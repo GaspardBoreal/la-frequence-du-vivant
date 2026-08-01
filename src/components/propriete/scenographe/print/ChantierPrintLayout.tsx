@@ -161,7 +161,7 @@ const SpeciesTile: React.FC<{
 
 const LIST_ROWS_1 = 20;
 const LIST_ROWS_N = 26;
-const TILES_PER_PAGE = 12;
+const TILES_PER_PAGE = 9;
 const PHOTOS_PER_PAGE = 6;
 
 /**
@@ -505,7 +505,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
               Les espèces en place
             </Title>
           )}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             {tiles.map((e) => (
               <SpeciesTile
                 key={e.key}
@@ -536,7 +536,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
               Les espèces proposées et retenues
             </Title>
           )}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             {tiles.map((e) => {
               const isRetained = retained.some((r) => r.key === e.key);
               const n = numberOf.get(e.scientificName);
@@ -571,7 +571,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
               src={printImageUrl(photoList[0].url, 'hero')}
               alt={photoList[0].caption || 'État actuel'}
               className="h-[150mm] w-full object-cover"
-              crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
             />
             <figcaption className="flex items-center justify-between px-2 py-1.5 text-[8pt] text-[#6b6151]">
               <span>{photoList[0].caption || 'État actuel de l’emprise'}</span>
@@ -594,7 +594,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
                   src={printImageUrl(ph.url, 'plate')}
                   alt={ph.caption || 'Photographie de l’ouvrage'}
                   className="h-[62mm] w-full object-cover"
-                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
                 />
                 <figcaption className="flex items-center justify-between px-2 py-1 text-[7.6pt] text-[#6b6151]">
                   <span className="truncate">{ph.caption || '—'}</span>
