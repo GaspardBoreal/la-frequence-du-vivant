@@ -125,6 +125,29 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   }, [panelWidth]);
   const [scopeMode, setScopeMode] = React.useState<ScopeMode>('courant');
   const [scopeIds, setScopeIds] = React.useState<string[]>([]);
+
+  /**
+   * Rigueur du périmètre : par défaut on s'en tient à l'emprise dessinée.
+   * Le réglage suit l'ouvrage (un massif fin et un verger ne se lisent pas
+   * avec la même tolérance).
+   */
+  const [rigour, setRigour] = React.useState<Rigour>('strict');
+  const [neighbourM, setNeighbourM] = React.useState(5);
+  React.useEffect(() => {
+    const raw = localStorage.getItem(`scenographe:rigour:${objetId}`);
+    if (raw === 'strict' || raw === 'lisiere' || raw === 'voisinage') setRigour(raw);
+    else setRigour('strict');
+    const m = Number(localStorage.getItem(`scenographe:neighbourM:${objetId}`));
+    setNeighbourM(Number.isFinite(m) && m >= 1 && m <= 15 ? m : 5);
+  }, [objetId]);
+  React.useEffect(() => {
+    localStorage.setItem(`scenographe:rigour:${objetId}`, rigour);
+    localStorage.setItem(`scenographe:neighbourM:${objetId}`, String(neighbourM));
+  }, [objetId, rigour, neighbourM]);
+
+  /** Espèce survolée dans l'herbier : ses points pulsent sur le plan. */
+  const [hovered, setHovered] = React.useState<HerbierEntry | null>(null);
+
   const mapRef = React.useRef<LeafletMap | null>(null);
   const handleMapReady = React.useCallback((m: LeafletMap) => {
     mapRef.current = m;
