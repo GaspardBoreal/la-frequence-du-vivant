@@ -1,49 +1,45 @@
-## Ce qui se passe réellement
+## Ce que disent les données (vérifié)
 
-**1. Le satellite est noir en super zoom — cause confirmée par test des tuiles**
+L'ouvrage « Massif Fréquence 01 » est un polygone très fin : ~9 m × 2,4 m (21 m²).
+Requête sur les observations autour de son emprise :
 
-J'ai interrogé le serveur IGN sur la zone de la propriété (Deviat) :
+- ~10 observations tombent **strictement dans** le polygone,
+- une dizaine d'autres tombent dans le **collier de 3 m** (`EDGE_TOLERANCE_M`) que `classifyObservations` classe en `lisiere`,
+- l'herbier « En place » additionne aujourd'hui `dedans + lisiere` sans distinction ni réglage → **19**.
+
+Sur un ouvrage de 2,4 m de large, un collier de 3 m double quasiment la surface écoutée : c'est là que naît l'écart avec les ~6 sujets que vous comptez visuellement. Aucun rayon d'observation n'intervient (le code passe déjà `radius = 0`) — le coupable est la tolérance de lisière, pas un rayon.
+
+## Proposition : le « Curseur de rigueur »
+
+Un seul geste, lisible, dans le bandeau « En place », au-dessus de la liste.
 
 ```text
-z18  →  200 OK    (image)
-z19  →  200 OK    (image)
-z20  →  404 Not Found
-z21  →  404 Not Found
+En place                                  19 → 10
+Rigueur   ● Strict      Lisière +3 m      Voisinage +Xm
+          dans l'emprise   GPS tolérant     autour
+[ 10 dedans ] [ 9 lisière ] [ 0 voisinage ]   ⟵ chips vivantes
 ```
 
-Le fichier `mapStyles.ts` déclare l'ortho IGN native jusqu'à **z21**. Le Scénographe ouvre la carte à **z20** et autorise z24. Leaflet demande donc de vraies tuiles z20/z21 → 404 → **aucune image, fond noir**. Ce n'est pas un problème de `maxZoom` de couche : c'est un `maxNativeZoom` déclaré trop haut. Le ré-échantillonnage promis ne se déclenche jamais parce que Leaflet croit que ces niveaux existent.
-
-Test comparatif effectué : le fond Esri World Imagery répond bien en z20 et z21 au même endroit.
-
-**2. L'ouvrage n'est pas sélectionnable**
-
-Dans `ScenographeFullscreen.tsx`, l'emprise est dessinée par un `<GeoJSON>` purement décoratif (trait doré pointillé, `fillOpacity 0.06`), sans gestionnaire d'événement, et **seul l'ouvrage courant** est tracé. Rien sur le plan ne permet de le désigner, ni de basculer vers un ouvrage voisin : le Scénographe est verrouillé sur l'`objetId` reçu à l'ouverture.
-
----
-
-## Correction proposée
-
-### A. Un fond satellite qui ne tombe jamais en panne
-
-1. **Dire la vérité sur le zoom natif** : ortho IGN à `maxNativeZoom: 19` (valeur réellement servie), OSM à 19, relief à 17. Au-delà, Leaflet agrandit la dernière tuile nette au lieu de demander du vide.
-2. **Relais automatique** : ajouter un fond de secours **Esri World Imagery** (natif jusqu'à z21) posé *sous* l'ortho IGN en mode Sat. On garde la finesse et la couleur IGN là où elle existe (≤ z19), et au-delà l'image reste lisible grâce au relais — plus jamais d'écran noir.
-3. **Filet de sécurité** : écoute de l'événement `tileerror` ; au premier échec répété d'un niveau, la couche redescend son `maxNativeZoom` d'un cran et se rafraîchit — donc la carte s'auto-corrige sur n'importe quelle commune, y compris là où l'IGN monte réellement à z21.
-4. `ZoomScaleBadge` affiche le vrai palier (« natif z19 · image agrandie ×4 ») et la source réellement affichée (IGN ou relais).
-
-### B. Sélectionner et changer d'ouvrage sans quitter le plan
-
-1. **Toutes les emprises deviennent visibles** : l'ouvrage travaillé garde son trait doré plein ; les autres ouvrages de la propriété apparaissent en trait fin discret.
-2. **Emprises cliquables** : survol → halo doré + infobulle (nom, métré, nombre de sujets posés) ; clic sur un ouvrage secondaire → le Scénographe bascule dessus (recadrage, herbier et scénarios rechargés), clic sur l'ouvrage courant → sélection de l'emprise, qui ouvre un petit panneau d'ouvrage (renommer, voir le métré, ouvrir la fiche dans l'Atelier).
-3. **Sélecteur d'ouvrage dans le bandeau** : à côté du titre « Massif Fréquence 01 », une liste déroulante de tous les ouvrages avec glyphe, nom, métré et pastille du nombre de scénarios — pour changer de sujet en un clic quand l'emprise est hors écran.
-4. Le clic sur une emprise **ne pose pas de plante** quand un sujet de l'herbier est armé : dans ce cas la pose reste prioritaire (comportement actuel préservé, aucune régression du glisser-déposer).
-
----
+1. **Trois crans de rigueur** (segmented control), défaut = **Strict** :
+   - *Strict* : uniquement `dedans` (ray casting sur la géométrie réelle).
+   - *Lisière* : + collier 3 m (comportement actuel).
+   - *Voisinage* : + un rayon réglable depuis le bord (slider 1→15 m), pour piocher ce qui pousse juste à côté.
+2. **Chips de comptage** toujours visibles (`10 dedans · 9 lisière · 0 voisinage`) : on voit ce qu'on exclut, jamais de perte silencieuse.
+3. **Badge de zone sur chaque fiche** : liseré plein = dedans, liseré pointillé + pastille « lisière 1,8 m » = collier, pastille grise = voisinage. Chaque fiche affiche sa distance réelle au bord.
+4. **Survol = révélation sur le plan** : survoler une fiche fait pulser ses points sur la carte ; inversement, un halo doux dessine l'emprise + le collier actif quand on change de cran, pour matérialiser physiquement ce qu'on écoute.
+5. **« Tout poser » respecte le cran actif** : on ne pose jamais en masse des sujets qu'on a exclus visuellement.
+6. **Rigueur par scénario** : le cran choisi est mémorisé dans le scénario (donc restitué à la réouverture depuis la bibliothèque), avec repli sur *Strict*.
+7. Combinaison intacte avec le sélecteur de portée existant (cet ouvrage / ouvrages choisis / toute la propriété) : rigueur = profondeur, portée = étendue.
 
 ## Détails techniques
 
-- `src/components/maps/mapStyles.ts` : `maxNativeZoom` réalistes + entrée `SATELLITE_FALLBACK_URL` (Esri).
-- `src/components/maps/DynamicTileLayer.tsx` : couche de relais sous la couche principale en mode satellite, gestion `tileerror` avec dégradation automatique du `maxNativeZoom`, exposition du palier effectif via un petit store local.
-- `src/components/maps/controls/ZoomScaleBadge.tsx` : lit le palier effectif au lieu d'une constante passée en prop.
-- `src/components/propriete/scenographe/ScenographeFullscreen.tsx` : rendu de tous les ouvrages, `eventHandlers` de sélection/bascule, état `activeObjetId` interne (initialisé par la prop), recadrage sur changement.
-- Nouveau `src/components/propriete/scenographe/OuvrageSwitcher.tsx` (liste déroulante du bandeau) et `OuvrageGeometryLayer.tsx` (emprises interactives).
-- Aucune migration, aucun changement de données : les scénarios restent liés à `objet_id`, le hook `useOuvrageScenarios` suit simplement l'ouvrage actif.
+- `src/lib/ouvrageScope.ts` : rendre `EDGE_TOLERANCE_M` paramétrable (`classifyObservations(geometry, items, radiusM, edgeToleranceM)`), défaut inchangé pour les autres appelants.
+- `ScenographeFullscreen.tsx` : nouvel état `rigour: 'strict' | 'lisiere' | 'voisinage'` + `neighbourM`, appliqué dans `inPlaceEntries` ; chaque `HerbierEntry` porte désormais `zone` et `distanceM` (min sur ses points).
+- Nouveau composant `HerbierRigourPicker.tsx` (crans + chips + slider), posé sous `HerbierScopePicker`.
+- `HerbierPanel.tsx` : badge de zone + distance sur la fiche, callbacks `onHoverEntry` pour la mise en évidence carte.
+- `PlantingLayer` / `OuvrageGeometryLayer` : halo du collier actif et pulsation des points survolés (purement visuel).
+- Persistance : champ `rigour` dans le JSON du scénario (`useOuvrageScenarios`), sans migration SQL (colonne JSON existante).
+
+## Hors périmètre
+
+Pas de recalcul des données sources ni de correction GPS ici — le Contrôle GPS reste l'outil pour déplacer une observation mal placée.

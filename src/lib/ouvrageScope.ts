@@ -75,15 +75,19 @@ const distanceToPathM = (geometry: any, lat: number, lng: number): number => {
 /**
  * Classe une liste d'observations géolocalisées par rapport à un ouvrage.
  * `radiusM` = rayon d'écoute mesuré **depuis le bord** de l'ouvrage.
+ * `edgeToleranceM` = épaisseur du collier de lisière (imprécision GPS) ;
+ * la passer à 0 rend le cadrage strictement géométrique.
  */
 export function classifyObservations<T extends LatLng>(
   geometry: any,
   items: T[],
   radiusM: number,
+  edgeToleranceM: number = EDGE_TOLERANCE_M,
 ): ScopeResult<T> {
   const hasSurface = geometry?.type === 'Polygon';
   const out: ScopeResult<T> = { dedans: [], lisiere: [], voisinage: [], hasSurface };
   if (!geometry) return out;
+
 
   const fence = hasSurface ? buildGeofence([{ geometry }]) : null;
 
@@ -97,7 +101,8 @@ export function classifyObservations<T extends LatLng>(
         continue;
       }
       const d = distanceToGeofenceM(fence, it.lat, it.lng);
-      if (d <= EDGE_TOLERANCE_M) out.lisiere.push({ item: it, zone: 'lisiere', distanceM: d });
+      if (edgeToleranceM > 0 && d <= edgeToleranceM)
+        out.lisiere.push({ item: it, zone: 'lisiere', distanceM: d });
       else if (d <= radiusM) out.voisinage.push({ item: it, zone: 'voisinage', distanceM: d });
       continue;
     }
@@ -105,7 +110,10 @@ export function classifyObservations<T extends LatLng>(
     // Point ou ligne : pas d'intérieur, on écoute autour du tracé.
     const d = distanceToPathM(geometry, it.lat, it.lng);
     if (d <= LINE_TOLERANCE_M) out.dedans.push({ item: it, zone: 'dedans', distanceM: d });
+    else if (edgeToleranceM > 0 && d <= LINE_TOLERANCE_M + edgeToleranceM)
+      out.lisiere.push({ item: it, zone: 'lisiere', distanceM: d });
     else if (d <= radiusM) out.voisinage.push({ item: it, zone: 'voisinage', distanceM: d });
+
   }
 
   out.voisinage.sort((a, b) => a.distanceM - b.distanceM);

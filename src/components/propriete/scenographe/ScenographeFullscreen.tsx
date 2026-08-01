@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { useMap, useMapEvents } from 'react-leaflet';
+import { useMap, useMapEvents, CircleMarker } from 'react-leaflet';
 import type { Map as LeafletMap } from 'leaflet';
 import { X, Clock, Layers, Trash2, Sprout, Loader2, Maximize2, Save } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,13 +15,15 @@ import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames
 import { useOuvrageScenarios, type Planting } from '@/hooks/propriete/useOuvrageScenarios';
 import { useProprieteScenarios } from '@/hooks/propriete/useProprieteScenarios';
 import { useInatThumbs } from '@/hooks/propriete/useInatThumbs';
-import { classifyObservations } from '@/lib/ouvrageScope';
+import { classifyObservations, EDGE_TOLERANCE_M } from '@/lib/ouvrageScope';
 import { geometryAreaM2, geometryCenter, fmtArea } from '@/components/propriete/palette/studio/geoMetrics';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
 import { STRATES, STRATE_ORDER, parseStrate, spreadFor, type Strate } from '@/lib/plantSpread';
 
 import HerbierPanel, { type HerbierEntry } from './HerbierPanel';
 import HerbierScopePicker, { type ScopeMode } from './HerbierScopePicker';
+import HerbierRigourPicker, { type Rigour } from './HerbierRigourPicker';
+
 import PanelResizer from './PanelResizer';
 import PlantingLayer from './PlantingLayer';
 import OuvrageGeometryLayer from './OuvrageGeometryLayer';
@@ -125,6 +127,29 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   }, [panelWidth]);
   const [scopeMode, setScopeMode] = React.useState<ScopeMode>('courant');
   const [scopeIds, setScopeIds] = React.useState<string[]>([]);
+
+  /**
+   * Rigueur du périmètre : par défaut on s'en tient à l'emprise dessinée.
+   * Le réglage suit l'ouvrage (un massif fin et un verger ne se lisent pas
+   * avec la même tolérance).
+   */
+  const [rigour, setRigour] = React.useState<Rigour>('strict');
+  const [neighbourM, setNeighbourM] = React.useState(5);
+  React.useEffect(() => {
+    const raw = localStorage.getItem(`scenographe:rigour:${objetId}`);
+    if (raw === 'strict' || raw === 'lisiere' || raw === 'voisinage') setRigour(raw);
+    else setRigour('strict');
+    const m = Number(localStorage.getItem(`scenographe:neighbourM:${objetId}`));
+    setNeighbourM(Number.isFinite(m) && m >= 1 && m <= 15 ? m : 5);
+  }, [objetId]);
+  React.useEffect(() => {
+    localStorage.setItem(`scenographe:rigour:${objetId}`, rigour);
+    localStorage.setItem(`scenographe:neighbourM:${objetId}`, String(neighbourM));
+  }, [objetId, rigour, neighbourM]);
+
+  /** Espèce survolée dans l'herbier : ses points pulsent sur le plan. */
+  const [hovered, setHovered] = React.useState<HerbierEntry | null>(null);
+
   const mapRef = React.useRef<LeafletMap | null>(null);
   const handleMapReady = React.useCallback((m: LeafletMap) => {
     mapRef.current = m;
@@ -185,20 +210,30 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     return all.filter((o) => keep.has(o.id) && o.geometry);
   }, [objets, objetId, scopeMode, scopeIds]);
 
-  /** Espèces déjà présentes dans les emprises (ray casting, pas un simple rayon). */
-  const inPlaceEntries = React.useMemo<HerbierEntry[]>(() => {
-    if (!scopedObjets.length) return [];
+  /**
+   * Espèces déjà présentes, classées par rapport à la géométrie réelle.
+   * On calcule les trois zones une fois, le curseur de rigueur ne fait
+   * ensuite que choisir jusqu'où l'on écoute.
+   */
+  const inPlaceZoned = React.useMemo(() => {
+    const empty = { dedans: [] as HerbierEntry[], lisiere: [] as HerbierEntry[], voisinage: [] as HerbierEntry[] };
+    if (!scopedObjets.length) return empty;
     const multi = scopedObjets.length > 1;
     const by = new Map<string, HerbierEntry>();
     scopedObjets.forEach((o) => {
       const label = o.nom?.trim() || TOOL_BY_KEY[o.outil_key]?.label || 'Ouvrage';
-      const scope = classifyObservations(o.geometry, waypoints as any, 0);
-      [...scope.dedans, ...scope.lisiere].forEach(({ item }: any) => {
+      const scope = classifyObservations(o.geometry, waypoints as any, neighbourM, EDGE_TOLERANCE_M);
+      [...scope.dedans, ...scope.lisiere, ...scope.voisinage].forEach(({ item, zone, distanceM }: any) => {
         if (!item.scientificName) return;
         const prev = by.get(item.scientificName);
         if (prev) {
           prev.observations = (prev.observations || 0) + 1;
           if (!prev.photoUrl && item.photoUrl) prev.photoUrl = item.photoUrl;
+          // Une espèce vue à la fois dedans et en lisière est « dedans ».
+          if (distanceM < (prev.distanceM ?? Infinity)) {
+            prev.distanceM = distanceM;
+            prev.zone = zone;
+          }
           if (Number.isFinite(item.lat) && Number.isFinite(item.lng))
             prev.points = [...(prev.points || []), { lat: item.lat, lng: item.lng }];
           return;
@@ -216,6 +251,8 @@ export const ScenographeFullscreen: React.FC<Props> = ({
           photoUrl: item.photoUrl || null,
           observations: 1,
           ouvrageNom: multi ? label : null,
+          zone,
+          distanceM,
           points:
             Number.isFinite(item.lat) && Number.isFinite(item.lng)
               ? [{ lat: item.lat, lng: item.lng }]
@@ -223,8 +260,29 @@ export const ScenographeFullscreen: React.FC<Props> = ({
         });
       });
     });
-    return Array.from(by.values()).sort((a, b) => (b.observations || 0) - (a.observations || 0));
-  }, [scopedObjets, waypoints, displayNameFor]);
+    const out = { ...empty };
+    Array.from(by.values())
+      .sort((a, b) => (b.observations || 0) - (a.observations || 0))
+      .forEach((e) => out[(e.zone || 'dedans') as keyof typeof out].push(e));
+    return out;
+  }, [scopedObjets, waypoints, displayNameFor, neighbourM]);
+
+  const rigourCounts = React.useMemo(
+    () => ({
+      dedans: inPlaceZoned.dedans.length,
+      lisiere: inPlaceZoned.lisiere.length,
+      voisinage: inPlaceZoned.voisinage.length,
+    }),
+    [inPlaceZoned],
+  );
+
+  const inPlaceEntries = React.useMemo<HerbierEntry[]>(() => {
+    const out = [...inPlaceZoned.dedans];
+    if (rigour !== 'strict') out.push(...inPlaceZoned.lisiere);
+    if (rigour === 'voisinage') out.push(...inPlaceZoned.voisinage);
+    return out;
+  }, [inPlaceZoned, rigour]);
+
 
 
   const proposalNames = React.useMemo(
@@ -430,7 +488,18 @@ export const ScenographeFullscreen: React.FC<Props> = ({
                     onSelected={setScopeIds}
                   />
                 }
+                rigourControl={
+                  <HerbierRigourPicker
+                    value={rigour}
+                    onChange={setRigour}
+                    neighbourM={neighbourM}
+                    onNeighbourM={setNeighbourM}
+                    counts={rigourCounts}
+                  />
+                }
+                onHoverEntry={setHovered}
               />
+
             </aside>
             <PanelResizer
               width={panelWidth}
@@ -496,6 +565,22 @@ export const ScenographeFullscreen: React.FC<Props> = ({
                 onSelect={setSelected}
                 onMove={(id, lat, lng) => patchPlanting(id, { lat, lng })}
               />
+              {/* Survol de l'herbier : on montre où l'espèce a réellement été vue. */}
+              {(hovered?.points || []).map((pt, i) => (
+                <CircleMarker
+                  key={`hov-${i}`}
+                  center={[pt.lat, pt.lng]}
+                  radius={9}
+                  pathOptions={{
+                    color: '#c8a24a',
+                    weight: 2,
+                    fillColor: '#c8a24a',
+                    fillOpacity: 0.25,
+                    interactive: false,
+                  }}
+                />
+              ))}
+
             </RichMap>
           </div>
 

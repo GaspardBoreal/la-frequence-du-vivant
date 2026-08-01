@@ -19,7 +19,12 @@ export interface HerbierEntry {
   ouvrageNom?: string | null;
   /** Positions GPS réelles observées — servent à la pose en masse. */
   points?: Array<{ lat: number; lng: number }>;
+  /** Position de l'espèce par rapport à l'emprise (herbier « En place »). */
+  zone?: 'dedans' | 'lisiere' | 'voisinage';
+  /** Distance minimale au bord de l'ouvrage, en mètres. */
+  distanceM?: number;
 }
+
 
 interface Props {
   inPlace: HerbierEntry[];
@@ -30,6 +35,10 @@ interface Props {
   onAddFree: (entry: HerbierEntry) => void;
   /** Sélecteur de portée affiché en tête de l'onglet « En place ». */
   scopeControl?: React.ReactNode;
+  /** Curseur de rigueur du périmètre, sous la portée (onglet « En place »). */
+  rigourControl?: React.ReactNode;
+  /** Survol d'une fiche : met en évidence ses points sur le plan. */
+  onHoverEntry?: (entry: HerbierEntry | null) => void;
   /** Pose en masse des espèces affichées, à leur position GPS réelle. */
   onPlaceMany?: (entries: HerbierEntry[]) => void;
   /** Retire du plan toutes les plantations issues des espèces affichées. */
@@ -37,6 +46,16 @@ interface Props {
   /** Grille 2 colonnes quand le bandeau est élargi. */
   wide?: boolean;
 }
+
+const ZONE_BADGE: Record<
+  NonNullable<HerbierEntry['zone']>,
+  { label: string; bg: string; fg: string; ring: string }
+> = {
+  dedans: { label: 'dedans', bg: 'hsl(var(--ds-forest-deep) / 0.14)', fg: 'hsl(var(--ds-forest-deep))', ring: 'hsl(var(--ds-forest-deep) / 0.45)' },
+  lisiere: { label: 'lisière', bg: 'rgba(200,162,74,.20)', fg: '#8a6b23', ring: 'rgba(200,162,74,.75)' },
+  voisinage: { label: 'voisinage', bg: 'rgba(59,126,161,.16)', fg: '#2b5f7a', ring: 'rgba(59,126,161,.6)' },
+};
+
 
 type TabKey = 'place' | 'proposee' | 'libre';
 type PlacedFilter = 'all' | 'todo' | 'done';
@@ -52,23 +71,33 @@ const Card: React.FC<{
   armed: boolean;
   placed: number;
   onClick: () => void;
-}> = ({ entry, armed, placed, onClick }) => {
+  onHover?: (entry: HerbierEntry | null) => void;
+}> = ({ entry, armed, placed, onClick, onHover }) => {
   const info = STRATES[entry.strate];
+  const zone = entry.zone ? ZONE_BADGE[entry.zone] : null;
   return (
     <button
       type="button"
       onClick={onClick}
+      onMouseEnter={() => onHover?.(entry)}
+      onMouseLeave={() => onHover?.(null)}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-scenographe', JSON.stringify(entry));
         e.dataTransfer.effectAllowed = 'copy';
       }}
+      style={
+        zone && entry.zone !== 'dedans'
+          ? { borderStyle: 'dashed', borderColor: zone.ring }
+          : undefined
+      }
       className={`group relative flex w-full items-center gap-2.5 rounded-xl border p-2 text-left transition-all ${
         armed
           ? 'border-[#c8a24a] bg-[#c8a24a]/12 shadow-[0_0_0_3px_rgba(200,162,74,.18)]'
           : 'border-[hsl(var(--ds-line))] bg-white/60 hover:border-[hsl(var(--ds-forest))]/40 hover:bg-white/85'
       }`}
     >
+
       <span
         className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[18px]"
         style={{ backgroundColor: `${info.color}22` }}
@@ -96,6 +125,18 @@ const Card: React.FC<{
           >
             {info.label} · Ø {entry.spreadM} m
           </span>
+          {zone && (
+            <span
+              className="rounded-full px-1.5 py-px text-[9px] font-medium"
+              style={{ backgroundColor: zone.bg, color: zone.fg }}
+            >
+              {zone.label}
+              {entry.zone !== 'dedans' && entry.distanceM != null
+                ? ` ${entry.distanceM < 10 ? entry.distanceM.toFixed(1) : Math.round(entry.distanceM)} m`
+                : ''}
+            </span>
+          )}
+
           {entry.ouvrageNom && (
             <span className="max-w-[110px] truncate rounded-full bg-[hsl(var(--ds-forest-deep))]/10 px-1.5 py-px text-[9px] font-medium text-[hsl(var(--ds-forest-deep))]/75">
               {entry.ouvrageNom}
@@ -132,6 +173,9 @@ export const HerbierPanel: React.FC<Props> = ({
   placedCount,
   onAddFree,
   scopeControl,
+  rigourControl,
+  onHoverEntry,
+
   onPlaceMany,
   onRemoveMany,
   wide,
@@ -189,6 +233,8 @@ export const HerbierPanel: React.FC<Props> = ({
       {tab !== 'libre' && (
         <div className="space-y-2 border-b border-[hsl(var(--ds-line))]/60 px-2.5 py-2">
           {tab === 'place' && scopeControl}
+          {tab === 'place' && rigourControl}
+
 
           <div className="flex flex-wrap items-center gap-1">
             {FILTERS.map((f) => (
@@ -315,6 +361,8 @@ export const HerbierPanel: React.FC<Props> = ({
                 armed={armedKey === e.key}
                 placed={placedCount[e.key] || 0}
                 onClick={() => onArm(armedKey === e.key ? null : e)}
+                onHover={onHoverEntry}
+
               />
             ))}
           </div>
