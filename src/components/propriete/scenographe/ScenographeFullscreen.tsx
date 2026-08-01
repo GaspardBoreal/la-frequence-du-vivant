@@ -565,6 +565,22 @@ export const ScenographeFullscreen: React.FC<Props> = ({
                 onSelect={setSelected}
                 onMove={(id, lat, lng) => patchPlanting(id, { lat, lng })}
               />
+              {/* Survol de l'herbier : on montre où l'espèce a réellement été vue. */}
+              {(hovered?.points || []).map((pt, i) => (
+                <CircleMarker
+                  key={`hov-${i}`}
+                  center={[pt.lat, pt.lng]}
+                  radius={9}
+                  pathOptions={{
+                    color: '#c8a24a',
+                    weight: 2,
+                    fillColor: '#c8a24a',
+                    fillOpacity: 0.25,
+                    interactive: false,
+                  }}
+                />
+              ))}
+
             </RichMap>
           </div>
 
