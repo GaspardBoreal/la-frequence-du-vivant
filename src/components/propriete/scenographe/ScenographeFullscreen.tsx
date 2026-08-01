@@ -393,8 +393,41 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     [proposals, thumbFor],
   );
 
-
   const plantings = scen.active?.plantings ?? [];
+
+  /**
+   * Vignettes « apports » pour le dossier de chantier : source de vérité = les
+   * sujets réellement posés au plan (persistés en base), complétés par les
+   * propositions de session non posées. La planche ne dépend donc plus de
+   * l'ouverture préalable de l'onglet « Proposées ».
+   */
+  const printProposedEntries = React.useMemo<HerbierEntry[]>(() => {
+    const by = new Map<string, HerbierEntry>();
+    plantings
+      .filter((p) => p.origin !== 'place')
+      .forEach((p) => {
+        const sci = p.scientificName;
+        if (by.has(sci)) return;
+        const thumb = thumbFor(sci);
+        const strate: Strate = p.strate || parseStrate(null);
+        by.set(sci, {
+          key: `prop:${sci}`,
+          scientificName: sci,
+          commonNameFr: p.commonNameFr || thumb?.common_name_fr || null,
+          strate,
+          spreadM: p.spreadM || spreadFor(strate, null),
+          origin: 'proposee' as const,
+          photoUrl: p.photoUrl || thumb?.photo_url || null,
+          functions: p.functions,
+          note: p.note,
+        });
+      });
+    proposedEntries.forEach((e) => {
+      if (!by.has(e.scientificName)) by.set(e.scientificName, e);
+    });
+    return Array.from(by.values());
+  }, [plantings, proposedEntries, thumbFor]);
+
 
   const placedCount = React.useMemo(() => {
     const m: Record<string, number> = {};
