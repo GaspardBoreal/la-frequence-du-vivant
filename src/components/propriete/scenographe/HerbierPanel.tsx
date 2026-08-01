@@ -71,23 +71,33 @@ const Card: React.FC<{
   armed: boolean;
   placed: number;
   onClick: () => void;
-}> = ({ entry, armed, placed, onClick }) => {
+  onHover?: (entry: HerbierEntry | null) => void;
+}> = ({ entry, armed, placed, onClick, onHover }) => {
   const info = STRATES[entry.strate];
+  const zone = entry.zone ? ZONE_BADGE[entry.zone] : null;
   return (
     <button
       type="button"
       onClick={onClick}
+      onMouseEnter={() => onHover?.(entry)}
+      onMouseLeave={() => onHover?.(null)}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-scenographe', JSON.stringify(entry));
         e.dataTransfer.effectAllowed = 'copy';
       }}
+      style={
+        zone && entry.zone !== 'dedans'
+          ? { borderStyle: 'dashed', borderColor: zone.ring }
+          : undefined
+      }
       className={`group relative flex w-full items-center gap-2.5 rounded-xl border p-2 text-left transition-all ${
         armed
           ? 'border-[#c8a24a] bg-[#c8a24a]/12 shadow-[0_0_0_3px_rgba(200,162,74,.18)]'
           : 'border-[hsl(var(--ds-line))] bg-white/60 hover:border-[hsl(var(--ds-forest))]/40 hover:bg-white/85'
       }`}
     >
+
       <span
         className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[18px]"
         style={{ backgroundColor: `${info.color}22` }}
