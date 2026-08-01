@@ -36,7 +36,9 @@ const uid = () => `pl_${Math.random().toString(36).slice(2, 10)}`;
 /** Capture l'instance Leaflet pour le glisser-déposer depuis l'herbier. */
 const MapGrab: React.FC<{ onMap: (m: LeafletMap) => void }> = ({ onMap }) => {
   const map = useMap();
-  React.useEffect(() => onMap(map), [map, onMap]);
+  React.useEffect(() => {
+    onMap(map);
+  }, [map, onMap]);
   return null;
 };
 
@@ -85,6 +87,10 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   const [selected, setSelected] = React.useState<string | null>(null);
   const [panelOpen, setPanelOpen] = React.useState(true);
   const mapRef = React.useRef<LeafletMap | null>(null);
+  const handleMapReady = React.useCallback((m: LeafletMap) => {
+    mapRef.current = m;
+  }, []);
+
 
   React.useEffect(() => {
     fullscreenSurfaces.push();
@@ -316,7 +322,7 @@ export const ScenographeFullscreen: React.FC<Props> = ({
               controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
               height="100%"
             >
-              <MapGrab onMap={(m) => (mapRef.current = m)} />
+              <MapGrab onMap={handleMapReady} />
               <ZoomScaleBadge />
               <ClickToPlace
                 enabled={!!armed}
