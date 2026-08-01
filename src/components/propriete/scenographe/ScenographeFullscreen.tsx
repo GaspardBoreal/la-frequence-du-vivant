@@ -798,7 +798,18 @@ export const ScenographeFullscreen: React.FC<Props> = ({
           onClose={() => setGalleryObjetId(null)}
         />
       )}
+      {/* La Chambre du Vivant : se projeter dans le scénario */}
+      {immersionOpen && (
+        <ImmersionOverlay
+          plantings={plantings}
+          photos={(objetPhotos.byObjet.get(objetId) ?? []) as any}
+          scenarioName={scen.active?.nom || 'Scénario'}
+          ouvrageName={objet?.nom?.trim() || tool?.label || 'Ouvrage'}
+          onClose={() => setImmersionOpen(false)}
+        />
+      )}
     </div>
+
   );
 
   return createPortal(body, document.body);
