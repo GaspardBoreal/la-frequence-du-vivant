@@ -196,6 +196,8 @@ export const PaletteSummary: React.FC<Props> = ({
               ))}
             </section>
           )}
+        </>
+      )}
 
 
       {showP2 && (
