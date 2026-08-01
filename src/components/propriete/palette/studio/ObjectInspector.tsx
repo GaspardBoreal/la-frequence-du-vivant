@@ -76,6 +76,7 @@ export const ObjectInspector: React.FC<Props> = ({
   const [nom, setNom] = React.useState(objet.nom || '');
   const [note, setNote] = React.useState(objet.meta?.note || '');
   const transforming = transformMeasure != null;
+  const { scenarios } = useOuvrageScenarios(proprieteId, objet.id);
 
   React.useEffect(() => {
     setNom(objet.nom || '');
