@@ -788,10 +788,21 @@ export const ScenographeFullscreen: React.FC<Props> = ({
           Chargement de l’ouvrage…
         </div>
       )}
+      {/* Carnet photo d'un ouvrage : même visionneuse que l'Atelier */}
+      {galleryPhotos.length > 0 && (
+        <OuvragePhotoViewer
+          photos={galleryPhotos}
+          index={Math.min(galleryIndex, galleryPhotos.length - 1)}
+          title={galleryTitle}
+          onIndex={setGalleryIndex}
+          onClose={() => setGalleryObjetId(null)}
+        />
+      )}
     </div>
   );
 
   return createPortal(body, document.body);
 };
+
 
 export default ScenographeFullscreen;
