@@ -7,7 +7,11 @@ import ScenographeFullscreen from './ScenographeFullscreen';
  * Il enregistre la propriété courante (les entrées depuis le chat n'ont pas
  * d'autre moyen de la connaître) et rend la surface plein écran à la demande.
  */
-export const ScenographeMount: React.FC<{ proprieteId: string }> = ({ proprieteId }) => {
+export const ScenographeMount: React.FC<{
+  proprieteId: string;
+  propertyName?: string;
+  commune?: string | null;
+}> = ({ proprieteId, propertyName, commune }) => {
   const state = useScenographeState();
 
   React.useEffect(() => {
@@ -23,6 +27,8 @@ export const ScenographeMount: React.FC<{ proprieteId: string }> = ({ proprieteI
       objetId={state.objetId}
       proposals={state.proposals}
       initialScenarioId={state.scenarioId}
+      propertyName={propertyName}
+      commune={commune}
       onClose={scenographeStore.close}
     />
   );
