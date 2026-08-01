@@ -193,7 +193,12 @@ export const PaletteStudio: React.FC<Props> = ({
 
 
 
-  const { calques, upsertCalque, deleteCalque } = useProprieteCalques(open ? proprieteId : undefined);
+  const {
+    calques,
+    upsertCalque,
+    deleteCalque,
+    loading: calquesLoading,
+  } = useProprieteCalques(open ? proprieteId : undefined);
   const { objets, upsertObjet, deleteObjet } = useProprieteObjets(open ? proprieteId : undefined);
   const objetPhotos = useObjetPhotos(open ? proprieteId : undefined);
 
