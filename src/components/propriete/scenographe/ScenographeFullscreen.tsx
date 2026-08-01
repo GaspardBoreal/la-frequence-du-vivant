@@ -2,7 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { useMap, useMapEvents, CircleMarker } from 'react-leaflet';
 import type { Map as LeafletMap } from 'leaflet';
-import { X, Clock, Layers, Trash2, Sprout, Loader2, Maximize2, Save, Eye } from 'lucide-react';
+import { X, Clock, Layers, Trash2, Sprout, Loader2, Maximize2, Save, Eye, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 
 import RichMap from '@/components/maps/RichMap';
