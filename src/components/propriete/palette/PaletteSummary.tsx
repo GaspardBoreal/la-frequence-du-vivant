@@ -65,6 +65,8 @@ interface Props {
   printSection?: 'all' | 'p1' | 'p2';
   /** Masque le cartouche à l'écran (il est alors porté par l'en-tête d'étape) */
   hideCartoucheOnScreen?: boolean;
+  /** Remplace la section 02 à l'écran par le widget « Emplacements & ouvrages » */
+  zonesSlot?: React.ReactNode;
 }
 
 const SectionHead: React.FC<{
@@ -113,6 +115,7 @@ export const PaletteSummary: React.FC<Props> = ({
   printOnly,
   printSection = 'all',
   hideCartoucheOnScreen,
+  zonesSlot,
 }) => {
   const showP1 = printSection === 'all' || printSection === 'p1';
   const showP2 = printSection === 'all' || printSection === 'p2';
@@ -162,39 +165,43 @@ export const PaletteSummary: React.FC<Props> = ({
             </blockquote>
           </section>
 
-          {/* 02 — Une palette par emplacement */}
-          <section className="space-y-4">
-            <SectionHead
-              num="02"
-              label="Une palette par emplacement"
-              Icon={Sprout}
-              tint="#e9f1e6"
-              ink="#2f5d3a"
-              onEdit={printOnly ? undefined : () => onEditBlock?.('zones')}
-            />
-            {zones.length === 0 && (
-              <p className="text-sm italic text-[hsl(var(--ds-forest-deep))]/60">
-                Aucun emplacement tracé.
-              </p>
-            )}
-            {zones.map((z, i) => (
-              <ZonePaletteCard
-                key={z.id}
-                index={i}
-                name={z.name}
-                color={z.color}
-                ambiance={z.ambiance}
-                intention={z.intention}
-                recommendations={z.recommendations}
-                selectedIds={z.selected}
-                readOnly
-                forceOpen
-
+          {/* 02 — Emplacements & ouvrages (widget vivant) ou palettes par emplacement */}
+          {zonesSlot && !printOnly ? (
+            <section className="space-y-4">{zonesSlot}</section>
+          ) : (
+            <section className="space-y-4">
+              <SectionHead
+                num="02"
+                label="Une palette par emplacement"
+                Icon={Sprout}
+                tint="#e9f1e6"
+                ink="#2f5d3a"
+                onEdit={printOnly ? undefined : () => onEditBlock?.('zones')}
               />
-            ))}
-          </section>
+              {zones.length === 0 && (
+                <p className="text-sm italic text-[hsl(var(--ds-forest-deep))]/60">
+                  Aucun emplacement tracé.
+                </p>
+              )}
+              {zones.map((z, i) => (
+                <ZonePaletteCard
+                  key={z.id}
+                  index={i}
+                  name={z.name}
+                  color={z.color}
+                  ambiance={z.ambiance}
+                  intention={z.intention}
+                  recommendations={z.recommendations}
+                  selectedIds={z.selected}
+                  readOnly
+                  forceOpen
+                />
+              ))}
+            </section>
+          )}
         </>
       )}
+
 
       {showP2 && (
         <>
