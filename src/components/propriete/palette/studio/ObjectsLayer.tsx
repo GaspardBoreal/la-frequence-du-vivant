@@ -261,7 +261,21 @@ export const ObjectsLayer: React.FC<Props> = ({
 
         return null;
       })}
+
+      {/* Pastilles « carnet photo » — couche partagée avec le Scénographe */}
+      <OuvragePhotoPastilleLayer
+        objets={ordered.filter((o) => {
+          if (o.id === hiddenId) return false;
+          const cal = o.calque_id ? calqueById[o.calque_id] : null;
+          return !cal || cal.visible;
+        })}
+        photoCounts={photoCounts}
+        photoThumbs={photoThumbs}
+        selectedId={selectedId}
+        onOpenPhotos={onOpenPhotos}
+      />
     </>
+
   );
 };
 
