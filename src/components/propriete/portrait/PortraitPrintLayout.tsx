@@ -152,7 +152,7 @@ export const PortraitPrintLayout: React.FC<Props> = ({
       {coverVariant === 'hero-photo' && photos[0] ? (
         <section className="portrait-print-page portrait-print-full portrait-print-hero-cover">
           <div className="portrait-print-hero">
-            <img src={printImageUrl(photos[0].url, 'hero')} alt="" crossOrigin="anonymous" />
+            <img src={printImageUrl(photos[0].url, 'hero')} alt="" referrerPolicy="no-referrer" />
           </div>
           <div className="portrait-print-hero-overlay">
             <div className="portrait-print-eyebrow" style={{ color: '#fbf7ee' }}>Portrait du site</div>
@@ -195,7 +195,7 @@ export const PortraitPrintLayout: React.FC<Props> = ({
         <div className="portrait-print-toc-grid">
           {photos.map((p, idx) => (
             <div key={p.id} className="portrait-print-toc-tile">
-              <img src={printImageUrl(p.url, 'thumb')} alt="" crossOrigin="anonymous" />
+              <img src={printImageUrl(p.url, 'thumb')} alt="" referrerPolicy="no-referrer" />
               <div className="portrait-print-toc-num">{String(idx + 1).padStart(2, '0')}</div>
             </div>
           ))}
@@ -223,7 +223,7 @@ export const PortraitPrintLayout: React.FC<Props> = ({
           return (
             <section key={p.id} className="portrait-print-page portrait-print-full">
               <div className="portrait-print-hero">
-                <img src={printImageUrl(p.url, 'plate')} alt="" crossOrigin="anonymous" />
+                <img src={printImageUrl(p.url, 'plate')} alt="" referrerPolicy="no-referrer" />
               </div>
               <div className="portrait-print-cartouche">
                 <div className="num-huge">{String(pg.index + 1).padStart(2, '0')}</div>
@@ -242,7 +242,7 @@ export const PortraitPrintLayout: React.FC<Props> = ({
           <section key={`d-${pg.startIndex}`} className="portrait-print-page portrait-print-double">
             <div className="col-main">
               <figure>
-                <img src={printImageUrl(pg.main.url, 'plate')} alt="" crossOrigin="anonymous" />
+                <img src={printImageUrl(pg.main.url, 'plate')} alt="" referrerPolicy="no-referrer" />
                 <figcaption>
                   <span className="num">{String(pg.startIndex + 1).padStart(2, '0')}</span>
                   {pg.main.author_name ?? 'Anonyme'}
@@ -253,7 +253,7 @@ export const PortraitPrintLayout: React.FC<Props> = ({
             <div className="col-side">
               {pg.sides.map((s, j) => (
                 <figure key={s.id}>
-                  <img src={printImageUrl(s.url, 'plate')} alt="" crossOrigin="anonymous" />
+                  <img src={printImageUrl(s.url, 'plate')} alt="" referrerPolicy="no-referrer" />
                   <figcaption>
                     <span className="num">{String(pg.startIndex + 2 + j).padStart(2, '0')}</span>
                     {s.author_name ?? 'Anonyme'}
