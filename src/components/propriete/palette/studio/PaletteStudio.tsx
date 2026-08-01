@@ -70,6 +70,7 @@ import ZoneTransformBar from '../ZoneTransformBar';
 import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
 import ObjetTransformLayer from './ObjetTransformLayer';
 import ObjetTransformBar from './ObjetTransformBar';
+import EmpriseRealPanel from './EmpriseRealPanel';
 import { useObjetTransform } from '@/hooks/propriete/useObjetTransform';
 import ZoneInspector from './ZoneInspector';
 import { MAP_CHROME_SIDE_CENTER } from '@/components/maps/mapChrome';
@@ -865,6 +866,17 @@ export const PaletteStudio: React.FC<Props> = ({
           <InlineGpsBar curation={inlineGps} />
 
           <ObjetTransformBar
+            api={objetTransform}
+            color={
+              (objetTransform.objet?.style?.color as string) ||
+              (objetTransform.objet
+                ? TOOL_BY_KEY[objetTransform.objet.outil_key]?.color
+                : undefined) ||
+              '#2f5d3a'
+            }
+          />
+
+          <EmpriseRealPanel
             api={objetTransform}
             color={
               (objetTransform.objet?.style?.color as string) ||

@@ -21,6 +21,8 @@ export interface ObjetTransformApi {
   smoothCount: number;
   canUndo: boolean;
   canSmooth: boolean;
+  /** Remplace la géométrie éditée (ex. point → emprise réelle polygonale). */
+  morph: (geometry: any) => void;
   baseMeasure: number;
   measure: number;
   /** Géométrie GeoJSON reconstruite à partir des sommets courants. */
@@ -44,11 +46,13 @@ export function useObjetTransform(
 ): ObjetTransformApi {
   const [objet, setObjet] = React.useState<ProprieteObjet | null>(null);
   const [coords, setCoords] = React.useState<Ring>([]);
-  const [history, setHistory] = React.useState<Ring[]>([]);
+  const [history, setHistory] = React.useState<Array<{ coords: Ring; geometry: any }>>([]);
   const [smoothCount, setSmoothCount] = React.useState(0);
   const baseRef = React.useRef<Ring>([]);
   const coordsRef = React.useRef<Ring>([]);
   coordsRef.current = coords;
+  const geomRef = React.useRef<any>(null);
+  geomRef.current = objet?.geometry ?? null;
 
   const kind = (objet?.geometry?.type ?? null) as ObjetTransformApi['kind'];
   const unit = (objet ? TOOL_BY_KEY[objet.outil_key]?.unit ?? 'u' : 'u') as 'm2' | 'ml' | 'u';
@@ -63,13 +67,20 @@ export function useObjetTransform(
   }, []);
 
   const pushHistory = React.useCallback(() => {
-    setHistory((h) => [...h.slice(-24), coordsRef.current]);
+    setHistory((h) => [...h.slice(-24), { coords: coordsRef.current, geometry: geomRef.current }]);
+  }, []);
+
+  /** Morphing de géométrie : le point devient une emprise réelle éditable. */
+  const morph = React.useCallback((geometry: any) => {
+    setHistory((h) => [...h.slice(-24), { coords: coordsRef.current, geometry: geomRef.current }]);
+    setObjet((o) => (o ? { ...o, geometry } : o));
+    setCoords(geomCoords(geometry));
   }, []);
 
   const preview = React.useCallback((next: Ring) => setCoords(next), []);
 
   const smooth = React.useCallback(() => {
-    setHistory((h) => [...h.slice(-24), coordsRef.current]);
+    setHistory((h) => [...h.slice(-24), { coords: coordsRef.current, geometry: geomRef.current }]);
     setCoords((c) => {
       if (c.length < 3) return c;
       const smoothed = smoothRing(c, 1);
@@ -81,7 +92,9 @@ export function useObjetTransform(
   const undo = React.useCallback(() => {
     setHistory((h) => {
       if (!h.length) return h;
-      setCoords(h[h.length - 1]);
+      const prev = h[h.length - 1];
+      setCoords(prev.coords);
+      setObjet((o) => (o && prev.geometry ? { ...o, geometry: prev.geometry } : o));
       setSmoothCount((n) => Math.max(0, n - 1));
       return h.slice(0, -1);
     });
@@ -134,6 +147,7 @@ export function useObjetTransform(
     smoothCount,
     canUndo: history.length > 0,
     canSmooth: kind === 'Polygon' && coords.length >= 4,
+    morph,
     baseMeasure,
     measure,
     geometry,
