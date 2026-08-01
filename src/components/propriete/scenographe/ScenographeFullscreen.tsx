@@ -1,0 +1,478 @@
+import React from 'react';
+import { createPortal } from 'react-dom';
+import { GeoJSON, useMap, useMapEvents } from 'react-leaflet';
+import type { Map as LeafletMap } from 'leaflet';
+import { X, Clock, Layers, Trash2, Sprout, Loader2, Maximize2, Save } from 'lucide-react';
+import { toast } from 'sonner';
+
+import RichMap from '@/components/maps/RichMap';
+import { MapViewReporter, useMapViewState } from '@/components/maps/hooks/useMapViewState';
+import ZoomScaleBadge from '@/components/maps/controls/ZoomScaleBadge';
+import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
+
+import { useProprieteObjets, type ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
+import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
+import { useOuvrageScenarios, type Planting } from '@/hooks/propriete/useOuvrageScenarios';
+import { useInatThumbs } from '@/hooks/propriete/useInatThumbs';
+import { classifyObservations } from '@/lib/ouvrageScope';
+import { geometryAreaM2, geometryCenter, fmtArea } from '@/components/propriete/palette/studio/geoMetrics';
+import { TOOL_BY_KEY } from '@/lib/paysageTools';
+import { STRATES, STRATE_ORDER, parseStrate, spreadFor, type Strate } from '@/lib/plantSpread';
+
+import HerbierPanel, { type HerbierEntry } from './HerbierPanel';
+import PlantingLayer from './PlantingLayer';
+import BalanceBar from './BalanceBar';
+import ScenarioTabs from './ScenarioTabs';
+import type { ScenographeProposal } from './scenographeStore';
+
+const GROWTH_STEPS = [
+  { label: 'An 0', factor: 0.35, tag: 'La plantation — les mottes, les vides, la patience.' },
+  { label: 'An 3', factor: 0.7, tag: 'Les strates basses se referment, le sol se couvre.' },
+  { label: 'An 10', factor: 1, tag: 'L’ouvrage a pris son ampleur : c’est le plan vrai.' },
+];
+
+const uid = () => `pl_${Math.random().toString(36).slice(2, 10)}`;
+
+/** Capture l'instance Leaflet pour le glisser-déposer depuis l'herbier. */
+const MapGrab: React.FC<{ onMap: (m: LeafletMap) => void }> = ({ onMap }) => {
+  const map = useMap();
+  React.useEffect(() => onMap(map), [map, onMap]);
+  return null;
+};
+
+const ClickToPlace: React.FC<{ enabled: boolean; onPlace: (lat: number, lng: number) => void }> = ({
+  enabled,
+  onPlace,
+}) => {
+  useMapEvents({
+    click: (e) => {
+      if (enabled) onPlace(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+};
+
+interface Props {
+  proprieteId: string;
+  objetId: string;
+  proposals: ScenographeProposal[];
+  onClose: () => void;
+}
+
+/**
+ * Le Scénographe d'ouvrage : composer un aménagement en posant de vraies
+ * espèces, à la vraie échelle, sur l'emprise réelle du lieu. Ce que l'on
+ * dessine ici n'est pas un croquis mais une hypothèse mesurable.
+ */
+export const ScenographeFullscreen: React.FC<Props> = ({
+  proprieteId,
+  objetId,
+  proposals,
+  onClose,
+}) => {
+  const { objets } = useProprieteObjets(proprieteId);
+  const objet: ProprieteObjet | undefined = React.useMemo(
+    () => (objets || []).find((o: ProprieteObjet) => o.id === objetId),
+    [objets, objetId],
+  );
+
+  const { waypoints } = usePropertySpeciesPool(proprieteId);
+  const { displayNameFor } = useWaypointFrenchNames(waypoints as any);
+  const scen = useOuvrageScenarios(proprieteId, objetId);
+
+  const [growthIdx, setGrowthIdx] = React.useState(1);
+  const [armed, setArmed] = React.useState<HerbierEntry | null>(null);
+  const [selected, setSelected] = React.useState<string | null>(null);
+  const [panelOpen, setPanelOpen] = React.useState(true);
+  const { view, onChange: onViewChange } = useMapViewState();
+  const mapRef = React.useRef<LeafletMap | null>(null);
+
+  React.useEffect(() => {
+    fullscreenSurfaces.push();
+    return () => fullscreenSurfaces.pop();
+  }, []);
+
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (armed) setArmed(null);
+        else onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [armed, onClose]);
+
+  const geometry = objet?.geometry;
+  const areaM2 = React.useMemo(() => (geometry ? geometryAreaM2(geometry) : 0), [geometry]);
+  const center = React.useMemo(() => (geometry ? geometryCenter(geometry) : null), [geometry]);
+  const bounds = React.useMemo<Array<[number, number]> | undefined>(() => {
+    if (!geometry) return undefined;
+    const cs: Array<[number, number]> =
+      geometry.type === 'Polygon'
+        ? geometry.coordinates?.[0] ?? []
+        : geometry.type === 'LineString'
+          ? geometry.coordinates ?? []
+          : geometry.coordinates
+            ? [geometry.coordinates]
+            : [];
+    return cs.length ? cs.map((c) => [c[1], c[0]] as [number, number]) : undefined;
+  }, [geometry]);
+
+  /** Espèces déjà présentes dans l'emprise (ray casting, pas un simple rayon). */
+  const inPlaceEntries = React.useMemo<HerbierEntry[]>(() => {
+    if (!geometry) return [];
+    const scope = classifyObservations(geometry, waypoints as any, 0);
+    const by = new Map<string, HerbierEntry>();
+    [...scope.dedans, ...scope.lisiere].forEach(({ item }: any) => {
+      if (!item.scientificName) return;
+      const prev = by.get(item.scientificName);
+      if (prev) {
+        prev.observations = (prev.observations || 0) + 1;
+        if (!prev.photoUrl && item.photoUrl) prev.photoUrl = item.photoUrl;
+        return;
+      }
+      by.set(item.scientificName, {
+        key: `place:${item.scientificName}`,
+        scientificName: item.scientificName,
+        commonNameFr: displayNameFor({
+          scientificName: item.scientificName,
+          commonName: item.commonName ?? null,
+        }),
+        strate: item.kingdom === 'Plantae' ? 'herbacee' : 'herbacee',
+        spreadM: STRATES.herbacee.spreadM,
+        origin: 'place',
+        photoUrl: item.photoUrl || null,
+        observations: 1,
+      });
+    });
+    return Array.from(by.values()).sort((a, b) => (b.observations || 0) - (a.observations || 0));
+  }, [geometry, waypoints, displayNameFor]);
+
+  const proposalNames = React.useMemo(
+    () => proposals.map((p) => p.scientificName).filter(Boolean),
+    [proposals],
+  );
+  const { map: thumbs } = useInatThumbs(proposalNames);
+
+  const proposedEntries = React.useMemo<HerbierEntry[]>(
+    () =>
+      proposals.map((p) => {
+        const strate: Strate = p.strate || parseStrate(null);
+        const thumb = thumbs.get(p.scientificName);
+        return {
+          key: `prop:${p.scientificName}`,
+          scientificName: p.scientificName,
+          commonNameFr: p.commonNameFr || thumb?.commonName || null,
+          strate,
+          spreadM: spreadFor(strate, p.heightM ?? null),
+          origin: 'proposee' as const,
+          photoUrl: thumb?.photoUrl || null,
+          functions: p.functions,
+          note: p.note,
+        };
+      }),
+    [proposals, thumbs],
+  );
+
+  const plantings = scen.active?.plantings ?? [];
+
+  const placedCount = React.useMemo(() => {
+    const m: Record<string, number> = {};
+    plantings.forEach((p) => {
+      const k = `${p.origin === 'place' ? 'place' : p.origin === 'proposee' ? 'prop' : 'libre'}:${p.scientificName}`;
+      m[k] = (m[k] || 0) + 1;
+    });
+    return m;
+  }, [plantings]);
+
+  const savePlantings = React.useCallback(
+    async (next: Planting[]) => {
+      if (scen.active) {
+        await scen.patch(scen.active.id, { plantings: next });
+      } else {
+        await scen.create(next);
+      }
+    },
+    [scen],
+  );
+
+  const place = React.useCallback(
+    (entry: HerbierEntry, lat: number, lng: number) => {
+      const p: Planting = {
+        id: uid(),
+        scientificName: entry.scientificName,
+        commonNameFr: entry.commonNameFr ?? null,
+        lat,
+        lng,
+        spreadM: entry.spreadM,
+        strate: entry.strate,
+        origin: entry.origin,
+        photoUrl: entry.photoUrl ?? null,
+        functions: entry.functions,
+        note: entry.note ?? null,
+      };
+      void savePlantings([...plantings, p]);
+      setSelected(p.id);
+    },
+    [plantings, savePlantings],
+  );
+
+  const patchPlanting = (id: string, patch: Partial<Planting>) =>
+    void savePlantings(plantings.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+
+  const removePlanting = (id: string) => {
+    void savePlantings(plantings.filter((p) => p.id !== id));
+    setSelected(null);
+  };
+
+  const growth = GROWTH_STEPS[growthIdx].factor;
+  const tool = objet ? TOOL_BY_KEY[objet.outil_key] : null;
+  const sel = plantings.find((p) => p.id === selected) || null;
+
+  const body = (
+    <div className="fixed inset-0 z-[3000] flex flex-col bg-[hsl(var(--ds-forest-deep))]">
+      {/* Bandeau : l'identité de l'ouvrage et les variantes du projet */}
+      <header className="flex flex-wrap items-center gap-3 border-b border-white/10 bg-[hsl(var(--ds-forest-deep))] px-4 py-2.5 text-white">
+        <span className="flex items-center gap-2">
+          <span className="text-[18px]">{tool?.glyph ?? '🌿'}</span>
+          <span className="leading-tight">
+            <span className="block text-[9.5px] uppercase tracking-[0.16em] opacity-55">
+              Scénographe d’ouvrage
+            </span>
+            <span className="block text-[13px] font-semibold">
+              {objet?.nom?.trim() || tool?.label || 'Ouvrage'}
+              {areaM2 > 0 && <span className="ml-2 text-[10.5px] font-normal opacity-60">{fmtArea(areaM2)}</span>}
+            </span>
+          </span>
+        </span>
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <ScenarioTabs
+            scenarios={scen.scenarios}
+            activeId={scen.activeId}
+            onSelect={scen.setActiveId}
+            onCreate={() => void scen.create([])}
+            onDuplicate={scen.duplicate}
+            onDelete={scen.remove}
+            onRetenu={scen.setRetenu}
+            onRename={(id, nom) => void scen.patch(id, { nom })}
+          />
+          <button
+            onClick={onClose}
+            aria-label="Fermer le Scénographe"
+            className="rounded-full p-1.5 opacity-70 transition-opacity hover:bg-white/10 hover:opacity-100"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </header>
+
+      <div className="flex min-h-0 flex-1">
+        {/* Herbier */}
+        {panelOpen && (
+          <aside className="hidden w-[290px] shrink-0 flex-col border-r border-[hsl(var(--ds-line))]/60 bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] md:flex">
+            <HerbierPanel
+              inPlace={inPlaceEntries}
+              proposed={proposedEntries}
+              armedKey={armed?.key ?? null}
+              onArm={setArmed}
+              placedCount={placedCount}
+              onAddFree={(e) => setArmed(e)}
+            />
+          </aside>
+        )}
+
+        {/* Plan */}
+        <main
+          className="relative min-w-0 flex-1"
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            const raw = e.dataTransfer.getData('application/x-scenographe');
+            const map = mapRef.current;
+            if (!raw || !map) return;
+            try {
+              const entry = JSON.parse(raw) as HerbierEntry;
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const ll = map.containerPointToLatLng([e.clientX - rect.left, e.clientY - rect.top] as any);
+              place(entry, ll.lat, ll.lng);
+            } catch {
+              /* payload illisible : on ignore */
+            }
+          }}
+        >
+          <div className={`h-full w-full ${armed ? 'cursor-crosshair' : ''}`}>
+            <RichMap
+              center={center ?? [46.6, 2.5]}
+              bounds={bounds}
+              fitPadding={[70, 70]}
+              fitMaxZoom={23}
+              zoom={20}
+              maxZoom={24}
+              initialStyle="satellite"
+              controls={{ zoom: true, style: true, geolocate: false, cadastre: true }}
+              height="100%"
+            >
+              <MapGrab onMap={(m) => (mapRef.current = m)} />
+              <MapViewReporter onChange={onViewChange} />
+              <ClickToPlace
+                enabled={!!armed}
+                onPlace={(lat, lng) => armed && place(armed, lat, lng)}
+              />
+              {geometry && (
+                <GeoJSON
+                  key={objetId}
+                  data={geometry as any}
+                  style={{
+                    color: tool?.color || '#c8a24a',
+                    weight: 2,
+                    fillColor: tool?.color || '#c8a24a',
+                    fillOpacity: 0.06,
+                    dashArray: '5 4',
+                  }}
+                />
+              )}
+              <PlantingLayer
+                plantings={plantings}
+                growth={growth}
+                selectedId={selected}
+                onSelect={setSelected}
+                onMove={(id, lat, lng) => patchPlanting(id, { lat, lng })}
+              />
+            </RichMap>
+          </div>
+
+          <ZoomScaleBadge zoom={view.zoom} lat={view.center?.[0] ?? center?.[0] ?? 46.6} />
+
+          {/* Horloge du vivant */}
+          <div className="pointer-events-auto absolute bottom-4 left-1/2 z-[1000] w-[min(420px,92%)] -translate-x-1/2 rounded-2xl border border-white/15 bg-[hsl(var(--ds-forest-deep))]/92 px-4 py-2.5 text-white shadow-2xl backdrop-blur">
+            <div className="flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5 opacity-70" />
+              {GROWTH_STEPS.map((s, i) => (
+                <button
+                  key={s.label}
+                  onClick={() => setGrowthIdx(i)}
+                  className={`rounded-full px-2.5 py-1 text-[10.5px] font-medium transition-colors ${
+                    growthIdx === i ? 'bg-[#c8a24a] text-white' : 'opacity-55 hover:opacity-90'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+              <span className="ml-auto text-[9.5px] tabular-nums opacity-50">
+                {plantings.length} sujet{plantings.length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <p className="mt-1 text-[10px] italic leading-snug opacity-60">{GROWTH_STEPS[growthIdx].tag}</p>
+          </div>
+
+          {/* Fiche du sujet sélectionné */}
+          {sel && (
+            <div className="absolute right-3 top-3 z-[1000] w-[236px] rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/96 p-3 text-[hsl(var(--ds-forest-deep))] shadow-2xl backdrop-blur">
+              <div className="flex items-start gap-2">
+                {sel.photoUrl ? (
+                  <img src={sel.photoUrl} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--ds-forest))]/12 text-[16px]">
+                    {STRATES[sel.strate].glyph}
+                  </span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[11.5px] font-semibold">
+                    {sel.commonNameFr || sel.scientificName}
+                  </span>
+                  <span className="block truncate text-[10px] italic opacity-55">{sel.scientificName}</span>
+                </span>
+                <button onClick={() => setSelected(null)} className="opacity-50 hover:opacity-100">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              <label className="mt-2.5 block text-[9.5px] font-semibold uppercase tracking-wide opacity-55">
+                Strate
+              </label>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {STRATE_ORDER.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() =>
+                      patchPlanting(sel.id, { strate: s, spreadM: STRATES[s].spreadM })
+                    }
+                    className="rounded-full px-1.5 py-0.5 text-[9.5px] font-medium"
+                    style={{
+                      backgroundColor: sel.strate === s ? STRATES[s].color : `${STRATES[s].color}20`,
+                      color: sel.strate === s ? '#fff' : STRATES[s].color,
+                    }}
+                  >
+                    {STRATES[s].glyph}
+                  </button>
+                ))}
+              </div>
+
+              <label className="mt-2.5 flex items-center justify-between text-[9.5px] font-semibold uppercase tracking-wide opacity-55">
+                Envergure adulte
+                <span className="tabular-nums opacity-80">Ø {sel.spreadM.toFixed(1)} m</span>
+              </label>
+              <input
+                type="range"
+                min={0.2}
+                max={12}
+                step={0.1}
+                value={sel.spreadM}
+                onChange={(e) => patchPlanting(sel.id, { spreadM: Number(e.target.value) })}
+                className="mt-1 w-full accent-[#c8a24a]"
+              />
+
+              <button
+                onClick={() => removePlanting(sel.id)}
+                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#c1663f]/40 py-1.5 text-[10.5px] font-medium text-[#c1663f] transition-colors hover:bg-[#c1663f]/10"
+              >
+                <Trash2 className="h-3 w-3" />
+                Retirer du plan
+              </button>
+            </div>
+          )}
+
+          {/* Herbier mobile */}
+          <button
+            onClick={() => setPanelOpen((v) => !v)}
+            className="absolute left-3 top-3 z-[1000] flex items-center gap-1.5 rounded-full border border-white/15 bg-[hsl(var(--ds-forest-deep))]/90 px-3 py-1.5 text-[10.5px] font-medium text-white shadow-lg backdrop-blur md:hidden"
+          >
+            <Layers className="h-3.5 w-3.5" />
+            Herbier
+          </button>
+        </main>
+      </div>
+
+      {/* Herbier en tiroir sur mobile */}
+      {panelOpen && (
+        <div className="max-h-[42vh] shrink-0 overflow-hidden border-t border-[hsl(var(--ds-line))]/60 bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] md:hidden">
+          <HerbierPanel
+            inPlace={inPlaceEntries}
+            proposed={proposedEntries}
+            armedKey={armed?.key ?? null}
+            onArm={setArmed}
+            placedCount={placedCount}
+            onAddFree={(e) => setArmed(e)}
+          />
+        </div>
+      )}
+
+      <BalanceBar plantings={plantings} areaM2={areaM2} growth={growth} />
+
+      {!objet && (
+        <div className="absolute inset-0 z-[3100] flex items-center justify-center bg-[hsl(var(--ds-forest-deep))]/85 text-white">
+          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          Chargement de l’ouvrage…
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ScenographeFullscreen;
