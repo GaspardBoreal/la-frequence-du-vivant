@@ -540,40 +540,53 @@ export const ChantierPrintLayout: React.FC<Props> = ({
       ))}
 
       {/* ---------- 5 · Les apports retenus ---------- */}
-      {chunk(proposedTiles, TILES_PER_PAGE).map((tiles, ci) => (
+      {(proposedTiles.length ? chunk(proposedTiles, TILES_PER_PAGE) : [[]]).map((tiles, ci) => (
         <Page key={`prop-${ci}`}>
           {ci === 0 && (
             <Title
               eyebrow={`Planche ${proposedPlate}`}
-              sub={`${retained.length} espèce${retained.length > 1 ? 's' : ''} retenue${retained.length > 1 ? 's' : ''} et posée${retained.length > 1 ? 's' : ''} au plan${notRetained.length ? ` · ${notRetained.length} en réserve` : ''}.`}
+              sub={
+                proposedTiles.length
+                  ? `${retained.length} espèce${retained.length > 1 ? 's' : ''} retenue${retained.length > 1 ? 's' : ''} et posée${retained.length > 1 ? 's' : ''} au plan${notRetained.length ? ` · ${notRetained.length} en réserve` : ''}.`
+                  : 'Aucun apport retenu à ce stade : le scénario s’appuie uniquement sur les espèces déjà en place.'
+              }
             >
               Les espèces proposées et retenues
             </Title>
           )}
-          <div className="grid grid-cols-3 gap-3">
-            {tiles.map((e) => {
-              const isRetained = retained.some((r) => r.key === e.key);
-              const n = numberOf.get(e.scientificName);
-              return (
-                <SpeciesTile
-                  key={e.key}
-                  photoUrl={e.photoUrl}
-                  title={e.commonNameFr || e.scientificName}
-                  latin={e.scientificName}
-                  strate={e.strate}
-                  badge={isRetained ? `retenue · n° ${n ?? '—'}` : 'en réserve'}
-                  meta={`Ø ${fmtM(e.spreadM)}`}
-                  functions={e.functions}
-                />
-              );
-            })}
-          </div>
+          {tiles.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-[#e0d5b6] px-4 py-6 text-center text-[9.5pt] italic text-[#8a8172]">
+              Aucun apport n’a encore été posé au plan pour ce scénario.
+            </p>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              {tiles.map((e) => {
+                const qty = plantings.filter(
+                  (p) => p.origin !== 'place' && p.scientificName === e.scientificName,
+                ).length;
+                const isRetained = qty > 0;
+                const n = numberOf.get(e.scientificName);
+                return (
+                  <SpeciesTile
+                    key={e.key}
+                    photoUrl={e.photoUrl}
+                    title={e.commonNameFr || e.scientificName}
+                    latin={e.scientificName}
+                    strate={e.strate}
+                    badge={isRetained ? `retenue · n° ${n ?? '—'}` : 'en réserve'}
+                    meta={`Ø ${fmtM(e.spreadM)}${isRetained ? ` · ${qty} sujet${qty > 1 ? 's' : ''}` : ''}`}
+                    functions={e.functions}
+                  />
+                );
+              })}
+            </div>
+          )}
           <p className="mt-3 text-[7.4pt] italic text-[#8a8172]">
             Photographies de référence : iNaturalist / GBIF (licences Creative Commons).
           </p>
         </Page>
-
       ))}
+
 
       {/* ---------- 6 · Photos avant aménagement ---------- */}
       {photoList.length > 0 && (
