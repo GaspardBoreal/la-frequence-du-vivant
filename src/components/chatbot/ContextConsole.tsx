@@ -57,8 +57,20 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
       list.push(p);
       map.set(p.group, list);
     }
-    return Array.from(map.entries());
-  }, [providers]);
+    // Les groupes porteurs d'une UI spécialisée (plateau des ouvrages…) doivent
+    // exister même sans provider : sinon l'utilisateur ne peut jamais faire la
+    // sélection qui, précisément, crée le provider.
+    for (const g of Object.keys(groupExtras ?? {})) {
+      if (!map.has(g)) map.set(g, []);
+    }
+    const ORDER = ['Vivant', 'Sol', 'Ouvrages', 'Site', 'Flore'];
+    return Array.from(map.entries()).sort(([a], [b]) => {
+      const ia = ORDER.indexOf(a);
+      const ib = ORDER.indexOf(b);
+      if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+      return a.localeCompare(b);
+    });
+  }, [providers, groupExtras]);
 
   const totalBytes = useMemo(
     () =>
