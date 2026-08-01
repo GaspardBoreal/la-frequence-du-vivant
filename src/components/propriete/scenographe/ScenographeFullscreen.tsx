@@ -20,6 +20,8 @@ import { TOOL_BY_KEY } from '@/lib/paysageTools';
 import { STRATES, STRATE_ORDER, parseStrate, spreadFor, type Strate } from '@/lib/plantSpread';
 
 import HerbierPanel, { type HerbierEntry } from './HerbierPanel';
+import HerbierScopePicker, { type ScopeMode } from './HerbierScopePicker';
+import PanelResizer from './PanelResizer';
 import PlantingLayer from './PlantingLayer';
 import BalanceBar from './BalanceBar';
 import ScenarioTabs from './ScenarioTabs';
