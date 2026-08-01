@@ -255,6 +255,55 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     [plantings, savePlantings],
   );
 
+  /** Pose en une fois toutes les espèces filtrées, à leur position observée. */
+  const placeMany = React.useCallback(
+    (entries: HerbierEntry[]) => {
+      const fallback = center;
+      const next: Planting[] = [];
+      entries.forEach((entry) => {
+        const pts = entry.points?.length
+          ? entry.points
+          : fallback
+            ? [{ lat: fallback[0], lng: fallback[1] }]
+            : [];
+        pts.forEach((pt) => {
+          next.push({
+            id: uid(),
+            scientificName: entry.scientificName,
+            commonNameFr: entry.commonNameFr ?? null,
+            lat: pt.lat,
+            lng: pt.lng,
+            spreadM: entry.spreadM,
+            strate: entry.strate,
+            origin: entry.origin,
+            photoUrl: entry.photoUrl ?? null,
+            functions: entry.functions,
+            note: entry.note ?? null,
+          });
+        });
+      });
+      if (!next.length) return;
+      void savePlantings([...plantings, ...next]);
+      toast.success(`${next.length} sujet${next.length > 1 ? 's' : ''} posé${next.length > 1 ? 's' : ''}`, {
+        description: `${entries.length} espèce${entries.length > 1 ? 's' : ''} à leur position observée.`,
+      });
+    },
+    [plantings, savePlantings, center],
+  );
+
+  const removeMany = React.useCallback(
+    (entries: HerbierEntry[]) => {
+      const names = new Set(entries.map((e) => e.scientificName));
+      const next = plantings.filter((p) => !names.has(p.scientificName));
+      const removed = plantings.length - next.length;
+      if (!removed) return;
+      void savePlantings(next);
+      setSelected(null);
+      toast.success(`${removed} sujet${removed > 1 ? 's' : ''} retiré${removed > 1 ? 's' : ''} du plan`);
+    },
+    [plantings, savePlantings],
+  );
+
   const patchPlanting = (id: string, patch: Partial<Planting>) =>
     void savePlantings(plantings.map((p) => (p.id === id ? { ...p, ...patch } : p)));
 
