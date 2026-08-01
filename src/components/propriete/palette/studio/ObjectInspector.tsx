@@ -11,6 +11,7 @@ import ObjetPhotoStrip from './photos/ObjetPhotoStrip';
 import type { ObjetPhoto } from '@/hooks/propriete/useObjetPhotos';
 import SoilLinkBlock from './SoilLinkBlock';
 import AskGardenAiBlock from './AskGardenAiBlock';
+import { openScenographe } from '@/components/propriete/scenographe/scenographeStore';
 
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
 
