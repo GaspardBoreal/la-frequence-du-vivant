@@ -343,21 +343,23 @@ export const PaletteStudio: React.FC<Props> = ({
 
 
 
-  /* Semer les calques par défaut au premier passage */
-  const seededRef = React.useRef(false);
+  /* Semer les calques par défaut — une seule fois par propriété, après chargement */
+  const seededRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (!open || readOnly || seededRef.current) return;
-    if (calques.length > 0) {
-      seededRef.current = true;
-      return;
-    }
-    seededRef.current = true;
+    if (!open || readOnly || !proprieteId) return;
+    // On attend le chargement réel : une liste vide « en cours de chargement »
+    // ne doit jamais déclencher un nouveau semis (source des calques dupliqués).
+    if (calquesLoading) return;
+    if (seededRef.current === proprieteId) return;
+    seededRef.current = proprieteId;
+    if (calques.length > 0) return;
     (async () => {
       for (let i = 0; i < DEFAULT_LAYERS.length; i++) {
-        await upsertCalque({ nom: DEFAULT_LAYERS[i], ordre: i });
+        await upsertCalque({ nom: DEFAULT_LAYERS[i], ordre: i }).catch(() => {});
       }
     })().catch(() => {});
-  }, [open, readOnly, calques.length, upsertCalque]);
+  }, [open, readOnly, proprieteId, calquesLoading, calques.length, upsertCalque]);
+
 
   React.useEffect(() => {
     if (!activeCalqueId && calques.length > 0) setActiveCalqueId(calques[calques.length - 1].id);
