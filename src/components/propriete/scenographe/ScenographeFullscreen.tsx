@@ -36,7 +36,9 @@ const uid = () => `pl_${Math.random().toString(36).slice(2, 10)}`;
 /** Capture l'instance Leaflet pour le glisser-déposer depuis l'herbier. */
 const MapGrab: React.FC<{ onMap: (m: LeafletMap) => void }> = ({ onMap }) => {
   const map = useMap();
-  React.useEffect(() => onMap(map), [map, onMap]);
+  React.useEffect(() => {
+    onMap(map);
+  }, [map, onMap]);
   return null;
 };
 
