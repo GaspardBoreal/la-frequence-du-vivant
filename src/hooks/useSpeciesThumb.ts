@@ -118,6 +118,60 @@ export function useSpeciesThumbs(scientificNames: Array<string | null | undefine
 }
 
 /**
+ * Résolution IMPÉRATIVE et attendue d'un lot de vignettes.
+ *
+ * Contrairement au hook (qui déclenche la résolution en tâche de fond), cette
+ * fonction attend réellement la réponse de l'edge function : indispensable
+ * avant une impression, où il ne faut plus aucune image manquante.
+ * Renvoie la carte à jour des vignettes (clé = nom scientifique en minuscules).
+ */
+export async function resolveSpeciesThumbs(
+  scientificNames: Array<string | null | undefined>,
+  onProgress?: (done: number, total: number) => void,
+): Promise<Map<string, SpeciesThumbRow>> {
+  const names = Array.from(
+    new Set(scientificNames.map(normalize).filter((n) => n.length >= 2)),
+  );
+  const out = new Map<string, SpeciesThumbRow>();
+  if (names.length === 0) return out;
+
+  const read = async (batch: string[]) => {
+    const { data, error } = await supabase.rpc('get_species_thumbs', { _names: batch });
+    if (error) {
+      console.warn('[resolveSpeciesThumbs] rpc error:', error.message);
+      return;
+    }
+    for (const row of (data || []) as SpeciesThumbRow[]) out.set(row.scientific_name, row);
+  };
+
+  // 1) Lecture du cache existant
+  for (let i = 0; i < names.length; i += 200) await read(names.slice(i, i + 200));
+
+  // 2) Résolution des manquantes (iNat → GBIF), par lots de 50
+  const missing = names.filter((n) => {
+    const row = out.get(n);
+    return !row || (!row.photo_url && row.source === 'none');
+  });
+  let done = 0;
+  onProgress?.(0, missing.length);
+  for (let i = 0; i < missing.length; i += 50) {
+    const batch = missing.slice(i, i + 50);
+    try {
+      await supabase.functions.invoke('resolve-species-thumb', {
+        body: { scientific_names: batch },
+      });
+    } catch (err) {
+      console.warn('[resolveSpeciesThumbs] invoke failed:', (err as Error).message);
+    }
+    await read(batch);
+    done += batch.length;
+    onProgress?.(Math.min(done, missing.length), missing.length);
+  }
+
+  return out;
+}
+
+/**
  * Hook single — wrapper pratique pour les composants qui n'ont qu'un nom.
  */
 export function useSpeciesThumb(scientificName: string | null | undefined) {
