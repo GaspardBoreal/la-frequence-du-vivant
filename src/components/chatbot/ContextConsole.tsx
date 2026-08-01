@@ -27,7 +27,10 @@ interface ContextConsoleProps {
   activeKeys: string[];
   /** Poids des autres pièces jointes déjà attachées (document, pool d'espèces). */
   baseBytes?: number;
+  /** UI spécialisée injectée en tête d'un groupe (ex : plateau des ouvrages). */
+  groupExtras?: Record<string, React.ReactNode>;
 }
+
 
 /**
  * Console de contextes — cœur de l'IA frugale.
