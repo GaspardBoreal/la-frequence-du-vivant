@@ -65,6 +65,8 @@ interface Props {
   printSection?: 'all' | 'p1' | 'p2';
   /** Masque le cartouche à l'écran (il est alors porté par l'en-tête d'étape) */
   hideCartoucheOnScreen?: boolean;
+  /** Remplace la section 02 à l'écran par le widget « Emplacements & ouvrages » */
+  zonesSlot?: React.ReactNode;
 }
 
 const SectionHead: React.FC<{
