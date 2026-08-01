@@ -75,15 +75,19 @@ const distanceToPathM = (geometry: any, lat: number, lng: number): number => {
 /**
  * Classe une liste d'observations géolocalisées par rapport à un ouvrage.
  * `radiusM` = rayon d'écoute mesuré **depuis le bord** de l'ouvrage.
+ * `edgeToleranceM` = épaisseur du collier de lisière (imprécision GPS) ;
+ * la passer à 0 rend le cadrage strictement géométrique.
  */
 export function classifyObservations<T extends LatLng>(
   geometry: any,
   items: T[],
   radiusM: number,
+  edgeToleranceM: number = EDGE_TOLERANCE_M,
 ): ScopeResult<T> {
   const hasSurface = geometry?.type === 'Polygon';
   const out: ScopeResult<T> = { dedans: [], lisiere: [], voisinage: [], hasSurface };
   if (!geometry) return out;
+
 
   const fence = hasSurface ? buildGeofence([{ geometry }]) : null;
 
