@@ -8,6 +8,7 @@ import { toolByKey } from '@/lib/ouvrageRecoKb';
 import { linkedSampleIds, mergeSamples, ouvrageSoilAlerts } from '@/lib/soilLinkEngine';
 import { measureFor, fmtMeasure } from './studio/geoMetrics';
 import OuvrageRecoCard from './OuvrageRecoCard';
+import OuvrageScenariosPanel from './OuvrageScenariosPanel';
 
 interface ZoneLite {
   id: string;
