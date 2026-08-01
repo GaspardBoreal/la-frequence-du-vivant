@@ -1,5 +1,12 @@
 import React from 'react';
-import { Copy, Check, Table2, FileSpreadsheet, Download } from 'lucide-react';
+import { Copy, Check, Table2, FileSpreadsheet, Download, Clapperboard } from 'lucide-react';
+import {
+  openScenographe,
+  useScenographeAvailable,
+} from '@/components/propriete/scenographe/scenographeStore';
+import { useProprieteChatFocus } from '@/components/propriete/chatbot/proprieteChatFocus';
+import { parseSpeciesTable, looksLikeSpeciesTable } from '@/lib/chatSpeciesTable';
+
 
 /**
  * Tableau de synthèse du chat : rendu éditorial + actions d'export.
