@@ -22,6 +22,8 @@ import { STRATES, STRATE_ORDER, parseStrate, spreadFor, type Strate } from '@/li
 
 import HerbierPanel, { type HerbierEntry } from './HerbierPanel';
 import HerbierScopePicker, { type ScopeMode } from './HerbierScopePicker';
+import HerbierRigourPicker, { type Rigour } from './HerbierRigourPicker';
+
 import PanelResizer from './PanelResizer';
 import PlantingLayer from './PlantingLayer';
 import OuvrageGeometryLayer from './OuvrageGeometryLayer';
