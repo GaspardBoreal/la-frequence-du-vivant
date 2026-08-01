@@ -22,11 +22,19 @@ interface ScenographeState {
   proprieteId: string | null;
   open: boolean;
   objetId: string | null;
+  /** Scénario à rouvrir précisément (sinon : le retenu, sinon le premier). */
+  scenarioId: string | null;
   /** Propositions injectées à l'ouverture (herbier « Proposées »). */
   proposals: ScenographeProposal[];
 }
 
-const EMPTY: ScenographeState = { proprieteId: null, open: false, objetId: null, proposals: [] };
+const EMPTY: ScenographeState = {
+  proprieteId: null,
+  open: false,
+  objetId: null,
+  scenarioId: null,
+  proposals: [],
+};
 
 let state: ScenographeState = EMPTY;
 const listeners = new Set<() => void>();
@@ -43,8 +51,8 @@ export const scenographeStore = {
     state = { ...state, proprieteId };
     emit();
   },
-  open: (objetId: string, proposals: ScenographeProposal[] = []) => {
-    state = { ...state, open: true, objetId, proposals };
+  open: (objetId: string, proposals: ScenographeProposal[] = [], scenarioId: string | null = null) => {
+    state = { ...state, open: true, objetId, proposals, scenarioId };
     emit();
   },
   close: () => {
@@ -67,5 +75,15 @@ export function useScenographeAvailable(): boolean {
   );
 }
 
-export const openScenographe = (objetId: string, proposals: ScenographeProposal[] = []) =>
-  scenographeStore.open(objetId, proposals);
+/**
+ * Ouvre le Scénographe. Le second argument accepte soit la liste de
+ * propositions (usage historique depuis le chat), soit un objet d'options
+ * permettant de viser un scénario précis.
+ */
+export const openScenographe = (
+  objetId: string,
+  arg: ScenographeProposal[] | { proposals?: ScenographeProposal[]; scenarioId?: string | null } = [],
+) => {
+  if (Array.isArray(arg)) return scenographeStore.open(objetId, arg, null);
+  return scenographeStore.open(objetId, arg.proposals ?? [], arg.scenarioId ?? null);
+};

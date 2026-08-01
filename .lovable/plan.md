@@ -1,46 +1,34 @@
-## 1. Bandeau gauche (herbier) redimensionnable
+## Pourquoi vous ne les voyez pas
 
-`ScenographeFullscreen.tsx` — l'aside est figé à 290 px.
-- Poignée de glissement verticale entre l'herbier et le plan (curseur `col-resize`, filet doré au survol).
-- Largeur libre entre 240 et 640 px, mémorisée dans `localStorage` (`scenographe:panelWidth`).
-- Double-clic sur la poignée = retour à la largeur par défaut ; bouton replier/déplier conservé.
-- L'herbier passe en grille 2 colonnes automatiquement au-delà de ~430 px (plus de vignettes visibles d'un coup).
+Le bloc « Scénographies » créé précédemment vit uniquement dans la **fiche dépliée d'un ouvrage du registre**, sous la carte de l'onglet Palette végétale (`OuvragesRegister` → `OuvrageScenariosPanel`). Dans le plein écran **L'Atelier du jardin nourricier** (`PaletteStudio`), aucune entrée ne liste les scénarios : l'inspecteur d'objet ne propose qu'un bouton « Ouvrir le Scénographe », qui rouvre toujours le scénario retenu (ou le premier) sans permettre de choisir.
 
-## 2. Espèces en place : filtrer par ouvrage + poser en masse
+## 1. Bibliothèque des scénographies dans l'Atelier
 
-Aujourd'hui la liste « En place » ne montre que les espèces de l'emprise de l'ouvrage courant, une par une.
+Nouveau bouton **« Scénographies »** (icône baguette + pastille du nombre) dans la barre d'outils haute de l'Atelier, à côté des actions existantes. Il ouvre un panneau latéral droit (même langage visuel que l'inspecteur : carte dockée, filet doré) :
 
-**Portée (nouveau sélecteur en tête d'onglet)**
-- « Cet ouvrage » (défaut) · « Ouvrages choisis… » (menu à cocher listant tous les ouvrages de la propriété avec leur métré) · « Toute la propriété ».
-- Chaque fiche espèce affiche une puce d'origine (nom de l'ouvrage d'où elle vient) quand la portée dépasse l'ouvrage courant.
-- Calcul par ray-casting sur chaque géométrie retenue (`classifyObservations`), fusion et dédoublonnage par nom scientifique.
+- Liste **tous** les scénarios de la propriété, regroupés par ouvrage (nom de l'ouvrage + métré en en-tête de groupe).
+- Chaque ligne : nom du scénario, nombre de sujets, glyphes de strates, date, pastille dorée « Retenu ».
+- Filtre rapide : *Tous* · *Cet ouvrage* (quand un objet est sélectionné) · *Retenus*.
+- Survol d'une ligne → l'emprise de l'ouvrage concerné clignote doucement sur le plan, pour relier liste et carte.
+- Actions par ligne, identiques au registre : Ouvrir · Renommer · Dupliquer · Retenir · Supprimer (confirmation).
+- État vide : « Aucune scénographie — sélectionnez un ouvrage et composez-en une. »
 
-**Bascule posées / non posées**
-- Trois filtres rapides : Toutes · À poser · Déjà posées, avec compteurs.
+## 2. Rouvrir *le bon* scénario
 
-**Actions de masse**
-- « Tout poser » : place en une fois toutes les espèces affichées après filtre, **à leur position GPS réelle observée** (et non au centre), en ignorant celles déjà posées.
-- « Tout retirer » : enlève du scénario les plantations issues de la sélection courante.
-- Confirmation légère + toast récapitulatif ; un seul enregistrement du scénario (pas un par espèce).
+Aujourd'hui `openScenographe(objetId)` ne transporte pas l'identité du scénario.
 
-## 3. Vue Géo / Sat en super zoom
+- `scenographeStore` gagne un champ `scenarioId` optionnel ; `openScenographe(objetId, { scenarioId, proposals })`.
+- `ScenographeFullscreen` sélectionne ce scénario à l'ouverture au lieu du retenu/premier.
+- Le registre (`OuvrageScenariosPanel`) et la nouvelle bibliothèque passent tous deux l'id — un clic ouvre exactement la variante cliquée.
 
-Cause : dans `DynamicTileLayer`, `maxZoom` de la couche vaut `max(maxZoom, nativeMax)` mais le fond disparaît quand la carte dépasse la valeur transmise ; en plein écran le Scénographe pousse jusqu'à z24 tandis que les tuiles IGN sont natives à z21.
-- Toujours donner à la couche un `maxZoom` supérieur ou égal au `maxZoom` de la carte (marge +2), avec `maxNativeZoom` au natif du fournisseur → Leaflet ré-échantillonne au lieu de vider le fond.
-- Même traitement pour l'overlay cadastre et pour les fonds Géo (OSM z20) et Relief (z17).
-- Le badge d'échelle indique « tuiles agrandies · natif z21 » au-delà du natif, pour que l'utilisateur sache qu'il travaille en interpolation.
+## 3. Rappel dans l'inspecteur d'objet
 
-## 4. Retrouver tous les scénarios depuis l'Atelier
-
-Dans `OuvragesRegister.tsx` (fiche dépliée d'un ouvrage), nouveau bloc **« Scénographies »** :
-- Liste des scénarios de l'ouvrage : nom, nombre de sujets, strates réunies, date, pastille dorée « Retenu ».
-- Actions par ligne : Ouvrir dans le Scénographe · Renommer · Dupliquer · Retenir · Supprimer (confirmation).
-- Bouton « Nouveau scénario » si aucun n'existe.
-- Ouverture via le store existant `openScenographe(objetId)` — aucun nouveau chemin de données.
+Dans `ObjectInspector`, au-dessus du bouton « Ouvrir le Scénographe » : une ligne compacte « n scénographie(s) » avec les 3 dernières en puces cliquables (ouverture directe) et un lien « Toutes… » qui ouvre la bibliothèque filtrée sur cet ouvrage.
 
 ## Détails techniques
 
-- Aucune migration : `propriete_ouvrage_scenarios` et le hook `useOuvrageScenarios` suffisent.
-- Nouveaux fichiers : `scenographe/HerbierScopePicker.tsx`, `scenographe/PanelResizer.tsx`, `palette/OuvrageScenariosPanel.tsx`.
-- Modifiés : `ScenographeFullscreen.tsx`, `HerbierPanel.tsx`, `DynamicTileLayer.tsx`, `ZoomScaleBadge.tsx`, `OuvragesRegister.tsx`.
-- Les positions GPS réelles des observations sont déjà disponibles via `usePropertySpeciesPool` (waypoints), on les conserve dans les entrées d'herbier pour la pose en masse.
+- Aucune migration : la table `propriete_ouvrage_scenarios` suffit.
+- Nouveau hook `useProprieteScenarios(proprieteId)` : lecture de tous les scénarios de la propriété (une requête), plus `patch` / `remove` / `duplicate` / `setRetenu` mutualisés avec la logique existante de `useOuvrageScenarios`.
+- Nouveaux fichiers : `palette/studio/ScenariosLibraryPanel.tsx`, `hooks/propriete/useProprieteScenarios.ts`.
+- Modifiés : `scenographe/scenographeStore.ts`, `scenographe/ScenographeFullscreen.tsx`, `palette/studio/PaletteStudio.tsx`, `palette/studio/ObjectInspector.tsx`, `palette/OuvrageScenariosPanel.tsx`.
+- Le panneau réutilise `uiOverlayLevel` pour se placer correctement sous les overlays plein écran.

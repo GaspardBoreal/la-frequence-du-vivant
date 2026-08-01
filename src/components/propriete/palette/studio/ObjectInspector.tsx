@@ -12,10 +12,15 @@ import type { ObjetPhoto } from '@/hooks/propriete/useObjetPhotos';
 import SoilLinkBlock from './SoilLinkBlock';
 import AskGardenAiBlock from './AskGardenAiBlock';
 import { openScenographe } from '@/components/propriete/scenographe/scenographeStore';
+import { useOuvrageScenarios } from '@/hooks/propriete/useOuvrageScenarios';
 
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
 
 interface Props {
+  /** Propriété courante — permet de relire les scénographies de l'ouvrage. */
+  proprieteId?: string;
+  /** Ouvre la bibliothèque des scénographies de l'Atelier. */
+  onOpenScenarioLibrary?: () => void;
   objet: ProprieteObjet;
   calques: ProprieteCalque[];
   zones: ProprieteZone[];
@@ -46,6 +51,8 @@ const field =
   'w-full rounded-md border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-1 text-[11px] outline-none focus:border-[hsl(var(--ds-forest))]/50';
 
 export const ObjectInspector: React.FC<Props> = ({
+  proprieteId,
+  onOpenScenarioLibrary,
   objet,
   calques,
   zones,
@@ -69,6 +76,7 @@ export const ObjectInspector: React.FC<Props> = ({
   const [nom, setNom] = React.useState(objet.nom || '');
   const [note, setNote] = React.useState(objet.meta?.note || '');
   const transforming = transformMeasure != null;
+  const { scenarios } = useOuvrageScenarios(proprieteId, objet.id);
 
   React.useEffect(() => {
     setNom(objet.nom || '');
@@ -224,6 +232,36 @@ export const ObjectInspector: React.FC<Props> = ({
           toolLabel={tool?.label ?? 'ouvrage'}
           nom={objet.nom}
         />
+
+        {/* Les scénographies déjà composées pour cet ouvrage */}
+        {scenarios.length > 0 && (
+          <div className="rounded-lg border border-[hsl(var(--ds-line))] bg-white/50 px-2 py-1.5">
+            <p className="mb-1 flex items-center gap-1 text-[9.5px] uppercase tracking-wider opacity-55">
+              🎬 {scenarios.length} scénographie{scenarios.length > 1 ? 's' : ''}
+              {onOpenScenarioLibrary && (
+                <button
+                  onClick={onOpenScenarioLibrary}
+                  className="ml-auto rounded-full px-1.5 text-[9.5px] normal-case tracking-normal underline decoration-dotted opacity-80 hover:opacity-100"
+                >
+                  Toutes…
+                </button>
+              )}
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {scenarios.slice(-3).map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => openScenographe(objet.id, { scenarioId: s.id })}
+                  title={`Rouvrir « ${s.nom} »`}
+                  className="max-w-full truncate rounded-full border border-[#c8a24a]/50 bg-[#c8a24a]/10 px-2 py-0.5 text-[10px] hover:bg-[#c8a24a]/20"
+                >
+                  {s.retenu ? '★ ' : ''}
+                  {s.nom} · {s.plantings?.length || 0}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Composer l'ouvrage : poser de vraies espèces à la vraie échelle */}
         <button
