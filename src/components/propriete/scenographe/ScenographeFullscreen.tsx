@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { useMap, useMapEvents } from 'react-leaflet';
+import { useMap, useMapEvents, CircleMarker } from 'react-leaflet';
 import type { Map as LeafletMap } from 'leaflet';
 import { X, Clock, Layers, Trash2, Sprout, Loader2, Maximize2, Save } from 'lucide-react';
 import { toast } from 'sonner';
