@@ -57,7 +57,22 @@ export const OuvragesContextPicker: React.FC<{ proprieteId?: string }> = ({ prop
     });
   }, [objets, waypoints, soil]);
 
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return (
+      <div className="mb-2 rounded-xl border border-dashed border-border bg-background/40 p-3">
+        <div className="flex items-center gap-2">
+          <Layers className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Plateau des ouvrages
+          </span>
+        </div>
+        <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+          Aucun emplacement dessiné pour l'instant. Ouvrez l'Atelier du jardin pour tracer une mare,
+          un massif ou un potager : ils apparaîtront ici, sélectionnables un à un.
+        </p>
+      </div>
+    );
+  }
 
   const selected = new Set(focus.selectedObjetIds);
   const allIds = rows.map((r) => r.id);
