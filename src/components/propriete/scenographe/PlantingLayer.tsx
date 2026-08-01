@@ -1,5 +1,5 @@
 import React from 'react';
-import { Circle, Marker, Tooltip } from 'react-leaflet';
+import { Circle, Marker, Tooltip, LayerGroup } from 'react-leaflet';
 import L from 'leaflet';
 import { STRATES } from '@/lib/plantSpread';
 import type { Planting } from '@/hooks/propriete/useOuvrageScenarios';
@@ -54,7 +54,7 @@ export const PlantingLayer: React.FC<Props> = ({
       const radius = Math.max(0.15, (p.spreadM * growth) / 2);
       const selected = selectedId === p.id;
       return (
-        <React.Fragment key={p.id}>
+        <LayerGroup key={p.id}>
           <Circle
             center={[p.lat, p.lng]}
             radius={radius}
@@ -88,7 +88,7 @@ export const PlantingLayer: React.FC<Props> = ({
               </span>
             </Tooltip>
           </Marker>
-        </React.Fragment>
+        </LayerGroup>
       );
     })}
   </>
