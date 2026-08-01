@@ -347,6 +347,7 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     () => [...inPlaceRaw.map((e) => e.scientificName), ...proposalNames],
     [inPlaceRaw, proposalNames],
   );
+  const queryClient = useQueryClient();
   const { data: thumbMap } = useSpeciesThumbs(thumbNames);
   const thumbFor = React.useCallback(
     (sci: string) => thumbMap?.get((sci || '').trim().toLowerCase()) ?? null,
