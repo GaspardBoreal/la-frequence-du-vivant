@@ -1,45 +1,46 @@
-## Ce que disent les données (vérifié)
+## Le problème (confirmé par la copie d'écran)
 
-L'ouvrage « Massif Fréquence 01 » est un polygone très fin : ~9 m × 2,4 m (21 m²).
-Requête sur les observations autour de son emprise :
+Le fond « Sat » du Scénographe monte jusqu'au zoom 24. La pile actuelle est : ortho IGN (natif déclaré z19) posée sur un relais Esri World Imagery (natif déclaré z21).
 
-- ~10 observations tombent **strictement dans** le polygone,
-- une dizaine d'autres tombent dans le **collier de 3 m** (`EDGE_TOLERANCE_M`) que `classifyObservations` classe en `lisiere`,
-- l'herbier « En place » additionne aujourd'hui `dedans + lisiere` sans distinction ni réglage → **19**.
+Sur cette commune, Esri n'a pas d'imagerie haute résolution : au lieu de renvoyer une erreur 404, **il renvoie une image valide (HTTP 200) portant le texte « Map data not yet available »**. Résultat :
 
-Sur un ouvrage de 2,4 m de large, un collier de 3 m double quasiment la surface écoutée : c'est là que naît l'écart avec les ~6 sujets que vous comptez visuellement. Aucun rayon d'observation n'intervient (le code passe déjà `radius = 0`) — le coupable est la tolérance de lisière, pas un rayon.
+- l'événement `tileerror` ne se déclenche jamais ;
+- l'auto-dégradation de `DynamicTileLayer` (qui écoute `tileerror`) ne s'active donc jamais ;
+- Leaflet continue de demander des tuiles z20/z21 « vides » au lieu d'agrandir la dernière tuile réellement photographique.
 
-## Proposition : le « Curseur de rigueur »
+Le mécanisme actuel ne peut pas fonctionner : il attend une erreur qui n'arrive pas.
 
-Un seul geste, lisible, dans le bandeau « En place », au-dessus de la liste.
+## La proposition : mesurer la couverture réelle, au lieu de la supposer
 
-```text
-En place                                  19 → 10
-Rigueur   ● Strict      Lisière +3 m      Voisinage +Xm
-          dans l'emprise   GPS tolérant     autour
-[ 10 dedans ] [ 9 lisière ] [ 0 voisinage ]   ⟵ chips vivantes
-```
+Trois garde-fous complémentaires, du plus fiable au plus universel.
 
-1. **Trois crans de rigueur** (segmented control), défaut = **Strict** :
-   - *Strict* : uniquement `dedans` (ray casting sur la géométrie réelle).
-   - *Lisière* : + collier 3 m (comportement actuel).
-   - *Voisinage* : + un rayon réglable depuis le bord (slider 1→15 m), pour piocher ce qui pousse juste à côté.
-2. **Chips de comptage** toujours visibles (`10 dedans · 9 lisière · 0 voisinage`) : on voit ce qu'on exclut, jamais de perte silencieuse.
-3. **Badge de zone sur chaque fiche** : liseré plein = dedans, liseré pointillé + pastille « lisière 1,8 m » = collier, pastille grise = voisinage. Chaque fiche affiche sa distance réelle au bord.
-4. **Survol = révélation sur le plan** : survoler une fiche fait pulser ses points sur la carte ; inversement, un halo doux dessine l'emprise + le collier actif quand on change de cran, pour matérialiser physiquement ce qu'on écoute.
-5. **« Tout poser » respecte le cran actif** : on ne pose jamais en masse des sujets qu'on a exclus visuellement.
-6. **Rigueur par scénario** : le cran choisi est mémorisé dans le scénario (donc restitué à la réouverture depuis la bibliothèque), avec repli sur *Strict*.
-7. Combinaison intacte avec le sélecteur de portée existant (cet ouvrage / ouvrages choisis / toute la propriété) : rigueur = profondeur, portée = étendue.
+### 1. Sonde de couverture Esri (le cœur de la solution)
+
+Esri expose un service officiel d'inventaire des tuiles :
+`.../World_Imagery/MapServer/tilemap/{z}/{y}/{x}/1/1` qui répond `{"data":[1]}` (tuile réelle) ou `{"data":[0]}` (pas d'imagerie).
+
+À chaque déplacement/zoom de la carte, on interroge cette sonde sur la tuile du centre, en descendant du zoom demandé jusqu'à trouver le premier niveau réellement couvert. Ce niveau devient le `maxNativeZoom` effectif du relais — Leaflet agrandit alors proprement la dernière tuile nette au lieu d'afficher la pancarte grise.
+
+Résultat mis en cache par zone (clé z/x/y tronquée) pour éviter tout appel répété.
+
+### 2. Sonde IGN symétrique
+
+Même logique côté ortho IGN, dont le natif varie de z18 à z21 selon les communes : une requête WMTS de test au niveau visé, un repli d'un cran par échec. L'IGN étant souvent plus fin qu'Esri en France rurale, on garde l'IGN au-dessus quand il est couvert et on ne bascule sur Esri que s'il ne l'est pas.
+
+### 3. Filet de sécurité « pixel sniffing »
+
+Pour tout fournisseur qui renverrait une tuile bidon en 200 sans tilemap disponible : à l'événement `tileload`, on échantillonne quelques pixels de la tuile sur un canvas hors écran. Une tuile quasi uniforme et désaturée (la pancarte grise) est comptée comme absente ; trois occurrences au même niveau déclenchent la dégradation du palier natif. Coût négligeable (échantillonnage 1 tuile sur 8).
+
+### 4. Vérité affichée à l'écran
+
+Le badge d'échelle indique déjà le facteur d'agrandissement. On l'enrichit de la source réellement lisible : « IGN z20 · image agrandie ×4 » ou « relais Esri z18 · image agrandie ×16 », plus une pastille discrète « imagerie limitée sur ce secteur » quand l'agrandissement dépasse ×8, pour que l'utilisateur sache qu'il dessine sur une image interpolée — jamais sur une pancarte.
 
 ## Détails techniques
 
-- `src/lib/ouvrageScope.ts` : rendre `EDGE_TOLERANCE_M` paramétrable (`classifyObservations(geometry, items, radiusM, edgeToleranceM)`), défaut inchangé pour les autres appelants.
-- `ScenographeFullscreen.tsx` : nouvel état `rigour: 'strict' | 'lisiere' | 'voisinage'` + `neighbourM`, appliqué dans `inPlaceEntries` ; chaque `HerbierEntry` porte désormais `zone` et `distanceM` (min sur ses points).
-- Nouveau composant `HerbierRigourPicker.tsx` (crans + chips + slider), posé sous `HerbierScopePicker`.
-- `HerbierPanel.tsx` : badge de zone + distance sur la fiche, callbacks `onHoverEntry` pour la mise en évidence carte.
-- `PlantingLayer` / `OuvrageGeometryLayer` : halo du collier actif et pulsation des points survolés (purement visuel).
-- Persistance : champ `rigour` dans le JSON du scénario (`useOuvrageScenarios`), sans migration SQL (colonne JSON existante).
+- `src/components/maps/tileCoverageProbe.ts` (nouveau) : sonde tilemap Esri + sonde IGN, cache mémoire par (source, z, x, y), annulation des requêtes obsolètes.
+- `src/components/maps/DynamicTileLayer.tsx` : abonnement à `moveend`/`zoomend` → appel de la sonde → mise à jour de `maxNativeZoom` du relais et de la couche IGN, `redraw()`, publication dans le store. Ajout du détecteur pixel sur `tileload`. Conservation de l'écoute `tileerror` existante.
+- `src/components/maps/tileNativeZoomStore.ts` : ajout des champs `activeSource` (IGN / Esri) et `coverageProbed`.
+- `src/components/maps/controls/ZoomScaleBadge.tsx` : affichage de la source active et de la pastille « imagerie limitée ».
+- `src/components/maps/mapStyles.ts` : ajout de l'URL du service `tilemap` Esri à la constante `SATELLITE_RELAY`.
 
-## Hors périmètre
-
-Pas de recalcul des données sources ni de correction GPS ici — le Contrôle GPS reste l'outil pour déplacer une observation mal placée.
+Aucun changement de comportement pour les autres cartes : la sonde ne s'active que sur le style `satellite`.
