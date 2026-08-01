@@ -2,7 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { useMap, useMapEvents, CircleMarker } from 'react-leaflet';
 import type { Map as LeafletMap } from 'leaflet';
-import { X, Clock, Layers, Trash2, Sprout, Loader2, Maximize2, Save } from 'lucide-react';
+import { X, Clock, Layers, Trash2, Sprout, Loader2, Maximize2, Save, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 import RichMap from '@/components/maps/RichMap';
@@ -18,6 +18,8 @@ import { useInatThumbs } from '@/hooks/propriete/useInatThumbs';
 import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
 import OuvragePhotoPastilleLayer from '@/components/propriete/palette/studio/photos/OuvragePhotoPastilleLayer';
 import OuvragePhotoViewer from '@/components/propriete/palette/studio/photos/OuvragePhotoViewer';
+import ImmersionOverlay from './immersion/ImmersionOverlay';
+
 
 import { classifyObservations, EDGE_TOLERANCE_M } from '@/lib/ouvrageScope';
 import { geometryAreaM2, geometryCenter, fmtArea } from '@/components/propriete/palette/studio/geoMetrics';
@@ -107,6 +109,11 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   const { waypoints } = usePropertySpeciesPool(proprieteId);
   const { displayNameFor } = useWaypointFrenchNames(waypoints as any);
   const scen = useOuvrageScenarios(proprieteId, objetId);
+
+  /** La Chambre du Vivant : immersion plein écran dans le scénario actif. */
+  const [immersionOpen, setImmersionOpen] = React.useState(false);
+
+
 
   /* Carnet photo des ouvrages — même source et même visionneuse que l'Atelier. */
   const objetPhotos = useObjetPhotos(proprieteId);
@@ -469,6 +476,21 @@ export const ScenographeFullscreen: React.FC<Props> = ({
         />
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setImmersionOpen(true)}
+            disabled={plantings.length === 0}
+            title={
+              plantings.length === 0
+                ? 'Pose au moins une espèce pour entrer dans la scène'
+                : 'Se projeter dans ce scénario'
+            }
+            className="group relative flex items-center gap-1.5 overflow-hidden rounded-full border border-[#c8a24a]/60 bg-[#c8a24a]/12 px-3 py-1.5 text-[11.5px] font-semibold text-[#f0e3c2] transition hover:bg-[#c8a24a]/25 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            La Chambre du Vivant
+          </button>
+
           <ScenarioTabs
             scenarios={scen.scenarios}
             activeId={scen.activeId}
@@ -798,7 +820,18 @@ export const ScenographeFullscreen: React.FC<Props> = ({
           onClose={() => setGalleryObjetId(null)}
         />
       )}
+      {/* La Chambre du Vivant : se projeter dans le scénario */}
+      {immersionOpen && (
+        <ImmersionOverlay
+          plantings={plantings}
+          photos={(objetPhotos.byObjet.get(objetId) ?? []) as any}
+          scenarioName={scen.active?.nom || 'Scénario'}
+          ouvrageName={objet?.nom?.trim() || tool?.label || 'Ouvrage'}
+          onClose={() => setImmersionOpen(false)}
+        />
+      )}
     </div>
+
   );
 
   return createPortal(body, document.body);
