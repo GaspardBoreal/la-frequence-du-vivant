@@ -15,6 +15,10 @@ import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames
 import { useOuvrageScenarios, type Planting } from '@/hooks/propriete/useOuvrageScenarios';
 import { useProprieteScenarios } from '@/hooks/propriete/useProprieteScenarios';
 import { useInatThumbs } from '@/hooks/propriete/useInatThumbs';
+import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
+import OuvragePhotoPastilleLayer from '@/components/propriete/palette/studio/photos/OuvragePhotoPastilleLayer';
+import OuvragePhotoViewer from '@/components/propriete/palette/studio/photos/OuvragePhotoViewer';
+
 import { classifyObservations, EDGE_TOLERANCE_M } from '@/lib/ouvrageScope';
 import { geometryAreaM2, geometryCenter, fmtArea } from '@/components/propriete/palette/studio/geoMetrics';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
@@ -103,6 +107,31 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   const { waypoints } = usePropertySpeciesPool(proprieteId);
   const { displayNameFor } = useWaypointFrenchNames(waypoints as any);
   const scen = useOuvrageScenarios(proprieteId, objetId);
+
+  /* Carnet photo des ouvrages — même source et même visionneuse que l'Atelier. */
+  const objetPhotos = useObjetPhotos(proprieteId);
+  const [galleryObjetId, setGalleryObjetId] = React.useState<string | null>(null);
+  const [galleryIndex, setGalleryIndex] = React.useState(0);
+  const galleryPhotos = React.useMemo(
+    () => (galleryObjetId ? objetPhotos.byObjet.get(galleryObjetId) ?? [] : []),
+    [galleryObjetId, objetPhotos.byObjet],
+  );
+  const galleryTitle = React.useMemo(() => {
+    const o = (objets || []).find((x: ProprieteObjet) => x.id === galleryObjetId);
+    return o ? o.nom || TOOL_BY_KEY[o.outil_key]?.label || 'Ouvrage' : '';
+  }, [galleryObjetId, objets]);
+  const photoThumbs = React.useMemo(() => {
+    const m: Record<string, string | undefined> = {};
+    objetPhotos.byObjet.forEach((list, id) => {
+      m[id] = list[0]?.url;
+    });
+    return m;
+  }, [objetPhotos.byObjet]);
+  const openGallery = React.useCallback((id: string) => {
+    setGalleryIndex(0);
+    setGalleryObjetId(id);
+  }, []);
+
 
   /** Rouvrir exactement la variante cliquée dans la bibliothèque. */
   const appliedInitial = React.useRef<string | null>(null);
@@ -558,6 +587,15 @@ export const ScenographeFullscreen: React.FC<Props> = ({
                 onSelectOuvrage={switchOuvrage}
                 onSelectSelf={() => setOuvrageCardOpen(true)}
               />
+              {/* Pastilles « carnet photo » — exactement la couche de l'Atelier */}
+              <OuvragePhotoPastilleLayer
+                objets={(objets || []) as any}
+                photoCounts={objetPhotos.counts}
+                photoThumbs={photoThumbs}
+                selectedId={objetId}
+                onOpenPhotos={openGallery}
+              />
+
               <PlantingLayer
                 plantings={plantings}
                 growth={growth}
@@ -750,10 +788,21 @@ export const ScenographeFullscreen: React.FC<Props> = ({
           Chargement de l’ouvrage…
         </div>
       )}
+      {/* Carnet photo d'un ouvrage : même visionneuse que l'Atelier */}
+      {galleryPhotos.length > 0 && (
+        <OuvragePhotoViewer
+          photos={galleryPhotos}
+          index={Math.min(galleryIndex, galleryPhotos.length - 1)}
+          title={galleryTitle}
+          onIndex={setGalleryIndex}
+          onClose={() => setGalleryObjetId(null)}
+        />
+      )}
     </div>
   );
 
   return createPortal(body, document.body);
 };
+
 
 export default ScenographeFullscreen;

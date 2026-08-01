@@ -6,7 +6,7 @@ import { hexOf, isChromaticTool, teintesOf } from '@/lib/nuancierKb';
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import { fmtMeasure, measureFor } from './geoMetrics';
-import { photoPastilleIcon } from './photos/PhotoPastille';
+import OuvragePhotoPastilleLayer from './photos/OuvragePhotoPastilleLayer';
 
 /**
  * Applique un vrai dégradé SVG des teintes du nuancier au remplissage du
@@ -87,64 +87,8 @@ const glyphIcon = (glyph: string, color: string, selected: boolean, scale = 1) =
     iconAnchor: [14 * scale, 14 * scale],
   });
 
-/**
- * Point d'accroche de l'étiquette photo : jamais le centre de l'ouvrage,
- * mais son bord (sommet nord-ouest pour un polygone, extrémité pour une
- * ligne). Le décalage visuel est ensuite fait en pixels via `iconAnchor`,
- * pour rester stable à tous les zooms.
- */
-const photoAnchor = (geometry: any): [number, number] | null => {
-  if (!geometry) return null;
-  if (geometry.type === 'Point') {
-    const c = geometry.coordinates;
-    return [c[1], c[0]];
-  }
-  if (geometry.type === 'LineString') {
-    const cs = geometry.coordinates || [];
-    if (!cs.length) return null;
-    // Extrémité la plus au nord : l'étiquette pend en marge du tracé.
-    const m = cs.reduce((a: number[], b: number[]) => (b[1] > a[1] ? b : a), cs[0]);
-    return [m[1], m[0]];
-  }
-  if (geometry.type === 'Polygon') {
-    const ring: number[][] = geometry.coordinates?.[0] || [];
-    if (!ring.length) return null;
-    const lats = ring.map((c) => c[1]);
-    const lngs = ring.map((c) => c[0]);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-    const dLat = maxLat - minLat || 1;
-    const dLng = maxLng - minLng || 1;
-    // Sommet réel le plus proche du coin nord-ouest de l'enveloppe.
-    let best = ring[0];
-    let bestScore = -Infinity;
-    for (const c of ring) {
-      const score = (c[1] - minLat) / dLat + (maxLng - c[0]) / dLng;
-      if (score > bestScore) {
-        bestScore = score;
-        best = c;
-      }
-    }
-    return [best[1], best[0]];
-  }
-  return null;
-};
+// Ancrage/zoom de la pastille photo : voir `photos/OuvragePhotoPastilleLayer`.
 
-/** Zoom courant de la carte, pour la variante compacte de la pastille. */
-const useMapZoom = () => {
-  const map = useMap();
-  const [zoom, setZoom] = React.useState<number>(() => map.getZoom());
-  React.useEffect(() => {
-    const on = () => setZoom(map.getZoom());
-    map.on('zoomend', on);
-    return () => {
-      map.off('zoomend', on);
-    };
-  }, [map]);
-  return zoom;
-};
 
 
 interface Props {
@@ -193,34 +137,8 @@ export const ObjectsLayer: React.FC<Props> = ({
     [objets, calqueById],
   );
 
-  const zoom = useMapZoom();
-  const map = useMap();
-  const compact = zoom < 18;
 
-  /**
-   * Anti-collision légère : deux étiquettes trop proches (< 26 px) se
-   * répartissent de part et d'autre du sommet.
-   */
-  const sideById = React.useMemo(() => {
-    const out: Record<string, 'left' | 'right'> = {};
-    const placed: { x: number; y: number }[] = [];
-    for (const o of ordered) {
-      if (!(photoCounts?.[o.id] ?? 0)) continue;
-      const a = photoAnchor(o.geometry);
-      if (!a) continue;
-      let pt: { x: number; y: number };
-      try {
-        pt = map.latLngToLayerPoint(L.latLng(a[0], a[1])) as any;
-      } catch {
-        out[o.id] = 'left';
-        continue;
-      }
-      const clash = placed.some((p) => Math.abs(p.x - pt.x) < 26 && Math.abs(p.y - pt.y) < 26);
-      out[o.id] = clash ? 'right' : 'left';
-      placed.push(pt);
-    }
-    return out;
-  }, [ordered, photoCounts, map, zoom]);
+
 
 
   return (
@@ -262,53 +180,9 @@ export const ObjectsLayer: React.FC<Props> = ({
           </Tooltip>
         );
 
-        // Pastille « carnet photo » — points, lignes et polygones
-        const photoCount = photoCounts?.[o.id] ?? 0;
-        const anchor = photoCount > 0 ? photoAnchor(o.geometry) : null;
         const isPoint = o.geometry?.type === 'Point';
-        const pastille =
-          anchor && photoCount > 0 ? (
-            <Marker
-              key={`${o.id}-photos-${compact ? 'dot' : sideById[o.id] ?? 'left'}${selected ? '-on' : ''}`}
-              position={anchor as any}
-              icon={photoPastilleIcon(photoCount, label, photoThumbs?.[o.id], {
-                side: sideById[o.id] ?? 'left',
-                compact,
-                active: selected,
-              })}
+        const withPastille = (node: React.ReactNode) => node;
 
-              zIndexOffset={800}
-              interactive
-              keyboard={false}
-              eventHandlers={{
-                click: (e: any) => {
-                  e.originalEvent?.stopPropagation?.();
-                  L.DomEvent.stop(e);
-                  onOpenPhotos?.(o.id);
-                },
-                dblclick: (e: any) => {
-                  e.originalEvent?.stopPropagation?.();
-                  L.DomEvent.stop(e);
-                },
-              }}
-            >
-              <Tooltip direction="top" offset={[0, -12] as any}>
-                <span style={{ fontSize: 11 }}>
-                  📷 Carnet photo · {photoCount} photo{photoCount > 1 ? 's' : ''}
-                </span>
-              </Tooltip>
-            </Marker>
-          ) : null;
-
-        const withPastille = (node: React.ReactNode) =>
-          pastille ? (
-            <React.Fragment key={o.id}>
-              {node}
-              {pastille}
-            </React.Fragment>
-          ) : (
-            node
-          );
 
         if (isPoint) {
           const c = o.geometry.coordinates;
@@ -387,7 +261,21 @@ export const ObjectsLayer: React.FC<Props> = ({
 
         return null;
       })}
+
+      {/* Pastilles « carnet photo » — couche partagée avec le Scénographe */}
+      <OuvragePhotoPastilleLayer
+        objets={ordered.filter((o) => {
+          if (o.id === hiddenId) return false;
+          const cal = o.calque_id ? calqueById[o.calque_id] : null;
+          return !cal || cal.visible;
+        })}
+        photoCounts={photoCounts}
+        photoThumbs={photoThumbs}
+        selectedId={selectedId}
+        onOpenPhotos={onOpenPhotos}
+      />
     </>
+
   );
 };
 
