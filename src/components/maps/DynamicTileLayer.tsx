@@ -45,10 +45,13 @@ const DynamicTileLayer: React.FC<Props> = ({ mapStyle, maxZoom = 19 }) => {
     const layer = L.tileLayer(config.url, {
       attribution: config.attribution,
       maxNativeZoom: declaredNative,
-      maxZoom: layerMax,
+      // Au-delà d'un agrandissement ×4 de l'ortho IGN, on laisse le relais
+      // mondial (plus net à ces niveaux) reprendre la main.
+      maxZoom: relay ? declaredNative + 2 : layerMax,
       className: config.className || '',
       zIndex: 2,
     });
+
 
     // Auto-correction : si le fournisseur renvoie des 404 à un niveau donné,
     // on redescend son palier natif et on redemande les tuiles.
