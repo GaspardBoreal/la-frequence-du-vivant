@@ -344,8 +344,14 @@ export const ScenographeFullscreen: React.FC<Props> = ({
    * l'écran comme pour l'impression.
    */
   const thumbNames = React.useMemo(
-    () => [...inPlaceRaw.map((e) => e.scientificName), ...proposalNames],
-    [inPlaceRaw, proposalNames],
+    () => [
+      ...inPlaceRaw.map((e) => e.scientificName),
+      ...proposalNames,
+      // Les sujets déjà posés au plan : indispensables pour la planche
+      // « apports » du dossier de chantier, même si la reco IA n'a pas tourné.
+      ...(scen.active?.plantings ?? []).map((p) => p.scientificName),
+    ],
+    [inPlaceRaw, proposalNames, scen.active?.plantings],
   );
   const queryClient = useQueryClient();
   const { data: thumbMap } = useSpeciesThumbs(thumbNames);
