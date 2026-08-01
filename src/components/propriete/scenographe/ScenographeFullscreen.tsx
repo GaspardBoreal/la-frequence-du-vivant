@@ -110,6 +110,11 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   const { displayNameFor } = useWaypointFrenchNames(waypoints as any);
   const scen = useOuvrageScenarios(proprieteId, objetId);
 
+  /** La Chambre du Vivant : immersion plein écran dans le scénario actif. */
+  const [immersionOpen, setImmersionOpen] = React.useState(false);
+
+
+
   /* Carnet photo des ouvrages — même source et même visionneuse que l'Atelier. */
   const objetPhotos = useObjetPhotos(proprieteId);
   const [galleryObjetId, setGalleryObjetId] = React.useState<string | null>(null);
