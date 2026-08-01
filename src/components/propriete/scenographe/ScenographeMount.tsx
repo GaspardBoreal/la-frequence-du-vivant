@@ -22,6 +22,7 @@ export const ScenographeMount: React.FC<{ proprieteId: string }> = ({ proprieteI
       proprieteId={proprieteId}
       objetId={state.objetId}
       proposals={state.proposals}
+      initialScenarioId={state.scenarioId}
       onClose={scenographeStore.close}
     />
   );

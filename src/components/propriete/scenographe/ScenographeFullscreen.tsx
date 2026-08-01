@@ -60,6 +60,8 @@ interface Props {
   proprieteId: string;
   objetId: string;
   proposals: ScenographeProposal[];
+  /** Scénario à rouvrir précisément (bibliothèque / registre). */
+  initialScenarioId?: string | null;
   onClose: () => void;
 }
 
@@ -72,6 +74,7 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   proprieteId,
   objetId,
   proposals,
+  initialScenarioId,
   onClose,
 }) => {
   const { objets } = useProprieteObjets(proprieteId);
@@ -83,6 +86,15 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   const { waypoints } = usePropertySpeciesPool(proprieteId);
   const { displayNameFor } = useWaypointFrenchNames(waypoints as any);
   const scen = useOuvrageScenarios(proprieteId, objetId);
+
+  /** Rouvrir exactement la variante cliquée dans la bibliothèque. */
+  const appliedInitial = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!initialScenarioId || appliedInitial.current === initialScenarioId) return;
+    if (!scen.scenarios.some((s) => s.id === initialScenarioId)) return;
+    appliedInitial.current = initialScenarioId;
+    scen.setActiveId(initialScenarioId);
+  }, [initialScenarioId, scen]);
 
   const [growthIdx, setGrowthIdx] = React.useState(1);
   const [armed, setArmed] = React.useState<HerbierEntry | null>(null);
