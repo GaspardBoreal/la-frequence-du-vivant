@@ -1,4 +1,5 @@
 import React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { createPortal } from 'react-dom';
 import { useMap, useMapEvents, CircleMarker } from 'react-leaflet';
 import type { Map as LeafletMap } from 'leaflet';
@@ -504,6 +505,14 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     portalId: 'chantier-print-portal',
     bodyClass: 'chantier-print-mode',
     onDone: () => setChantierPrinting(false),
+    prepareLabel: 'Recherche des photographies d’espèces',
+    // Aucune vignette manquante au moment d'imprimer : on résout d'abord
+    // toutes les espèces du dossier via le cache serveur (iNaturalist → GBIF).
+    prepare: async () => {
+      await resolveSpeciesThumbs(thumbNames);
+      await queryClient.invalidateQueries({ queryKey: ['species-thumb-batch'] });
+      await new Promise((r) => setTimeout(r, 120));
+    },
   });
   const ouvragePhotos = React.useMemo(
     () => objetPhotos.byObjet.get(objetId) ?? [],
