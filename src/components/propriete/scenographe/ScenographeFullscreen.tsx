@@ -15,6 +15,10 @@ import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames
 import { useOuvrageScenarios, type Planting } from '@/hooks/propriete/useOuvrageScenarios';
 import { useProprieteScenarios } from '@/hooks/propriete/useProprieteScenarios';
 import { useInatThumbs } from '@/hooks/propriete/useInatThumbs';
+import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
+import OuvragePhotoPastilleLayer from '@/components/propriete/palette/studio/photos/OuvragePhotoPastilleLayer';
+import OuvragePhotoViewer from '@/components/propriete/palette/studio/photos/OuvragePhotoViewer';
+
 import { classifyObservations, EDGE_TOLERANCE_M } from '@/lib/ouvrageScope';
 import { geometryAreaM2, geometryCenter, fmtArea } from '@/components/propriete/palette/studio/geoMetrics';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
