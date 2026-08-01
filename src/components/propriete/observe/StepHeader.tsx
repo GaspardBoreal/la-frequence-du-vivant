@@ -15,6 +15,12 @@ export const StepHeader: React.FC<{
   saving?: boolean;
   title?: string;
   subtitle?: React.ReactNode;
+  /** Ligne d'identité du site (nom · commune) affichée sous le titre */
+  meta?: React.ReactNode;
+  /** Sceau / statut (ex. « Scellée le … ») affiché en haut à droite */
+  seal?: React.ReactNode;
+  /** Actions compactes (imprimer, rouvrir…) alignées à droite */
+  actions?: React.ReactNode;
 }> = ({
   current = 1,
   savedAt,
@@ -26,6 +32,9 @@ export const StepHeader: React.FC<{
       <span className="italic"> Observer · Comprendre · Concevoir.</span>
     </>
   ),
+  meta,
+  seal,
+  actions,
 }) => {
   return (
     <div className="rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-6 md:p-8 shadow-[0_2px_20px_-8px_rgba(60,80,60,0.15)]">
@@ -37,23 +46,30 @@ export const StepHeader: React.FC<{
           <h2 className="font-serif italic text-3xl md:text-4xl mt-2 text-[hsl(var(--ds-forest-deep))]">
             {title}
           </h2>
+          {meta && (
+            <p className="mt-1 text-sm text-[hsl(var(--ds-forest))]/70">{meta}</p>
+          )}
           <p className="mt-2 text-sm text-[hsl(var(--ds-forest))]/80 max-w-xl leading-relaxed">
             {subtitle}
           </p>
         </div>
 
-        <div className="text-right">
-          <div className="text-[10px] font-bold tracking-[0.35em] uppercase text-[hsl(var(--ds-forest))]/80">
-            Progression
+        <div className="text-right flex flex-col items-end gap-2">
+          {seal}
+          <div>
+            <div className="text-[10px] font-bold tracking-[0.35em] uppercase text-[hsl(var(--ds-forest))]/80">
+              Progression
+            </div>
+            <div className="text-3xl font-serif text-[hsl(var(--ds-forest-deep))]">{current * 20}%</div>
+            <div className="mt-2 text-[10px] text-[hsl(var(--ds-forest))]/70 flex items-center justify-end gap-1.5">
+              {saving ? (
+                <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--ds-forest))] animate-pulse" /> Enregistrement…</span>
+              ) : savedAt ? (
+                <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> Enregistré</span>
+              ) : null}
+            </div>
           </div>
-          <div className="text-3xl font-serif text-[hsl(var(--ds-forest-deep))]">{current * 20}%</div>
-          <div className="mt-2 text-[10px] text-[hsl(var(--ds-forest))]/70 flex items-center justify-end gap-1.5">
-            {saving ? (
-              <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--ds-forest))] animate-pulse" /> Enregistrement…</span>
-            ) : savedAt ? (
-              <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> Enregistré</span>
-            ) : null}
-          </div>
+          {actions}
         </div>
       </div>
 
