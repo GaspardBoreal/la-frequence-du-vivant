@@ -173,6 +173,9 @@ export const HerbierPanel: React.FC<Props> = ({
   placedCount,
   onAddFree,
   scopeControl,
+  rigourControl,
+  onHoverEntry,
+
   onPlaceMany,
   onRemoveMany,
   wide,
