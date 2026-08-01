@@ -92,9 +92,18 @@ export function ChatTableBlock({ children }: { children?: React.ReactNode }) {
   );
 
   const [rows, setRows] = React.useState(0);
+  const [isPalette, setIsPalette] = React.useState(false);
   React.useEffect(() => {
     setRows(Math.max(0, (ref.current?.rows.length ?? 1) - 1));
+    setIsPalette(looksLikeSpeciesTable(readMatrix(ref.current)));
   }, [children]);
+
+  /** Passerelle vers le Scénographe : n'apparaît que dans un espace propriété
+   *  avec un ouvrage cadré et un tableau qui ressemble à une palette. */
+  const scenoReady = useScenographeAvailable();
+  const focus = useProprieteChatFocus();
+  const targetObjetId = focus.objetId ?? focus.selectedObjetIds[0] ?? null;
+  const canStage = scenoReady && isPalette && !!targetObjetId;
 
   return (
     <div className="group/table my-3 overflow-hidden rounded-xl border border-border/70 bg-background/40 not-prose">
@@ -103,6 +112,20 @@ export function ChatTableBlock({ children }: { children?: React.ReactNode }) {
           <Table2 className="h-3 w-3" /> Synthèse à exporter
           {rows > 0 && <span className="text-primary/80">· {rows} ligne{rows > 1 ? 's' : ''}</span>}
         </span>
+
+        {canStage && (
+          <button
+            type="button"
+            onClick={() =>
+              openScenographe(targetObjetId!, parseSpeciesTable(readMatrix(ref.current)))
+            }
+            title="Composer cette palette sur le plan de l’ouvrage"
+            className="flex items-center gap-1 rounded-full border border-[#c8a24a]/60 bg-[#c8a24a]/15 px-2 py-[3px] text-[10px] font-medium text-[#c8a24a] transition-colors hover:bg-[#c8a24a]/25"
+          >
+            <Clapperboard className="h-3 w-3" />
+            <span>Scénographe</span>
+          </button>
+        )}
 
         <Action
           onClick={() => write(toMarkdown(readMatrix(ref.current)), 'md')}
@@ -124,6 +147,7 @@ export function ChatTableBlock({ children }: { children?: React.ReactNode }) {
         />
         <Action onClick={download} icon={Download} label=".csv" />
       </div>
+
       <div className="overflow-x-auto">
         <table
           ref={ref}
