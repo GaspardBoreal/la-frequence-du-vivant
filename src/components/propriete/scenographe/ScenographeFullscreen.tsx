@@ -87,6 +87,10 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   const [selected, setSelected] = React.useState<string | null>(null);
   const [panelOpen, setPanelOpen] = React.useState(true);
   const mapRef = React.useRef<LeafletMap | null>(null);
+  const handleMapReady = React.useCallback((m: LeafletMap) => {
+    mapRef.current = m;
+  }, []);
+
 
   React.useEffect(() => {
     fullscreenSurfaces.push();
