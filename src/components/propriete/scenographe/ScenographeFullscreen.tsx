@@ -134,35 +134,55 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     return cs.length ? cs.map((c) => [c[1], c[0]] as [number, number]) : undefined;
   }, [geometry]);
 
-  /** Espèces déjà présentes dans l'emprise (ray casting, pas un simple rayon). */
+  /** Ouvrages écoutés selon la portée choisie. */
+  const scopedObjets = React.useMemo<ProprieteObjet[]>(() => {
+    const all = (objets || []) as ProprieteObjet[];
+    if (scopeMode === 'tous') return all.filter((o) => o.geometry);
+    const keep = new Set<string>([objetId, ...(scopeMode === 'choisis' ? scopeIds : [])]);
+    return all.filter((o) => keep.has(o.id) && o.geometry);
+  }, [objets, objetId, scopeMode, scopeIds]);
+
+  /** Espèces déjà présentes dans les emprises (ray casting, pas un simple rayon). */
   const inPlaceEntries = React.useMemo<HerbierEntry[]>(() => {
-    if (!geometry) return [];
-    const scope = classifyObservations(geometry, waypoints as any, 0);
+    if (!scopedObjets.length) return [];
+    const multi = scopedObjets.length > 1;
     const by = new Map<string, HerbierEntry>();
-    [...scope.dedans, ...scope.lisiere].forEach(({ item }: any) => {
-      if (!item.scientificName) return;
-      const prev = by.get(item.scientificName);
-      if (prev) {
-        prev.observations = (prev.observations || 0) + 1;
-        if (!prev.photoUrl && item.photoUrl) prev.photoUrl = item.photoUrl;
-        return;
-      }
-      by.set(item.scientificName, {
-        key: `place:${item.scientificName}`,
-        scientificName: item.scientificName,
-        commonNameFr: displayNameFor({
+    scopedObjets.forEach((o) => {
+      const label = o.nom?.trim() || TOOL_BY_KEY[o.outil_key]?.label || 'Ouvrage';
+      const scope = classifyObservations(o.geometry, waypoints as any, 0);
+      [...scope.dedans, ...scope.lisiere].forEach(({ item }: any) => {
+        if (!item.scientificName) return;
+        const prev = by.get(item.scientificName);
+        if (prev) {
+          prev.observations = (prev.observations || 0) + 1;
+          if (!prev.photoUrl && item.photoUrl) prev.photoUrl = item.photoUrl;
+          if (Number.isFinite(item.lat) && Number.isFinite(item.lng))
+            prev.points = [...(prev.points || []), { lat: item.lat, lng: item.lng }];
+          return;
+        }
+        by.set(item.scientificName, {
+          key: `place:${item.scientificName}`,
           scientificName: item.scientificName,
-          commonName: item.commonName ?? null,
-        }),
-        strate: item.kingdom === 'Plantae' ? 'herbacee' : 'herbacee',
-        spreadM: STRATES.herbacee.spreadM,
-        origin: 'place',
-        photoUrl: item.photoUrl || null,
-        observations: 1,
+          commonNameFr: displayNameFor({
+            scientificName: item.scientificName,
+            commonName: item.commonName ?? null,
+          }),
+          strate: 'herbacee',
+          spreadM: STRATES.herbacee.spreadM,
+          origin: 'place',
+          photoUrl: item.photoUrl || null,
+          observations: 1,
+          ouvrageNom: multi ? label : null,
+          points:
+            Number.isFinite(item.lat) && Number.isFinite(item.lng)
+              ? [{ lat: item.lat, lng: item.lng }]
+              : [],
+        });
       });
     });
     return Array.from(by.values()).sort((a, b) => (b.observations || 0) - (a.observations || 0));
-  }, [geometry, waypoints, displayNameFor]);
+  }, [scopedObjets, waypoints, displayNameFor]);
+
 
   const proposalNames = React.useMemo(
     () => proposals.map((p) => p.scientificName).filter(Boolean),
