@@ -266,26 +266,77 @@ export function useProprieteChatProviders(proprieteId?: string): {
     }
 
 
+    /**
+     * Sélection à la carte : 1, plusieurs, tous ou aucun ouvrage, avec un
+     * niveau de détail commutable. Aucun ouvrage retenu → aucun contexte
+     * ouvrage transmis (frugalité stricte).
+     */
     const allObjets = objets ?? [];
-    if (allObjets.length > 0) {
+    const selected = allObjets.filter((o) => focus.selectedObjetIds.includes(o.id));
+    if (selected.length > 0) {
+      const detail = focus.ouvrageDetail;
+      const detailLabel =
+        detail === 'resume' ? 'résumé' : detail === 'complet' ? 'dossier complet' : 'complet + espèces';
+
+      const rows = selected.map((o) => {
+        const dossier = buildOuvrageSoilDossier({ objet: o, samples: soil?.samples ?? [] });
+        if (detail === 'resume') {
+          return {
+            nom: o.nom || dossier.ouvrage.typeLabel,
+            type: dossier.ouvrage.typeLabel,
+            mesure: dossier.ouvrage.mesure,
+            surfaceM2: round(measureFor('m2', o.geometry)),
+            intention: dossier.ouvrage.intention,
+          };
+        }
+        const base = {
+          ...dossier,
+          especesRetenuesPalette: dossier.especesRetenues,
+        };
+        if (detail === 'complet') return base;
+
+        const sc = classifyObservations(o.geometry, waypoints ?? [], focus.radiusM);
+        return {
+          ...base,
+          rayonEcouteM: focus.radiusM,
+          especesObservees: {
+            dedans: withFr(rollupSpecies(sc.dedans.map((s) => s.item) as any)).map((s) => ({
+              n: s.n,
+              c: s.c,
+              obs: s.obs,
+            })),
+            lisiere: withFr(rollupSpecies(sc.lisiere.map((s) => s.item) as any)).map((s) => ({
+              n: s.n,
+              c: s.c,
+              obs: s.obs,
+            })),
+          },
+        };
+      });
+
       list.push(
         provider({
-          id: 'ouvrages.tous',
+          id: 'ouvrages.selection',
           group: 'Ouvrages',
           emoji: '🧭',
-          label: 'Tous les ouvrages de l’atelier',
-          hint: `${allObjets.length} emplacements dessinés`,
+          label:
+            selected.length === allObjets.length
+              ? `Tous les ouvrages de l’atelier (${selected.length})`
+              : `${selected.length} ouvrage${selected.length > 1 ? 's' : ''} retenu${selected.length > 1 ? 's' : ''}`,
+          hint: `${selected.map((o) => o.nom || o.outil_key).slice(0, 3).join(', ')}${
+            selected.length > 3 ? '…' : ''
+          } · ${detailLabel}`,
           payload: {
-            ouvrages: allObjets.map((o) => ({
-              nom: o.nom,
-              type: o.outil_key,
-              mesure: round(measureFor('m2', o.geometry)),
-              note: o.meta?.note ?? null,
-            })),
+            niveauDetail: detailLabel,
+            selection: `${selected.length}/${allObjets.length} ouvrages de l'atelier`,
+            noteSelection:
+              "Seuls les ouvrages listés ici ont été retenus par l'utilisateur : ne pas extrapoler aux autres emplacements du jardin.",
+            ouvrages: rows,
           },
         }),
       );
     }
+
 
     /* ── Portrait du site ───────────────────────────────────────────────── */
     const surfaceCadastre = (parcelles ?? []).reduce(
@@ -373,7 +424,7 @@ export function useProprieteChatProviders(proprieteId?: string): {
     scope,
     scopedWaypoints,
     species,
-
+    waypoints,
     soil,
     objets,
     zones,
@@ -383,5 +434,7 @@ export function useProprieteChatProviders(proprieteId?: string): {
     flora,
     focusObjet,
     focus.radiusM,
+    focus.selectedObjetIds,
+    focus.ouvrageDetail,
   ]);
 }

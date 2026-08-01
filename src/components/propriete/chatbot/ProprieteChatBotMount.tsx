@@ -4,6 +4,7 @@ import { chatPageContext, contextSliceKey } from '@/hooks/useChatPageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProprieteChatProviders } from '@/hooks/propriete/useProprieteChatProviders';
 import GardenFocusBanner from './GardenFocusBanner';
+import OuvragesContextPicker from './OuvragesContextPicker';
 import { useProprieteChatFocus, FOCUS_AUTO_CONTEXT_IDS } from './proprieteChatFocus';
 
 
@@ -29,9 +30,27 @@ export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
       chatPageContext.setAvailableAttachments(null);
       return;
     }
-    chatPageContext.setAvailableAttachments({ providers, providersTitle });
+    chatPageContext.setAvailableAttachments({
+      providers,
+      providersTitle,
+      providerGroupExtras: {
+        Ouvrages: <OuvragesContextPicker proprieteId={proprieteId} />,
+      },
+    });
     return () => chatPageContext.setAvailableAttachments(null);
   }, [proprieteId, providers, providersTitle]);
+
+  // Rafraîchit les slices déjà actives quand leur payload change
+  // (sélection d'ouvrages, profondeur de données, rayon d'écoute).
+  useEffect(() => {
+    const active = new Set(
+      Object.keys((chatPageContext.getState().pageState.visibleData as Record<string, unknown>) ?? {}),
+    );
+    providers.forEach((p) => {
+      const key = contextSliceKey(p.id);
+      if (active.has(key)) chatPageContext.setVisibleSlice(key, p.payload);
+    });
+  }, [providers]);
 
   /** Contextes réellement transmis quand un ouvrage est cadré. */
   const autoProviders = useMemo(

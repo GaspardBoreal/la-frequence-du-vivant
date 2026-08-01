@@ -27,7 +27,10 @@ interface ContextConsoleProps {
   activeKeys: string[];
   /** Poids des autres pièces jointes déjà attachées (document, pool d'espèces). */
   baseBytes?: number;
+  /** UI spécialisée injectée en tête d'un groupe (ex : plateau des ouvrages). */
+  groupExtras?: Record<string, React.ReactNode>;
 }
+
 
 /**
  * Console de contextes — cœur de l'IA frugale.
@@ -43,6 +46,7 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
   providers,
   activeKeys,
   baseBytes = 0,
+  groupExtras,
 }) => {
   const activeSet = useMemo(() => new Set(activeKeys), [activeKeys]);
 
@@ -182,6 +186,7 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
                   <p className="px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {group}
                   </p>
+                  {groupExtras?.[group]}
                   <div className="space-y-1.5">
                     {items.map((p) => {
                       const active = activeSet.has(contextSliceKey(p.id));

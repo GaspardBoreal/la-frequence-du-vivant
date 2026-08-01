@@ -876,6 +876,7 @@ export function ChatBot({
           providers={contextProviders}
           activeKeys={activeContextKeys}
           baseBytes={attachedBaseBytes}
+          groupExtras={availableAttachments?.providerGroupExtras}
         />
       )}
 
