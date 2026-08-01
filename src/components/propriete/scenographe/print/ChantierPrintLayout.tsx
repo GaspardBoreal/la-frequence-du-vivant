@@ -264,10 +264,19 @@ export const ChantierPrintLayout: React.FC<Props> = ({
     : 0;
   const inPlacePages = Math.ceil(inPlaceList.length / TILES_PER_PAGE);
   const proposedTiles = [...retained, ...notRetained];
-  const proposedPages = Math.ceil(proposedTiles.length / TILES_PER_PAGE);
+  /** La planche « apports » est toujours imprimée, même vide (mention explicite). */
+  const proposedPages = Math.max(1, Math.ceil(proposedTiles.length / TILES_PER_PAGE));
   const photoPages = photoList.length
     ? 1 + Math.max(0, Math.ceil((photoList.length - 1) / PHOTOS_PER_PAGE))
     : 0;
+
+  /* --- Numérotation continue des planches --- */
+  let plateSeq = 0;
+  const planPlate = ++plateSeq;
+  const listPlate = listPages ? ++plateSeq : 0;
+  const inPlacePlate = inPlacePages ? ++plateSeq : 0;
+  const proposedPlate = ++plateSeq;
+  const photoPlate = photoPages ? ++plateSeq : 0;
 
   const total =
     1 /* cover */ +
@@ -277,6 +286,7 @@ export const ChantierPrintLayout: React.FC<Props> = ({
     proposedPages +
     photoPages +
     1; /* repères */
+
 
   let page = 1;
   const Foot: React.FC<{ index: number }> = ({ index }) => (
