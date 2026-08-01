@@ -78,8 +78,9 @@ export function ChatMessage({ role, content, isExpanded, isStreaming }: ChatMess
                     table: ({ children }) => <ChatTableBlock>{children}</ChatTableBlock>,
                   }}
                 >
-                  {content}
+                  {markdown}
                 </ReactMarkdown>
+
               </div>
             )}
           </div>
