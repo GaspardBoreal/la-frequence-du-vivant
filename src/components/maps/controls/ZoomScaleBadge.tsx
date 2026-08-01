@@ -36,6 +36,7 @@ export const ZoomScaleBadge: React.FC<Props> = () => {
 
   const upscaled = zoom > tiles.nativeMaxZoom;
   const factor = Math.round(2 ** (zoom - tiles.nativeMaxZoom));
+  const limited = upscaled && factor >= 8;
 
   return (
     <div className="leaflet-bottom leaflet-left pointer-events-none">
@@ -43,16 +44,25 @@ export const ZoomScaleBadge: React.FC<Props> = () => {
         zoom {zoom.toFixed(2).replace(/\.00$/, '')}
         {upscaled ? (
           <span className="ml-1.5 font-normal opacity-65">
-            · natif z{tiles.nativeMaxZoom} · image agrandie ×{factor}
-            {tiles.relayed && ' · relais Esri'}
+            · {tiles.activeSource || tiles.source} z{tiles.nativeMaxZoom} · image agrandie ×{factor}
           </span>
         ) : (
-          tiles.source && <span className="ml-1.5 font-normal opacity-55">· {tiles.source}</span>
+          (tiles.activeSource || tiles.source) && (
+            <span className="ml-1.5 font-normal opacity-55">
+              · {tiles.activeSource || tiles.source}
+            </span>
+          )
+        )}
+        {limited && (
+          <span className="ml-1.5 rounded-full bg-[hsl(var(--ds-gold))]/25 px-1.5 py-px text-[9.5px] font-medium">
+            imagerie limitée sur ce secteur
+          </span>
         )}
       </div>
     </div>
   );
 };
+
 
 
 export default ZoomScaleBadge;
