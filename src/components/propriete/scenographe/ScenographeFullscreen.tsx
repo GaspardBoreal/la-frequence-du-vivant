@@ -185,20 +185,30 @@ export const ScenographeFullscreen: React.FC<Props> = ({
     return all.filter((o) => keep.has(o.id) && o.geometry);
   }, [objets, objetId, scopeMode, scopeIds]);
 
-  /** Espèces déjà présentes dans les emprises (ray casting, pas un simple rayon). */
-  const inPlaceEntries = React.useMemo<HerbierEntry[]>(() => {
-    if (!scopedObjets.length) return [];
+  /**
+   * Espèces déjà présentes, classées par rapport à la géométrie réelle.
+   * On calcule les trois zones une fois, le curseur de rigueur ne fait
+   * ensuite que choisir jusqu'où l'on écoute.
+   */
+  const inPlaceZoned = React.useMemo(() => {
+    const empty = { dedans: [] as HerbierEntry[], lisiere: [] as HerbierEntry[], voisinage: [] as HerbierEntry[] };
+    if (!scopedObjets.length) return empty;
     const multi = scopedObjets.length > 1;
     const by = new Map<string, HerbierEntry>();
     scopedObjets.forEach((o) => {
       const label = o.nom?.trim() || TOOL_BY_KEY[o.outil_key]?.label || 'Ouvrage';
-      const scope = classifyObservations(o.geometry, waypoints as any, 0);
-      [...scope.dedans, ...scope.lisiere].forEach(({ item }: any) => {
+      const scope = classifyObservations(o.geometry, waypoints as any, neighbourM, EDGE_TOLERANCE_M);
+      [...scope.dedans, ...scope.lisiere, ...scope.voisinage].forEach(({ item, zone, distanceM }: any) => {
         if (!item.scientificName) return;
         const prev = by.get(item.scientificName);
         if (prev) {
           prev.observations = (prev.observations || 0) + 1;
           if (!prev.photoUrl && item.photoUrl) prev.photoUrl = item.photoUrl;
+          // Une espèce vue à la fois dedans et en lisière est « dedans ».
+          if (distanceM < (prev.distanceM ?? Infinity)) {
+            prev.distanceM = distanceM;
+            prev.zone = zone;
+          }
           if (Number.isFinite(item.lat) && Number.isFinite(item.lng))
             prev.points = [...(prev.points || []), { lat: item.lat, lng: item.lng }];
           return;
@@ -216,6 +226,8 @@ export const ScenographeFullscreen: React.FC<Props> = ({
           photoUrl: item.photoUrl || null,
           observations: 1,
           ouvrageNom: multi ? label : null,
+          zone,
+          distanceM,
           points:
             Number.isFinite(item.lat) && Number.isFinite(item.lng)
               ? [{ lat: item.lat, lng: item.lng }]
@@ -223,8 +235,29 @@ export const ScenographeFullscreen: React.FC<Props> = ({
         });
       });
     });
-    return Array.from(by.values()).sort((a, b) => (b.observations || 0) - (a.observations || 0));
-  }, [scopedObjets, waypoints, displayNameFor]);
+    const out = { ...empty };
+    Array.from(by.values())
+      .sort((a, b) => (b.observations || 0) - (a.observations || 0))
+      .forEach((e) => out[(e.zone || 'dedans') as keyof typeof out].push(e));
+    return out;
+  }, [scopedObjets, waypoints, displayNameFor, neighbourM]);
+
+  const rigourCounts = React.useMemo(
+    () => ({
+      dedans: inPlaceZoned.dedans.length,
+      lisiere: inPlaceZoned.lisiere.length,
+      voisinage: inPlaceZoned.voisinage.length,
+    }),
+    [inPlaceZoned],
+  );
+
+  const inPlaceEntries = React.useMemo<HerbierEntry[]>(() => {
+    const out = [...inPlaceZoned.dedans];
+    if (rigour !== 'strict') out.push(...inPlaceZoned.lisiere);
+    if (rigour === 'voisinage') out.push(...inPlaceZoned.voisinage);
+    return out;
+  }, [inPlaceZoned, rigour]);
+
 
 
   const proposalNames = React.useMemo(
