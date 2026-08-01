@@ -613,8 +613,15 @@ export function ChatBot({
                       </div>
                     ) : (
                       messages.map((msg, i) => (
-                        <ChatMessage key={i} role={msg.role} content={msg.content} isExpanded={isExpanded} />
+                        <ChatMessage
+                          key={i}
+                          role={msg.role}
+                          content={msg.content}
+                          isExpanded={isExpanded}
+                          isStreaming={isLoading && i === messages.length - 1 && msg.role === 'assistant'}
+                        />
                       ))
+
                     )}
                     {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                       <div className="flex items-center gap-2 text-muted-foreground">

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ChatTableBlock from './ChatTableBlock';
+import { repairChatMarkdown } from '@/lib/chatMarkdownRepair';
 import { Bot, User, Volume2, VolumeX, Copy, Check } from 'lucide-react';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 
@@ -9,12 +10,21 @@ interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
   isExpanded?: boolean;
+  /** Vrai tant que la réponse est en cours de streaming (répare sans casser). */
+  isStreaming?: boolean;
 }
 
-export function ChatMessage({ role, content, isExpanded }: ChatMessageProps) {
+export function ChatMessage({ role, content, isExpanded, isStreaming }: ChatMessageProps) {
   const isUser = role === 'user';
   const { isSupported, isSpeaking, speak, stopSpeaking } = useSpeechSynthesis();
   const [copied, setCopied] = useState(false);
+
+  /** Markdown normalisé : les tableaux dégradés redeviennent des tableaux GFM. */
+  const markdown = useMemo(
+    () => (isUser ? content : repairChatMarkdown(content, isStreaming)),
+    [content, isUser, isStreaming],
+  );
+
 
   const handleSpeak = () => {
     if (isSpeaking) stopSpeaking();
@@ -68,8 +78,9 @@ export function ChatMessage({ role, content, isExpanded }: ChatMessageProps) {
                     table: ({ children }) => <ChatTableBlock>{children}</ChatTableBlock>,
                   }}
                 >
-                  {content}
+                  {markdown}
                 </ReactMarkdown>
+
               </div>
             )}
           </div>
