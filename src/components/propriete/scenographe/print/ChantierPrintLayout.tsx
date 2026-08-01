@@ -522,7 +522,11 @@ export const ChantierPrintLayout: React.FC<Props> = ({
               />
             ))}
           </div>
+          <p className="mt-3 text-[7.4pt] italic text-[#8a8172]">
+            Photographies de référence : iNaturalist / GBIF (licences Creative Commons).
+          </p>
         </Page>
+
       ))}
 
       {/* ---------- 5 · Les apports retenus ---------- */}
@@ -554,7 +558,11 @@ export const ChantierPrintLayout: React.FC<Props> = ({
               );
             })}
           </div>
+          <p className="mt-3 text-[7.4pt] italic text-[#8a8172]">
+            Photographies de référence : iNaturalist / GBIF (licences Creative Commons).
+          </p>
         </Page>
+
       ))}
 
       {/* ---------- 6 · Photos avant aménagement ---------- */}
