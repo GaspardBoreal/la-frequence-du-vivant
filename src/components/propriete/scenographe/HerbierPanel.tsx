@@ -361,6 +361,8 @@ export const HerbierPanel: React.FC<Props> = ({
                 armed={armedKey === e.key}
                 placed={placedCount[e.key] || 0}
                 onClick={() => onArm(armedKey === e.key ? null : e)}
+                onHover={onHoverEntry}
+
               />
             ))}
           </div>
