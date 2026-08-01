@@ -535,6 +535,23 @@ export const ScenographeFullscreen: React.FC<Props> = ({
             La Chambre du Vivant
           </button>
 
+          <button
+            type="button"
+            onClick={() => setChantierOpen(true)}
+            disabled={plantings.length === 0}
+            title={
+              plantings.length === 0
+                ? 'Pose au moins une espèce pour éditer le dossier'
+                : 'Éditer le dossier de chantier à présenter aux professionnels'
+            }
+            className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-[11.5px] font-semibold text-white/90 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            Dossier de chantier
+          </button>
+
+
+
           <ScenarioTabs
             scenarios={scen.scenarios}
             activeId={scen.activeId}
