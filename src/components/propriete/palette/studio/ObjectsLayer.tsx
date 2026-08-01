@@ -6,7 +6,7 @@ import { hexOf, isChromaticTool, teintesOf } from '@/lib/nuancierKb';
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import { fmtMeasure, measureFor } from './geoMetrics';
-import { photoPastilleIcon } from './photos/PhotoPastille';
+import OuvragePhotoPastilleLayer from './photos/OuvragePhotoPastilleLayer';
 
 /**
  * Applique un vrai dégradé SVG des teintes du nuancier au remplissage du
