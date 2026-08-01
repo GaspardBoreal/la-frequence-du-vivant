@@ -488,7 +488,18 @@ export const ScenographeFullscreen: React.FC<Props> = ({
                     onSelected={setScopeIds}
                   />
                 }
+                rigourControl={
+                  <HerbierRigourPicker
+                    value={rigour}
+                    onChange={setRigour}
+                    neighbourM={neighbourM}
+                    onNeighbourM={setNeighbourM}
+                    counts={rigourCounts}
+                  />
+                }
+                onHoverEntry={setHovered}
               />
+
             </aside>
             <PanelResizer
               width={panelWidth}
