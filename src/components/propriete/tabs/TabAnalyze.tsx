@@ -359,7 +359,7 @@ export const TabAnalyze: React.FC<{
           onRelabel={relabelSample}
           onRestore={restoreSample}
 
-          onBulkSet={(next) => setLocal((s) => ({ ...s, samples: next }))}
+          index={1}
           index={1}
         />
         </div>

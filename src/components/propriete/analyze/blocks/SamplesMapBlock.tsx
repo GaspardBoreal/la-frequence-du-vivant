@@ -18,9 +18,10 @@ import { StrataSeal, StrataCompletionLine } from '../sample/StrataSeal';
 import {
   MIN_SAMPLES,
   MAX_SAMPLES,
-  defaultPositions,
+  firstFreePosition,
   freeLetters,
 } from '../sample/sampleRoster';
+
 import { SampleDeleteDialog } from '../sample/SampleDeleteDialog';
 import {
   DropdownMenu,
@@ -294,6 +295,9 @@ export const SamplesMapBlock: React.FC<{
   const [pendingDelete, setPendingDelete] = useState<SoilSample | null>(null);
   /** Prélèvements déjà semés : garantit une seule attribution de position par point. */
   const seededRef = React.useRef<Set<string>>(new Set());
+  /** Repère en cours de glisser : neutralise le clic parasite de fin de drag. */
+  const draggedRef = React.useRef<string | null>(null);
+
 
   /**
    * Semis GPS non destructif : chaque prélèvement sans coordonnées reçoit un
