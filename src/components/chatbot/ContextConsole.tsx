@@ -392,7 +392,51 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
                               {empty ? '—' : formatBytes(p.bytes)}
                             </span>
                           </div>
-                        </button>
+
+                          {/* Transparence : lire, copier, emporter ce contexte */}
+                          {!empty && (
+                            <div className="mt-1.5 flex items-center gap-1 pl-9 opacity-0 transition-opacity duration-200 group-hover/ctx:opacity-100 focus-within:opacity-100 group-focus/ctx:opacity-100">
+                              {[
+                                {
+                                  key: 'eye',
+                                  icon: <Eye className="h-3 w-3" />,
+                                  label: 'Lire',
+                                  run: () => setBordereau({ providers: [p], single: true }),
+                                },
+                                {
+                                  key: 'copy',
+                                  icon:
+                                    copiedId === p.id ? (
+                                      <Check className="h-3 w-3 text-emerald-400" />
+                                    ) : (
+                                      <Copy className="h-3 w-3" />
+                                    ),
+                                  label: copiedId === p.id ? 'Copié' : 'Copier',
+                                  run: () => void copyOne(p),
+                                },
+                                {
+                                  key: 'dl',
+                                  icon: <Download className="h-3 w-3" />,
+                                  label: 'Fichier',
+                                  run: () => downloadOne(p),
+                                },
+                              ].map((a) => (
+                                <button
+                                  key={a.key}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    a.run();
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                >
+                                  {a.icon}
+                                  {a.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
                       );
                     })}
                   </div>
