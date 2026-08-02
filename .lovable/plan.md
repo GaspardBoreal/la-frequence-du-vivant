@@ -1,35 +1,44 @@
-# Étape 2 · Prélèvements — jusqu'à 10 points, renommables et supprimables
+## Ce qui se passe
 
-## Constat (vérifié dans le code)
-- `SamplesMapBlock.tsx` fige `MAX_SAMPLES = 5` et `LABELS = ['A'…'E']` ; `defaultPositions()` ne génère que 5 positions (pentagone ~30 m).
-- `usePropertySoil.addSample()` crée l'id/label par `String.fromCharCode(65 + samples.length)` : après une suppression, un nouvel ajout **réutilise un id existant** (collision A/B/C, données de strates écrasées). C'est le vrai bug de fond à corriger avant d'ouvrir à 10.
-- Le « nom » du prélèvement affiché dans la liste est en réalité le champ libre `location`, éditable inline mais sans validation ni feedback.
-- La suppression est un `X` immédiat, sans confirmation, et masqué dès qu'il ne reste que 3 points ; elle efface aussi les 4 strates (structure, texture, pH, vie) sans prévenir.
-- `SamplesBlock.tsx` (variante sans carte) duplique la limite « max 5 ».
+L'écran n'est pas « cassé » au hasard : trois mécanismes se marchent dessus dès qu'on **édite un prélèvement puis qu'on en crée un autre**.
 
-## Ce qui sera fait
+1. **L'ajout renvoie un identifiant fantôme.** Dans `usePropertySoil`, `addSample` calcule l'id *à l'intérieur* de la fonction de mise à jour d'état, puis le retourne. React exécute cette fonction plus tard (et deux fois en développement) : l'appelant reçoit souvent une chaîne vide. Résultat : le nouveau prélèvement n'est pas ciblé, la ligne reste « Nommer ce prélèvement » grisée et inerte (le F de la copie d'écran).
 
-### 1. Capacité portée à 10 (source unique)
-- Nouveau module `src/components/propriete/analyze/sample/sampleRoster.ts` : `MAX_SAMPLES = 10`, `MIN_SAMPLES = 3`, alphabet A→J, génération d'id **non colliding** (premier label libre, puis suffixe), et `defaultPositions()` étendu en double couronne (5 points à ~30 m + 5 à ~55 m, décalés d'un demi-pas) pour que 10 pastilles restent lisibles.
-- `usePropertySoil.addSample()` consomme ce générateur ; `SamplesMapBlock` et `SamplesBlock` importent les constantes au lieu de les redéfinir.
-- Sous-titres et compteurs passent de « 3 à 5 » à « 3 à 10 » (carte, plein écran, carte sans map).
+2. **Le semis automatique des coordonnées écrase la saisie.** L'effet qui donne une position aux prélèvements sans GPS reconstruit **tout le tableau** à partir d'une photo figée des prélèvements, puis l'écrit d'un bloc (`onBulkSet`). S'il se déclenche pendant qu'on tape un nom, la frappe en cours est perdue. En plus il ne se déclenche que si le *nombre* de prélèvements change : après une suppression suivie d'un ajout, le nouveau point reste sans coordonnées et n'apparaît jamais sur la carte. Et comme la position est choisie par *rang dans la liste*, un nouveau point peut atterrir sous un point existant ou très loin de la parcelle (le F au sud sur la copie d'écran).
 
-### 2. Renommer / modifier — « l'étiquette du carottier »
-- La ligne de liste devient éditable en deux temps : un champ **Nom du prélèvement** (`location`) au style étiquette manuscrite, avec crayon révélé au survol, focus au clic, validation `Entrée`, annulation `Échap`, autosave silencieux (le debounce d'enregistrement existant s'en charge).
-- Ajout d'un **renommage de la lettre** : petit menu sur la pastille permettant de réattribuer une lettre libre (A→J) sans casser l'id interne — le repère cartographique, le sceau des 4 strates et la fiche Carotte suivent instantanément.
-- Micro-feedback : pulse doré sur le marqueur correspondant pendant l'édition, et ligne « enregistré » discrète.
+3. **Le focus est repris de force à chaque rendu.** Le champ de nom se re-focalise via un `ref` recréé à chaque rendu : tant qu'une ligne est « en édition », le curseur est ramené dedans, même quand on clique ailleurs (carte, autre ligne, bouton Ajouter).
 
-### 3. Supprimer — confirmation « scellé rompu »
-- Le `X` ouvre un `AlertDialog` shadcn au ton du carnet : rappel du nom, des coordonnées, et **du nombre de strates renseignées qui seront perdues** (calculé via `strataState`).
-- Bouton destructeur explicite « Retirer le prélèvement D » + « Annuler ». Après suppression, toast avec **Annuler (10 s)** qui restaure l'échantillon complet (les données restent en mémoire locale avant persistance).
-- Suppression bloquée sous 3 points, avec explication au survol au lieu d'un bouton simplement absent.
+S'ajoutent deux irritants visuels : toutes les lignes passent en opacité réduite au survol d'une voisine (effet « écran qui clignote »), et l'animation de hauteur sur des lignes en `flex` fait sauter la liste.
 
-### 4. Lisibilité à 10 points (le « wahou »)
-- Pastilles cartographiques : léger décalage anti-superposition automatique et mise en avant du point survolé (les autres passent à 55 % d'opacité) — lien carte ↔ liste renforcé dans les deux sens.
-- Panneau latéral scrollable avec en-tête collant « n / 10 » et une **jauge de couverture du carottage** (pastilles remplies = strates complètes), pour visualiser d'un coup d'œil l'avancement du diagnostic.
-- Animation d'entrée/sortie en `AnimatePresence` pour que l'ajout et le retrait se lisent comme un geste, pas comme un saut.
+## Correctifs proposés
+
+### 1. Création fiable d'un prélèvement
+- `addSample` calcule l'identifiant et l'étiquette **avant** la mise à jour d'état, à partir d'une référence à jour du registre, et renvoie toujours un id réel (ou `null` si le maximum de 10 est atteint).
+- Le nouveau prélèvement est créé **déjà positionné** : coordonnées calculées à la création (clic carte = position du clic ; bouton « Ajouter » = premier emplacement libre), donc plus aucune dépendance au semis différé.
+- Anti double-clic : garde sur la capacité au niveau de l'état, pas au niveau de la vue.
+
+### 2. Semis de coordonnées non destructif
+- Remplacer l'écriture en bloc par des mises à jour **ciblées** (`updateSample` pour chaque point sans coordonnées) : la saisie en cours n'est plus jamais écrasée.
+- Déclencheur basé sur « existe-t-il un point sans coordonnées ? » plutôt que sur le nombre de points, et exécuté une seule fois par point (garde par identifiant déjà traité).
+- Choix de la position : premier emplacement de la double couronne **non occupé** (distance minimale d'environ 10 m avec les points existants), au lieu du rang dans la liste.
+
+### 3. Focus et édition maîtrisés
+- Suppression du `ref` auto-focus. On utilise une demande de focus **unique** (identifiant à focaliser, consommé puis effacé) après création d'un prélèvement.
+- Le nom est édité en état local de ligne et propagé au registre à la validation / perte de focus, avec `Échap` = annuler, `Entrée` = valider : plus de perte de frappe même si le registre se réécrit.
+
+### 4. Robustesse de la suppression et du recadrage
+- L'action « Annuler » du bandeau de suppression ne réinsère le prélèvement que s'il n'a pas été recréé entre-temps, et retombe en fin de liste si la position d'origine n'existe plus.
+- Le recadrage automatique de la carte ne se fait qu'au premier affichage et lors d'un changement de parcelle, jamais pendant un glisser-déposer de pastille (évite les sauts de carte).
+- Le clic sur une pastille n'ouvre plus la fiche carotte s'il suit immédiatement un déplacement.
+
+### 5. Lisibilité de la liste
+- Atténuation au survol supprimée (seule la ligne survolée est mise en avant) ; l'animation de hauteur est remplacée par un fondu/déplacement, sans saut de mise en page.
+- Nom du prélèvement sur deux lignes possibles et infobulle : plus de texte tronqué façon « Projet "Massif Mé ».
+- Message clair si l'ajout est impossible (maximum atteint) et compteur « n / 10 » conservé.
 
 ## Détails techniques
-- Fichiers touchés : `src/hooks/propriete/usePropertySoil.ts`, `src/components/propriete/analyze/blocks/SamplesMapBlock.tsx`, `src/components/propriete/analyze/blocks/SamplesBlock.tsx`, nouveau `sample/sampleRoster.ts`, nouveau `sample/SampleDeleteDialog.tsx`.
-- Aucun changement de schéma : `samples` est déjà un JSON dans `propriete_soil_diagnostics`, la limite de 5 n'existait qu'en front.
-- Les vues aval (`SamplesRegisterTable`, `AnalyzeSummary`, `SoilSamplesPlan` d'impression, fiche Carotte, liens sol↔ouvrage) itèrent sur le tableau : elles absorbent 10 points sans modification, seuls les gabarits d'impression seront vérifiés pour la pagination.
+
+- `src/hooks/propriete/usePropertySoil.ts` : `addSample` s'appuie sur une `ref` du registre courant pour calculer id/étiquette en amont et retourner `string | null` ; `restoreSample` vérifie l'absence de doublon d'id.
+- `src/components/propriete/analyze/blocks/SamplesMapBlock.tsx` : suppression de `seedMissingCoords` + `onBulkSet` au profit d'un effet de semis par point via `onUpdate` ; nouvel utilitaire de placement libre dans `sampleRoster.ts` (`firstFreePosition(center, samples)`) ; état `focusRequestId` ; sous-composant `SampleRow` avec état de saisie local.
+- `src/components/propriete/tabs/TabAnalyze.tsx` : `onBulkSet` devient inutile et est retiré du câblage.
+- Aucune modification de base de données : la persistance différée (1,5 s) existante reste inchangée.
