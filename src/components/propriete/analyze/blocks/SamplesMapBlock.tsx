@@ -264,14 +264,13 @@ export const SamplesMapBlock: React.FC<{
   proprieteCenter?: [number, number] | null;
   samples: SoilSample[];
   onUpdate: (id: string, patch: Partial<SoilSample>) => void;
-  /** Renvoie l'identifiant du prélèvement créé. */
-  onAdd: (patch?: Partial<SoilSample>) => string | void;
+  /** Renvoie l'identifiant du prélèvement créé (null si maximum atteint). */
+  onAdd: (patch?: Partial<SoilSample>) => string | null | void;
   onRemove: (id: string) => void;
   /** Réattribue la lettre du repère. */
   onRelabel?: (id: string, label: string) => void;
   /** Réinsère un prélèvement supprimé (annulation). */
   onRestore?: (sample: SoilSample, at: number) => void;
-  onBulkSet?: (next: SoilSample[]) => void;
   index?: number;
 }> = ({
   proprieteId,
@@ -282,7 +281,6 @@ export const SamplesMapBlock: React.FC<{
   onRemove,
   onRelabel,
   onRestore,
-  onBulkSet,
   index = 0,
 }) => {
 
@@ -292,18 +290,31 @@ export const SamplesMapBlock: React.FC<{
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<SoilSample | null>(null);
+  /** Prélèvements déjà semés : garantit une seule attribution de position par point. */
+  const seededRef = React.useRef<Set<string>>(new Set());
 
-
-  // Seed coords for any sample missing them (initial load or after adding D/E via sidebar button)
+  /**
+   * Semis GPS non destructif : chaque prélèvement sans coordonnées reçoit un
+   * emplacement libre via une mise à jour CIBLÉE (jamais une réécriture du registre).
+   */
   useEffect(() => {
-    if (!onBulkSet) return;
     if (!parcCenter && !proprieteCenter) return;
-    const next = seedMissingCoords(samples, center);
-    if (next) onBulkSet(next);
+    const orphans = samples.filter(
+      (s) => (s.lat == null || s.lng == null) && !seededRef.current.has(s.id),
+    );
+    if (!orphans.length) return;
+    const placed = [...samples];
+    for (const o of orphans) {
+      const [lat, lng] = firstFreePosition(center, placed);
+      seededRef.current.add(o.id);
+      placed.push({ ...o, lat, lng });
+      onUpdate(o.id, { lat, lng });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [samples.length, parcCenter?.[0], parcCenter?.[1], proprieteCenter?.[0], proprieteCenter?.[1]]);
+  }, [samples, parcCenter?.[0], parcCenter?.[1], proprieteCenter?.[0], proprieteCenter?.[1]]);
+
 
   const parcelleBounds = useMemo<Array<[number, number]>>(() => {
     const pts: Array<[number, number]> = [];
