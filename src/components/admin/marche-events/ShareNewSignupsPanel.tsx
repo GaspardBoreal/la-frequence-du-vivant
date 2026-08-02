@@ -17,28 +17,42 @@ const ShareNewSignupsPanel: React.FC<Props> = ({ eventId, initialValue }) => {
   const [pending, setPending] = useState(false);
   const qc = useQueryClient();
 
+  const countAutoReaders = async () => {
+    const { count } = await supabase
+      .from('event_invited_readers')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', eventId)
+      .eq('invite_source', 'auto_new_signup');
+    return count ?? 0;
+  };
+
   const onToggle = async (next: boolean) => {
     setPending(true);
     const prev = value;
     setValue(next);
+    const before = await countAutoReaders();
     const { error } = await supabase
       .from('marche_events')
       .update({ share_with_new_signups: next })
       .eq('id', eventId);
-    setPending(false);
     if (error) {
+      setPending(false);
       setValue(prev);
       toast.error(error.message);
       return;
     }
+    const after = await countAutoReaders();
+    setPending(false);
+    const delta = Math.abs(after - before);
     toast.success(
       next
-        ? 'Partage activé : tout nouveau marcheur sera ajouté silencieusement.'
-        : 'Partage désactivé. Les entrées existantes sont conservées.'
+        ? `Partage activé — ${delta} marcheur${delta > 1 ? 's' : ''} en accueil invité${delta > 1 ? 's' : ''}. Les futurs inscrits le seront automatiquement.`
+        : `Partage désactivé — ${delta} invitation${delta > 1 ? 's' : ''} automatique${delta > 1 ? 's' : ''} retirée${delta > 1 ? 's' : ''}. Les invitations manuelles et les inscrits sont conservés.`
     );
     qc.invalidateQueries({ queryKey: ['marche-events-paginated'] });
     qc.invalidateQueries({ queryKey: ['marche-events-all'] });
     qc.invalidateQueries({ queryKey: ['marche-event', eventId] });
+    qc.invalidateQueries({ queryKey: ['event-invited-readers', eventId] });
   };
 
   return (
@@ -67,8 +81,8 @@ const ShareNewSignupsPanel: React.FC<Props> = ({ eventId, initialValue }) => {
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {value
-                  ? 'Tout nouveau marcheur sera silencieusement ajouté comme Lecteur invité dès son inscription. Les marcheurs déjà inscrits ne sont pas concernés.'
-                  : 'Activez pour ajouter automatiquement chaque futur nouvel inscrit comme Lecteur invité sur cette marche.'}
+                  ? 'Chaque marcheur en accueil est invité comme Lecteur invité, et tout nouvel inscrit le sera automatiquement.'
+                  : 'Activez pour inviter les marcheurs en accueil et chaque futur inscrit. La désactivation retire ces invitations automatiques (sauf inscrits à la marche).'}
               </p>
             </div>
             <Switch checked={value} disabled={pending} onCheckedChange={onToggle} />

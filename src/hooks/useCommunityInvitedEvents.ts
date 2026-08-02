@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface InvitedEventRow {
@@ -23,10 +24,38 @@ export interface InvitedEventRow {
 
 
 export const useCommunityInvitedEvents = (userId: string | undefined) => {
+  const qc = useQueryClient();
+
+  // Réagit en direct aux ajouts/retraits d'invitations (toggle « partage » admin)
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`invited-readers-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'event_invited_readers',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ['community-invited-events', userId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, qc]);
+
   return useQuery({
     queryKey: ['community-invited-events', userId],
     enabled: !!userId,
     staleTime: 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
     queryFn: async (): Promise<InvitedEventRow[]> => {
       if (!userId) return [];
 
