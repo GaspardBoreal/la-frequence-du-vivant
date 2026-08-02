@@ -116,10 +116,10 @@ const ApprendreMarchePage = lazyWithRetry(() => import('./pages/ApprendreMarcheP
 const ImmersiveGardenFiche = lazyWithRetry(() => import('./pages/ImmersiveGardenFiche'));
 
 /* Montages globaux : chargés à la demande, sans écran d'attente */
-const AdminChatBotMount = lazy(() =>
+const AdminChatBotMount = lazyWithRetry(() =>
   import('./components/chatbot/AdminChatBotMount').then((m) => ({ default: m.AdminChatBotMount })),
 );
-const CommunityChatBotMount = lazy(() =>
+const CommunityChatBotMount = lazyWithRetry(() =>
   import('./components/chatbot/CommunityChatBotMount').then((m) => ({ default: m.CommunityChatBotMount })),
 );
 const AdhesionFab = lazyWithRetry(() => import('./components/adhesion/AdhesionFab'));
