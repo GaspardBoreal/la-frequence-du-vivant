@@ -2597,3 +2597,24 @@
   .ds-photo-pastille { animation: none; }
   .ds-photo-pastille__frame { transition: none; }
 }
+
+/* ── Bordereau du vivant : impression / PDF ─────────────────────────────── */
+@media print {
+  body:has(.ctx-bordereau) > *:not(#root) { display: none !important; }
+  body:has(.ctx-bordereau) #root > *:not(:has(.ctx-bordereau)) { display: none !important; }
+  .ctx-bordereau {
+    position: static !important;
+    max-height: none !important;
+    max-width: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .ctx-bordereau * { color: #111 !important; }
+  .ctx-bordereau .ctx-bordereau-paper {
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  .ctx-bordereau pre { font-size: 9.5pt !important; }
+}

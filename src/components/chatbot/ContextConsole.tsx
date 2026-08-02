@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Gauge, Check, Sparkles, Trash2 } from 'lucide-react';
+import { X, Gauge, Check, Sparkles, Trash2, Copy, Download, Eye, ScrollText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFullscreenSurfaceOpen, CHAT_Z } from '@/lib/uiOverlayLevel';
 
@@ -16,7 +16,15 @@ import {
   formatTokens,
   ECO_COLORS,
 } from '@/lib/chatContextCost';
+import {
+  buildBordereau,
+  serializeProvider,
+  copyText,
+  downloadFile,
+} from '@/lib/contextExport';
+import { ContextBordereau } from './ContextBordereau';
 import { cn } from '@/lib/utils';
+
 
 interface ContextConsoleProps {
   open: boolean;
@@ -29,6 +37,8 @@ interface ContextConsoleProps {
   baseBytes?: number;
   /** UI spécialisée injectée en tête d'un groupe (ex : plateau des ouvrages). */
   groupExtras?: Record<string, React.ReactNode>;
+  /** Nom de la fiche courante (propriété, marche…) porté sur le bordereau. */
+  subject?: string | null;
 }
 
 
@@ -47,8 +57,10 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
   activeKeys,
   baseBytes = 0,
   groupExtras,
+  subject,
 }) => {
   const activeSet = useMemo(() => new Set(activeKeys), [activeKeys]);
+
 
   const groups = useMemo(() => {
     const map = new Map<string, ContextProvider[]>();
@@ -108,10 +120,34 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
   const activeCount = activeProviders.length;
   const fullscreenOpen = useFullscreenSurfaceOpen();
 
+  /* ---- Transparence : copier / exporter les contextes ---- */
+  const [bordereau, setBordereau] = useState<{ providers: ContextProvider[]; single: boolean } | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const flashCopied = (id: string) => {
+    setCopiedId(id);
+    setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1600);
+  };
+
+  const copyOne = async (p: ContextProvider) => {
+    if (await copyText(serializeProvider(p, 'markdown').content)) flashCopied(p.id);
+  };
+  const downloadOne = (p: ContextProvider) => downloadFile(serializeProvider(p, 'markdown'));
+
+  const bordereauFile = () =>
+    buildBordereau(activeProviders, { title, subject, baseBytes }, 'markdown');
+  const copyAll = async () => {
+    if (await copyText(bordereauFile().content)) flashCopied('__all__');
+  };
+  const overlayZ = fullscreenOpen ? CHAT_Z.aboveFullscreen + 100 : 1300;
+
+
 
 
   return (
+    <>
     <AnimatePresence>
+
       {open && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -194,6 +230,34 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
                 </span>
               </div>
 
+              {/* Transparence : emporter la sélection complète */}
+              {activeCount > 0 && (
+                <div className="mt-2 flex items-center gap-1.5">
+                  <button
+                    onClick={() => setBordereau({ providers: activeProviders, single: false })}
+                    className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-1 text-[11px] font-medium text-amber-200 hover:bg-amber-400/20 transition-colors"
+                  >
+                    <ScrollText className="h-3 w-3" />
+                    Bordereau
+                  </button>
+                  <button
+                    onClick={copyAll}
+                    className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    {copiedId === '__all__' ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    {copiedId === '__all__' ? 'Copié' : 'Copier tout'}
+                  </button>
+                  <button
+                    onClick={() => downloadFile(bordereauFile())}
+                    className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    <Download className="h-3 w-3" />
+                    Exporter
+                  </button>
+                </div>
+              )}
+
+
               {/* Récapitulatif vivant des contextes retenus */}
               <AnimatePresence initial={false}>
                 {activeProviders.length > 0 && (
@@ -252,18 +316,27 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
                       const active = activeSet.has(contextSliceKey(p.id));
                       const empty = p.bytes <= 2;
                       return (
-                        <button
+                        <div
                           key={p.id}
+                          role="button"
+                          tabIndex={empty ? -1 : 0}
+                          aria-pressed={active}
                           onClick={() => !empty && toggle(p)}
-                          disabled={empty}
+                          onKeyDown={(e) => {
+                            if (!empty && (e.key === 'Enter' || e.key === ' ')) {
+                              e.preventDefault();
+                              toggle(p);
+                            }
+                          }}
                           className={cn(
-                            'relative w-full overflow-hidden text-left rounded-xl border px-3 py-2.5 pl-4 transition-all duration-200',
+                            'group/ctx relative w-full overflow-hidden text-left rounded-xl border px-3 py-2.5 pl-4 transition-all duration-200',
                             active
                               ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/40 shadow-[0_0_0_3px_hsl(var(--primary)/0.07),0_6px_18px_-10px_hsl(var(--primary)/0.6)]'
                               : 'border-border bg-background/60 hover:bg-muted/60 hover:border-border',
-                            empty && 'opacity-45 cursor-not-allowed',
+                            empty ? 'opacity-45 cursor-not-allowed' : 'cursor-pointer',
                           )}
                         >
+
                           {active && (
                             <motion.span
                               layoutId={`ctx-rail-${p.id}`}
@@ -321,7 +394,51 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
                               {empty ? '—' : formatBytes(p.bytes)}
                             </span>
                           </div>
-                        </button>
+
+                          {/* Transparence : lire, copier, emporter ce contexte */}
+                          {!empty && (
+                            <div className="mt-1.5 flex items-center gap-1 pl-9 opacity-0 transition-opacity duration-200 group-hover/ctx:opacity-100 focus-within:opacity-100 group-focus/ctx:opacity-100">
+                              {[
+                                {
+                                  key: 'eye',
+                                  icon: <Eye className="h-3 w-3" />,
+                                  label: 'Lire',
+                                  run: () => setBordereau({ providers: [p], single: true }),
+                                },
+                                {
+                                  key: 'copy',
+                                  icon:
+                                    copiedId === p.id ? (
+                                      <Check className="h-3 w-3 text-emerald-400" />
+                                    ) : (
+                                      <Copy className="h-3 w-3" />
+                                    ),
+                                  label: copiedId === p.id ? 'Copié' : 'Copier',
+                                  run: () => void copyOne(p),
+                                },
+                                {
+                                  key: 'dl',
+                                  icon: <Download className="h-3 w-3" />,
+                                  label: 'Fichier',
+                                  run: () => downloadOne(p),
+                                },
+                              ].map((a) => (
+                                <button
+                                  key={a.key}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    a.run();
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                >
+                                  {a.icon}
+                                  {a.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
                       );
                     })}
                   </div>
@@ -345,7 +462,20 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
         </motion.div>
       )}
     </AnimatePresence>
+
+    <ContextBordereau
+      open={!!bordereau}
+      onClose={() => setBordereau(null)}
+      title={title}
+      subject={subject}
+      providers={bordereau?.providers ?? []}
+      single={bordereau?.single}
+      baseBytes={bordereau?.single ? 0 : baseBytes}
+      zIndex={overlayZ + 20}
+    />
+    </>
   );
+
 };
 
 export default ContextConsole;
