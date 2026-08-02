@@ -487,113 +487,26 @@ export const SamplesMapBlock: React.FC<{
         </div>
       </div>
 
-      <AnimatePresence initial={false} mode="popLayout">
-      {samples.map((s, i) => (
-        <motion.div
-          layout
-          key={s.id}
-          initial={{ opacity: 0, x: -6, height: 0 }}
-          animate={{ opacity: hoveredId && hoveredId !== s.id ? 0.65 : 1, x: 0, height: 'auto' }}
-          exit={{ opacity: 0, x: 12, height: 0 }}
-          transition={{ delay: i * 0.02, duration: 0.22 }}
-          onMouseEnter={() => setHoveredId(s.id)}
-          onMouseLeave={() => setHoveredId(null)}
-          className={`flex items-center gap-2.5 rounded-xl border p-2.5 transition ${
-            hoveredId === s.id || editingId === s.id
-              ? 'border-[hsl(var(--ds-forest))] bg-[hsl(var(--ds-forest))]/8'
-              : 'border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60'
-          }`}
-        >
-          {/* Pastille : menu de réattribution de lettre */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label={`Changer le repère du prélèvement ${s.label}`}
-                title="Changer le repère (lettre)"
-                className="flex-shrink-0 w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center font-serif font-bold shadow-sm hover:ring-2 hover:ring-[hsl(var(--ds-forest))]/30 transition"
-              >
-                {s.label}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-[9rem]">
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-widest">
-                Repère
-              </DropdownMenuLabel>
-              {freeLetters(samples, s.id).map((l) => (
-                <DropdownMenuItem
-                  key={l}
-                  onSelect={() => onRelabel?.(s.id, l)}
-                  className="font-serif"
-                >
-                  {l}
-                  {l === s.label && <Check className="w-3.5 h-3.5 ml-auto" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <input
-                value={s.location ?? ''}
-                onChange={(e) => onUpdate(s.id, { location: e.target.value })}
-                onFocus={() => setEditingId(s.id)}
-                onBlur={() => setEditingId((cur) => (cur === s.id ? null : cur))}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLInputElement).blur();
-                }}
-                ref={(el) => {
-                  if (el && editingId === s.id && document.activeElement !== el) el.focus();
-                }}
-                placeholder="Nommer ce prélèvement (ex. sous le tilleul…)"
-                className="w-full bg-transparent border-none outline-none text-sm font-medium text-[hsl(var(--ds-forest-deep))] placeholder:font-normal placeholder:text-[hsl(var(--ds-forest))]/40"
-              />
-              <Pencil
-                className={`w-3 h-3 flex-shrink-0 transition ${
-                  hoveredId === s.id || editingId === s.id
-                    ? 'text-[hsl(var(--ds-forest))]/70'
-                    : 'text-transparent'
-                }`}
-              />
-            </div>
-            <div className="mt-1 flex items-center gap-2 flex-wrap">
-              <StrataSeal
-                sample={s}
-                size="row"
-                onSelect={(block) => openSampleCore(s.id, samples, proprieteId, block)}
-              />
-              <StrataCompletionLine sample={s} />
-            </div>
-            {s.lat != null && s.lng != null && (
-              <div className="text-[10px] text-[hsl(var(--ds-forest))]/50 mt-0.5">
-                {s.lat.toFixed(5)}, {s.lng.toFixed(5)}
-              </div>
-            )}
-          </div>
-          <button
-            onClick={() => openSampleCore(s.id, samples, proprieteId)}
-            aria-label={`Ouvrir la fiche carotte ${s.label}`}
-            className="shrink-0 rounded-full border border-[hsl(var(--ds-forest))]/35 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))]/10 transition"
-          >
-            Carotte
-          </button>
-          <button
-            onClick={() => samples.length > MIN_SAMPLES && setPendingDelete(s)}
-            disabled={samples.length <= MIN_SAMPLES}
-            aria-label={`Retirer le prélèvement ${s.label}`}
-            title={
-              samples.length <= MIN_SAMPLES
-                ? `Le diagnostic requiert au moins ${MIN_SAMPLES} prélèvements`
-                : 'Retirer ce prélèvement'
-            }
-            className="w-7 h-7 rounded-full flex items-center justify-center text-[hsl(var(--ds-forest))]/50 hover:text-[#b4603f] hover:bg-[#b4603f]/10 transition disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-[hsl(var(--ds-forest))]/50 disabled:cursor-not-allowed"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </motion.div>
-      ))}
+      <AnimatePresence initial={false}>
+        {samples.map((s) => (
+          <SampleRow
+            key={s.id}
+            sample={s}
+            samples={samples}
+            proprieteId={proprieteId}
+            hovered={hoveredId === s.id}
+            autoFocus={focusId === s.id}
+            canDelete={samples.length > MIN_SAMPLES}
+            minSamples={MIN_SAMPLES}
+            onHover={setHoveredId}
+            onRename={(v) => onUpdate(s.id, { location: v })}
+            onRelabel={onRelabel ? (l) => onRelabel(s.id, l) : undefined}
+            onDelete={() => setPendingDelete(s)}
+            onFocusConsumed={() => setFocusId((cur) => (cur === s.id ? null : cur))}
+          />
+        ))}
       </AnimatePresence>
+
 
       {samples.length < MAX_SAMPLES && (
         <button
