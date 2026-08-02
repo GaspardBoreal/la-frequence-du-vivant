@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GeoJSON, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { Plus, X, MapPin, Info, Move3D, Maximize2, Minimize2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Plus, X, MapPin, Info, Move3D, Maximize2, Minimize2, Pencil, Check } from 'lucide-react';
 import { AnalyzeCard } from '../AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
@@ -14,6 +15,21 @@ import {
 import { openSampleCore } from '../sample/sampleDrawerStore';
 import { strataState } from '../sample/strataGlyphs';
 import { StrataSeal, StrataCompletionLine } from '../sample/StrataSeal';
+import {
+  MIN_SAMPLES,
+  MAX_SAMPLES,
+  defaultPositions,
+  freeLetters,
+} from '../sample/sampleRoster';
+import { SampleDeleteDialog } from '../sample/SampleDeleteDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
 
 
 const SAVED_STYLE: L.PathOptions = {
