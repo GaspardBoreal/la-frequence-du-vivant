@@ -108,6 +108,8 @@ export const LayersPanel: React.FC<Props> = ({
   system,
   onSystem,
   soilCount,
+  onOpenHerbier,
+
 
   scopeCounts,
   objetCountByCalque,
