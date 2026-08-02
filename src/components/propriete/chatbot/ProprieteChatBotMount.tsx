@@ -23,7 +23,11 @@ interface Props {
 export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
   const isMobile = useIsMobile();
   const { providers, providersTitle } = useProprieteChatProviders(proprieteId);
+  const { objets } = useProprieteObjets(proprieteId);
   const focus = useProprieteChatFocus();
+
+  const ouvrageIds = useMemo(() => (objets ?? []).map((o) => o.id), [objets]);
+  const ouvrageIdsKey = ouvrageIds.join(',');
 
   useEffect(() => {
     if (!proprieteId || providers.length === 0) {
@@ -33,12 +37,15 @@ export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
     chatPageContext.setAvailableAttachments({
       providers,
       providersTitle,
+      ouvrageIds,
       providerGroupExtras: {
         Ouvrages: <OuvragesContextPicker proprieteId={proprieteId} />,
       },
     });
     return () => chatPageContext.setAvailableAttachments(null);
-  }, [proprieteId, providers, providersTitle]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proprieteId, providers, providersTitle, ouvrageIdsKey]);
+
 
   // Rafraîchit les slices déjà actives quand leur payload change
   // (sélection d'ouvrages, profondeur de données, rayon d'écoute).
