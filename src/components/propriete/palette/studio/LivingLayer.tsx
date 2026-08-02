@@ -176,7 +176,12 @@ interface LayerProps {
   onZoomPhoto?: (id: string) => void;
   onStartInlineMove?: (w: ObservationPopupWaypoint) => void;
   onOpenGps?: (w: ObservationPopupWaypoint) => void;
+  /** Espèce survolée dans « L'herbier du moment » : ses pastilles s'auréolent. */
+  highlightKey?: string | null;
+  /** Observation à situer : la carte s'y rend et ouvre sa fiche. */
+  focusId?: string | null;
 }
+
 
 /**
  * Panneau Leaflet dédié au vivant : les observations passent AU-DESSUS des
