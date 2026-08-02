@@ -81,8 +81,8 @@ const ShareNewSignupsPanel: React.FC<Props> = ({ eventId, initialValue }) => {
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {value
-                  ? 'Tout nouveau marcheur sera silencieusement ajouté comme Lecteur invité dès son inscription. Les marcheurs déjà inscrits ne sont pas concernés.'
-                  : 'Activez pour ajouter automatiquement chaque futur nouvel inscrit comme Lecteur invité sur cette marche.'}
+                  ? 'Chaque marcheur en accueil est invité comme Lecteur invité, et tout nouvel inscrit le sera automatiquement.'
+                  : 'Activez pour inviter les marcheurs en accueil et chaque futur inscrit. La désactivation retire ces invitations automatiques (sauf inscrits à la marche).'}
               </p>
             </div>
             <Switch checked={value} disabled={pending} onCheckedChange={onToggle} />
