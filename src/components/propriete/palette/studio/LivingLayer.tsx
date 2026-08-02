@@ -1,6 +1,6 @@
 import React from 'react';
 import { CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
-import { Search, X, Tag as TagIcon, RotateCcw } from 'lucide-react';
+import { Search, X, Tag as TagIcon, RotateCcw, BookOpen } from 'lucide-react';
 import type { PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
 import { PLANT_INDICATORS, type PlantFamily } from '@/lib/plantIndicatorKb';
 import ObservationPopupCard, {
@@ -353,6 +353,8 @@ interface BarProps {
   /** Tags du marcheur présents sur la propriété, avec leur compte d'observations. */
   tagFacets?: VivantTagFacet[];
   tagsLoading?: boolean;
+  /** Ouvre « L'herbier du moment » : miroir textuel des observations visibles. */
+  onOpenHerbier?: () => void;
 }
 
 const chip = (on: boolean) =>
@@ -374,6 +376,7 @@ export const LivingFilterPanel: React.FC<BarProps> = ({
   counts,
   tagFacets = [],
   tagsLoading,
+  onOpenHerbier,
 }) => {
   const toggle = <T,>(arr: T[], v: T): T[] =>
     arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
