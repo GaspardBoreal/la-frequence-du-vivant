@@ -64,6 +64,9 @@ export const TabAnalyze: React.FC<{
     updateSample,
     addSample,
     removeSample,
+    relabelSample,
+    restoreSample,
+
     markComplete,
   } = usePropertySoil(proprieteId);
 
