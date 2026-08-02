@@ -1,33 +1,41 @@
-## Diagnostic (vérifié en base)
+## Intention
 
-La liste « Vous êtes invité·e » lit la table `event_invited_readers`. Ces lignes ne sont créées qu'**une seule fois**, au moment de l'inscription du marcheur, par le trigger `auto_invite_new_signup_to_shared_events`. Modifier ensuite le réglage « Partager aux nouveaux inscrits » d'une marche n'a **aucun effet rétroactif**.
+Rendre visible et emportable ce que l'IA reçoit. Chaque contexte devient un objet manipulable : on peut le lire, le copier, le télécharger. La sélection complète devient un **Bordereau du vivant** — un document de transparence signé (date, propriété, poids, tokens estimés), à l'image d'un bordereau de livraison : « voici exactement ce qui a été transmis ».
 
-Constat sur le profil Olivier Lépine (28872ce1…) : ses 3 lignes datent toutes du 02/08 01:54 (son inscription).
-- Il voit encore `AGROECOLOGIE "Marcher sur un sol qui respire"` alors que le partage y est désormais OFF.
-- Il ne voit pas `Les Secrets de Sauniers`, dont le partage a été activé après son inscription.
+## Ce qu'on ajoute
 
-## Ce qui sera mis en place
+### 1. Actions par contexte (dans chaque carte de la console)
+Au survol / à l'ouverture d'une carte, une petite rangée d'actions discrètes apparaît :
+- **Œil** — ouvre l'aperçu du contenu réel (voir §3)
+- **Copier** — copie le contexte dans le presse-papier (format choisi globalement)
+- **Télécharger** — un fichier par contexte (`resume-du-vivant.md` / `.json` / `.csv`)
 
-### 1. Synchronisation automatique au changement de réglage (base de données)
-Nouveau trigger sur `marche_events`, déclenché quand `share_with_new_signups` change :
+Le clic sur la carte garde son rôle actuel (activer/désactiver) ; les actions sont sur des boutons dédiés pour éviter toute ambiguïté.
 
-- **Passage à ON** → ajoute une invitation `auto_new_signup` pour tous les profils au rôle `marcheur_en_devenir` qui ne sont ni déjà invités, ni déjà inscrits à la marche.
-- **Passage à OFF** → supprime uniquement les lignes `invite_source = 'auto_new_signup'` de cette marche, en épargnant celles dont le marcheur s'est inscrit entre-temps (participation existante ou `promoted_to_participant_at` renseigné). Les invitations manuelles et par lien ne sont jamais touchées.
-- Chaque ajout/retrait est journalisé dans `event_invited_readers_audit` (`auto_share_on` / `auto_share_off`).
+### 2. Actions sur la sélection complète (bandeau « Transmis »)
+À côté du compteur `3/7 actifs` : **Copier le bordereau** et **Exporter**, plus un bouton **Aperçu** qui ouvre le bordereau complet.
 
-### 2. Rattrapage immédiat de l'existant
-Une passe unique aligne la base sur l'état actuel des réglages : Olivier perd l'invitation AGROECOLOGIE et gagne « Les Secrets de Sauniers ».
+Le bordereau assemble, dans l'ordre des groupes (Vivant / Sol / Ouvrages / Site / Flore) :
+- un en-tête : nom de la propriété, date/heure, nombre de contextes, poids total, tokens estimés, verdict d'éco-score
+- une table des matières avec le poids de chaque bloc
+- chaque contexte, titré, avec son contenu
 
-### 3. Rafraîchissement côté application
-Le hook `useCommunityInvitedEvents` garde aujourd'hui les données 60 s en cache et ne réagit à rien.
-- Abonnement Realtime sur `event_invited_readers` filtré par `user_id`, avec invalidation de la requête à chaque insertion/suppression (nettoyage propre via `removeChannel`).
-- Revalidation au retour d'onglet/focus, pour que le marcheur voie une liste à jour même sans rechargement.
+### 3. Le « Bordereau du vivant » (nouvelle vue plein panneau)
+Overlay sobre au-dessus de la console, esthétique papier-atelier sur fond sombre :
+- filet doré en marge, en-tête à sceau (réutilise le vocabulaire visuel des « carnets scellés » du diagnostic)
+- barre de format : **Lisible (Markdown)** · **Données (JSON)** · **Tableur (CSV)** · **Brut (texte IA)** — « Brut » montre exactement la chaîne envoyée au modèle, sans reformulation : c'est l'engagement de transparence
+- pagination par contexte, contenu en police mono avec numéros de ligne
+- pied de page : **Copier**, **Télécharger**, **Imprimer / PDF**
+- micro-animation : les contextes actifs « tombent » dans le bordereau à l'ouverture (stagger léger)
 
-### 4. Repère côté admin
-Dans le panneau « Partager aux nouveaux marcheurs inscrits » d'une marche, un message de confirmation précise combien d'invitations ont été ajoutées ou retirées après le basculement du réglage.
+### 4. Jauge de frugalité contextualisée
+Dans le bordereau, chaque bloc affiche sa part du total sous forme de fine barre proportionnelle — on voit d'un coup d'œil qui pèse (ex. « Liste complète des espèces : 17 Ko = 94 % du contexte »). Cela transforme l'export en outil pédagogique de frugalité.
 
 ## Détails techniques
 
-- Migration : fonction `sync_shared_event_invited_readers()` en `SECURITY DEFINER`, trigger `AFTER UPDATE OF share_with_new_signups ON public.marche_events` avec `WHEN (OLD.share_with_new_signups IS DISTINCT FROM NEW.share_with_new_signups)`.
-- Le trigger d'inscription existant reste inchangé.
-- Fichiers touchés côté front : `src/hooks/useCommunityInvitedEvents.ts` (realtime + invalidation) et le composant admin `ShareNewSignupsPanel`.
+- Nouveau `src/lib/contextExport.ts` : `serializeProvider(p, format)` et `buildBordereau(providers, meta, format)` → `{ filename, mime, content }`. Sérialisation robuste des `payload: unknown` (objet → JSON indenté ; tableau d'objets homogènes → tableau Markdown / CSV ; chaîne → verbatim).
+- Nouveau composant `src/components/chatbot/ContextBordereau.tsx` (overlay + formats + actions), monté depuis `ContextConsole.tsx`.
+- `ContextConsole.tsx` : ajout des boutons par carte et des actions de sélection ; aucune modification de la logique d'activation (`chatPageContext.setVisibleSlice`) ni des providers.
+- Copie via `navigator.clipboard.writeText` avec repli `document.execCommand`, retour visuel « Copié » sur le bouton ; téléchargement par `Blob` + `URL.createObjectURL`.
+- Impression PDF via une feuille `@media print` dédiée au bordereau (même approche que les impressions existantes du diagnostic).
+- Générique : la console étant partagée, la fonctionnalité profite aussi aux autres chatbots (Mon Espace, Admin), sans code spécifique.
