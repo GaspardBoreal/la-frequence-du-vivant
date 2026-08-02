@@ -358,9 +358,8 @@ export const TabAnalyze: React.FC<{
           onRemove={removeSample}
           onRelabel={relabelSample}
           onRestore={restoreSample}
+          index={1}
 
-          index={1}
-          index={1}
         />
         </div>
         </div>
