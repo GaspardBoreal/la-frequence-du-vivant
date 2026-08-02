@@ -456,10 +456,22 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
                 Utiliser ce contexte
               </Button>
             </div>
+
+            <ContextBordereau
+              open={!!bordereau}
+              onClose={() => setBordereau(null)}
+              title={title}
+              subject={subject}
+              providers={bordereau?.providers ?? []}
+              single={bordereau?.single}
+              baseBytes={bordereau?.single ? 0 : baseBytes}
+              zIndex={overlayZ + 20}
+            />
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
+
   );
 };
 
