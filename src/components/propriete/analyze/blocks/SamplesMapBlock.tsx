@@ -336,13 +336,14 @@ export const SamplesMapBlock: React.FC<{
     return pts;
   }, [parcelles]);
 
-  const bounds = useMemo<Array<[number, number]> | undefined>(() => {
-    const pts: Array<[number, number]> = [...parcelleBounds];
-    for (const s of samples) {
-      if (s.lat != null && s.lng != null) pts.push([s.lat, s.lng]);
-    }
-    return pts.length >= 2 ? pts : undefined;
-  }, [samples, parcelleBounds]);
+  /**
+   * Cadrage initial figé : recalculé sur les parcelles uniquement, jamais sur les
+   * pastilles — la carte ne saute donc plus pendant un déplacement de repère.
+   */
+  const bounds = useMemo<Array<[number, number]> | undefined>(
+    () => (parcelleBounds.length >= 2 ? parcelleBounds : undefined),
+    [parcelleBounds],
+  );
 
   const disabledAdd = samples.length >= MAX_SAMPLES;
 
@@ -361,11 +362,21 @@ export const SamplesMapBlock: React.FC<{
       toast.info(`Maximum atteint : ${MAX_SAMPLES} prélèvements.`);
       return;
     }
-    const id = onAdd(patch);
-    if (typeof id === 'string' && id) setEditingId(id);
+    const seed = patch?.lat != null && patch?.lng != null ? patch : (() => {
+      const [lat, lng] = firstFreePosition(center, samples);
+      return { ...patch, lat, lng };
+    })();
+    const id = onAdd(seed);
+    if (typeof id === 'string' && id) {
+      seededRef.current.add(id);
+      setFocusId(id);
+    } else if (id === null) {
+      toast.info(`Maximum atteint : ${MAX_SAMPLES} prélèvements.`);
+    }
   };
 
   const handleAddOnMap = (lat: number, lng: number) => handleAdd({ lat, lng });
+
 
   const confirmDelete = () => {
     const s = pendingDelete;
