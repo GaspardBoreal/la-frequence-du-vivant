@@ -55,13 +55,14 @@ const strataDotsHtml = (sample?: SoilSample) => {
   return `<div style="position:absolute;left:0;right:0;top:24px;display:flex;gap:2.5px;justify-content:center;">${dots}</div>`;
 };
 
-const makeIcon = (letter: string, active: boolean, sample?: SoilSample) =>
+const makeIcon = (letter: string, active: boolean, sample?: SoilSample, dimmed = false) =>
   L.divIcon({
     className: 'soil-sample-marker',
     iconSize: [38, 46],
     iconAnchor: [19, 42],
     html: `
-      <div style="position:relative;width:38px;height:46px;">
+      <div style="position:relative;width:38px;height:46px;opacity:${dimmed ? 0.55 : 1};transform:scale(${active ? 1.12 : 1});transform-origin:50% 100%;transition:opacity .18s ease, transform .18s ease;">
+
         <div style="position:absolute;inset:0;filter:drop-shadow(0 3px 6px rgba(30,40,20,.35));">
           <svg viewBox="0 0 38 46" width="38" height="46" xmlns="http://www.w3.org/2000/svg">
             <path d="M19 45 C 6 30 3 20 3 15 A 16 16 0 1 1 35 15 C 35 20 32 30 19 45 Z"
@@ -96,7 +97,6 @@ const AddOnClick: React.FC<{ onAdd: (lat: number, lng: number) => void; disabled
   return null;
 };
 
-const makeIcon = (letter: string, active: boolean, dimmed: boolean, sample?: SoilSample) =>
 
 
 /** Seed coords per-sample: any sample without coords gets one, based on its position. */
