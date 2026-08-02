@@ -428,20 +428,21 @@ export const SamplesMapBlock: React.FC<{
             <Marker
               key={s.id}
               position={[s.lat, s.lng]}
-              icon={makeIcon(
-                s.label,
-                hoveredId === s.id || editingId === s.id,
-                s,
-                !!hoveredId && hoveredId !== s.id,
-              )}
-
+              icon={makeIcon(s.label, hoveredId === s.id || focusId === s.id, s)}
               draggable
               eventHandlers={{
+                dragstart: () => { draggedRef.current = s.id; },
                 dragend: (e) => {
                   const ll = (e.target as L.Marker).getLatLng();
                   onUpdate(s.id, { lat: ll.lat, lng: ll.lng });
+                  // Neutralise le clic de fin de glisser (sinon la fiche s'ouvre).
+                  window.setTimeout(() => { draggedRef.current = null; }, 250);
                 },
-                click: () => openSampleCore(s.id, samples, proprieteId),
+                click: () => {
+                  if (draggedRef.current === s.id) return;
+                  openSampleCore(s.id, samples, proprieteId);
+                },
+
                 mouseover: () => setHoveredId(s.id),
                 mouseout: () => setHoveredId(null),
               }}
