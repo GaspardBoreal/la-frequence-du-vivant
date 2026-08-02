@@ -356,6 +356,9 @@ export const TabAnalyze: React.FC<{
           onUpdate={updateSample}
           onAdd={addSample}
           onRemove={removeSample}
+          onRelabel={relabelSample}
+          onRestore={restoreSample}
+
           onBulkSet={(next) => setLocal((s) => ({ ...s, samples: next }))}
           index={1}
         />
