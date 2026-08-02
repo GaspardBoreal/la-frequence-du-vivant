@@ -120,6 +120,28 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
   const activeCount = activeProviders.length;
   const fullscreenOpen = useFullscreenSurfaceOpen();
 
+  /* ---- Transparence : copier / exporter les contextes ---- */
+  const [bordereau, setBordereau] = useState<{ providers: ContextProvider[]; single: boolean } | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const flashCopied = (id: string) => {
+    setCopiedId(id);
+    setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1600);
+  };
+
+  const copyOne = async (p: ContextProvider) => {
+    if (await copyText(serializeProvider(p, 'markdown').content)) flashCopied(p.id);
+  };
+  const downloadOne = (p: ContextProvider) => downloadFile(serializeProvider(p, 'markdown'));
+
+  const bordereauFile = () =>
+    buildBordereau(activeProviders, { title, subject, baseBytes }, 'markdown');
+  const copyAll = async () => {
+    if (await copyText(bordereauFile().content)) flashCopied('__all__');
+  };
+  const overlayZ = fullscreenOpen ? CHAT_Z.aboveFullscreen + 100 : 1300;
+
+
 
 
   return (
