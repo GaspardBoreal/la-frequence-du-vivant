@@ -99,23 +99,165 @@ const AddOnClick: React.FC<{ onAdd: (lat: number, lng: number) => void; disabled
 
 
 
-/** Seed coords per-sample: any sample without coords gets one, based on its position. */
-const seedMissingCoords = (
-  samples: SoilSample[],
-  center: [number, number] | null,
-): SoilSample[] | null => {
-  if (!center) return null;
-  const missing = samples.some((s) => s.lat == null || s.lng == null);
-  if (!missing) return null;
-  const pts = defaultPositions(center);
-  return samples.map((s, i) => {
-    if (s.lat != null && s.lng != null) return s;
-    const p = pts[i % pts.length];
-    // Petit décalage anti-superposition
-    const jitter = (i > pts.length - 1 ? (i - pts.length + 1) : 0) * 0.00005;
-    return { ...s, lat: p[0] + jitter, lng: p[1] + jitter };
-  });
+/**
+ * Ligne du registre : la saisie du nom vit en état LOCAL puis est propagée au
+ * registre. Une réécriture du registre (semis GPS, sauvegarde) ne peut donc
+ * plus effacer la frappe en cours.
+ */
+const SampleRow: React.FC<{
+  sample: SoilSample;
+  samples: SoilSample[];
+  proprieteId?: string;
+  hovered: boolean;
+  autoFocus: boolean;
+  canDelete: boolean;
+  minSamples: number;
+  onHover: (id: string | null) => void;
+  onRename: (value: string) => void;
+  onRelabel?: (label: string) => void;
+  onDelete: () => void;
+  onFocusConsumed: () => void;
+}> = ({
+  sample: s,
+  samples,
+  proprieteId,
+  hovered,
+  autoFocus,
+  canDelete,
+  minSamples,
+  onHover,
+  onRename,
+  onRelabel,
+  onDelete,
+  onFocusConsumed,
+}) => {
+  const [draft, setDraft] = useState(s.location ?? '');
+  const [editing, setEditing] = useState(false);
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+
+  // Synchronise depuis le registre uniquement hors édition.
+  useEffect(() => {
+    if (!editing) setDraft(s.location ?? '');
+  }, [s.location, editing]);
+
+  // Focus demandé une seule fois, à la création du prélèvement.
+  useEffect(() => {
+    if (!autoFocus) return;
+    inputRef.current?.focus();
+    inputRef.current?.select();
+    onFocusConsumed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFocus]);
+
+  const commit = () => {
+    setEditing(false);
+    if ((s.location ?? '') !== draft) onRename(draft);
+  };
+
+  return (
+    <motion.div
+      layout="position"
+      initial={{ opacity: 0, x: -6 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 12 }}
+      transition={{ duration: 0.2 }}
+      onMouseEnter={() => onHover(s.id)}
+      onMouseLeave={() => onHover(null)}
+      className={`flex items-start gap-2.5 rounded-xl border p-2.5 transition-colors ${
+        hovered || editing
+          ? 'border-[hsl(var(--ds-forest))] bg-[hsl(var(--ds-forest))]/8'
+          : 'border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60'
+      }`}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Changer le repère du prélèvement ${s.label}`}
+            title="Changer le repère (lettre)"
+            className="flex-shrink-0 w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center font-serif font-bold shadow-sm hover:ring-2 hover:ring-[hsl(var(--ds-forest))]/30 transition"
+          >
+            {s.label}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[9rem]">
+          <DropdownMenuLabel className="text-[10px] uppercase tracking-widest">Repère</DropdownMenuLabel>
+          {freeLetters(samples, s.id).map((l) => (
+            <DropdownMenuItem key={l} onSelect={() => onRelabel?.(l)} className="font-serif">
+              {l}
+              {l === s.label && <Check className="w-3.5 h-3.5 ml-auto" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <input
+            ref={inputRef}
+            value={draft}
+            title={draft || undefined}
+            onChange={(e) => setDraft(e.target.value)}
+            onFocus={() => setEditing(true)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+              if (e.key === 'Escape') {
+                setDraft(s.location ?? '');
+                setEditing(false);
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            placeholder="Nommer ce prélèvement (ex. sous le tilleul…)"
+            className="w-full bg-transparent border-none outline-none text-sm font-medium text-[hsl(var(--ds-forest-deep))] placeholder:font-normal placeholder:text-[hsl(var(--ds-forest))]/40"
+          />
+          <Pencil
+            className={`w-3 h-3 flex-shrink-0 transition ${
+              hovered || editing ? 'text-[hsl(var(--ds-forest))]/70' : 'text-transparent'
+            }`}
+          />
+        </div>
+        <div className="mt-1 flex items-center gap-2 flex-wrap">
+          <StrataSeal
+            sample={s}
+            size="row"
+            onSelect={(block) => openSampleCore(s.id, samples, proprieteId, block)}
+          />
+          <StrataCompletionLine sample={s} />
+        </div>
+        {s.lat != null && s.lng != null ? (
+          <div className="text-[10px] text-[hsl(var(--ds-forest))]/50 mt-0.5">
+            {s.lat.toFixed(5)}, {s.lng.toFixed(5)}
+          </div>
+        ) : (
+          <div className="text-[10px] text-[#b4603f]/80 mt-0.5">Position en attente…</div>
+        )}
+      </div>
+
+      <button
+        onClick={() => openSampleCore(s.id, samples, proprieteId)}
+        aria-label={`Ouvrir la fiche carotte ${s.label}`}
+        className="shrink-0 mt-0.5 rounded-full border border-[hsl(var(--ds-forest))]/35 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))]/10 transition"
+      >
+        Carotte
+      </button>
+      <button
+        onClick={() => canDelete && onDelete()}
+        disabled={!canDelete}
+        aria-label={`Retirer le prélèvement ${s.label}`}
+        title={
+          canDelete
+            ? 'Retirer ce prélèvement'
+            : `Le diagnostic requiert au moins ${minSamples} prélèvements`
+        }
+        className="w-7 h-7 mt-0.5 rounded-full flex items-center justify-center text-[hsl(var(--ds-forest))]/50 hover:text-[#b4603f] hover:bg-[#b4603f]/10 transition disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-[hsl(var(--ds-forest))]/50 disabled:cursor-not-allowed"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </motion.div>
+  );
 };
+
 
 export const SamplesMapBlock: React.FC<{
   proprieteId?: string;
