@@ -455,7 +455,7 @@ export const SamplesMapBlock: React.FC<{
     <AnalyzeCard
       number={2}
       category="Étape 2 · Prélèvements"
-      title="3 à 5 échantillons représentatifs"
+      title={`${MIN_SAMPLES} à ${MAX_SAMPLES} échantillons représentatifs`}
       subtitle="Positionnez chaque prélèvement sur la carte de votre propriété. Glissez pour ajuster, cliquez sur la carte pour ajouter un point."
       index={index}
     >
@@ -504,7 +504,7 @@ export const SamplesMapBlock: React.FC<{
               </div>
               <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70">Étape 2 · Prélèvements</div>
-                <div className="font-serif text-lg text-[hsl(var(--ds-forest-deep))] truncate">3 à 5 échantillons représentatifs</div>
+                <div className="font-serif text-lg text-[hsl(var(--ds-forest-deep))] truncate">{MIN_SAMPLES} à {MAX_SAMPLES} échantillons représentatifs</div>
               </div>
               <span className="ml-auto text-sm font-semibold text-[hsl(var(--ds-forest))]">{samples.length} / {MAX_SAMPLES}</span>
               <button
@@ -528,7 +528,13 @@ export const SamplesMapBlock: React.FC<{
         </AnimatePresence>,
         document.body,
       )}
+      <SampleDeleteDialog
+        sample={pendingDelete}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+      />
     </AnalyzeCard>
+
   );
 };
 
