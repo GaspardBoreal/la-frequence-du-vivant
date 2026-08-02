@@ -3,6 +3,7 @@ import { ChatBot } from '@/components/chatbot/ChatBot';
 import { chatPageContext, contextSliceKey } from '@/hooks/useChatPageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProprieteChatProviders } from '@/hooks/propriete/useProprieteChatProviders';
+import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
 import GardenFocusBanner from './GardenFocusBanner';
 import OuvragesContextPicker from './OuvragesContextPicker';
 import { useProprieteChatFocus, FOCUS_AUTO_CONTEXT_IDS } from './proprieteChatFocus';
