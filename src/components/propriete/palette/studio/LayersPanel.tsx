@@ -12,7 +12,9 @@ import {
   Check,
   Pencil,
   Move3d,
+  BookOpen,
 } from 'lucide-react';
+
 import type { ProprieteCalque } from '@/hooks/propriete/usePropertyCalques';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import { ZONE_COLORS } from '@/hooks/propriete/usePropertyZones';
