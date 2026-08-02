@@ -38,6 +38,11 @@ const PERIOD_OPTIONS: { key: EvolutionPeriod; label: string }[] = [
   { key: 'custom', label: 'Période personnalisée…' },
 ];
 
+/** Libellé lisible d'une période — source unique partagée (herbier, exports). */
+export const periodLabelOf = (p: EvolutionPeriod): string =>
+  PERIOD_OPTIONS.find((o) => o.key === p)?.label ?? 'Tout';
+
+
 const dateToISO = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const fromISOToDate = (iso?: string) => {

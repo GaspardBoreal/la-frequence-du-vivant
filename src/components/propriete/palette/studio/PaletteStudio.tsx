@@ -28,7 +28,10 @@ import { MapViewReporter, useMapViewState } from '@/components/maps/hooks/useMap
 import ZoomScaleBadge from '@/components/maps/controls/ZoomScaleBadge';
 import { RevealPhotoLightbox } from '@/components/propriete/identify/blocks/RevealPhotoLightbox';
 
-import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
+import { usePropertySpeciesPool, type PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
+import HerbierDuMomentDrawer from './HerbierDuMomentDrawer';
+import { useVivantScopeFor } from '@/contexts/ProprieteVivantScopeContext';
+import { periodLabelOf } from '@/components/propriete/VivantPeriodFilter';
 import { normalizeSpeciesKey } from '@/hooks/useExplorationFieldPhotos';
 
 import { useProprieteCalques } from '@/hooks/propriete/usePropertyCalques';
@@ -303,6 +306,30 @@ export const PaletteStudio: React.FC<Props> = ({
     () => ({ displayName: frenchName, tagsBySpecies }),
     [frenchName, tagsBySpecies],
   );
+
+  /* ── L'herbier du moment : miroir textuel des observations visibles ───── */
+  const [herbierOpen, setHerbierOpen] = React.useState(false);
+  const [hoveredSpeciesKey, setHoveredSpeciesKey] = React.useState<string | null>(null);
+  const [focusObsId, setFocusObsId] = React.useState<string | null>(null);
+  const vivantScope = useVivantScopeFor(open ? proprieteId : undefined);
+  const tagLabelsByKey = React.useMemo(() => {
+    const m = new Map<string, string>();
+    (myTags || []).forEach((t) => m.set(normalizeTagKey(t.label), t.label));
+    return m;
+  }, [myTags]);
+  /* Raccourci « L » : ouvrir/fermer l'herbier sans quitter la carte. */
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'l' && e.key !== 'L') return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      setHerbierOpen((v) => !v);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
 
   /** Observations réellement affichées (filtres Vivant) : contexte lightbox + Contrôle GPS. */
   const visibleWaypoints = React.useMemo(
@@ -680,6 +707,7 @@ export const PaletteStudio: React.FC<Props> = ({
                   system={system}
                   onSystem={(p) => setSystem((s) => ({ ...s, ...p }))}
                   scopeCounts={scopeCounts}
+                  onOpenHerbier={() => setHerbierOpen(true)}
                   soilCount={soil.placed.length}
                   objetCountByCalque={objetCountByCalque}
                   readOnly={readOnly}
@@ -692,6 +720,7 @@ export const PaletteStudio: React.FC<Props> = ({
                   counts={vivantCounts}
                   tagFacets={tagFacets}
                   tagsLoading={tagsLoading}
+                  onOpenHerbier={() => setHerbierOpen(true)}
                 />
 
               )}
@@ -826,6 +855,8 @@ export const PaletteStudio: React.FC<Props> = ({
                 filter={vivantFilter}
                 filterContext={filterContext}
                 frenchName={frenchName}
+                highlightKey={hoveredSpeciesKey}
+                focusId={focusObsId}
                 canCurate={!!canCurate}
                 walkerPhotosFor={walkerPhotosFor}
 
@@ -1117,6 +1148,28 @@ export const PaletteStudio: React.FC<Props> = ({
             onClose={() => setGalleryObjetId(null)}
           />
         )}
+
+        {/* L'herbier du moment : la liste vivante de ce que la carte montre */}
+        <HerbierDuMomentDrawer
+          open={herbierOpen}
+          onClose={() => {
+            setHerbierOpen(false);
+            setHoveredSpeciesKey(null);
+          }}
+          waypoints={visibleWaypoints}
+          filter={vivantFilter}
+          onFilterChange={setVivantFilter}
+          frenchName={frenchName}
+          fieldPhotoFor={walkerPhotosFor}
+          scopeLabel={vivantScope.scope === 'cadastre' ? 'Observations du cadastre' : 'Toutes les observations'}
+          periodLabel={periodLabelOf(vivantScope.period)}
+          tagLabels={tagLabelsByKey}
+          onHoverSpecies={setHoveredSpeciesKey}
+          onFocusObservation={(w: PropertyWaypoint) => {
+            setFocusObsId(null);
+            window.setTimeout(() => setFocusObsId(w.id), 20);
+          }}
+        />
 
         {/* Contrôle GPS : mêmes gestes de curation que la Carte des révélations */}
         {canCurate && gpsConsole && (
