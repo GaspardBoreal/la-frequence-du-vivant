@@ -55,6 +55,9 @@ interface Props {
   scopeCounts?: { cadastre: number | null; all: number };
   /** Nombre de prélèvements de sol posés sur la carte. */
   soilCount?: number;
+  /** Ouvre « L'herbier du moment » : la liste des espèces réellement visibles. */
+  onOpenHerbier?: () => void;
+
 
 
   objetCountByCalque: Record<string, number>;
