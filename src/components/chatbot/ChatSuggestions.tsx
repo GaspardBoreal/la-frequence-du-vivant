@@ -110,7 +110,7 @@ export function ChatSuggestions({ onSelect, context = 'dashboard' }: ChatSuggest
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.08 }}
-            onClick={() => onSelect(s.text)}
+            onClick={() => handleSelect(s)}
             className="rounded-xl border border-border bg-card px-3 py-2.5 text-left text-xs text-foreground transition-colors hover:bg-muted"
           >
             <span className="mr-1.5">{s.emoji}</span>
