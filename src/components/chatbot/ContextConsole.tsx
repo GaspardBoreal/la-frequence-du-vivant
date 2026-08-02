@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Gauge, Check, Sparkles, Trash2 } from 'lucide-react';
+import { X, Gauge, Check, Sparkles, Trash2, Copy, Download, Eye, ScrollText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFullscreenSurfaceOpen, CHAT_Z } from '@/lib/uiOverlayLevel';
 
@@ -16,7 +16,15 @@ import {
   formatTokens,
   ECO_COLORS,
 } from '@/lib/chatContextCost';
+import {
+  buildBordereau,
+  serializeProvider,
+  copyText,
+  downloadFile,
+} from '@/lib/contextExport';
+import { ContextBordereau } from './ContextBordereau';
 import { cn } from '@/lib/utils';
+
 
 interface ContextConsoleProps {
   open: boolean;
