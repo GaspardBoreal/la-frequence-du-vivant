@@ -264,7 +264,13 @@ export const SamplesMapBlock: React.FC<{
             <Marker
               key={s.id}
               position={[s.lat, s.lng]}
-              icon={makeIcon(s.label, hoveredId === s.id, s)}
+              icon={makeIcon(
+                s.label,
+                hoveredId === s.id || editingId === s.id,
+                s,
+                !!hoveredId && hoveredId !== s.id,
+              )}
+
               draggable
               eventHandlers={{
                 dragend: (e) => {
@@ -295,30 +301,97 @@ export const SamplesMapBlock: React.FC<{
 
   const sidePanel = (
     <div className="space-y-2">
+      {/* En-tête collant : compteur + jauge de couverture du carottage */}
+      <div className="sticky top-0 z-10 -mx-0.5 px-0.5 pb-2 pt-0.5 bg-[hsl(var(--ds-cream))]/90 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--ds-cream))]/70">
+        <div className="flex items-baseline justify-between text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70">
+          <span>Registre des prélèvements</span>
+          <span className="font-semibold text-[hsl(var(--ds-forest))]">
+            {samples.length} / {MAX_SAMPLES}
+          </span>
+        </div>
+        <div className="mt-1.5 h-1 rounded-full bg-[hsl(var(--ds-forest))]/12 overflow-hidden">
+          <motion.div
+            className="h-full rounded-full bg-[hsl(var(--ds-forest))]"
+            initial={false}
+            animate={{ width: `${coverage}%` }}
+            transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+          />
+        </div>
+        <div className="mt-1 text-[10px] text-[hsl(var(--ds-forest-deep))]/55">
+          Couverture du carottage · {coverage}% des strates renseignées
+        </div>
+      </div>
+
+      <AnimatePresence initial={false} mode="popLayout">
       {samples.map((s, i) => (
         <motion.div
+          layout
           key={s.id}
-          initial={{ opacity: 0, x: -6 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: i * 0.03 }}
+          initial={{ opacity: 0, x: -6, height: 0 }}
+          animate={{ opacity: hoveredId && hoveredId !== s.id ? 0.65 : 1, x: 0, height: 'auto' }}
+          exit={{ opacity: 0, x: 12, height: 0 }}
+          transition={{ delay: i * 0.02, duration: 0.22 }}
           onMouseEnter={() => setHoveredId(s.id)}
           onMouseLeave={() => setHoveredId(null)}
           className={`flex items-center gap-2.5 rounded-xl border p-2.5 transition ${
-            hoveredId === s.id
+            hoveredId === s.id || editingId === s.id
               ? 'border-[hsl(var(--ds-forest))] bg-[hsl(var(--ds-forest))]/8'
               : 'border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60'
           }`}
         >
-          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center font-serif font-bold shadow-sm">
-            {s.label}
-          </div>
+          {/* Pastille : menu de réattribution de lettre */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label={`Changer le repère du prélèvement ${s.label}`}
+                title="Changer le repère (lettre)"
+                className="flex-shrink-0 w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center font-serif font-bold shadow-sm hover:ring-2 hover:ring-[hsl(var(--ds-forest))]/30 transition"
+              >
+                {s.label}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[9rem]">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-widest">
+                Repère
+              </DropdownMenuLabel>
+              {freeLetters(samples, s.id).map((l) => (
+                <DropdownMenuItem
+                  key={l}
+                  onSelect={() => onRelabel?.(s.id, l)}
+                  className="font-serif"
+                >
+                  {l}
+                  {l === s.label && <Check className="w-3.5 h-3.5 ml-auto" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <div className="flex-1 min-w-0">
-            <input
-              value={s.location ?? ''}
-              onChange={(e) => onUpdate(s.id, { location: e.target.value })}
-              placeholder="Emplacement (ex. sous le tilleul…)"
-              className="w-full bg-transparent border-none outline-none text-sm text-[hsl(var(--ds-forest-deep))] placeholder:text-[hsl(var(--ds-forest))]/40"
-            />
+            <div className="flex items-center gap-1.5">
+              <input
+                value={s.location ?? ''}
+                onChange={(e) => onUpdate(s.id, { location: e.target.value })}
+                onFocus={() => setEditingId(s.id)}
+                onBlur={() => setEditingId((cur) => (cur === s.id ? null : cur))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLInputElement).blur();
+                }}
+                ref={(el) => {
+                  if (el && editingId === s.id && document.activeElement !== el) el.focus();
+                }}
+                placeholder="Nommer ce prélèvement (ex. sous le tilleul…)"
+                className="w-full bg-transparent border-none outline-none text-sm font-medium text-[hsl(var(--ds-forest-deep))] placeholder:font-normal placeholder:text-[hsl(var(--ds-forest))]/40"
+              />
+              <Pencil
+                className={`w-3 h-3 flex-shrink-0 transition ${
+                  hoveredId === s.id || editingId === s.id
+                    ? 'text-[hsl(var(--ds-forest))]/70'
+                    : 'text-transparent'
+                }`}
+              />
+            </div>
             <div className="mt-1 flex items-center gap-2 flex-wrap">
               <StrataSeal
                 sample={s}
@@ -340,27 +413,32 @@ export const SamplesMapBlock: React.FC<{
           >
             Carotte
           </button>
-          {samples.length > 3 && (
-
-            <button
-              onClick={() => onRemove(s.id)}
-              aria-label="Retirer le prélèvement"
-              className="w-7 h-7 rounded-full flex items-center justify-center text-[hsl(var(--ds-forest))]/50 hover:text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))]/10 transition"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+          <button
+            onClick={() => samples.length > MIN_SAMPLES && setPendingDelete(s)}
+            disabled={samples.length <= MIN_SAMPLES}
+            aria-label={`Retirer le prélèvement ${s.label}`}
+            title={
+              samples.length <= MIN_SAMPLES
+                ? `Le diagnostic requiert au moins ${MIN_SAMPLES} prélèvements`
+                : 'Retirer ce prélèvement'
+            }
+            className="w-7 h-7 rounded-full flex items-center justify-center text-[hsl(var(--ds-forest))]/50 hover:text-[#b4603f] hover:bg-[#b4603f]/10 transition disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-[hsl(var(--ds-forest))]/50 disabled:cursor-not-allowed"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </motion.div>
       ))}
+      </AnimatePresence>
 
       {samples.length < MAX_SAMPLES && (
         <button
-          onClick={onAdd}
+          onClick={() => handleAdd()}
           className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-[hsl(var(--ds-forest))]/40 bg-transparent p-2.5 text-xs font-semibold text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))]/5 transition"
         >
           <Plus className="w-3.5 h-3.5" /> Ajouter un prélèvement (max {MAX_SAMPLES})
         </button>
       )}
+
 
       {parcelles.length === 0 && (
         <div className="flex items-start gap-2 rounded-xl bg-[hsl(var(--ds-forest))]/8 border border-[hsl(var(--ds-line))] p-2.5 text-[11px] text-[hsl(var(--ds-forest-deep))]/75 leading-snug">
