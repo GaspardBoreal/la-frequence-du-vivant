@@ -1,49 +1,35 @@
-## Objectif
+# Étape 2 · Prélèvements — jusqu'à 10 points, renommables et supprimables
 
-Les 4 suggestions « propriété » de l'IA de Jardin doivent parler de la **propriété entière** et activer d'elles-mêmes les contextes nécessaires, même si l'utilisateur n'a rien coché dans la Console de contextes.
+## Constat (vérifié dans le code)
+- `SamplesMapBlock.tsx` fige `MAX_SAMPLES = 5` et `LABELS = ['A'…'E']` ; `defaultPositions()` ne génère que 5 positions (pentagone ~30 m).
+- `usePropertySoil.addSample()` crée l'id/label par `String.fromCharCode(65 + samples.length)` : après une suppression, un nouvel ajout **réutilise un id existant** (collision A/B/C, données de strates écrasées). C'est le vrai bug de fond à corriger avant d'ouvrir à 10.
+- Le « nom » du prélèvement affiché dans la liste est en réalité le champ libre `location`, éditable inline mais sans validation ni feedback.
+- La suppression est un `X` immédiat, sans confirmation, et masqué dès qu'il ne reste que 3 points ; elle efface aussi les 4 strates (structure, texture, pH, vie) sans prévenir.
+- `SamplesBlock.tsx` (variante sans carte) duplique la limite « max 5 ».
 
-## 1. Renommage des suggestions (`src/components/chatbot/ChatSuggestions.tsx`)
+## Ce qui sera fait
 
-| Avant | Après |
-|---|---|
-| Propose une palette végétale pour cet ouvrage | Propose une palette végétale pour **cette propriété** |
-| Que disent les analyses de sol reliées ? | **Que disent les analyses de sol ?** |
-| Quelles espèces indigènes privilégier ici ? | inchangé |
-| Quelles précautions pour cet aménagement ? | Quelles précautions pour **cette propriété** ? |
+### 1. Capacité portée à 10 (source unique)
+- Nouveau module `src/components/propriete/analyze/sample/sampleRoster.ts` : `MAX_SAMPLES = 10`, `MIN_SAMPLES = 3`, alphabet A→J, génération d'id **non colliding** (premier label libre, puis suffixe), et `defaultPositions()` étendu en double couronne (5 points à ~30 m + 5 à ~55 m, décalés d'un demi-pas) pour que 10 pastilles restent lisibles.
+- `usePropertySoil.addSample()` consomme ce générateur ; `SamplesMapBlock` et `SamplesBlock` importent les constantes au lieu de les redéfinir.
+- Sous-titres et compteurs passent de « 3 à 5 » à « 3 à 10 » (carte, plein écran, carte sans map).
 
-## 2. Contextes exigés par question
+### 2. Renommer / modifier — « l'étiquette du carottier »
+- La ligne de liste devient éditable en deux temps : un champ **Nom du prélèvement** (`location`) au style étiquette manuscrite, avec crayon révélé au survol, focus au clic, validation `Entrée`, annulation `Échap`, autosave silencieux (le debounce d'enregistrement existant s'en charge).
+- Ajout d'un **renommage de la lettre** : petit menu sur la pastille permettant de réattribuer une lettre libre (A→J) sans casser l'id interne — le repère cartographique, le sceau des 4 strates et la fiche Carotte suivent instantanément.
+- Micro-feedback : pulse doré sur le marqueur correspondant pendant l'édition, et ligne « enregistré » discrète.
 
-Chaque suggestion `propriete` porte désormais une liste d'identifiants de contexte à activer avant l'envoi :
+### 3. Supprimer — confirmation « scellé rompu »
+- Le `X` ouvre un `AlertDialog` shadcn au ton du carnet : rappel du nom, des coordonnées, et **du nombre de strates renseignées qui seront perdues** (calculé via `strataState`).
+- Bouton destructeur explicite « Retirer le prélèvement D » + « Annuler ». Après suppression, toast avec **Annuler (10 s)** qui restaure l'échantillon complet (les données restent en mémoire locale avant persistance).
+- Suppression bloquée sous 3 points, avec explication au survol au lieu d'un bouton simplement absent.
 
-- Palette végétale → `vivant.liste`, `sol.carottes`, `site.portrait`
-- Analyses de sol → `sol.carottes`, `site.portrait`
-- Espèces indigènes → `vivant.liste`, `sol.carottes`, `site.portrait`
-- Précautions → `vivant.liste`, `sol.carottes`, `site.portrait` **+ tout le Plateau des ouvrages en profondeur « Complet »**
+### 4. Lisibilité à 10 points (le « wahou »)
+- Pastilles cartographiques : léger décalage anti-superposition automatique et mise en avant du point survolé (les autres passent à 55 % d'opacité) — lien carte ↔ liste renforcé dans les deux sens.
+- Panneau latéral scrollable avec en-tête collant « n / 10 » et une **jauge de couverture du carottage** (pastilles remplies = strates complètes), pour visualiser d'un coup d'œil l'avancement du diagnostic.
+- Animation d'entrée/sortie en `AnimatePresence` pour que l'ajout et le retrait se lisent comme un geste, pas comme un saut.
 
-(`vivant.liste` = Liste complète des espèces, `sol.carottes` = Détail des prélèvements, `site.portrait` = Portrait du site.)
-
-## 3. Mécanique d'activation
-
-Nouvel utilitaire `src/lib/chatSuggestionContexts.ts` :
-
-- lit les `providers` publiés dans `chatPageContext.availableAttachments` ;
-- pour chaque id demandé et disponible, appelle `chatPageContext.setVisibleSlice(contextSliceKey(id), payload)` — exactement le même chemin que la Console, donc l'UI affiche bien ces contextes comme actifs (chips + compteur) ;
-- ne désactive jamais ce que l'utilisateur avait déjà coché (union, pas remplacement) ;
-- ignore silencieusement un contexte absent (ex. aucune carotte posée) — la réponse reste possible avec le reste.
-
-Cas particulier « Précautions » (Plateau des ouvrages) :
-- `proprieteChatFocus.setOuvrageDetail('complet')` ;
-- `proprieteChatFocus.setSelectedObjets(<tous les ids d'ouvrages>)` — les ids viennent du payload/registre déjà exposé, sinon via le provider `ouvrages.selection` reconstruit ;
-- le `ProprieteChatBotMount` publie déjà automatiquement la slice `ouvrages.selection` dès que la sélection est non vide, donc aucune duplication de logique ; on laisse un tick de rendu avant l'envoi du message pour que le payload recalculé parte bien.
-
-Pour disposer de la liste complète des ouvrages côté suggestion, `ProprieteChatBotMount` expose les ids d'ouvrages dans l'inventaire d'attachements (petit champ additionnel, pas de nouvelle requête).
-
-## 4. Retour utilisateur
-
-Au clic sur une suggestion, un court toast/mention « Contextes activés : 📋 Liste des espèces · 🧪 Prélèvements · 🗺️ Portrait du site » afin de rester fidèle à l'engagement de transparence (rien n'est envoyé en silence). Les contextes restent modifiables/désactivables dans la Console 📎.
-
-## Fichiers touchés
-
-- `src/components/chatbot/ChatSuggestions.tsx` (libellés + ids requis + activation au clic)
-- `src/lib/chatSuggestionContexts.ts` (nouveau)
-- `src/components/propriete/chatbot/ProprieteChatBotMount.tsx` (expose les ids d'ouvrages)
+## Détails techniques
+- Fichiers touchés : `src/hooks/propriete/usePropertySoil.ts`, `src/components/propriete/analyze/blocks/SamplesMapBlock.tsx`, `src/components/propriete/analyze/blocks/SamplesBlock.tsx`, nouveau `sample/sampleRoster.ts`, nouveau `sample/SampleDeleteDialog.tsx`.
+- Aucun changement de schéma : `samples` est déjà un JSON dans `propriete_soil_diagnostics`, la limite de 5 n'existait qu'en front.
+- Les vues aval (`SamplesRegisterTable`, `AnalyzeSummary`, `SoilSamplesPlan` d'impression, fiche Carotte, liens sol↔ouvrage) itèrent sur le tableau : elles absorbent 10 points sans modification, seuls les gabarits d'impression seront vérifiés pour la pagination.

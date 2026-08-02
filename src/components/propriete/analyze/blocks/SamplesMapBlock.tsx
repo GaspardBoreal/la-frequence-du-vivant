@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GeoJSON, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { Plus, X, MapPin, Info, Move3D, Maximize2, Minimize2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Plus, X, MapPin, Info, Move3D, Maximize2, Minimize2, Pencil, Check } from 'lucide-react';
 import { AnalyzeCard } from '../AnalyzeCard';
 import { RichMap } from '@/components/maps';
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
@@ -14,6 +15,21 @@ import {
 import { openSampleCore } from '../sample/sampleDrawerStore';
 import { strataState } from '../sample/strataGlyphs';
 import { StrataSeal, StrataCompletionLine } from '../sample/StrataSeal';
+import {
+  MIN_SAMPLES,
+  MAX_SAMPLES,
+  defaultPositions,
+  freeLetters,
+} from '../sample/sampleRoster';
+import { SampleDeleteDialog } from '../sample/SampleDeleteDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
 
 
 const SAVED_STYLE: L.PathOptions = {
@@ -24,8 +40,6 @@ const SAVED_STYLE: L.PathOptions = {
   fillOpacity: 0.28,
 };
 
-const LABELS = ['A', 'B', 'C', 'D', 'E'];
-const MAX_SAMPLES = 5;
 
 /** Pastilles du « sceau des 4 strates » posées sous la lettre du repère. */
 const strataDotsHtml = (sample?: SoilSample) => {
@@ -41,13 +55,14 @@ const strataDotsHtml = (sample?: SoilSample) => {
   return `<div style="position:absolute;left:0;right:0;top:24px;display:flex;gap:2.5px;justify-content:center;">${dots}</div>`;
 };
 
-const makeIcon = (letter: string, active: boolean, sample?: SoilSample) =>
+const makeIcon = (letter: string, active: boolean, sample?: SoilSample, dimmed = false) =>
   L.divIcon({
     className: 'soil-sample-marker',
     iconSize: [38, 46],
     iconAnchor: [19, 42],
     html: `
-      <div style="position:relative;width:38px;height:46px;">
+      <div style="position:relative;width:38px;height:46px;opacity:${dimmed ? 0.55 : 1};transform:scale(${active ? 1.12 : 1});transform-origin:50% 100%;transition:opacity .18s ease, transform .18s ease;">
+
         <div style="position:absolute;inset:0;filter:drop-shadow(0 3px 6px rgba(30,40,20,.35));">
           <svg viewBox="0 0 38 46" width="38" height="46" xmlns="http://www.w3.org/2000/svg">
             <path d="M19 45 C 6 30 3 20 3 15 A 16 16 0 1 1 35 15 C 35 20 32 30 19 45 Z"
@@ -82,17 +97,7 @@ const AddOnClick: React.FC<{ onAdd: (lat: number, lng: number) => void; disabled
   return null;
 };
 
-/** Positions par défaut en pentagone autour d'un centre (~30 m). */
-const defaultPositions = (center: [number, number]): Array<[number, number]> => {
-  const deg = 0.00027; // ~30 m
-  return [
-    [center[0] + deg * 0.9, center[1] - deg * 0.9],
-    [center[0] + deg * 0.9, center[1] + deg * 0.9],
-    [center[0] - deg * 1.1, center[1]],
-    [center[0] - deg * 0.4, center[1] + deg * 1.4],
-    [center[0] - deg * 0.4, center[1] - deg * 1.4],
-  ];
-};
+
 
 /** Seed coords per-sample: any sample without coords gets one, based on its position. */
 const seedMissingCoords = (
@@ -117,8 +122,13 @@ export const SamplesMapBlock: React.FC<{
   proprieteCenter?: [number, number] | null;
   samples: SoilSample[];
   onUpdate: (id: string, patch: Partial<SoilSample>) => void;
-  onAdd: () => void;
+  /** Renvoie l'identifiant du prélèvement créé. */
+  onAdd: (patch?: Partial<SoilSample>) => string | void;
   onRemove: (id: string) => void;
+  /** Réattribue la lettre du repère. */
+  onRelabel?: (id: string, label: string) => void;
+  /** Réinsère un prélèvement supprimé (annulation). */
+  onRestore?: (sample: SoilSample, at: number) => void;
   onBulkSet?: (next: SoilSample[]) => void;
   index?: number;
 }> = ({
@@ -128,15 +138,21 @@ export const SamplesMapBlock: React.FC<{
   onUpdate,
   onAdd,
   onRemove,
+  onRelabel,
+  onRestore,
   onBulkSet,
   index = 0,
 }) => {
+
   const { data: parcelles = [] } = useProprieteParcelles(proprieteId);
   const parcCenter = useMemo(() => centroidOfParcelles(parcelles), [parcelles]);
   const center: [number, number] = parcCenter ?? proprieteCenter ?? [45.0, 0.5];
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<SoilSample | null>(null);
+
 
   // Seed coords for any sample missing them (initial load or after adding D/E via sidebar button)
   useEffect(() => {
@@ -177,13 +193,42 @@ export const SamplesMapBlock: React.FC<{
 
   const disabledAdd = samples.length >= MAX_SAMPLES;
 
-  const handleAddOnMap = (lat: number, lng: number) => {
-    const nextIndex = samples.length;
-    if (nextIndex >= MAX_SAMPLES) return;
-    onAdd();
-    const newId = LABELS[nextIndex] || String.fromCharCode(65 + nextIndex);
-    setTimeout(() => onUpdate(newId, { lat, lng }), 0);
+  /** Couverture du carottage : strates renseignées / total possible. */
+  const coverage = useMemo(() => {
+    if (!samples.length) return 0;
+    const done = samples.reduce(
+      (acc, s) => acc + strataState(s).filter((st) => st.done).length,
+      0,
+    );
+    return Math.round((done / (samples.length * 4)) * 100);
+  }, [samples]);
+
+  const handleAdd = (patch?: Partial<SoilSample>) => {
+    if (samples.length >= MAX_SAMPLES) {
+      toast.info(`Maximum atteint : ${MAX_SAMPLES} prélèvements.`);
+      return;
+    }
+    const id = onAdd(patch);
+    if (typeof id === 'string' && id) setEditingId(id);
   };
+
+  const handleAddOnMap = (lat: number, lng: number) => handleAdd({ lat, lng });
+
+  const confirmDelete = () => {
+    const s = pendingDelete;
+    setPendingDelete(null);
+    if (!s) return;
+    const at = samples.findIndex((x) => x.id === s.id);
+    onRemove(s.id);
+    toast(`Prélèvement ${s.label} retiré`, {
+      description: s.location?.trim() || 'Sans nom',
+      duration: 10000,
+      action: onRestore
+        ? { label: 'Annuler', onClick: () => onRestore(s, at < 0 ? samples.length : at) }
+        : undefined,
+    });
+  };
+
 
   // Esc closes fullscreen
   useEffect(() => {
@@ -219,7 +264,13 @@ export const SamplesMapBlock: React.FC<{
             <Marker
               key={s.id}
               position={[s.lat, s.lng]}
-              icon={makeIcon(s.label, hoveredId === s.id, s)}
+              icon={makeIcon(
+                s.label,
+                hoveredId === s.id || editingId === s.id,
+                s,
+                !!hoveredId && hoveredId !== s.id,
+              )}
+
               draggable
               eventHandlers={{
                 dragend: (e) => {
@@ -250,30 +301,97 @@ export const SamplesMapBlock: React.FC<{
 
   const sidePanel = (
     <div className="space-y-2">
+      {/* En-tête collant : compteur + jauge de couverture du carottage */}
+      <div className="sticky top-0 z-10 -mx-0.5 px-0.5 pb-2 pt-0.5 bg-[hsl(var(--ds-cream))]/90 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--ds-cream))]/70">
+        <div className="flex items-baseline justify-between text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70">
+          <span>Registre des prélèvements</span>
+          <span className="font-semibold text-[hsl(var(--ds-forest))]">
+            {samples.length} / {MAX_SAMPLES}
+          </span>
+        </div>
+        <div className="mt-1.5 h-1 rounded-full bg-[hsl(var(--ds-forest))]/12 overflow-hidden">
+          <motion.div
+            className="h-full rounded-full bg-[hsl(var(--ds-forest))]"
+            initial={false}
+            animate={{ width: `${coverage}%` }}
+            transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+          />
+        </div>
+        <div className="mt-1 text-[10px] text-[hsl(var(--ds-forest-deep))]/55">
+          Couverture du carottage · {coverage}% des strates renseignées
+        </div>
+      </div>
+
+      <AnimatePresence initial={false} mode="popLayout">
       {samples.map((s, i) => (
         <motion.div
+          layout
           key={s.id}
-          initial={{ opacity: 0, x: -6 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: i * 0.03 }}
+          initial={{ opacity: 0, x: -6, height: 0 }}
+          animate={{ opacity: hoveredId && hoveredId !== s.id ? 0.65 : 1, x: 0, height: 'auto' }}
+          exit={{ opacity: 0, x: 12, height: 0 }}
+          transition={{ delay: i * 0.02, duration: 0.22 }}
           onMouseEnter={() => setHoveredId(s.id)}
           onMouseLeave={() => setHoveredId(null)}
           className={`flex items-center gap-2.5 rounded-xl border p-2.5 transition ${
-            hoveredId === s.id
+            hoveredId === s.id || editingId === s.id
               ? 'border-[hsl(var(--ds-forest))] bg-[hsl(var(--ds-forest))]/8'
               : 'border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60'
           }`}
         >
-          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center font-serif font-bold shadow-sm">
-            {s.label}
-          </div>
+          {/* Pastille : menu de réattribution de lettre */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label={`Changer le repère du prélèvement ${s.label}`}
+                title="Changer le repère (lettre)"
+                className="flex-shrink-0 w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center font-serif font-bold shadow-sm hover:ring-2 hover:ring-[hsl(var(--ds-forest))]/30 transition"
+              >
+                {s.label}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[9rem]">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-widest">
+                Repère
+              </DropdownMenuLabel>
+              {freeLetters(samples, s.id).map((l) => (
+                <DropdownMenuItem
+                  key={l}
+                  onSelect={() => onRelabel?.(s.id, l)}
+                  className="font-serif"
+                >
+                  {l}
+                  {l === s.label && <Check className="w-3.5 h-3.5 ml-auto" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <div className="flex-1 min-w-0">
-            <input
-              value={s.location ?? ''}
-              onChange={(e) => onUpdate(s.id, { location: e.target.value })}
-              placeholder="Emplacement (ex. sous le tilleul…)"
-              className="w-full bg-transparent border-none outline-none text-sm text-[hsl(var(--ds-forest-deep))] placeholder:text-[hsl(var(--ds-forest))]/40"
-            />
+            <div className="flex items-center gap-1.5">
+              <input
+                value={s.location ?? ''}
+                onChange={(e) => onUpdate(s.id, { location: e.target.value })}
+                onFocus={() => setEditingId(s.id)}
+                onBlur={() => setEditingId((cur) => (cur === s.id ? null : cur))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLInputElement).blur();
+                }}
+                ref={(el) => {
+                  if (el && editingId === s.id && document.activeElement !== el) el.focus();
+                }}
+                placeholder="Nommer ce prélèvement (ex. sous le tilleul…)"
+                className="w-full bg-transparent border-none outline-none text-sm font-medium text-[hsl(var(--ds-forest-deep))] placeholder:font-normal placeholder:text-[hsl(var(--ds-forest))]/40"
+              />
+              <Pencil
+                className={`w-3 h-3 flex-shrink-0 transition ${
+                  hoveredId === s.id || editingId === s.id
+                    ? 'text-[hsl(var(--ds-forest))]/70'
+                    : 'text-transparent'
+                }`}
+              />
+            </div>
             <div className="mt-1 flex items-center gap-2 flex-wrap">
               <StrataSeal
                 sample={s}
@@ -295,27 +413,32 @@ export const SamplesMapBlock: React.FC<{
           >
             Carotte
           </button>
-          {samples.length > 3 && (
-
-            <button
-              onClick={() => onRemove(s.id)}
-              aria-label="Retirer le prélèvement"
-              className="w-7 h-7 rounded-full flex items-center justify-center text-[hsl(var(--ds-forest))]/50 hover:text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))]/10 transition"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+          <button
+            onClick={() => samples.length > MIN_SAMPLES && setPendingDelete(s)}
+            disabled={samples.length <= MIN_SAMPLES}
+            aria-label={`Retirer le prélèvement ${s.label}`}
+            title={
+              samples.length <= MIN_SAMPLES
+                ? `Le diagnostic requiert au moins ${MIN_SAMPLES} prélèvements`
+                : 'Retirer ce prélèvement'
+            }
+            className="w-7 h-7 rounded-full flex items-center justify-center text-[hsl(var(--ds-forest))]/50 hover:text-[#b4603f] hover:bg-[#b4603f]/10 transition disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-[hsl(var(--ds-forest))]/50 disabled:cursor-not-allowed"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </motion.div>
       ))}
+      </AnimatePresence>
 
       {samples.length < MAX_SAMPLES && (
         <button
-          onClick={onAdd}
+          onClick={() => handleAdd()}
           className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-[hsl(var(--ds-forest))]/40 bg-transparent p-2.5 text-xs font-semibold text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))]/5 transition"
         >
           <Plus className="w-3.5 h-3.5" /> Ajouter un prélèvement (max {MAX_SAMPLES})
         </button>
       )}
+
 
       {parcelles.length === 0 && (
         <div className="flex items-start gap-2 rounded-xl bg-[hsl(var(--ds-forest))]/8 border border-[hsl(var(--ds-line))] p-2.5 text-[11px] text-[hsl(var(--ds-forest-deep))]/75 leading-snug">
@@ -332,7 +455,7 @@ export const SamplesMapBlock: React.FC<{
     <AnalyzeCard
       number={2}
       category="Étape 2 · Prélèvements"
-      title="3 à 5 échantillons représentatifs"
+      title={`${MIN_SAMPLES} à ${MAX_SAMPLES} échantillons représentatifs`}
       subtitle="Positionnez chaque prélèvement sur la carte de votre propriété. Glissez pour ajuster, cliquez sur la carte pour ajouter un point."
       index={index}
     >
@@ -381,7 +504,7 @@ export const SamplesMapBlock: React.FC<{
               </div>
               <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-widest text-[hsl(var(--ds-forest))]/70">Étape 2 · Prélèvements</div>
-                <div className="font-serif text-lg text-[hsl(var(--ds-forest-deep))] truncate">3 à 5 échantillons représentatifs</div>
+                <div className="font-serif text-lg text-[hsl(var(--ds-forest-deep))] truncate">{MIN_SAMPLES} à {MAX_SAMPLES} échantillons représentatifs</div>
               </div>
               <span className="ml-auto text-sm font-semibold text-[hsl(var(--ds-forest))]">{samples.length} / {MAX_SAMPLES}</span>
               <button
@@ -405,7 +528,13 @@ export const SamplesMapBlock: React.FC<{
         </AnimatePresence>,
         document.body,
       )}
+      <SampleDeleteDialog
+        sample={pendingDelete}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+      />
     </AnalyzeCard>
+
   );
 };
 

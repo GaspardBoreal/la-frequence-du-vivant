@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  MAX_SAMPLES,
+  nextLabel,
+  nextSampleId,
+} from '@/components/propriete/analyze/sample/sampleRoster';
+
 
 export interface SoilSample {
   id: string;
@@ -182,16 +188,35 @@ export function usePropertySoil(proprieteId?: string) {
         ...s,
         samples: s.samples.map((sm) => (sm.id === id ? { ...sm, ...patch } : sm)),
       })),
-    addSample: () =>
+    /** Ajoute un prélèvement (id/lettre garantis libres) et renvoie son id. */
+    addSample: (patch?: Partial<SoilSample>) => {
+      let createdId = '';
       setLocal((s) => {
-        const nextLetter = String.fromCharCode(65 + s.samples.length);
-        return {
-          ...s,
-          samples: [...s.samples, { id: nextLetter, label: nextLetter }],
-        };
-      }),
+        if (s.samples.length >= MAX_SAMPLES) return s;
+        const id = nextSampleId(s.samples);
+        const label = nextLabel(s.samples);
+        createdId = id;
+        return { ...s, samples: [...s.samples, { ...patch, id, label }] };
+      });
+      return createdId;
+    },
+    /** Réattribue la lettre affichée sans toucher à l'identifiant interne. */
+    relabelSample: (id: string, label: string) =>
+      setLocal((s) => ({
+        ...s,
+        samples: s.samples.map((sm) => (sm.id === id ? { ...sm, label } : sm)),
+      })),
     removeSample: (id: string) =>
       setLocal((s) => ({ ...s, samples: s.samples.filter((sm) => sm.id !== id) })),
+    /** Réinsère un prélèvement supprimé à sa position d'origine (annulation). */
+    restoreSample: (sample: SoilSample, at: number) =>
+      setLocal((s) => {
+        if (s.samples.some((sm) => sm.id === sample.id)) return s;
+        const next = [...s.samples];
+        next.splice(Math.max(0, Math.min(at, next.length)), 0, sample);
+        return { ...s, samples: next };
+      }),
+
     markComplete: () => persist(local, true),
   };
 }

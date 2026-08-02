@@ -64,6 +64,9 @@ export const TabAnalyze: React.FC<{
     updateSample,
     addSample,
     removeSample,
+    relabelSample,
+    restoreSample,
+
     markComplete,
   } = usePropertySoil(proprieteId);
 
@@ -353,6 +356,9 @@ export const TabAnalyze: React.FC<{
           onUpdate={updateSample}
           onAdd={addSample}
           onRemove={removeSample}
+          onRelabel={relabelSample}
+          onRestore={restoreSample}
+
           onBulkSet={(next) => setLocal((s) => ({ ...s, samples: next }))}
           index={1}
         />

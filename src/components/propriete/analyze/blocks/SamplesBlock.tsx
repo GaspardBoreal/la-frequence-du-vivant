@@ -4,6 +4,8 @@ import { Plus, X, MapPin } from 'lucide-react';
 import { AnalyzeCard } from '../AnalyzeCard';
 import { SoilHeroStrata } from '../SoilPictos';
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
+import { MIN_SAMPLES, MAX_SAMPLES } from '../sample/sampleRoster';
+import { SampleDeleteDialog } from '../sample/SampleDeleteDialog';
 
 export const SamplesBlock: React.FC<{
   samples: SoilSample[];
@@ -11,11 +13,14 @@ export const SamplesBlock: React.FC<{
   onAdd: () => void;
   onRemove: (id: string) => void;
   index?: number;
-}> = ({ samples, onUpdate, onAdd, onRemove, index = 0 }) => (
+}> = ({ samples, onUpdate, onAdd, onRemove, index = 0 }) => {
+  const [pending, setPending] = React.useState<SoilSample | null>(null);
+
+  return (
   <AnalyzeCard
     number={2}
     category="Étape 2 · Prélèvements"
-    title="3 à 5 échantillons représentatifs"
+    title={`${MIN_SAMPLES} à ${MAX_SAMPLES} échantillons représentatifs`}
     subtitle="Notez l'emplacement précis de chaque prélèvement (A, B, C…)."
     index={index}
     hero={
@@ -43,10 +48,10 @@ export const SamplesBlock: React.FC<{
             placeholder="Emplacement (ex. sous le tilleul, allée nord, potager…)"
             className="flex-1 bg-transparent border-none outline-none text-sm text-[hsl(var(--ds-forest-deep))] placeholder:text-[hsl(var(--ds-forest))]/40"
           />
-          {samples.length > 3 && (
+          {samples.length > MIN_SAMPLES && (
             <button
-              onClick={() => onRemove(s.id)}
-              aria-label="Retirer le prélèvement"
+              onClick={() => setPending(s)}
+              aria-label={`Retirer le prélèvement ${s.label}`}
               className="w-7 h-7 rounded-full flex items-center justify-center text-[hsl(var(--ds-forest))]/50 hover:text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))]/10 transition"
             >
               <X className="w-3.5 h-3.5" />
@@ -54,14 +59,24 @@ export const SamplesBlock: React.FC<{
           )}
         </motion.div>
       ))}
-      {samples.length < 5 && (
+      {samples.length < MAX_SAMPLES && (
         <button
           onClick={onAdd}
           className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-[hsl(var(--ds-forest))]/40 bg-transparent p-2.5 text-xs font-semibold text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))]/5 transition"
         >
-          <Plus className="w-3.5 h-3.5" /> Ajouter un prélèvement (max 5)
+          <Plus className="w-3.5 h-3.5" /> Ajouter un prélèvement (max {MAX_SAMPLES})
         </button>
       )}
     </div>
+
+    <SampleDeleteDialog
+      sample={pending}
+      onCancel={() => setPending(null)}
+      onConfirm={() => {
+        if (pending) onRemove(pending.id);
+        setPending(null);
+      }}
+    />
   </AnalyzeCard>
-);
+  );
+};
