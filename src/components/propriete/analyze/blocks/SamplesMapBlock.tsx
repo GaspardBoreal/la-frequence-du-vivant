@@ -96,17 +96,8 @@ const AddOnClick: React.FC<{ onAdd: (lat: number, lng: number) => void; disabled
   return null;
 };
 
-/** Positions par défaut en pentagone autour d'un centre (~30 m). */
-const defaultPositions = (center: [number, number]): Array<[number, number]> => {
-  const deg = 0.00027; // ~30 m
-  return [
-    [center[0] + deg * 0.9, center[1] - deg * 0.9],
-    [center[0] + deg * 0.9, center[1] + deg * 0.9],
-    [center[0] - deg * 1.1, center[1]],
-    [center[0] - deg * 0.4, center[1] + deg * 1.4],
-    [center[0] - deg * 0.4, center[1] - deg * 1.4],
-  ];
-};
+const makeIcon = (letter: string, active: boolean, dimmed: boolean, sample?: SoilSample) =>
+
 
 /** Seed coords per-sample: any sample without coords gets one, based on its position. */
 const seedMissingCoords = (
