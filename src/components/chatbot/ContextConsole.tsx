@@ -228,6 +228,34 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
                 </span>
               </div>
 
+              {/* Transparence : emporter la sélection complète */}
+              {activeCount > 0 && (
+                <div className="mt-2 flex items-center gap-1.5">
+                  <button
+                    onClick={() => setBordereau({ providers: activeProviders, single: false })}
+                    className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-1 text-[11px] font-medium text-amber-200 hover:bg-amber-400/20 transition-colors"
+                  >
+                    <ScrollText className="h-3 w-3" />
+                    Bordereau
+                  </button>
+                  <button
+                    onClick={copyAll}
+                    className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    {copiedId === '__all__' ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    {copiedId === '__all__' ? 'Copié' : 'Copier tout'}
+                  </button>
+                  <button
+                    onClick={() => downloadFile(bordereauFile())}
+                    className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    <Download className="h-3 w-3" />
+                    Exporter
+                  </button>
+                </div>
+              )}
+
+
               {/* Récapitulatif vivant des contextes retenus */}
               <AnimatePresence initial={false}>
                 {activeProviders.length > 0 && (
