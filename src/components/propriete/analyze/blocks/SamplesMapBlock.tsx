@@ -18,9 +18,10 @@ import { StrataSeal, StrataCompletionLine } from '../sample/StrataSeal';
 import {
   MIN_SAMPLES,
   MAX_SAMPLES,
-  defaultPositions,
+  firstFreePosition,
   freeLetters,
 } from '../sample/sampleRoster';
+
 import { SampleDeleteDialog } from '../sample/SampleDeleteDialog';
 import {
   DropdownMenu,
@@ -99,37 +100,178 @@ const AddOnClick: React.FC<{ onAdd: (lat: number, lng: number) => void; disabled
 
 
 
-/** Seed coords per-sample: any sample without coords gets one, based on its position. */
-const seedMissingCoords = (
-  samples: SoilSample[],
-  center: [number, number] | null,
-): SoilSample[] | null => {
-  if (!center) return null;
-  const missing = samples.some((s) => s.lat == null || s.lng == null);
-  if (!missing) return null;
-  const pts = defaultPositions(center);
-  return samples.map((s, i) => {
-    if (s.lat != null && s.lng != null) return s;
-    const p = pts[i % pts.length];
-    // Petit décalage anti-superposition
-    const jitter = (i > pts.length - 1 ? (i - pts.length + 1) : 0) * 0.00005;
-    return { ...s, lat: p[0] + jitter, lng: p[1] + jitter };
-  });
+/**
+ * Ligne du registre : la saisie du nom vit en état LOCAL puis est propagée au
+ * registre. Une réécriture du registre (semis GPS, sauvegarde) ne peut donc
+ * plus effacer la frappe en cours.
+ */
+const SampleRow: React.FC<{
+  sample: SoilSample;
+  samples: SoilSample[];
+  proprieteId?: string;
+  hovered: boolean;
+  autoFocus: boolean;
+  canDelete: boolean;
+  minSamples: number;
+  onHover: (id: string | null) => void;
+  onRename: (value: string) => void;
+  onRelabel?: (label: string) => void;
+  onDelete: () => void;
+  onFocusConsumed: () => void;
+}> = ({
+  sample: s,
+  samples,
+  proprieteId,
+  hovered,
+  autoFocus,
+  canDelete,
+  minSamples,
+  onHover,
+  onRename,
+  onRelabel,
+  onDelete,
+  onFocusConsumed,
+}) => {
+  const [draft, setDraft] = useState(s.location ?? '');
+  const [editing, setEditing] = useState(false);
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+
+  // Synchronise depuis le registre uniquement hors édition.
+  useEffect(() => {
+    if (!editing) setDraft(s.location ?? '');
+  }, [s.location, editing]);
+
+  // Focus demandé une seule fois, à la création du prélèvement.
+  useEffect(() => {
+    if (!autoFocus) return;
+    inputRef.current?.focus();
+    inputRef.current?.select();
+    onFocusConsumed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFocus]);
+
+  const commit = () => {
+    setEditing(false);
+    if ((s.location ?? '') !== draft) onRename(draft);
+  };
+
+  return (
+    <motion.div
+      layout="position"
+      initial={{ opacity: 0, x: -6 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 12 }}
+      transition={{ duration: 0.2 }}
+      onMouseEnter={() => onHover(s.id)}
+      onMouseLeave={() => onHover(null)}
+      className={`flex items-start gap-2.5 rounded-xl border p-2.5 transition-colors ${
+        hovered || editing
+          ? 'border-[hsl(var(--ds-forest))] bg-[hsl(var(--ds-forest))]/8'
+          : 'border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60'
+      }`}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Changer le repère du prélèvement ${s.label}`}
+            title="Changer le repère (lettre)"
+            className="flex-shrink-0 w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center font-serif font-bold shadow-sm hover:ring-2 hover:ring-[hsl(var(--ds-forest))]/30 transition"
+          >
+            {s.label}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[9rem]">
+          <DropdownMenuLabel className="text-[10px] uppercase tracking-widest">Repère</DropdownMenuLabel>
+          {freeLetters(samples, s.id).map((l) => (
+            <DropdownMenuItem key={l} onSelect={() => onRelabel?.(l)} className="font-serif">
+              {l}
+              {l === s.label && <Check className="w-3.5 h-3.5 ml-auto" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <input
+            ref={inputRef}
+            value={draft}
+            title={draft || undefined}
+            onChange={(e) => setDraft(e.target.value)}
+            onFocus={() => setEditing(true)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+              if (e.key === 'Escape') {
+                setDraft(s.location ?? '');
+                setEditing(false);
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            placeholder="Nommer ce prélèvement (ex. sous le tilleul…)"
+            className="w-full bg-transparent border-none outline-none text-sm font-medium text-[hsl(var(--ds-forest-deep))] placeholder:font-normal placeholder:text-[hsl(var(--ds-forest))]/40"
+          />
+          <Pencil
+            className={`w-3 h-3 flex-shrink-0 transition ${
+              hovered || editing ? 'text-[hsl(var(--ds-forest))]/70' : 'text-transparent'
+            }`}
+          />
+        </div>
+        <div className="mt-1 flex items-center gap-2 flex-wrap">
+          <StrataSeal
+            sample={s}
+            size="row"
+            onSelect={(block) => openSampleCore(s.id, samples, proprieteId, block)}
+          />
+          <StrataCompletionLine sample={s} />
+        </div>
+        {s.lat != null && s.lng != null ? (
+          <div className="text-[10px] text-[hsl(var(--ds-forest))]/50 mt-0.5">
+            {s.lat.toFixed(5)}, {s.lng.toFixed(5)}
+          </div>
+        ) : (
+          <div className="text-[10px] text-[#b4603f]/80 mt-0.5">Position en attente…</div>
+        )}
+      </div>
+
+      <button
+        onClick={() => openSampleCore(s.id, samples, proprieteId)}
+        aria-label={`Ouvrir la fiche carotte ${s.label}`}
+        className="shrink-0 mt-0.5 rounded-full border border-[hsl(var(--ds-forest))]/35 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))]/10 transition"
+      >
+        Carotte
+      </button>
+      <button
+        onClick={() => canDelete && onDelete()}
+        disabled={!canDelete}
+        aria-label={`Retirer le prélèvement ${s.label}`}
+        title={
+          canDelete
+            ? 'Retirer ce prélèvement'
+            : `Le diagnostic requiert au moins ${minSamples} prélèvements`
+        }
+        className="w-7 h-7 mt-0.5 rounded-full flex items-center justify-center text-[hsl(var(--ds-forest))]/50 hover:text-[#b4603f] hover:bg-[#b4603f]/10 transition disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-[hsl(var(--ds-forest))]/50 disabled:cursor-not-allowed"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </motion.div>
+  );
 };
+
 
 export const SamplesMapBlock: React.FC<{
   proprieteId?: string;
   proprieteCenter?: [number, number] | null;
   samples: SoilSample[];
   onUpdate: (id: string, patch: Partial<SoilSample>) => void;
-  /** Renvoie l'identifiant du prélèvement créé. */
-  onAdd: (patch?: Partial<SoilSample>) => string | void;
+  /** Renvoie l'identifiant du prélèvement créé (null si maximum atteint). */
+  onAdd: (patch?: Partial<SoilSample>) => string | null | void;
   onRemove: (id: string) => void;
   /** Réattribue la lettre du repère. */
   onRelabel?: (id: string, label: string) => void;
   /** Réinsère un prélèvement supprimé (annulation). */
   onRestore?: (sample: SoilSample, at: number) => void;
-  onBulkSet?: (next: SoilSample[]) => void;
   index?: number;
 }> = ({
   proprieteId,
@@ -140,7 +282,6 @@ export const SamplesMapBlock: React.FC<{
   onRemove,
   onRelabel,
   onRestore,
-  onBulkSet,
   index = 0,
 }) => {
 
@@ -150,18 +291,34 @@ export const SamplesMapBlock: React.FC<{
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<SoilSample | null>(null);
+  /** Prélèvements déjà semés : garantit une seule attribution de position par point. */
+  const seededRef = React.useRef<Set<string>>(new Set());
+  /** Repère en cours de glisser : neutralise le clic parasite de fin de drag. */
+  const draggedRef = React.useRef<string | null>(null);
 
 
-  // Seed coords for any sample missing them (initial load or after adding D/E via sidebar button)
+  /**
+   * Semis GPS non destructif : chaque prélèvement sans coordonnées reçoit un
+   * emplacement libre via une mise à jour CIBLÉE (jamais une réécriture du registre).
+   */
   useEffect(() => {
-    if (!onBulkSet) return;
     if (!parcCenter && !proprieteCenter) return;
-    const next = seedMissingCoords(samples, center);
-    if (next) onBulkSet(next);
+    const orphans = samples.filter(
+      (s) => (s.lat == null || s.lng == null) && !seededRef.current.has(s.id),
+    );
+    if (!orphans.length) return;
+    const placed = [...samples];
+    for (const o of orphans) {
+      const [lat, lng] = firstFreePosition(center, placed);
+      seededRef.current.add(o.id);
+      placed.push({ ...o, lat, lng });
+      onUpdate(o.id, { lat, lng });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [samples.length, parcCenter?.[0], parcCenter?.[1], proprieteCenter?.[0], proprieteCenter?.[1]]);
+  }, [samples, parcCenter?.[0], parcCenter?.[1], proprieteCenter?.[0], proprieteCenter?.[1]]);
+
 
   const parcelleBounds = useMemo<Array<[number, number]>>(() => {
     const pts: Array<[number, number]> = [];
@@ -183,13 +340,14 @@ export const SamplesMapBlock: React.FC<{
     return pts;
   }, [parcelles]);
 
-  const bounds = useMemo<Array<[number, number]> | undefined>(() => {
-    const pts: Array<[number, number]> = [...parcelleBounds];
-    for (const s of samples) {
-      if (s.lat != null && s.lng != null) pts.push([s.lat, s.lng]);
-    }
-    return pts.length >= 2 ? pts : undefined;
-  }, [samples, parcelleBounds]);
+  /**
+   * Cadrage initial figé : recalculé sur les parcelles uniquement, jamais sur les
+   * pastilles — la carte ne saute donc plus pendant un déplacement de repère.
+   */
+  const bounds = useMemo<Array<[number, number]> | undefined>(
+    () => (parcelleBounds.length >= 2 ? parcelleBounds : undefined),
+    [parcelleBounds],
+  );
 
   const disabledAdd = samples.length >= MAX_SAMPLES;
 
@@ -208,11 +366,21 @@ export const SamplesMapBlock: React.FC<{
       toast.info(`Maximum atteint : ${MAX_SAMPLES} prélèvements.`);
       return;
     }
-    const id = onAdd(patch);
-    if (typeof id === 'string' && id) setEditingId(id);
+    const seed = patch?.lat != null && patch?.lng != null ? patch : (() => {
+      const [lat, lng] = firstFreePosition(center, samples);
+      return { ...patch, lat, lng };
+    })();
+    const id = onAdd(seed);
+    if (typeof id === 'string' && id) {
+      seededRef.current.add(id);
+      setFocusId(id);
+    } else if (id === null) {
+      toast.info(`Maximum atteint : ${MAX_SAMPLES} prélèvements.`);
+    }
   };
 
   const handleAddOnMap = (lat: number, lng: number) => handleAdd({ lat, lng });
+
 
   const confirmDelete = () => {
     const s = pendingDelete;
@@ -264,20 +432,21 @@ export const SamplesMapBlock: React.FC<{
             <Marker
               key={s.id}
               position={[s.lat, s.lng]}
-              icon={makeIcon(
-                s.label,
-                hoveredId === s.id || editingId === s.id,
-                s,
-                !!hoveredId && hoveredId !== s.id,
-              )}
-
+              icon={makeIcon(s.label, hoveredId === s.id || focusId === s.id, s)}
               draggable
               eventHandlers={{
+                dragstart: () => { draggedRef.current = s.id; },
                 dragend: (e) => {
                   const ll = (e.target as L.Marker).getLatLng();
                   onUpdate(s.id, { lat: ll.lat, lng: ll.lng });
+                  // Neutralise le clic de fin de glisser (sinon la fiche s'ouvre).
+                  window.setTimeout(() => { draggedRef.current = null; }, 250);
                 },
-                click: () => openSampleCore(s.id, samples, proprieteId),
+                click: () => {
+                  if (draggedRef.current === s.id) return;
+                  openSampleCore(s.id, samples, proprieteId);
+                },
+
                 mouseover: () => setHoveredId(s.id),
                 mouseout: () => setHoveredId(null),
               }}
@@ -322,113 +491,26 @@ export const SamplesMapBlock: React.FC<{
         </div>
       </div>
 
-      <AnimatePresence initial={false} mode="popLayout">
-      {samples.map((s, i) => (
-        <motion.div
-          layout
-          key={s.id}
-          initial={{ opacity: 0, x: -6, height: 0 }}
-          animate={{ opacity: hoveredId && hoveredId !== s.id ? 0.65 : 1, x: 0, height: 'auto' }}
-          exit={{ opacity: 0, x: 12, height: 0 }}
-          transition={{ delay: i * 0.02, duration: 0.22 }}
-          onMouseEnter={() => setHoveredId(s.id)}
-          onMouseLeave={() => setHoveredId(null)}
-          className={`flex items-center gap-2.5 rounded-xl border p-2.5 transition ${
-            hoveredId === s.id || editingId === s.id
-              ? 'border-[hsl(var(--ds-forest))] bg-[hsl(var(--ds-forest))]/8'
-              : 'border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60'
-          }`}
-        >
-          {/* Pastille : menu de réattribution de lettre */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label={`Changer le repère du prélèvement ${s.label}`}
-                title="Changer le repère (lettre)"
-                className="flex-shrink-0 w-9 h-9 rounded-full bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] flex items-center justify-center font-serif font-bold shadow-sm hover:ring-2 hover:ring-[hsl(var(--ds-forest))]/30 transition"
-              >
-                {s.label}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-[9rem]">
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-widest">
-                Repère
-              </DropdownMenuLabel>
-              {freeLetters(samples, s.id).map((l) => (
-                <DropdownMenuItem
-                  key={l}
-                  onSelect={() => onRelabel?.(s.id, l)}
-                  className="font-serif"
-                >
-                  {l}
-                  {l === s.label && <Check className="w-3.5 h-3.5 ml-auto" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <input
-                value={s.location ?? ''}
-                onChange={(e) => onUpdate(s.id, { location: e.target.value })}
-                onFocus={() => setEditingId(s.id)}
-                onBlur={() => setEditingId((cur) => (cur === s.id ? null : cur))}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLInputElement).blur();
-                }}
-                ref={(el) => {
-                  if (el && editingId === s.id && document.activeElement !== el) el.focus();
-                }}
-                placeholder="Nommer ce prélèvement (ex. sous le tilleul…)"
-                className="w-full bg-transparent border-none outline-none text-sm font-medium text-[hsl(var(--ds-forest-deep))] placeholder:font-normal placeholder:text-[hsl(var(--ds-forest))]/40"
-              />
-              <Pencil
-                className={`w-3 h-3 flex-shrink-0 transition ${
-                  hoveredId === s.id || editingId === s.id
-                    ? 'text-[hsl(var(--ds-forest))]/70'
-                    : 'text-transparent'
-                }`}
-              />
-            </div>
-            <div className="mt-1 flex items-center gap-2 flex-wrap">
-              <StrataSeal
-                sample={s}
-                size="row"
-                onSelect={(block) => openSampleCore(s.id, samples, proprieteId, block)}
-              />
-              <StrataCompletionLine sample={s} />
-            </div>
-            {s.lat != null && s.lng != null && (
-              <div className="text-[10px] text-[hsl(var(--ds-forest))]/50 mt-0.5">
-                {s.lat.toFixed(5)}, {s.lng.toFixed(5)}
-              </div>
-            )}
-          </div>
-          <button
-            onClick={() => openSampleCore(s.id, samples, proprieteId)}
-            aria-label={`Ouvrir la fiche carotte ${s.label}`}
-            className="shrink-0 rounded-full border border-[hsl(var(--ds-forest))]/35 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-forest))]/10 transition"
-          >
-            Carotte
-          </button>
-          <button
-            onClick={() => samples.length > MIN_SAMPLES && setPendingDelete(s)}
-            disabled={samples.length <= MIN_SAMPLES}
-            aria-label={`Retirer le prélèvement ${s.label}`}
-            title={
-              samples.length <= MIN_SAMPLES
-                ? `Le diagnostic requiert au moins ${MIN_SAMPLES} prélèvements`
-                : 'Retirer ce prélèvement'
-            }
-            className="w-7 h-7 rounded-full flex items-center justify-center text-[hsl(var(--ds-forest))]/50 hover:text-[#b4603f] hover:bg-[#b4603f]/10 transition disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-[hsl(var(--ds-forest))]/50 disabled:cursor-not-allowed"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </motion.div>
-      ))}
+      <AnimatePresence initial={false}>
+        {samples.map((s) => (
+          <SampleRow
+            key={s.id}
+            sample={s}
+            samples={samples}
+            proprieteId={proprieteId}
+            hovered={hoveredId === s.id}
+            autoFocus={focusId === s.id}
+            canDelete={samples.length > MIN_SAMPLES}
+            minSamples={MIN_SAMPLES}
+            onHover={setHoveredId}
+            onRename={(v) => onUpdate(s.id, { location: v })}
+            onRelabel={onRelabel ? (l) => onRelabel(s.id, l) : undefined}
+            onDelete={() => setPendingDelete(s)}
+            onFocusConsumed={() => setFocusId((cur) => (cur === s.id ? null : cur))}
+          />
+        ))}
       </AnimatePresence>
+
 
       {samples.length < MAX_SAMPLES && (
         <button
