@@ -907,7 +907,9 @@ export function ChatBot({
           activeKeys={activeContextKeys}
           baseBytes={attachedBaseBytes}
           groupExtras={availableAttachments?.providerGroupExtras}
+          subject={focalState?.label ?? pageState?.label ?? null}
         />
+
       )}
 
     </>
