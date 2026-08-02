@@ -150,6 +150,9 @@ export const SamplesMapBlock: React.FC<{
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<SoilSample | null>(null);
+
 
   // Seed coords for any sample missing them (initial load or after adding D/E via sidebar button)
   useEffect(() => {
@@ -190,13 +193,42 @@ export const SamplesMapBlock: React.FC<{
 
   const disabledAdd = samples.length >= MAX_SAMPLES;
 
-  const handleAddOnMap = (lat: number, lng: number) => {
-    const nextIndex = samples.length;
-    if (nextIndex >= MAX_SAMPLES) return;
-    onAdd();
-    const newId = LABELS[nextIndex] || String.fromCharCode(65 + nextIndex);
-    setTimeout(() => onUpdate(newId, { lat, lng }), 0);
+  /** Couverture du carottage : strates renseignées / total possible. */
+  const coverage = useMemo(() => {
+    if (!samples.length) return 0;
+    const done = samples.reduce(
+      (acc, s) => acc + strataState(s).filter((st) => st.done).length,
+      0,
+    );
+    return Math.round((done / (samples.length * 4)) * 100);
+  }, [samples]);
+
+  const handleAdd = (patch?: Partial<SoilSample>) => {
+    if (samples.length >= MAX_SAMPLES) {
+      toast.info(`Maximum atteint : ${MAX_SAMPLES} prélèvements.`);
+      return;
+    }
+    const id = onAdd(patch);
+    if (typeof id === 'string' && id) setEditingId(id);
   };
+
+  const handleAddOnMap = (lat: number, lng: number) => handleAdd({ lat, lng });
+
+  const confirmDelete = () => {
+    const s = pendingDelete;
+    setPendingDelete(null);
+    if (!s) return;
+    const at = samples.findIndex((x) => x.id === s.id);
+    onRemove(s.id);
+    toast(`Prélèvement ${s.label} retiré`, {
+      description: s.location?.trim() || 'Sans nom',
+      duration: 10000,
+      action: onRestore
+        ? { label: 'Annuler', onClick: () => onRestore(s, at < 0 ? samples.length : at) }
+        : undefined,
+    });
+  };
+
 
   // Esc closes fullscreen
   useEffect(() => {
