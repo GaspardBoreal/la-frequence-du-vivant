@@ -40,8 +40,6 @@ const SAVED_STYLE: L.PathOptions = {
   fillOpacity: 0.28,
 };
 
-const LABELS = ['A', 'B', 'C', 'D', 'E'];
-const MAX_SAMPLES = 5;
 
 /** Pastilles du « sceau des 4 strates » posées sous la lettre du repère. */
 const strataDotsHtml = (sample?: SoilSample) => {
