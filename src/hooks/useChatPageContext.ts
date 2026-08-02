@@ -52,6 +52,9 @@ export interface AvailableAttachments {
   providersTitle?: string;
   /** UI spécialisée injectée en tête d'un groupe de la console. */
   providerGroupExtras?: Record<string, ReactNode>;
+  /** Ids de tous les ouvrages de l'atelier (sélection en masse par suggestion). */
+  ouvrageIds?: string[];
+
 }
 
 
