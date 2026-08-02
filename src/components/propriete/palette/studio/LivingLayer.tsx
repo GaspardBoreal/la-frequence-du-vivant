@@ -440,6 +440,17 @@ export const LivingFilterPanel: React.FC<BarProps> = ({
         )}
       </p>
 
+      {onOpenHerbier && (
+        <button
+          onClick={onOpenHerbier}
+          className="flex w-full items-center justify-center gap-1.5 rounded-full border border-[hsl(var(--ds-forest))]/40 bg-[hsl(var(--ds-forest))]/10 px-2 py-1 text-[10px] text-[hsl(var(--ds-forest-deep))] transition-colors hover:bg-[hsl(var(--ds-forest))]/20"
+        >
+          <BookOpen className="h-3 w-3" />
+          Voir la liste des espèces
+        </button>
+      )}
+
+
       {active && (
         <button
           onClick={() => onChange({ ...DEFAULT_VIVANT_FILTER })}
