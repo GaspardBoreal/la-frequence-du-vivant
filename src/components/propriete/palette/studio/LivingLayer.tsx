@@ -216,8 +216,29 @@ export const LivingLayer: React.FC<LayerProps> = ({
   onZoomPhoto,
   onStartInlineMove,
   onOpenGps,
+  highlightKey,
+  focusId,
 }) => {
   const paneReady = useVivantPane();
+  const map = useMap();
+  const markerRefs = React.useRef(new Map<string, any>());
+
+  /* Situer une observation depuis l'herbier : on s'y rend, puis on ouvre sa fiche. */
+  React.useEffect(() => {
+    if (!focusId) return;
+    const w = waypoints.find((x) => x.id === focusId);
+    if (!w) return;
+    map.flyTo([w.lat, w.lng], Math.max(map.getZoom(), 20), { duration: 0.7 });
+    const t = window.setTimeout(() => {
+      try {
+        markerRefs.current.get(focusId)?.openPopup?.();
+      } catch {
+        /* la pastille peut avoir été démontée entre-temps */
+      }
+    }, 780);
+    return () => window.clearTimeout(t);
+  }, [focusId, waypoints, map]);
+
   if (!paneReady) return null;
   return (
   <>
@@ -236,8 +257,9 @@ export const LivingLayer: React.FC<LayerProps> = ({
       const label = frenchName
         ? frenchName(w.scientificName, w.commonName)
         : w.commonName || w.scientificName;
-      const highlighted = searching && hit;
-      const muted = searching && !hit;
+      const hovered = !!highlightKey && norm(w.scientificName) === highlightKey;
+      const highlighted = (searching && hit) || hovered;
+      const muted = searching && !hit && !hovered;
       const radius = highlighted ? (bio ? 8 : 6.5) : bio ? 5 : 3.5;
       return (
         <React.Fragment key={w.id}>
@@ -251,11 +273,32 @@ export const LivingLayer: React.FC<LayerProps> = ({
             eventHandlers={onSelect ? { click: () => onSelect(w) } : undefined}
           />
         )}
+        {/* Auréole de survol : le lien vivant entre la liste et le plan. */}
+        {hovered && (
+          <CircleMarker
+            center={[w.lat, w.lng] as any}
+            radius={radius + 9}
+            pane={VIVANT_PANE}
+            interactive={false}
+            pathOptions={{
+              className: 'ds-vivant-pulse',
+              color: '#f2c14e',
+              weight: 2,
+              opacity: 0.9,
+              fillColor: '#f2c14e',
+              fillOpacity: 0.14,
+            }}
+          />
+        )}
         <CircleMarker
           center={[w.lat, w.lng] as any}
           radius={radius}
           pane={VIVANT_PANE}
           interactive={!muted}
+          ref={(r: any) => {
+            if (r) markerRefs.current.set(w.id, r);
+            else markerRefs.current.delete(w.id);
+          }}
 
           pathOptions={{
             color: highlighted ? '#f2c14e' : bio ? '#fffdf7' : meta.color,
@@ -293,6 +336,7 @@ export const LivingLayer: React.FC<LayerProps> = ({
   </>
   );
 };
+
 
 
 export interface VivantTagFacet {
