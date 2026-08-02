@@ -54,3 +54,34 @@ export function defaultPositions(center: [number, number]): Array<[number, numbe
   }
   return out;
 }
+
+/** Distance approximative en mètres (suffisante à l'échelle d'une parcelle). */
+function roughMeters(a: [number, number], b: [number, number]): number {
+  const dLat = (a[0] - b[0]) * 111320;
+  const dLng = (a[1] - b[1]) * 111320 * Math.cos((a[0] * Math.PI) / 180);
+  return Math.hypot(dLat, dLng);
+}
+
+/**
+ * Premier emplacement de la double couronne à plus de `minGapM` de tout point
+ * déjà posé. Si tout est occupé, on décale en spirale pour ne jamais superposer.
+ */
+export function firstFreePosition(
+  center: [number, number],
+  samples: SoilSample[],
+  minGapM = 10,
+): [number, number] {
+  const taken = samples
+    .filter((s) => s.lat != null && s.lng != null)
+    .map((s) => [s.lat as number, s.lng as number] as [number, number]);
+  const slots = defaultPositions(center);
+  for (const slot of slots) {
+    if (taken.every((t) => roughMeters(slot, t) > minGapM)) return slot;
+  }
+  const k = taken.length;
+  const r = 0.00027 * (2.6 + k * 0.18);
+  const a = (k * 2.39996) - Math.PI / 2; // angle d'or : répartition régulière
+  const lngScale = 1 / Math.max(0.2, Math.cos((center[0] * Math.PI) / 180));
+  return [center[0] + r * Math.sin(a), center[1] + r * lngScale * Math.cos(a)];
+}
+

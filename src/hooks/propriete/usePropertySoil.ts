@@ -106,6 +106,10 @@ export function usePropertySoil(proprieteId?: string) {
   const [saving, setSaving] = useState(false);
   const loadedIdRef = useRef<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Miroir synchrone du registre : permet de calculer id/lettre AVANT le setState. */
+  const localRef = useRef<PropertySoilState>(EMPTY);
+  localRef.current = local;
+
 
   useEffect(() => {
     if (proprieteId !== loadedIdRef.current) {
@@ -188,18 +192,27 @@ export function usePropertySoil(proprieteId?: string) {
         ...s,
         samples: s.samples.map((sm) => (sm.id === id ? { ...sm, ...patch } : sm)),
       })),
-    /** Ajoute un prélèvement (id/lettre garantis libres) et renvoie son id. */
-    addSample: (patch?: Partial<SoilSample>) => {
-      let createdId = '';
+    /**
+     * Ajoute un prélèvement et renvoie son identifiant (null si le maximum est atteint).
+     * L'id et la lettre sont calculés en amont du setState : la valeur retournée est
+     * donc toujours fiable, y compris en StrictMode (double invocation des updaters).
+     */
+    addSample: (patch?: Partial<SoilSample>): string | null => {
+      const current = localRef.current.samples ?? [];
+      if (current.length >= MAX_SAMPLES) return null;
+      const id = nextSampleId(current);
+      const label = nextLabel(current);
+      const created: SoilSample = { ...patch, id, label };
+      // Miroir immédiat : deux ajouts rapprochés ne peuvent plus produire le même id.
+      localRef.current = { ...localRef.current, samples: [...current, created] };
       setLocal((s) => {
+        if (s.samples.some((sm) => sm.id === id)) return s;
         if (s.samples.length >= MAX_SAMPLES) return s;
-        const id = nextSampleId(s.samples);
-        const label = nextLabel(s.samples);
-        createdId = id;
-        return { ...s, samples: [...s.samples, { ...patch, id, label }] };
+        return { ...s, samples: [...s.samples, created] };
       });
-      return createdId;
+      return id;
     },
+
     /** Réattribue la lettre affichée sans toucher à l'identifiant interne. */
     relabelSample: (id: string, label: string) =>
       setLocal((s) => ({
