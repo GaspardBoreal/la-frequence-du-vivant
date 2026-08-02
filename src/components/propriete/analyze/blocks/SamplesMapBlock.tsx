@@ -122,8 +122,13 @@ export const SamplesMapBlock: React.FC<{
   proprieteCenter?: [number, number] | null;
   samples: SoilSample[];
   onUpdate: (id: string, patch: Partial<SoilSample>) => void;
-  onAdd: () => void;
+  /** Renvoie l'identifiant du prélèvement créé. */
+  onAdd: (patch?: Partial<SoilSample>) => string | void;
   onRemove: (id: string) => void;
+  /** Réattribue la lettre du repère. */
+  onRelabel?: (id: string, label: string) => void;
+  /** Réinsère un prélèvement supprimé (annulation). */
+  onRestore?: (sample: SoilSample, at: number) => void;
   onBulkSet?: (next: SoilSample[]) => void;
   index?: number;
 }> = ({
@@ -133,9 +138,12 @@ export const SamplesMapBlock: React.FC<{
   onUpdate,
   onAdd,
   onRemove,
+  onRelabel,
+  onRestore,
   onBulkSet,
   index = 0,
 }) => {
+
   const { data: parcelles = [] } = useProprieteParcelles(proprieteId);
   const parcCenter = useMemo(() => centroidOfParcelles(parcelles), [parcelles]);
   const center: [number, number] = parcCenter ?? proprieteCenter ?? [45.0, 0.5];
