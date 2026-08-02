@@ -530,6 +530,18 @@
   100% { opacity: 1; transform: translateY(0); }
 }
 
+/* Auréole de survol des observations du vivant (Atelier · Herbier du moment) */
+@keyframes ds-vivant-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.86); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+.ds-vivant-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ds-vivant-pulse 1.5s ease-in-out infinite;
+}
+
+
 /* DESIGN DORDOGNE - Scoped styles for Dordogne exploration only */
 .dordogne-experience {
   /* Wave animations */
