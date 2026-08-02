@@ -145,7 +145,9 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
 
 
   return (
+    <>
     <AnimatePresence>
+
       {open && (
         <motion.div
           initial={{ opacity: 0 }}
