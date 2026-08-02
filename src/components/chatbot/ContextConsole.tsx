@@ -314,18 +314,27 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
                       const active = activeSet.has(contextSliceKey(p.id));
                       const empty = p.bytes <= 2;
                       return (
-                        <button
+                        <div
                           key={p.id}
+                          role="button"
+                          tabIndex={empty ? -1 : 0}
+                          aria-pressed={active}
                           onClick={() => !empty && toggle(p)}
-                          disabled={empty}
+                          onKeyDown={(e) => {
+                            if (!empty && (e.key === 'Enter' || e.key === ' ')) {
+                              e.preventDefault();
+                              toggle(p);
+                            }
+                          }}
                           className={cn(
-                            'relative w-full overflow-hidden text-left rounded-xl border px-3 py-2.5 pl-4 transition-all duration-200',
+                            'group/ctx relative w-full overflow-hidden text-left rounded-xl border px-3 py-2.5 pl-4 transition-all duration-200',
                             active
                               ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/40 shadow-[0_0_0_3px_hsl(var(--primary)/0.07),0_6px_18px_-10px_hsl(var(--primary)/0.6)]'
                               : 'border-border bg-background/60 hover:bg-muted/60 hover:border-border',
-                            empty && 'opacity-45 cursor-not-allowed',
+                            empty ? 'opacity-45 cursor-not-allowed' : 'cursor-pointer',
                           )}
                         >
+
                           {active && (
                             <motion.span
                               layoutId={`ctx-rail-${p.id}`}
