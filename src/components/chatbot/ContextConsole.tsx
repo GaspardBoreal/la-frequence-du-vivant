@@ -37,6 +37,8 @@ interface ContextConsoleProps {
   baseBytes?: number;
   /** UI spécialisée injectée en tête d'un groupe (ex : plateau des ouvrages). */
   groupExtras?: Record<string, React.ReactNode>;
+  /** Nom de la fiche courante (propriété, marche…) porté sur le bordereau. */
+  subject?: string | null;
 }
 
 
@@ -55,8 +57,10 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
   activeKeys,
   baseBytes = 0,
   groupExtras,
+  subject,
 }) => {
   const activeSet = useMemo(() => new Set(activeKeys), [activeKeys]);
+
 
   const groups = useMemo(() => {
     const map = new Map<string, ContextProvider[]>();
