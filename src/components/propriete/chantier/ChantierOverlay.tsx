@@ -198,6 +198,25 @@ export const ChantierOverlay: React.FC<Props> = ({
     [afterPool, lotSoil],
   );
 
+  /** Aperçu de l'ICG pour un tri encore en brouillon — rien n'est enregistré. */
+  const previewIcg = React.useCallback(
+    (draft: Record<string, SpeciesStatus>) => {
+      const merged = { ...speciesPhases.statuses, ...draft };
+      const p = poolsFromStatuses(scoped, workDate, merged);
+      const b = readIcg(p.before, lotSoil).detail.icg;
+      const afterSim =
+        afterMode === 'projete'
+          ? plantings.length
+            ? readIcg([...p.afterObserved, ...poolFromPlantings(plantings)], lotSoil).detail.icg
+            : null
+          : p.afterObserved.length
+            ? readIcg(p.afterObserved, lotSoil).detail.icg
+            : null;
+      return { before: b, after: afterSim };
+    },
+    [speciesPhases.statuses, scoped, workDate, lotSoil, afterMode, plantings],
+  );
+
 
   /* ---------- D. Médias du lot ---------- */
   const lotPhotos = React.useMemo(
