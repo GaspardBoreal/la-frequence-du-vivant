@@ -36,6 +36,7 @@ import ChantierLotPicker from './ChantierLotPicker';
 import IcgLadder, { IcgDeltaHero } from './IcgLadder';
 import MediaCurtain, { phasePhotos } from './MediaCurtain';
 import ChantierPhotoIntake from './ChantierPhotoIntake';
+import ChantierUploadCurtain from './ChantierUploadCurtain';
 import ChantierRapportLayout, {
   type RapportSpecies,
 } from './print/ChantierRapportLayout';
@@ -175,17 +176,29 @@ export const ChantierOverlay: React.FC<Props> = ({
 
   /** Verser des photos depuis Le Chantier : upload au carnet de l'ouvrage,
    *  puis rangement immédiat des nouvelles images dans la phase choisie. */
+  const [intakePhase, setIntakePhase] = React.useState<MediaPhase>('avant');
+  const [intakeObjetId, setIntakeObjetId] = React.useState<string | null>(null);
+  const [filing, setFiling] = React.useState(false);
+
   const handleIntake = React.useCallback(
     async (objetId: string, phase: MediaPhase, files: File[]) => {
+      setIntakePhase(phase);
+      setIntakeObjetId(objetId);
       const before = new Set(objetPhotos.photos.map((p) => p.id));
       await objetPhotos.upload(objetId, files);
-      const fresh = (await objetPhotos.refetch()).data ?? [];
-      const added = fresh.filter((p) => p.objet_id === objetId && !before.has(p.id));
-      for (const p of added) await setPhase(p.id, phase);
-      if (added.length) toast.success(`${added.length} image(s) rangée(s) en « ${phase} »`);
+      setFiling(true);
+      try {
+        const fresh = (await objetPhotos.refetch()).data ?? [];
+        const added = fresh.filter((p) => p.objet_id === objetId && !before.has(p.id));
+        for (const p of added) await setPhase(p.id, phase);
+        if (added.length) toast.success(`${added.length} image(s) rangée(s) en « ${phase} »`);
+      } finally {
+        setFiling(false);
+      }
     },
     [objetPhotos, setPhase],
   );
+
 
 
 
@@ -474,10 +487,22 @@ export const ChantierOverlay: React.FC<Props> = ({
             <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
               <ChantierPhotoIntake
                 ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))}
-                busy={!!objetPhotos.progress}
+                busy={!!objetPhotos.progress || filing}
                 progress={objetPhotos.progress}
                 onUpload={handleIntake}
               />
+              <ChantierUploadCurtain
+                items={objetPhotos.uploads}
+                phase={intakePhase}
+                filing={filing}
+                ouvrageLabel={
+                  lotObjets.find((o) => o.id === intakeObjetId)
+                    ? labelOfObjet(lotObjets.find((o) => o.id === intakeObjetId)!)
+                    : undefined
+                }
+                onClose={objetPhotos.clearUploads}
+              />
+
               <MediaCurtain
                 photos={phased}
                 onPhase={(id, phase: MediaPhase) => {
