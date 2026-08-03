@@ -599,6 +599,14 @@ export const PaletteStudio: React.FC<Props> = ({
             <Wand2 className="h-3.5 w-3.5" /> Scénographies
           </button>
           <button
+            onClick={() => setChantierOpen(true)}
+            title="Le Chantier — comparer l’avant et l’après travaux d’un lot d’ouvrages"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#c8a24a]/60 px-3 py-1.5 text-[11px] hover:border-[#c8a24a]"
+          >
+            <Hammer className="h-3.5 w-3.5" /> Le Chantier
+          </button>
+
+          <button
             onClick={() => setInspirationOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-line))] px-3 py-1.5 text-[11px] hover:border-[hsl(var(--ds-forest))]/60"
           >
