@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, RotateCcw, Sprout, Undo2 } from 'lucide-react';
+import { ArrowDownWideNarrow, ArrowDownAZ, Check, RotateCcw, Sprout, Undo2 } from 'lucide-react';
 import {
   SPECIES_STATUSES,
   SPECIES_STATUS_HINT,
@@ -7,8 +7,12 @@ import {
   SPECIES_STATUS_TONE,
   speciesKey,
   type CortegeEntry,
+  type SpeciesJuryResult,
   type SpeciesStatus,
+  type SpeciesVerdict,
 } from '@/lib/chantierIcg';
+import SpeciesWeightBar, { weightColor } from './SpeciesWeightBar';
+import CortegeBalance from './CortegeBalance';
 
 interface Props {
   entries: CortegeEntry[];
@@ -18,9 +22,12 @@ interface Props {
   preview: (draft: Record<string, SpeciesStatus>) => { before: number; after: number | null };
   /** Statuts déjà enregistrés (surcharges manuelles). */
   saved: Record<string, SpeciesStatus>;
+  /** Le jury « avant travaux » : poids de chaque espèce sur l'ICG. */
+  jury?: SpeciesJuryResult | null;
   onCommit: (changes: Record<string, SpeciesStatus | null>) => Promise<boolean> | void;
   onResetAll: () => void;
 }
+
 
 /**
  * « Le tri du cortège » — chaque espèce du lot reçoit son statut avant/après.
