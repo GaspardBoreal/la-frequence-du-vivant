@@ -107,6 +107,18 @@ export function observedIndicatorIds(pool: BiodiversitySpecies[]): string[] {
  * sur le même sol ; l'écart est sa contribution signée. Aucun barème n'est
  * dupliqué : c'est `computeConcordanceDetail` qui tranche, comme partout.
  */
+export interface SpeciesPoleImpact {
+  key: string;
+  short: string;
+  label: string;
+  intensity: number;
+  /** Verdict du pôle avec l'espèce, puis sans elle. */
+  matchWith: string;
+  matchWithout: string;
+  /** Points gagnés (ou perdus) sur ce pôle grâce à l'espèce. */
+  gain: number;
+}
+
 export interface SpeciesVerdict {
   plantId: string;
   plantName: string;
@@ -118,10 +130,15 @@ export interface SpeciesVerdict {
   observations: number;
   /** Pôles écologiques sur lesquels l'espèce pèse réellement. */
   poles: Array<{ key: string; short: string; intensity: number }>;
+  /** Détail pôle par pôle : ce que l'espèce change réellement au barème. */
+  impacts: SpeciesPoleImpact[];
+  /** Phrase en clair : « Sans elle, le pôle Richesse repasserait en accord. » */
+  reason: string;
   deltaPoints: number;
   deltaIcg: number;
   direction: 'up' | 'down' | 'flat';
 }
+
 
 export interface SpeciesJuryResult {
   verdicts: SpeciesVerdict[];
