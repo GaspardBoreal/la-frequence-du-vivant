@@ -35,6 +35,7 @@ import {
 import ChantierLotPicker from './ChantierLotPicker';
 import IcgLadder, { IcgDeltaHero } from './IcgLadder';
 import MediaCurtain, { phasePhotos } from './MediaCurtain';
+import ChantierPhotoIntake from './ChantierPhotoIntake';
 import ChantierRapportLayout, {
   type RapportSpecies,
 } from './print/ChantierRapportLayout';
@@ -171,6 +172,22 @@ export const ChantierOverlay: React.FC<Props> = ({
     () => phasePhotos(lotPhotos as any, active?.date_travaux ?? null, overrides),
     [lotPhotos, active?.date_travaux, overrides],
   );
+
+  /** Verser des photos depuis Le Chantier : upload au carnet de l'ouvrage,
+   *  puis rangement immédiat des nouvelles images dans la phase choisie. */
+  const handleIntake = React.useCallback(
+    async (objetId: string, phase: MediaPhase, files: File[]) => {
+      const before = new Set(objetPhotos.photos.map((p) => p.id));
+      await objetPhotos.upload(objetId, files);
+      const fresh = (await objetPhotos.refetch()).data ?? [];
+      const added = fresh.filter((p) => p.objet_id === objetId && !before.has(p.id));
+      for (const p of added) await setPhase(p.id, phase);
+      if (added.length) toast.success(`${added.length} image(s) rangée(s) en « ${phase} »`);
+    },
+    [objetPhotos, setPhase],
+  );
+
+
 
   /* ---------- F. Rapport ---------- */
   const inPlaceRaw = React.useMemo<RapportSpecies[]>(
@@ -455,6 +472,12 @@ export const ChantierOverlay: React.FC<Props> = ({
             </section>
 
             <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
+              <ChantierPhotoIntake
+                ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))}
+                busy={!!objetPhotos.progress}
+                progress={objetPhotos.progress}
+                onUpload={handleIntake}
+              />
               <MediaCurtain
                 photos={phased}
                 onPhase={(id, phase: MediaPhase) => {
