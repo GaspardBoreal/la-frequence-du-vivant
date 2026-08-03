@@ -44,6 +44,7 @@ import OuvrageGeometryLayer from './OuvrageGeometryLayer';
 import OuvrageSwitcher from './OuvrageSwitcher';
 import BalanceBar from './BalanceBar';
 import ScenarioTabs from './ScenarioTabs';
+import PremiersPas from './PremiersPas';
 import type { ScenographeProposal } from './scenographeStore';
 
 const GROWTH_STEPS = [
