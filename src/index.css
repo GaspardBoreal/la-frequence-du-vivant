@@ -12,6 +12,8 @@
     --ds-forest-soft: 118 20% 58%;  /* #7fa87f */
     --ds-earth: 30 27% 42%;         /* #8b6f4e */
     --ds-gold: 44 51% 54%;          /* #c9a84c */
+    --ds-ink: 40 18% 14%;           /* encre du carnet, sur crème */
+    --ds-ink-soft: 40 12% 34%;      /* annotations, légendes */
 
     /* === Étape 3 « J'identifie » — une teinte par critère écologique === */
     --ds-eco-eau: 192 45% 38%;      /* bleu-vert eau */
