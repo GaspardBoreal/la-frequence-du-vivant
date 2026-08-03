@@ -39,6 +39,8 @@ import {
 } from '@/lib/chantierIcg';
 
 import ChantierLotPicker from './ChantierLotPicker';
+import CortegeTriage from './CortegeTriage';
+import ProjectionGuide from './ProjectionGuide';
 import IcgLadder, { IcgDeltaHero } from './IcgLadder';
 import IcgPipeline from './IcgPipeline';
 import SpeciesJury from './SpeciesJury';
