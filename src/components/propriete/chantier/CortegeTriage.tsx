@@ -39,11 +39,28 @@ export const CortegeTriage: React.FC<Props> = ({
   labelFor,
   preview,
   saved,
+  jury,
   onCommit,
   onResetAll,
 }) => {
   const [draft, setDraft] = React.useState<Record<string, SpeciesStatus>>({});
   const [busy, setBusy] = React.useState(false);
+  const [order, setOrder] = React.useState<'weight' | 'alpha'>('weight');
+  const [openKey, setOpenKey] = React.useState<string | null>(null);
+  const [hovered, setHovered] = React.useState<string | null>(null);
+
+  /** Poids ICG par espèce, indexé sur le nom scientifique normalisé. */
+  const weights = React.useMemo(() => {
+    const map = new Map<string, SpeciesVerdict>();
+    for (const v of jury?.verdicts ?? []) map.set(speciesKey(v.scientificName), v);
+    return map;
+  }, [jury]);
+
+  const maxWeight = React.useMemo(
+    () => Math.max(1, ...(jury?.verdicts ?? []).map((v) => Math.abs(v.deltaPoints))),
+    [jury],
+  );
+
 
   const current = React.useMemo(() => {
     const out: Record<string, SpeciesStatus> = {};
