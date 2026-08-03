@@ -167,6 +167,22 @@ export const ChantierOverlay: React.FC<Props> = ({
   );
   const afterLabel = afterMode === 'projete' ? 'Après travaux · projeté' : 'Après travaux · constaté';
 
+  /* ---------- C bis. Le jury des espèces : qui monte, qui descend ---------- */
+  const beforeJury = React.useMemo(
+    () => speciesIcgJury(beforePool, lotSoil),
+    [beforePool, lotSoil],
+  );
+  const afterPool = React.useMemo(() => {
+    if (afterMode === 'projete')
+      return plantings.length ? [...beforePool, ...poolFromPlantings(plantings)] : null;
+    return afterWaypoints.length ? poolFromWaypoints(afterWaypoints) : null;
+  }, [afterMode, plantings, beforePool, afterWaypoints]);
+  const afterJury = React.useMemo(
+    () => (afterPool ? speciesIcgJury(afterPool, lotSoil) : null),
+    [afterPool, lotSoil],
+  );
+
+
   /* ---------- D. Médias du lot ---------- */
   const lotPhotos = React.useMemo(
     () => lotObjetIds.flatMap((id) => objetPhotos.byObjet.get(id) ?? []),
