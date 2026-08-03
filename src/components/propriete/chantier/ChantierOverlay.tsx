@@ -14,6 +14,7 @@ import {
   useChantierScenarios,
   type ProprieteChantier,
 } from '@/hooks/propriete/useProprieteChantiers';
+import { useChantierSpeciesPhases } from '@/hooks/propriete/useChantierSpeciesPhases';
 import { resolveSpeciesThumbs } from '@/hooks/useSpeciesThumb';
 import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
 
