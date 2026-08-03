@@ -178,7 +178,7 @@ export function speciesIcgJury(pool: BiodiversitySpecies[], soil: SoilLite): Spe
         const gain = row.rowPoints - (w?.rowPoints ?? 0);
         if (!pole && gain === 0) return null;
         return {
-          key: row.key,
+          key: row.key as string,
           short: pole?.short ?? row.label,
           label: row.label,
           intensity: pole?.intensity ?? 0,
