@@ -162,14 +162,18 @@ export const ChantierOverlay: React.FC<Props> = ({
 
   const before = React.useMemo(() => readIcg(beforePool, lotSoil), [beforePool, lotSoil]);
 
-  const after = React.useMemo(() => {
-    if (afterMode === 'projete') {
-      if (!plantings.length) return null;
-      return readIcg([...beforePool, ...poolFromPlantings(plantings)], lotSoil);
-    }
-    if (!afterWaypoints.length) return null;
-    return readIcg(poolFromWaypoints(afterWaypoints), lotSoil);
-  }, [afterMode, plantings, beforePool, afterWaypoints, lotSoil]);
+  const afterPool = React.useMemo(() => {
+    if (afterMode === 'projete')
+      return plantings.length
+        ? [...afterObservedPool, ...poolFromPlantings(plantings)]
+        : null;
+    return afterObservedPool.length ? afterObservedPool : null;
+  }, [afterMode, plantings, afterObservedPool]);
+
+  const after = React.useMemo(
+    () => (afterPool ? readIcg(afterPool, lotSoil) : null),
+    [afterPool, lotSoil],
+  );
 
   const delta = React.useMemo(
     () => (after ? icgDelta(before.detail, after.detail) : null),
@@ -182,11 +186,6 @@ export const ChantierOverlay: React.FC<Props> = ({
     () => speciesIcgJury(beforePool, lotSoil),
     [beforePool, lotSoil],
   );
-  const afterPool = React.useMemo(() => {
-    if (afterMode === 'projete')
-      return plantings.length ? [...beforePool, ...poolFromPlantings(plantings)] : null;
-    return afterWaypoints.length ? poolFromWaypoints(afterWaypoints) : null;
-  }, [afterMode, plantings, beforePool, afterWaypoints]);
   const afterJury = React.useMemo(
     () => (afterPool ? speciesIcgJury(afterPool, lotSoil) : null),
     [afterPool, lotSoil],
