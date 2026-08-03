@@ -12,6 +12,8 @@ import { classifyObservations, EDGE_TOLERANCE_M } from '@/lib/ouvrageScope';
 import { matchPlantsWithPool } from '@/lib/plantIndicatorMatcher';
 import {
   computeConcordanceDetail,
+  ECO_POLES,
+  poleIntensity,
   type ConcordanceDetail,
   type ConcordanceRow,
   type SoilLite,
