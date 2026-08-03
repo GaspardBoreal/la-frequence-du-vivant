@@ -449,12 +449,15 @@ export const ChantierOverlay: React.FC<Props> = ({
                   ))}
                 </select>
               )}
-              {afterMode === 'projete' && !plantings.length && (
-                <span className="text-[11.5px] italic opacity-60">
-                  Aucune scénographie sur ce lot : posez des espèces dans le Scénographe pour
-                  projeter l’après.
-                </span>
+              {afterMode === 'projete' && plantings.length > 0 && (
+                <ProjectionGuide
+                  ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))}
+                  hasScenario
+                  scenarioId={scenario?.id ?? null}
+                  scenarioObjetId={scenario?.objet_id ?? null}
+                />
               )}
+
               {afterMode === 'constate' && !active.date_travaux && (
                 <span className="text-[11.5px] italic opacity-60">
                   Fixez la date des travaux pour distinguer les relevés d’après.
