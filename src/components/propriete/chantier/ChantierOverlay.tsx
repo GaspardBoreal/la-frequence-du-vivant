@@ -15,6 +15,8 @@ import {
   type ProprieteChantier,
 } from '@/hooks/propriete/useProprieteChantiers';
 import { resolveSpeciesThumbs } from '@/hooks/useSpeciesThumb';
+import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
+
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
 import { classifyObservations } from '@/lib/ouvrageScope';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
@@ -171,7 +173,7 @@ export const ChantierOverlay: React.FC<Props> = ({
   );
 
   /* ---------- F. Rapport ---------- */
-  const inPlaceEntries = React.useMemo<RapportSpecies[]>(
+  const inPlaceRaw = React.useMemo<RapportSpecies[]>(
     () =>
       beforePool
         .map((s) => ({
@@ -183,6 +185,14 @@ export const ChantierOverlay: React.FC<Props> = ({
         .sort((a, b) => b.count - a.count),
     [beforePool],
   );
+
+  // Noms vernaculaires FR — même résolveur que L'Herbier du moment
+  const { displayNameFor } = useWaypointFrenchNames(inPlaceRaw);
+  const inPlaceEntries = React.useMemo<RapportSpecies[]>(
+    () => inPlaceRaw.map((s) => ({ ...s, commonName: displayNameFor(s) })),
+    [inPlaceRaw, displayNameFor],
+  );
+
 
   const thumbNames = React.useMemo(
     () => [
