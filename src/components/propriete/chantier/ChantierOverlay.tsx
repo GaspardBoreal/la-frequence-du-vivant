@@ -175,17 +175,29 @@ export const ChantierOverlay: React.FC<Props> = ({
 
   /** Verser des photos depuis Le Chantier : upload au carnet de l'ouvrage,
    *  puis rangement immédiat des nouvelles images dans la phase choisie. */
+  const [intakePhase, setIntakePhase] = React.useState<MediaPhase>('avant');
+  const [intakeObjetId, setIntakeObjetId] = React.useState<string | null>(null);
+  const [filing, setFiling] = React.useState(false);
+
   const handleIntake = React.useCallback(
     async (objetId: string, phase: MediaPhase, files: File[]) => {
+      setIntakePhase(phase);
+      setIntakeObjetId(objetId);
       const before = new Set(objetPhotos.photos.map((p) => p.id));
       await objetPhotos.upload(objetId, files);
-      const fresh = (await objetPhotos.refetch()).data ?? [];
-      const added = fresh.filter((p) => p.objet_id === objetId && !before.has(p.id));
-      for (const p of added) await setPhase(p.id, phase);
-      if (added.length) toast.success(`${added.length} image(s) rangée(s) en « ${phase} »`);
+      setFiling(true);
+      try {
+        const fresh = (await objetPhotos.refetch()).data ?? [];
+        const added = fresh.filter((p) => p.objet_id === objetId && !before.has(p.id));
+        for (const p of added) await setPhase(p.id, phase);
+        if (added.length) toast.success(`${added.length} image(s) rangée(s) en « ${phase} »`);
+      } finally {
+        setFiling(false);
+      }
     },
     [objetPhotos, setPhase],
   );
+
 
 
 
