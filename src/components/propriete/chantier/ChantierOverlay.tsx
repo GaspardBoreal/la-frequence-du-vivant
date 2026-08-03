@@ -455,6 +455,12 @@ export const ChantierOverlay: React.FC<Props> = ({
             </section>
 
             <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
+              <ChantierPhotoIntake
+                ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))}
+                busy={!!objetPhotos.progress}
+                progress={objetPhotos.progress}
+                onUpload={handleIntake}
+              />
               <MediaCurtain
                 photos={phased}
                 onPhase={(id, phase: MediaPhase) => {
