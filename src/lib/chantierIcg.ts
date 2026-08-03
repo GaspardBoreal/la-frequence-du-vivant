@@ -98,6 +98,115 @@ export function observedIndicatorIds(pool: BiodiversitySpecies[]): string[] {
   return matches.filter((m) => m.confidence !== 'none').map((m) => m.plant.id);
 }
 
+/**
+ * Le jury des espèces — contribution nette d'une bio-indicatrice à l'ICG.
+ *
+ * Méthode : retrait à un. On recalcule le même barème D.S. sans l'espèce,
+ * sur le même sol ; l'écart est sa contribution signée. Aucun barème n'est
+ * dupliqué : c'est `computeConcordanceDetail` qui tranche, comme partout.
+ */
+export interface SpeciesVerdict {
+  plantId: string;
+  plantName: string;
+  latin: string | null;
+  /** Nom scientifique observé sur le terrain (peut différer du latin de la fiche). */
+  scientificName: string;
+  commonName: string | null;
+  photoUrl: string | null;
+  observations: number;
+  /** Pôles écologiques sur lesquels l'espèce pèse réellement. */
+  poles: Array<{ key: string; short: string; intensity: number }>;
+  deltaPoints: number;
+  deltaIcg: number;
+  direction: 'up' | 'down' | 'flat';
+}
+
+export interface SpeciesJuryResult {
+  verdicts: SpeciesVerdict[];
+  up: SpeciesVerdict[];
+  down: SpeciesVerdict[];
+  flat: SpeciesVerdict[];
+  /** Espèces observées sans fiche bio-indicatrice : elles ne pèsent pas sur l'ICG. */
+  unmatched: Array<{ scientificName: string; commonName: string | null; observations: number }>;
+  /** Phrase de synthèse, écrite en clair. */
+  sentence: string;
+}
+
+export function speciesIcgJury(pool: BiodiversitySpecies[], soil: SoilLite): SpeciesJuryResult {
+  const { matches } = matchPlantsWithPool(pool);
+  const kept = matches.filter((m) => m.confidence !== 'none');
+  const ids = kept.map((m) => m.plant.id);
+  const full = computeConcordanceDetail(ids, soil);
+
+  const verdicts: SpeciesVerdict[] = kept.map((m) => {
+    const without = computeConcordanceDetail(
+      ids.filter((id) => id !== m.plant.id),
+      soil,
+    );
+    const deltaPoints = full.points - without.points;
+    const deltaIcg = full.icg - without.icg;
+    return {
+      plantId: m.plant.id,
+      plantName: m.plant.nom,
+      latin: m.plant.latin ?? null,
+      scientificName: m.species?.scientificName || m.plant.latin || m.plant.nom,
+      commonName: m.species?.commonName || null,
+      photoUrl: m.photos?.[0] ?? null,
+      observations: m.observations,
+      poles: ECO_POLES.map((p) => ({
+        key: p.key,
+        short: p.short,
+        intensity: poleIntensity(m.plant, p),
+      })).filter((p) => p.intensity > 0),
+      deltaPoints,
+      deltaIcg,
+      direction: deltaPoints > 0 ? 'up' : deltaPoints < 0 ? 'down' : 'flat',
+    };
+  });
+
+  const matchedNames = new Set(
+    kept
+      .map((m) => (m.species?.scientificName || '').trim().toLowerCase())
+      .filter(Boolean),
+  );
+  const unmatched = pool
+    .filter((s) => !matchedNames.has((s.scientificName || '').trim().toLowerCase()))
+    .map((s) => ({
+      scientificName: s.scientificName,
+      commonName: s.commonName || null,
+      observations: s.observations,
+    }));
+
+  const byWeight = (a: SpeciesVerdict, b: SpeciesVerdict) =>
+    Math.abs(b.deltaPoints) - Math.abs(a.deltaPoints);
+  const up = verdicts.filter((v) => v.direction === 'up').sort(byWeight);
+  const down = verdicts.filter((v) => v.direction === 'down').sort(byWeight);
+  const flat = verdicts.filter((v) => v.direction === 'flat');
+
+  const named = (list: SpeciesVerdict[]) =>
+    list.slice(0, 2).map((v) => v.plantName).join(' et ');
+  const parts: string[] = [];
+  if (up.length)
+    parts.push(
+      `${up.length} espèce${up.length > 1 ? 's confirment' : ' confirme'} la lecture du sol${up.length ? ` (surtout ${named(up)})` : ''}`,
+    );
+  if (down.length)
+    parts.push(
+      `${down.length} ${down.length > 1 ? 'la contredisent' : 'la contredit'} (${named(down)})`,
+    );
+  if (!parts.length)
+    parts.push('aucune bio-indicatrice reconnue ne déplace le score sur ce périmètre');
+
+  return {
+    verdicts,
+    up,
+    down,
+    flat,
+    unmatched,
+    sentence: `${parts.join(' · ')}.`,
+  };
+}
+
 /** Les espèces posées dans un scénario deviennent la flore attendue après travaux. */
 export function poolFromPlantings(plantings: Planting[]): BiodiversitySpecies[] {
   const today = new Date().toISOString().slice(0, 10);
