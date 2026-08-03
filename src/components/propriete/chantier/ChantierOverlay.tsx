@@ -173,6 +173,22 @@ export const ChantierOverlay: React.FC<Props> = ({
     [lotPhotos, active?.date_travaux, overrides],
   );
 
+  /** Verser des photos depuis Le Chantier : upload au carnet de l'ouvrage,
+   *  puis rangement immédiat des nouvelles images dans la phase choisie. */
+  const handleIntake = React.useCallback(
+    async (objetId: string, phase: MediaPhase, files: File[]) => {
+      const before = new Set(objetPhotos.photos.map((p) => p.id));
+      await objetPhotos.upload(objetId, files);
+      const fresh = (await objetPhotos.refetch()).data ?? [];
+      const added = fresh.filter((p) => p.objet_id === objetId && !before.has(p.id));
+      for (const p of added) await setPhase(p.id, phase);
+      if (added.length) toast.success(`${added.length} image(s) rangée(s) en « ${phase} »`);
+    },
+    [objetPhotos, setPhase],
+  );
+
+
+
   /* ---------- F. Rapport ---------- */
   const inPlaceRaw = React.useMemo<RapportSpecies[]>(
     () =>
