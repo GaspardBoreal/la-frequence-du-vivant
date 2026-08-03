@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight, MousePointerClick, Sprout, Wand2 } from 'lucide-react';
-import { openScenographe } from '@/components/propriete/scenographe/scenographeStore';
+import { openScenographe, useScenographeState } from '@/components/propriete/scenographe/scenographeStore';
 
 interface Props {
   ouvrages: Array<{ id: string; label: string }>;
@@ -39,6 +39,15 @@ export const ProjectionGuide: React.FC<Props> = ({
   scenarioObjetId,
 }) => {
   const [objetId, setObjetId] = React.useState<string>(ouvrages[0]?.id ?? '');
+  const [opening, setOpening] = React.useState(false);
+  const scenoOpen = useScenographeState().open;
+  React.useEffect(() => {
+    if (scenoOpen) setOpening(false);
+  }, [scenoOpen]);
+  const launch = (id: string, scenario?: string | null) => {
+    setOpening(true);
+    openScenographe(id, { scenarioId: scenario ?? undefined });
+  };
   React.useEffect(() => {
     if (!ouvrages.some((o) => o.id === objetId)) setObjetId(ouvrages[0]?.id ?? '');
   }, [ouvrages, objetId]);
@@ -47,10 +56,11 @@ export const ProjectionGuide: React.FC<Props> = ({
     return (
       <button
         type="button"
-        onClick={() => openScenographe(scenarioObjetId || objetId, { scenarioId: scenarioId ?? undefined })}
+        onClick={() => launch(scenarioObjetId || objetId, scenarioId)}
         className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-[11.5px] opacity-80 hover:opacity-100"
       >
-        <Wand2 className="h-3.5 w-3.5 text-[#c8a24a]" /> Modifier la scénographie
+        <Wand2 className="h-3.5 w-3.5 text-[#c8a24a]" />{' '}
+        {opening ? 'Ouverture du Scénographe…' : 'Modifier la scénographie'}
       </button>
     );
   }
@@ -88,11 +98,12 @@ export const ProjectionGuide: React.FC<Props> = ({
         )}
         <button
           type="button"
-          disabled={!objetId}
-          onClick={() => openScenographe(objetId)}
+          disabled={!objetId || opening}
+          onClick={() => launch(objetId)}
           className="inline-flex items-center gap-1.5 rounded-full border border-[#c8a24a] bg-[#c8a24a]/20 px-3.5 py-1.5 text-[12px] font-medium text-[#e7d3a1] disabled:opacity-40"
         >
-          <Wand2 className="h-3.5 w-3.5" /> Ouvrir le Scénographe
+          <Wand2 className="h-3.5 w-3.5" />{' '}
+          {opening ? 'Ouverture du Scénographe…' : 'Ouvrir le Scénographe'}
         </button>
         <span className="text-[10.5px] italic opacity-55">
           {ouvrages.length > 1
