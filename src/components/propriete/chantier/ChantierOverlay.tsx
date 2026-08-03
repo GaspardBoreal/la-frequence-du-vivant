@@ -15,6 +15,8 @@ import {
   type ProprieteChantier,
 } from '@/hooks/propriete/useProprieteChantiers';
 import { resolveSpeciesThumbs } from '@/hooks/useSpeciesThumb';
+import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
+
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
 import { classifyObservations } from '@/lib/ouvrageScope';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
