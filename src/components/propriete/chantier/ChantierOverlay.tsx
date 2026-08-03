@@ -36,7 +36,7 @@ import MediaCurtain, { phasePhotos } from './MediaCurtain';
 import ChantierRapportLayout, {
   type RapportSpecies,
 } from './print/ChantierRapportLayout';
-import usePrintCombined from '@/components/propriete/print/usePrintCombined';
+import { usePrintCombined } from '@/components/propriete/print/usePrintCombined';
 import PrintPreparationOverlay from '@/components/propriete/print/PrintPreparationOverlay';
 
 interface Props {
