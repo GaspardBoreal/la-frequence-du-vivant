@@ -274,13 +274,17 @@ export const ChantierOverlay: React.FC<Props> = ({
   const nameInput = React.useMemo(
     () => [
       ...inPlaceRaw,
+      ...cortege.map((c) => ({
+        scientificName: c.scientificName,
+        commonName: c.commonName,
+      })),
       ...beforeJury.verdicts.map((v) => ({
         scientificName: v.scientificName,
         commonName: v.commonName,
       })),
       ...beforeJury.unmatched,
     ],
-    [inPlaceRaw, beforeJury],
+    [inPlaceRaw, cortege, beforeJury],
   );
   const { displayNameFor } = useWaypointFrenchNames(nameInput);
   const inPlaceEntries = React.useMemo<RapportSpecies[]>(
