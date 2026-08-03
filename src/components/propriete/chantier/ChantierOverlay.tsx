@@ -17,6 +17,7 @@ import {
 import { useChantierSpeciesPhases } from '@/hooks/propriete/useChantierSpeciesPhases';
 import { resolveSpeciesThumbs } from '@/hooks/useSpeciesThumb';
 import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
+import { useScenographeState } from '@/components/propriete/scenographe/scenographeStore';
 
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
 import { classifyObservations } from '@/lib/ouvrageScope';
@@ -79,6 +80,10 @@ export const ChantierOverlay: React.FC<Props> = ({
   onClose,
 }) => {
   const queryClient = useQueryClient();
+  const scenoState = useScenographeState();
+  /** Le Scénographe vit à z-3000, sous cet écran : on s'efface le temps de son ouverture. */
+  const hiddenByScenographe = scenoState.open && scenoState.proprieteId === proprieteId;
+
   const { chantiers, create, patch, remove } = useProprieteChantiers(proprieteId);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const active = chantiers.find((c) => c.id === activeId) ?? null;
@@ -655,6 +660,8 @@ export const ChantierOverlay: React.FC<Props> = ({
         )}
     </div>
   );
+
+  if (hiddenByScenographe) return null;
 
   return createPortal(body, document.body);
 };
