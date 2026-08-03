@@ -28,12 +28,15 @@ import {
   poolFromWaypoints,
   readIcg,
   scopeWaypoints,
+  speciesIcgJury,
   type ChantierRigour,
   type MediaPhase,
 } from '@/lib/chantierIcg';
 
 import ChantierLotPicker from './ChantierLotPicker';
 import IcgLadder, { IcgDeltaHero } from './IcgLadder';
+import IcgPipeline from './IcgPipeline';
+import SpeciesJury from './SpeciesJury';
 import MediaCurtain, { phasePhotos } from './MediaCurtain';
 import ChantierPhotoIntake from './ChantierPhotoIntake';
 import ChantierUploadCurtain from './ChantierUploadCurtain';
