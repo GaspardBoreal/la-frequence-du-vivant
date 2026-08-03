@@ -99,6 +99,21 @@ export const CortegeTriage: React.FC<Props> = ({
 
   const gain = sim.after != null && base.after != null ? sim.after - base.after : null;
 
+  const ordered = React.useMemo(() => {
+    const list = [...entries];
+    if (order === 'alpha')
+      return list.sort((a, b) => labelFor(a).localeCompare(labelFor(b), 'fr'));
+    return list.sort((a, b) => {
+      const wa = weights.get(speciesKey(a.scientificName))?.deltaPoints ?? 0;
+      const wb = weights.get(speciesKey(b.scientificName))?.deltaPoints ?? 0;
+      if (wa === wb) return labelFor(a).localeCompare(labelFor(b), 'fr');
+      // positives d'abord (les plus fortes en haut), puis négatives (les plus lourdes)
+      if (wa >= 0 && wb >= 0) return wb - wa;
+      if (wa < 0 && wb < 0) return wa - wb;
+      return wa >= 0 ? -1 : 1;
+    });
+  }, [entries, order, weights, labelFor]);
+
   return (
     <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -106,6 +121,22 @@ export const CortegeTriage: React.FC<Props> = ({
           <Sprout className="h-3 w-3" /> Le tri du cortège · {entries.length}
         </p>
         <div className="ml-auto flex flex-wrap items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setOrder((o) => (o === 'weight' ? 'alpha' : 'weight'))}
+            title="Changer l'ordre de lecture"
+            className="inline-flex items-center gap-1 rounded-full border border-white/15 px-2.5 py-1 text-[10.5px] opacity-75 hover:opacity-100"
+          >
+            {order === 'weight' ? (
+              <>
+                <ArrowDownWideNarrow className="h-3 w-3" /> Par influence
+              </>
+            ) : (
+              <>
+                <ArrowDownAZ className="h-3 w-3" /> Alphabétique
+              </>
+            )}
+          </button>
           <button
             type="button"
             onClick={() => setAll('conservee')}
@@ -139,6 +170,18 @@ export const CortegeTriage: React.FC<Props> = ({
         ))}
       </div>
 
+      {jury && (
+        <CortegeBalance
+          up={jury.up}
+          down={jury.down}
+          sentence={jury.sentence}
+          nameFor={(v) => v.plantName}
+          hovered={hovered}
+          onHover={setHovered}
+          onSelect={(v) => setOpenKey(speciesKey(v.scientificName))}
+        />
+      )}
+
       {!entries.length && (
         <p className="text-[12px] italic opacity-60">
           Aucune observation dans ce périmètre — élargissez la rigueur.
@@ -146,52 +189,128 @@ export const CortegeTriage: React.FC<Props> = ({
       )}
 
       <ul className="grid gap-1.5 sm:grid-cols-2">
-        {entries.map((e) => {
+        {ordered.map((e) => {
           const key = speciesKey(e.scientificName);
           const status = current[key];
           const dirty = status !== (saved[key] ?? e.defaultStatus);
+          const v = weights.get(key);
+          const weight = v?.deltaIcg ?? 0;
+          const ghost = status === 'retiree' || status === 'ecartee';
+          const open = openKey === key;
+          const lit = hovered && v && hovered === v.plantId;
           return (
             <li
               key={key}
-              className="flex items-center gap-2 rounded-xl border px-2.5 py-1.5 transition"
+              className="rounded-xl border px-2.5 py-1.5 transition"
               style={{
-                borderColor: dirty ? SPECIES_STATUS_TONE[status] : 'rgba(255,255,255,0.12)',
-                background: dirty ? `${SPECIES_STATUS_TONE[status]}14` : undefined,
+                borderColor: lit
+                  ? weightColor(weight)
+                  : dirty
+                    ? SPECIES_STATUS_TONE[status]
+                    : 'rgba(255,255,255,0.12)',
+                background: lit
+                  ? `${weightColor(weight)}18`
+                  : dirty
+                    ? `${SPECIES_STATUS_TONE[status]}14`
+                    : undefined,
               }}
             >
-              <span
-                className="h-6 w-6 shrink-0 overflow-hidden rounded-md bg-white/10"
-                aria-hidden
-              >
-                {e.photoUrl && (
-                  <img src={e.photoUrl} alt="" className="h-full w-full object-cover" />
-                )}
-              </span>
-              <span className="min-w-0 flex-1 truncate text-[12px]">
-                {labelFor(e)} <span className="opacity-45">×{e.count}</span>
-              </span>
-              <span className="flex shrink-0 gap-0.5">
-                {SPECIES_STATUSES.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    title={`${SPECIES_STATUS_LABEL[s]} — ${SPECIES_STATUS_HINT[s]}`}
-                    onClick={() => setDraft((d) => ({ ...d, [key]: s }))}
-                    className="rounded-full px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.08em] transition"
-                    style={
-                      status === s
-                        ? { background: SPECIES_STATUS_TONE[s], color: '#0d1c14' }
-                        : { opacity: 0.45 }
-                    }
+              <div className="flex items-center gap-2">
+                <span
+                  className="h-6 w-6 shrink-0 overflow-hidden rounded-md bg-white/10"
+                  aria-hidden
+                >
+                  {e.photoUrl && (
+                    <img src={e.photoUrl} alt="" className="h-full w-full object-cover" />
+                  )}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[12px]">
+                  {labelFor(e)} <span className="opacity-45">×{e.count}</span>
+                </span>
+
+                <button
+                  type="button"
+                  disabled={!v}
+                  onClick={() => setOpenKey(open ? null : key)}
+                  onMouseEnter={() => v && setHovered(v.plantId)}
+                  onMouseLeave={() => setHovered(null)}
+                  title={
+                    v
+                      ? `${weight > 0 ? '+' : ''}${weight} pts d'ICG — voir pourquoi`
+                      : 'Hors référentiel bio-indicateur : sans influence sur l’ICG'
+                  }
+                  className="flex shrink-0 items-center gap-1.5 rounded-md px-0.5 py-0.5 transition hover:bg-white/[0.06] disabled:cursor-default disabled:opacity-35"
+                >
+                  <SpeciesWeightBar
+                    value={v ? v.deltaPoints : 0}
+                    max={maxWeight}
+                    ghost={ghost}
+                    width={62}
+                  />
+                  <span
+                    className="w-[26px] text-right text-[10.5px] font-semibold tabular-nums"
+                    style={{
+                      color: v ? weightColor(weight) : undefined,
+                      opacity: v ? (ghost ? 0.5 : 1) : 0.35,
+                    }}
                   >
-                    {SPECIES_STATUS_LABEL[s].slice(0, 4)}
-                  </button>
-                ))}
-              </span>
+                    {v ? (weight > 0 ? `+${weight}` : weight === 0 ? '—' : weight) : '·'}
+                  </span>
+                </button>
+
+                <span className="flex shrink-0 gap-0.5">
+                  {SPECIES_STATUSES.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      title={`${SPECIES_STATUS_LABEL[s]} — ${SPECIES_STATUS_HINT[s]}`}
+                      onClick={() => setDraft((d) => ({ ...d, [key]: s }))}
+                      className="rounded-full px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.08em] transition"
+                      style={
+                        status === s
+                          ? { background: SPECIES_STATUS_TONE[s], color: '#0d1c14' }
+                          : { opacity: 0.45 }
+                      }
+                    >
+                      {SPECIES_STATUS_LABEL[s].slice(0, 4)}
+                    </button>
+                  ))}
+                </span>
+              </div>
+
+              {open && v && (
+                <div className="mt-1.5 border-t border-current/10 pt-1.5">
+                  {v.impacts.length > 0 ? (
+                    <ul className="space-y-0.5">
+                      {v.impacts.map((im) => (
+                        <li
+                          key={im.key}
+                          className="flex items-center gap-2 text-[10.5px] opacity-80"
+                        >
+                          <span className="w-[92px] shrink-0 truncate">{im.label}</span>
+                          <span className="shrink-0 opacity-50">·{im.intensity}</span>
+                          <span className="min-w-0 flex-1 truncate opacity-65">
+                            {im.matchWith.toLowerCase()}
+                            {im.gain !== 0 && ` (sans elle : ${im.matchWithout.toLowerCase()})`}
+                          </span>
+                          <span
+                            className="w-[26px] shrink-0 text-right font-semibold tabular-nums"
+                            style={{ color: weightColor(im.gain) }}
+                          >
+                            {im.gain > 0 ? `+${im.gain}` : im.gain === 0 ? '—' : im.gain}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <p className="mt-1 text-[10.5px] italic opacity-70">{v.reason}</p>
+                </div>
+              )}
             </li>
           );
         })}
       </ul>
+
 
       {changeCount > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-[#c8a24a]/40 bg-[#c8a24a]/[0.08] px-3 py-2">
