@@ -486,10 +486,22 @@ export const ChantierOverlay: React.FC<Props> = ({
             <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
               <ChantierPhotoIntake
                 ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))}
-                busy={!!objetPhotos.progress}
+                busy={!!objetPhotos.progress || filing}
                 progress={objetPhotos.progress}
                 onUpload={handleIntake}
               />
+              <ChantierUploadCurtain
+                items={objetPhotos.uploads}
+                phase={intakePhase}
+                filing={filing}
+                ouvrageLabel={
+                  lotObjets.find((o) => o.id === intakeObjetId)
+                    ? labelOfObjet(lotObjets.find((o) => o.id === intakeObjetId)!)
+                    : undefined
+                }
+                onClose={objetPhotos.clearUploads}
+              />
+
               <MediaCurtain
                 photos={phased}
                 onPhase={(id, phase: MediaPhase) => {
