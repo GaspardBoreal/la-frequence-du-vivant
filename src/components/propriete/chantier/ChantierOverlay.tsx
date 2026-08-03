@@ -531,27 +531,15 @@ export const ChantierOverlay: React.FC<Props> = ({
               )}
             </section>
 
-            <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
-              <p className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] opacity-55">
-                <Sprout className="h-3 w-3" /> Cortège en place · {inPlaceEntries.length}
-              </p>
-              <ul className="flex flex-wrap gap-1.5">
-                {inPlaceEntries.map((s) => (
-                  <li
-                    key={s.scientificName}
-                    className="rounded-full border border-white/12 px-2.5 py-1 text-[11.5px]"
-                  >
-                    {s.commonName || s.scientificName}{' '}
-                    <span className="opacity-50">×{s.count}</span>
-                  </li>
-                ))}
-                {!inPlaceEntries.length && (
-                  <li className="text-[12px] italic opacity-60">
-                    Aucune observation dans ce périmètre — élargissez la rigueur.
-                  </li>
-                )}
-              </ul>
-            </section>
+            <CortegeTriage
+              entries={cortege}
+              labelFor={(e) => displayNameFor(e)}
+              saved={speciesPhases.statuses}
+              preview={previewIcg}
+              onCommit={(changes) => speciesPhases.commit(changes)}
+              onResetAll={() => void speciesPhases.resetAll()}
+            />
+
 
             <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
               <ChantierPhotoIntake
