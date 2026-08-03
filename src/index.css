@@ -2273,7 +2273,22 @@
     letter-spacing: 1.6pt;
     text-transform: uppercase;
     color: #8a6d3b;
+  /* Rapport « Le Chantier » — pages A4 sobres */
+  .chantier-print-page {
+    box-sizing: border-box;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 18mm 16mm 14mm;
+    background: #fdfaf4;
+    break-after: page;
+    page-break-after: always;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
+  .chantier-print-page:last-child { break-after: auto; page-break-after: auto; }
+  .chantier-print-body figure { break-inside: avoid; page-break-inside: avoid; }
+}
+
 }
 
 

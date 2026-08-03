@@ -13,6 +13,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Wand2,
+  Hammer,
+
 } from 'lucide-react';
 import RichMap from '@/components/maps/RichMap';
 import { ZONE_COLORS, type ProprieteZone } from '@/hooks/propriete/usePropertyZones';
@@ -44,6 +46,8 @@ import LayersPanel, { type SystemLayerState } from './LayersPanel';
 import ToolPalette from './ToolPalette';
 import ObjectInspector from './ObjectInspector';
 import ScenariosLibraryPanel from './ScenariosLibraryPanel';
+import ChantierOverlay from '@/components/propriete/chantier/ChantierOverlay';
+
 import SoilSamplesLayer from './SoilSamplesLayer';
 import { useSoilSamples } from '@/hooks/propriete/useSoilSamples';
 import { linkedSampleIds } from '@/lib/soilLinkEngine';
@@ -232,6 +236,9 @@ export const PaletteStudio: React.FC<Props> = ({
 
   const [tab, setTab] = React.useState<PanelTab>('outils');
   const [libraryOpen, setLibraryOpen] = React.useState(false);
+  /** « Le Chantier » : lecture avant / après d'un lot d'ouvrages. */
+  const [chantierOpen, setChantierOpen] = React.useState(false);
+
   const [panelOpen, setPanelOpen] = React.useState(true);
   const [activeCalqueId, setActiveCalqueId] = React.useState<string | null>(null);
   const [tool, setTool] = React.useState<PaysageTool | null>(null);
@@ -598,6 +605,14 @@ export const PaletteStudio: React.FC<Props> = ({
           >
             <Wand2 className="h-3.5 w-3.5" /> Scénographies
           </button>
+          <button
+            onClick={() => setChantierOpen(true)}
+            title="Le Chantier — comparer l’avant et l’après travaux d’un lot d’ouvrages"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#c8a24a]/60 px-3 py-1.5 text-[11px] hover:border-[#c8a24a]"
+          >
+            <Hammer className="h-3.5 w-3.5" /> Le Chantier
+          </button>
+
           <button
             onClick={() => setInspirationOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-line))] px-3 py-1.5 text-[11px] hover:border-[hsl(var(--ds-forest))]/60"
@@ -1191,8 +1206,18 @@ export const PaletteStudio: React.FC<Props> = ({
           />
         )}
 
+        {/* Le Chantier — démonstration avant / après d'un lot d'ouvrages */}
+        {chantierOpen && (
+          <ChantierOverlay
+            proprieteId={proprieteId}
+            objets={objets}
+            onClose={() => setChantierOpen(false)}
+          />
+        )}
+
       </div>
     </div>,
+
     document.body,
   );
 };

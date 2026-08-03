@@ -5833,6 +5833,92 @@ export type Database = {
           },
         ]
       }
+      propriete_chantier_media_phases: {
+        Row: {
+          chantier_id: string
+          created_at: string
+          id: string
+          phase: string
+          photo_id: string
+        }
+        Insert: {
+          chantier_id: string
+          created_at?: string
+          id?: string
+          phase?: string
+          photo_id: string
+        }
+        Update: {
+          chantier_id?: string
+          created_at?: string
+          id?: string
+          phase?: string
+          photo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_chantier_media_phases_chantier_id_fkey"
+            columns: ["chantier_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_chantiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propriete_chantier_media_phases_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_objet_photos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propriete_chantiers: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date_travaux: string | null
+          id: string
+          nom: string
+          notes: string | null
+          objet_ids: string[]
+          propriete_id: string
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date_travaux?: string | null
+          id?: string
+          nom: string
+          notes?: string | null
+          objet_ids?: string[]
+          propriete_id: string
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date_travaux?: string | null
+          id?: string
+          nom?: string
+          notes?: string | null
+          objet_ids?: string[]
+          propriete_id?: string
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_chantiers_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_companies: {
         Row: {
           company_id: string
