@@ -43,9 +43,20 @@ const KEY = (id?: string) => ['propriete-objet-photos', id];
 
 const extOf = (name: string) => (name.split('.').pop() || 'jpg').toLowerCase();
 
+export type UploadItemStatus = 'pending' | 'reading' | 'uploading' | 'done' | 'error';
+
+export interface UploadItem {
+  key: string;
+  name: string;
+  sizeBytes: number;
+  status: UploadItemStatus;
+  error?: string;
+}
+
 export function useObjetPhotos(proprieteId?: string) {
   const qc = useQueryClient();
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [uploads, setUploads] = useState<UploadItem[]>([]);
 
   const query = useQuery({
     queryKey: KEY(proprieteId),
