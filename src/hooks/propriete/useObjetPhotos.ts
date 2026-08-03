@@ -268,6 +268,9 @@ export function useObjetPhotos(proprieteId?: string) {
     counts,
     loading: query.isLoading,
     progress,
+    uploads,
+    clearUploads,
+
     upload,
     remove,
     setCaption,
