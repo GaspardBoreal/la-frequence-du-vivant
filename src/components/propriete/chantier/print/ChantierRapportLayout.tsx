@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ObjetPhoto } from '@/hooks/propriete/useObjetPhotos';
 import type { Planting } from '@/hooks/propriete/useOuvrageScenarios';
-import type { IcgDelta, IcgReading } from '@/lib/chantierIcg';
+import type { IcgDelta, IcgReading, SpeciesJuryResult, SpeciesVerdict } from '@/lib/chantierIcg';
 import { MATCH_LABEL, PHASE_LABEL, type MediaPhase } from '@/lib/chantierIcg';
 import { printImageUrl } from '@/components/propriete/print/printImageUrl';
 
@@ -33,6 +33,10 @@ interface Props {
   inPlace: RapportSpecies[];
   plantings: Planting[];
   photos: Array<ObjetPhoto & { phase: MediaPhase }>;
+  /** Le jury des espèces de l'état initial — contributions signées à l'ICG. */
+  jury?: SpeciesJuryResult | null;
+  /** Noms vernaculaires FR résolus, indexés par nom scientifique. */
+  juryNames?: Record<string, string>;
   options: ChantierRapportOptions;
 }
 
@@ -146,8 +150,12 @@ export const ChantierRapportLayout: React.FC<Props> = ({
   inPlace,
   plantings,
   photos,
+  jury,
+  juryNames,
   options,
 }) => {
+  const nameOf = (v: SpeciesVerdict) =>
+    juryNames?.[v.scientificName] || v.commonName || v.plantName;
   const complet = options.format === 'complet';
   const proposed: RapportSpecies[] = React.useMemo(() => {
     const by = new Map<string, RapportSpecies>();
@@ -265,6 +273,64 @@ export const ChantierRapportLayout: React.FC<Props> = ({
           </>
         )}
       </Page>
+
+      {/* Page 3 — le jury des espèces */}
+      {jury && jury.verdicts.length > 0 && (
+        <Page foot={foot}>
+          <Title
+            eyebrow="Comprendre le score"
+            sub="Contribution obtenue par retrait à un : l'ICG est recalculé sans l'espèce, l'écart est sa part."
+          >
+            Qui fait monter, qui fait descendre
+          </Title>
+          <p className="mb-3 text-[9.5pt] italic text-[#5d5544]">{jury.sentence}</p>
+
+          <div className="grid grid-cols-2 gap-5">
+            {[
+              { t: 'Elles confirment la lecture du sol', list: complet ? jury.up : jury.up.slice(0, 3) },
+              { t: 'Elles contredisent la lecture du sol', list: complet ? jury.down : jury.down.slice(0, 3) },
+            ].map((col) => (
+              <div key={col.t}>
+                <p className="border-b border-[#c8a24a] pb-1 text-[8pt] uppercase tracking-[0.14em] text-[#8a6d3b]">
+                  {col.t}
+                </p>
+                {col.list.length === 0 ? (
+                  <p className="mt-1.5 text-[8.6pt] italic text-[#8a8272]">Aucune.</p>
+                ) : (
+                  <ul className="mt-1.5 space-y-1">
+                    {col.list.map((v) => (
+                      <li key={v.plantId} className="flex items-baseline gap-2 text-[9pt]">
+                        <span className="min-w-0 flex-1">
+                          <span className="font-semibold">{nameOf(v)}</span>{' '}
+                          <span className="italic text-[#5d5544]">{v.scientificName}</span>
+                          {v.poles.length > 0 && (
+                            <span className="block text-[7.8pt] text-[#8a8272]">
+                              {v.poles.map((p) => p.short).join(' · ')}
+                            </span>
+                          )}
+                        </span>
+                        <span className="shrink-0 tabular-nums">
+                          {v.deltaIcg > 0 ? `+${v.deltaIcg}` : v.deltaIcg}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {complet && jury.unmatched.length > 0 && (
+            <p className="mt-5 text-[8.4pt] text-[#8a8272]">
+              Hors référentiel bio-indicateur, sans influence sur l'ICG :{' '}
+              {jury.unmatched
+                .map((s) => juryNames?.[s.scientificName] || s.commonName || s.scientificName)
+                .join(' · ')}
+              .
+            </p>
+          )}
+        </Page>
+      )}
 
       {/* Pages suivantes — dossier complet */}
       {complet && inPlace.length > 0 && (
