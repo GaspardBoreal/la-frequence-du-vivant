@@ -23,15 +23,19 @@ import { classifyObservations } from '@/lib/ouvrageScope';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
 import {
   RIGOUR_LABEL,
+  cortegeEntries,
   icgDelta,
   isAfterWorks,
   poolFromPlantings,
   poolFromWaypoints,
+  poolsFromStatuses,
   readIcg,
   scopeWaypoints,
   speciesIcgJury,
+  speciesKey,
   type ChantierRigour,
   type MediaPhase,
+  type SpeciesStatus,
 } from '@/lib/chantierIcg';
 
 import ChantierLotPicker from './ChantierLotPicker';
