@@ -28,12 +28,15 @@ import {
   poolFromWaypoints,
   readIcg,
   scopeWaypoints,
+  speciesIcgJury,
   type ChantierRigour,
   type MediaPhase,
 } from '@/lib/chantierIcg';
 
 import ChantierLotPicker from './ChantierLotPicker';
 import IcgLadder, { IcgDeltaHero } from './IcgLadder';
+import IcgPipeline from './IcgPipeline';
+import SpeciesJury from './SpeciesJury';
 import MediaCurtain, { phasePhotos } from './MediaCurtain';
 import ChantierPhotoIntake from './ChantierPhotoIntake';
 import ChantierUploadCurtain from './ChantierUploadCurtain';
@@ -164,6 +167,22 @@ export const ChantierOverlay: React.FC<Props> = ({
   );
   const afterLabel = afterMode === 'projete' ? 'Après travaux · projeté' : 'Après travaux · constaté';
 
+  /* ---------- C bis. Le jury des espèces : qui monte, qui descend ---------- */
+  const beforeJury = React.useMemo(
+    () => speciesIcgJury(beforePool, lotSoil),
+    [beforePool, lotSoil],
+  );
+  const afterPool = React.useMemo(() => {
+    if (afterMode === 'projete')
+      return plantings.length ? [...beforePool, ...poolFromPlantings(plantings)] : null;
+    return afterWaypoints.length ? poolFromWaypoints(afterWaypoints) : null;
+  }, [afterMode, plantings, beforePool, afterWaypoints]);
+  const afterJury = React.useMemo(
+    () => (afterPool ? speciesIcgJury(afterPool, lotSoil) : null),
+    [afterPool, lotSoil],
+  );
+
+
   /* ---------- D. Médias du lot ---------- */
   const lotPhotos = React.useMemo(
     () => lotObjetIds.flatMap((id) => objetPhotos.byObjet.get(id) ?? []),
@@ -217,11 +236,30 @@ export const ChantierOverlay: React.FC<Props> = ({
   );
 
   // Noms vernaculaires FR — même résolveur que L'Herbier du moment
-  const { displayNameFor } = useWaypointFrenchNames(inPlaceRaw);
+  const nameInput = React.useMemo(
+    () => [
+      ...inPlaceRaw,
+      ...beforeJury.verdicts.map((v) => ({
+        scientificName: v.scientificName,
+        commonName: v.commonName,
+      })),
+      ...beforeJury.unmatched,
+    ],
+    [inPlaceRaw, beforeJury],
+  );
+  const { displayNameFor } = useWaypointFrenchNames(nameInput);
   const inPlaceEntries = React.useMemo<RapportSpecies[]>(
     () => inPlaceRaw.map((s) => ({ ...s, commonName: displayNameFor(s) })),
     [inPlaceRaw, displayNameFor],
   );
+  const juryNames = React.useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const v of beforeJury.verdicts) out[v.scientificName] = displayNameFor(v);
+    for (const s of beforeJury.unmatched) out[s.scientificName] = displayNameFor(s);
+    return out;
+  }, [beforeJury, displayNameFor]);
+
+
 
 
   const thumbNames = React.useMemo(
@@ -432,6 +470,23 @@ export const ChantierOverlay: React.FC<Props> = ({
               </section>
             </div>
 
+            <IcgPipeline
+              reading={before}
+              jury={beforeJury}
+              observationCount={beforeWaypoints.length}
+            />
+
+            <SpeciesJury
+              jury={beforeJury}
+              title="Le jury des espèces · avant travaux"
+            />
+
+            {afterJury && (
+              <SpeciesJury jury={afterJury} title={`Le jury des espèces · ${afterLabel}`} />
+            )}
+
+
+
             <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
               <p className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] opacity-55">
                 <FlaskConical className="h-3 w-3" /> Prélèvements du lot · {lotSamples.length}
@@ -553,6 +608,8 @@ export const ChantierOverlay: React.FC<Props> = ({
             inPlace={inPlaceEntries}
             plantings={plantings}
             photos={phased as any}
+            jury={beforeJury}
+            juryNames={juryNames}
             options={{ format: printFormat }}
           />,
           print.portalRef.current,
