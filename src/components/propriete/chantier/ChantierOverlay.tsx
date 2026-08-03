@@ -465,6 +465,15 @@ export const ChantierOverlay: React.FC<Props> = ({
               )}
             </div>
 
+            {afterMode === 'projete' && !plantings.length && (
+              <ProjectionGuide
+                ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))}
+                hasScenario={false}
+              />
+            )}
+
+
+
             <div className="grid gap-4 lg:grid-cols-2">
               <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
                 <p className="mb-2 text-[10px] uppercase tracking-[0.2em] opacity-55">
