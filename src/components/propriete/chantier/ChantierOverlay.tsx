@@ -36,6 +36,7 @@ import ChantierLotPicker from './ChantierLotPicker';
 import IcgLadder, { IcgDeltaHero } from './IcgLadder';
 import MediaCurtain, { phasePhotos } from './MediaCurtain';
 import ChantierPhotoIntake from './ChantierPhotoIntake';
+import ChantierUploadCurtain from './ChantierUploadCurtain';
 import ChantierRapportLayout, {
   type RapportSpecies,
 } from './print/ChantierRapportLayout';
