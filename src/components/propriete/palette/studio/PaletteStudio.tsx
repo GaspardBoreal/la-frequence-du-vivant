@@ -234,6 +234,9 @@ export const PaletteStudio: React.FC<Props> = ({
 
   const [tab, setTab] = React.useState<PanelTab>('outils');
   const [libraryOpen, setLibraryOpen] = React.useState(false);
+  /** « Le Chantier » : lecture avant / après d'un lot d'ouvrages. */
+  const [chantierOpen, setChantierOpen] = React.useState(false);
+
   const [panelOpen, setPanelOpen] = React.useState(true);
   const [activeCalqueId, setActiveCalqueId] = React.useState<string | null>(null);
   const [tool, setTool] = React.useState<PaysageTool | null>(null);
