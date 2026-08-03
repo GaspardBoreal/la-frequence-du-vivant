@@ -236,11 +236,30 @@ export const ChantierOverlay: React.FC<Props> = ({
   );
 
   // Noms vernaculaires FR — même résolveur que L'Herbier du moment
-  const { displayNameFor } = useWaypointFrenchNames(inPlaceRaw);
+  const nameInput = React.useMemo(
+    () => [
+      ...inPlaceRaw,
+      ...beforeJury.verdicts.map((v) => ({
+        scientificName: v.scientificName,
+        commonName: v.commonName,
+      })),
+      ...beforeJury.unmatched,
+    ],
+    [inPlaceRaw, beforeJury],
+  );
+  const { displayNameFor } = useWaypointFrenchNames(nameInput);
   const inPlaceEntries = React.useMemo<RapportSpecies[]>(
     () => inPlaceRaw.map((s) => ({ ...s, commonName: displayNameFor(s) })),
     [inPlaceRaw, displayNameFor],
   );
+  const juryNames = React.useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const v of beforeJury.verdicts) out[v.scientificName] = displayNameFor(v);
+    for (const s of beforeJury.unmatched) out[s.scientificName] = displayNameFor(s);
+    return out;
+  }, [beforeJury, displayNameFor]);
+
+
 
 
   const thumbNames = React.useMemo(
