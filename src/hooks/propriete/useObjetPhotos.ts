@@ -127,6 +127,16 @@ export function useObjetPhotos(proprieteId?: string) {
       }
 
       setProgress({ done: 0, total: list.length });
+      setUploads(
+        list.map((f, i) => ({
+          key: `${f.name}-${f.size}-${i}`,
+          name: f.name,
+          sizeBytes: f.size,
+          status: 'pending' as UploadItemStatus,
+        })),
+      );
+      const mark = (i: number, patch: Partial<UploadItem>) =>
+        setUploads((prev) => prev.map((u, idx) => (idx === i ? { ...u, ...patch } : u)));
       const base = (byObjet.get(objetId) ?? []).length;
       let ok = 0;
 
@@ -136,9 +146,11 @@ export function useObjetPhotos(proprieteId?: string) {
           if (file.size > MAX_OUVRAGE_PHOTO_BYTES) {
             throw new Error('Photo trop lourde (25 Mo max)');
           }
+          mark(i, { status: 'reading' });
           const { processedFile, metadata } = await preparePhotoForUpload(file);
           const path = `${proprieteId}/${objetId}/${crypto.randomUUID()}.${extOf(processedFile.name)}`;
 
+          mark(i, { status: 'uploading' });
           const { error: upErr } = await supabase.storage
             .from(OUVRAGE_PHOTO_BUCKET)
             .upload(path, processedFile, {
@@ -174,8 +186,10 @@ export function useObjetPhotos(proprieteId?: string) {
             },
           });
           ok++;
+          mark(i, { status: 'done' });
         } catch (err: any) {
           console.error('[useObjetPhotos] upload failed', file.name, err);
+          mark(i, { status: 'error', error: err?.message || 'échec de l’envoi' });
           toast.error(`${file.name} : ${err?.message || 'échec de l’envoi'}`);
         } finally {
           setProgress({ done: i + 1, total: list.length });
@@ -185,9 +199,13 @@ export function useObjetPhotos(proprieteId?: string) {
       setProgress(null);
       await invalidate();
       if (ok > 0) toast.success(`${ok} photo${ok > 1 ? 's' : ''} ajoutée${ok > 1 ? 's' : ''}`);
+      return { ok, total: list.length };
     },
     [proprieteId, byObjet, invalidate],
   );
+
+  const clearUploads = useCallback(() => setUploads([]), []);
+
 
   const remove = useCallback(
     async (photo: ObjetPhoto) => {
