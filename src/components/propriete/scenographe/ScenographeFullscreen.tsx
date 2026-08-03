@@ -901,6 +901,10 @@ export const ScenographeFullscreen: React.FC<Props> = ({
             </div>
           )}
 
+          {plantings.length === 0 && !hideFirstSteps && (
+            <PremiersPas onDismiss={() => setHideFirstSteps(true)} />
+          )}
+
           {/* Herbier mobile */}
           <button
             onClick={() => setPanelOpen((v) => !v)}
