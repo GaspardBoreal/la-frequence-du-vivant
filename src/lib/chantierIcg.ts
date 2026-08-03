@@ -107,6 +107,18 @@ export function observedIndicatorIds(pool: BiodiversitySpecies[]): string[] {
  * sur le même sol ; l'écart est sa contribution signée. Aucun barème n'est
  * dupliqué : c'est `computeConcordanceDetail` qui tranche, comme partout.
  */
+export interface SpeciesPoleImpact {
+  key: string;
+  short: string;
+  label: string;
+  intensity: number;
+  /** Verdict du pôle avec l'espèce, puis sans elle. */
+  matchWith: string;
+  matchWithout: string;
+  /** Points gagnés (ou perdus) sur ce pôle grâce à l'espèce. */
+  gain: number;
+}
+
 export interface SpeciesVerdict {
   plantId: string;
   plantName: string;
@@ -118,10 +130,15 @@ export interface SpeciesVerdict {
   observations: number;
   /** Pôles écologiques sur lesquels l'espèce pèse réellement. */
   poles: Array<{ key: string; short: string; intensity: number }>;
+  /** Détail pôle par pôle : ce que l'espèce change réellement au barème. */
+  impacts: SpeciesPoleImpact[];
+  /** Phrase en clair : « Sans elle, le pôle Richesse repasserait en accord. » */
+  reason: string;
   deltaPoints: number;
   deltaIcg: number;
   direction: 'up' | 'down' | 'flat';
 }
+
 
 export interface SpeciesJuryResult {
   verdicts: SpeciesVerdict[];
@@ -147,6 +164,42 @@ export function speciesIcgJury(pool: BiodiversitySpecies[], soil: SoilLite): Spe
     );
     const deltaPoints = full.points - without.points;
     const deltaIcg = full.icg - without.icg;
+    const poles = ECO_POLES.map((p) => ({
+      key: p.key as string,
+      short: p.short,
+      intensity: poleIntensity(m.plant, p) as number,
+    })).filter((p) => p.intensity > 0);
+
+    const impacts: SpeciesPoleImpact[] = full.rows
+      .map((row, i) => {
+        const w = without.rows[i];
+        const pole = poles.find((p) => p.key === row.key);
+        if (!pole && row.rowPoints === (w?.rowPoints ?? 0)) return null;
+        const gain = row.rowPoints - (w?.rowPoints ?? 0);
+        if (!pole && gain === 0) return null;
+        return {
+          key: row.key as string,
+          short: pole?.short ?? row.label,
+          label: row.label,
+          intensity: pole?.intensity ?? 0,
+          matchWith: MATCH_LABEL[row.match] ?? row.match,
+          matchWithout: w ? (MATCH_LABEL[w.match] ?? w.match) : '—',
+          gain,
+        };
+      })
+      .filter((x): x is SpeciesPoleImpact => x !== null);
+
+    const movers = impacts.filter((x) => x.gain !== 0);
+    const reason = movers.length
+      ? movers
+          .map((x) =>
+            x.gain > 0
+              ? `Sans elle, le pôle ${x.label} retomberait en « ${x.matchWithout.toLowerCase()} » : elle rapporte ${x.gain} point${x.gain > 1 ? 's' : ''}.`
+              : `Sans elle, le pôle ${x.label} repasserait en « ${x.matchWithout.toLowerCase()} » : elle coûte ${Math.abs(x.gain)} point${Math.abs(x.gain) > 1 ? 's' : ''}.`,
+          )
+          .join(' ')
+      : 'Elle est reconnue au référentiel mais ne déplace aucun pôle : le score serait identique sans elle.';
+
     return {
       plantId: m.plant.id,
       plantName: m.plant.nom,
@@ -155,15 +208,17 @@ export function speciesIcgJury(pool: BiodiversitySpecies[], soil: SoilLite): Spe
       commonName: m.species?.commonName || null,
       photoUrl: m.photos?.[0] ?? null,
       observations: m.observations,
-      poles: ECO_POLES.map((p) => ({
-        key: p.key,
-        short: p.short,
-        intensity: poleIntensity(m.plant, p),
-      })).filter((p) => p.intensity > 0),
+      poles,
+      impacts,
+      reason,
       deltaPoints,
       deltaIcg,
-      direction: deltaPoints > 0 ? 'up' : deltaPoints < 0 ? 'down' : 'flat',
+      direction: (deltaPoints > 0 ? 'up' : deltaPoints < 0 ? 'down' : 'flat') as
+        | 'up'
+        | 'down'
+        | 'flat',
     };
+
   });
 
   const matchedNames = new Set(

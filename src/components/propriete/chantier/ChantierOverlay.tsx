@@ -578,9 +578,11 @@ export const ChantierOverlay: React.FC<Props> = ({
               labelFor={(e) => displayNameFor(e)}
               saved={speciesPhases.statuses}
               preview={previewIcg}
+              jury={beforeJury}
               onCommit={(changes) => speciesPhases.commit(changes)}
               onResetAll={() => void speciesPhases.resetAll()}
             />
+
 
 
             <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
