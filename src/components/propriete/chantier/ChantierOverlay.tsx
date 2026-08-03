@@ -107,12 +107,22 @@ export const ChantierOverlay: React.FC<Props> = ({
     () => scoped.filter((w) => !isAfterWorks(w.observationDate, active?.date_travaux)),
     [scoped, active?.date_travaux],
   );
-  const afterWaypoints = React.useMemo(
-    () => scoped.filter((w) => isAfterWorks(w.observationDate, active?.date_travaux)),
-    [scoped, active?.date_travaux],
+
+  /* ---------- A bis. Le tri du cortège : le statut posé à la main prime ---------- */
+  const speciesPhases = useChantierSpeciesPhases(active?.id);
+  const workDate = active?.date_travaux ?? null;
+
+  const cortege = React.useMemo(
+    () => cortegeEntries(scoped, workDate, speciesPhases.statuses),
+    [scoped, workDate, speciesPhases.statuses],
   );
 
-  const beforePool = React.useMemo(() => poolFromWaypoints(beforeWaypoints), [beforeWaypoints]);
+  const pools = React.useMemo(
+    () => poolsFromStatuses(scoped, workDate, speciesPhases.statuses),
+    [scoped, workDate, speciesPhases.statuses],
+  );
+  const beforePool = pools.before;
+  const afterObservedPool = pools.afterObserved;
 
   /* ---------- B. Les prélèvements dans le lot ---------- */
   const lotSamples = React.useMemo(() => {
