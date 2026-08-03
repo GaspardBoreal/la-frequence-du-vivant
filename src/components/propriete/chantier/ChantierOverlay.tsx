@@ -608,6 +608,8 @@ export const ChantierOverlay: React.FC<Props> = ({
             inPlace={inPlaceEntries}
             plantings={plantings}
             photos={phased as any}
+            jury={beforeJury}
+            juryNames={juryNames}
             options={{ format: printFormat }}
           />,
           print.portalRef.current,
