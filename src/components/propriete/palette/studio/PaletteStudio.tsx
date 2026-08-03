@@ -46,6 +46,8 @@ import LayersPanel, { type SystemLayerState } from './LayersPanel';
 import ToolPalette from './ToolPalette';
 import ObjectInspector from './ObjectInspector';
 import ScenariosLibraryPanel from './ScenariosLibraryPanel';
+import ChantierOverlay from '@/components/propriete/chantier/ChantierOverlay';
+
 import SoilSamplesLayer from './SoilSamplesLayer';
 import { useSoilSamples } from '@/hooks/propriete/useSoilSamples';
 import { linkedSampleIds } from '@/lib/soilLinkEngine';
