@@ -396,6 +396,9 @@ export const ScenographeFullscreen: React.FC<Props> = ({
 
   const plantings = scen.active?.plantings ?? [];
 
+  /** Le liseré « Premiers pas » ne s'impose jamais deux fois. */
+  const [hideFirstSteps, setHideFirstSteps] = React.useState(false);
+
   /**
    * Vignettes « apports » pour le dossier de chantier : source de vérité = les
    * sujets réellement posés au plan (persistés en base), complétés par les
