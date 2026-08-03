@@ -13,3 +13,5 @@ Le Chantier compare l'état d'un lot d'ouvrages avant et après travaux.
 - **Médias** : phase déduite de `taken_at` vs date des travaux, surchargeable à la main (AV/PD/AP) ; mosaïque ou rideau comparatif.
 - **Rapport** : `ChantierRapportLayout` en portail `#chantier-print-portal` (classe `chantier-print-mode`), format « simple » (bilan + calcul + preuves) ou « complet » (planches espèces en place et apports retenus). Vignettes résolues via `resolveSpeciesThumbs` avant impression.
 - **Entrée** : bouton « Le Chantier » dans la barre de l'Atelier du jardin nourricier.
+- **Tri du cortège** : table `propriete_chantier_species_phases` (statut par espèce : conservée / retirée / nouvelle / écartée). Le statut manuel prime sur la date des travaux ; pools avant/après dérivés par `poolsFromStatuses`, brouillon avec aperçu du delta ICG avant validation (`CortegeTriage`).
+- **Table de projection** : `ProjectionGuide` (3 marches + bouton `openScenographe`) remplace la phrase « posez des espèces » ; liseré `PremiersPas` dans le Scénographe tant qu'aucun sujet n'est posé.
