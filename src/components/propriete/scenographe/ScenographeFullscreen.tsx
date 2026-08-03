@@ -44,6 +44,7 @@ import OuvrageGeometryLayer from './OuvrageGeometryLayer';
 import OuvrageSwitcher from './OuvrageSwitcher';
 import BalanceBar from './BalanceBar';
 import ScenarioTabs from './ScenarioTabs';
+import PremiersPas from './PremiersPas';
 import type { ScenographeProposal } from './scenographeStore';
 
 const GROWTH_STEPS = [
@@ -394,6 +395,9 @@ export const ScenographeFullscreen: React.FC<Props> = ({
   );
 
   const plantings = scen.active?.plantings ?? [];
+
+  /** Le liseré « Premiers pas » ne s'impose jamais deux fois. */
+  const [hideFirstSteps, setHideFirstSteps] = React.useState(false);
 
   /**
    * Vignettes « apports » pour le dossier de chantier : source de vérité = les
@@ -899,6 +903,10 @@ export const ScenographeFullscreen: React.FC<Props> = ({
                 Cliquez une emprise voisine pour composer un autre ouvrage.
               </p>
             </div>
+          )}
+
+          {plantings.length === 0 && !hideFirstSteps && (
+            <PremiersPas onDismiss={() => setHideFirstSteps(true)} />
           )}
 
           {/* Herbier mobile */}

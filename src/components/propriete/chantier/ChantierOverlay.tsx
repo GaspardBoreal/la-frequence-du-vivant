@@ -14,6 +14,7 @@ import {
   useChantierScenarios,
   type ProprieteChantier,
 } from '@/hooks/propriete/useProprieteChantiers';
+import { useChantierSpeciesPhases } from '@/hooks/propriete/useChantierSpeciesPhases';
 import { resolveSpeciesThumbs } from '@/hooks/useSpeciesThumb';
 import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames';
 
@@ -22,18 +23,24 @@ import { classifyObservations } from '@/lib/ouvrageScope';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
 import {
   RIGOUR_LABEL,
+  cortegeEntries,
   icgDelta,
   isAfterWorks,
   poolFromPlantings,
   poolFromWaypoints,
+  poolsFromStatuses,
   readIcg,
   scopeWaypoints,
   speciesIcgJury,
+  speciesKey,
   type ChantierRigour,
   type MediaPhase,
+  type SpeciesStatus,
 } from '@/lib/chantierIcg';
 
 import ChantierLotPicker from './ChantierLotPicker';
+import CortegeTriage from './CortegeTriage';
+import ProjectionGuide from './ProjectionGuide';
 import IcgLadder, { IcgDeltaHero } from './IcgLadder';
 import IcgPipeline from './IcgPipeline';
 import SpeciesJury from './SpeciesJury';
@@ -107,12 +114,22 @@ export const ChantierOverlay: React.FC<Props> = ({
     () => scoped.filter((w) => !isAfterWorks(w.observationDate, active?.date_travaux)),
     [scoped, active?.date_travaux],
   );
-  const afterWaypoints = React.useMemo(
-    () => scoped.filter((w) => isAfterWorks(w.observationDate, active?.date_travaux)),
-    [scoped, active?.date_travaux],
+
+  /* ---------- A bis. Le tri du cortège : le statut posé à la main prime ---------- */
+  const speciesPhases = useChantierSpeciesPhases(active?.id);
+  const workDate = active?.date_travaux ?? null;
+
+  const cortege = React.useMemo(
+    () => cortegeEntries(scoped, workDate, speciesPhases.statuses),
+    [scoped, workDate, speciesPhases.statuses],
   );
 
-  const beforePool = React.useMemo(() => poolFromWaypoints(beforeWaypoints), [beforeWaypoints]);
+  const pools = React.useMemo(
+    () => poolsFromStatuses(scoped, workDate, speciesPhases.statuses),
+    [scoped, workDate, speciesPhases.statuses],
+  );
+  const beforePool = pools.before;
+  const afterObservedPool = pools.afterObserved;
 
   /* ---------- B. Les prélèvements dans le lot ---------- */
   const lotSamples = React.useMemo(() => {
@@ -152,14 +169,18 @@ export const ChantierOverlay: React.FC<Props> = ({
 
   const before = React.useMemo(() => readIcg(beforePool, lotSoil), [beforePool, lotSoil]);
 
-  const after = React.useMemo(() => {
-    if (afterMode === 'projete') {
-      if (!plantings.length) return null;
-      return readIcg([...beforePool, ...poolFromPlantings(plantings)], lotSoil);
-    }
-    if (!afterWaypoints.length) return null;
-    return readIcg(poolFromWaypoints(afterWaypoints), lotSoil);
-  }, [afterMode, plantings, beforePool, afterWaypoints, lotSoil]);
+  const afterPool = React.useMemo(() => {
+    if (afterMode === 'projete')
+      return plantings.length
+        ? [...afterObservedPool, ...poolFromPlantings(plantings)]
+        : null;
+    return afterObservedPool.length ? afterObservedPool : null;
+  }, [afterMode, plantings, afterObservedPool]);
+
+  const after = React.useMemo(
+    () => (afterPool ? readIcg(afterPool, lotSoil) : null),
+    [afterPool, lotSoil],
+  );
 
   const delta = React.useMemo(
     () => (after ? icgDelta(before.detail, after.detail) : null),
@@ -172,14 +193,28 @@ export const ChantierOverlay: React.FC<Props> = ({
     () => speciesIcgJury(beforePool, lotSoil),
     [beforePool, lotSoil],
   );
-  const afterPool = React.useMemo(() => {
-    if (afterMode === 'projete')
-      return plantings.length ? [...beforePool, ...poolFromPlantings(plantings)] : null;
-    return afterWaypoints.length ? poolFromWaypoints(afterWaypoints) : null;
-  }, [afterMode, plantings, beforePool, afterWaypoints]);
   const afterJury = React.useMemo(
     () => (afterPool ? speciesIcgJury(afterPool, lotSoil) : null),
     [afterPool, lotSoil],
+  );
+
+  /** Aperçu de l'ICG pour un tri encore en brouillon — rien n'est enregistré. */
+  const previewIcg = React.useCallback(
+    (draft: Record<string, SpeciesStatus>) => {
+      const merged = { ...speciesPhases.statuses, ...draft };
+      const p = poolsFromStatuses(scoped, workDate, merged);
+      const b = readIcg(p.before, lotSoil).detail.icg;
+      const afterSim =
+        afterMode === 'projete'
+          ? plantings.length
+            ? readIcg([...p.afterObserved, ...poolFromPlantings(plantings)], lotSoil).detail.icg
+            : null
+          : p.afterObserved.length
+            ? readIcg(p.afterObserved, lotSoil).detail.icg
+            : null;
+      return { before: b, after: afterSim };
+    },
+    [speciesPhases.statuses, scoped, workDate, lotSoil, afterMode, plantings],
   );
 
 
@@ -239,13 +274,17 @@ export const ChantierOverlay: React.FC<Props> = ({
   const nameInput = React.useMemo(
     () => [
       ...inPlaceRaw,
+      ...cortege.map((c) => ({
+        scientificName: c.scientificName,
+        commonName: c.commonName,
+      })),
       ...beforeJury.verdicts.map((v) => ({
         scientificName: v.scientificName,
         commonName: v.commonName,
       })),
       ...beforeJury.unmatched,
     ],
-    [inPlaceRaw, beforeJury],
+    [inPlaceRaw, cortege, beforeJury],
   );
   const { displayNameFor } = useWaypointFrenchNames(nameInput);
   const inPlaceEntries = React.useMemo<RapportSpecies[]>(
@@ -435,18 +474,30 @@ export const ChantierOverlay: React.FC<Props> = ({
                   ))}
                 </select>
               )}
-              {afterMode === 'projete' && !plantings.length && (
-                <span className="text-[11.5px] italic opacity-60">
-                  Aucune scénographie sur ce lot : posez des espèces dans le Scénographe pour
-                  projeter l’après.
-                </span>
+              {afterMode === 'projete' && plantings.length > 0 && (
+                <ProjectionGuide
+                  ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))}
+                  hasScenario
+                  scenarioId={scenario?.id ?? null}
+                  scenarioObjetId={scenario?.objet_id ?? null}
+                />
               )}
+
               {afterMode === 'constate' && !active.date_travaux && (
                 <span className="text-[11.5px] italic opacity-60">
                   Fixez la date des travaux pour distinguer les relevés d’après.
                 </span>
               )}
             </div>
+
+            {afterMode === 'projete' && !plantings.length && (
+              <ProjectionGuide
+                ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))}
+                hasScenario={false}
+              />
+            )}
+
+
 
             <div className="grid gap-4 lg:grid-cols-2">
               <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
@@ -517,27 +568,15 @@ export const ChantierOverlay: React.FC<Props> = ({
               )}
             </section>
 
-            <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
-              <p className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] opacity-55">
-                <Sprout className="h-3 w-3" /> Cortège en place · {inPlaceEntries.length}
-              </p>
-              <ul className="flex flex-wrap gap-1.5">
-                {inPlaceEntries.map((s) => (
-                  <li
-                    key={s.scientificName}
-                    className="rounded-full border border-white/12 px-2.5 py-1 text-[11.5px]"
-                  >
-                    {s.commonName || s.scientificName}{' '}
-                    <span className="opacity-50">×{s.count}</span>
-                  </li>
-                ))}
-                {!inPlaceEntries.length && (
-                  <li className="text-[12px] italic opacity-60">
-                    Aucune observation dans ce périmètre — élargissez la rigueur.
-                  </li>
-                )}
-              </ul>
-            </section>
+            <CortegeTriage
+              entries={cortege}
+              labelFor={(e) => displayNameFor(e)}
+              saved={speciesPhases.statuses}
+              preview={previewIcg}
+              onCommit={(changes) => speciesPhases.commit(changes)}
+              onResetAll={() => void speciesPhases.resetAll()}
+            />
+
 
             <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
               <ChantierPhotoIntake

@@ -333,3 +333,122 @@ export const isAfterWorks = (
   if (!workDate || !date) return false;
   return date.slice(0, 10) > workDate.slice(0, 10);
 };
+
+/* ------------------------------------------------------------------ *
+ * Le tri du cortège — statut posé à la main sur chaque espèce du lot.
+ * La date des travaux propose, l'humain dispose : la surcharge prime.
+ * ------------------------------------------------------------------ */
+
+export type SpeciesStatus = 'conservee' | 'retiree' | 'nouvelle' | 'ecartee';
+
+export const SPECIES_STATUS_LABEL: Record<SpeciesStatus, string> = {
+  conservee: 'Conservée',
+  retiree: 'Retirée',
+  nouvelle: 'Nouvelle',
+  ecartee: 'Écartée',
+};
+
+export const SPECIES_STATUS_HINT: Record<SpeciesStatus, string> = {
+  conservee: 'présente avant, maintenue après — compte des deux côtés',
+  retiree: 'supprimée par les travaux — compte avant seulement',
+  nouvelle: 'apparue ou apportée après travaux — compte après seulement',
+  ecartee: 'hors sujet ou mal identifiée — ne compte nulle part',
+};
+
+export const SPECIES_STATUS_TONE: Record<SpeciesStatus, string> = {
+  conservee: '#4f8a5b',
+  retiree: '#b4553f',
+  nouvelle: '#c8a24a',
+  ecartee: '#8b8578',
+};
+
+export const SPECIES_STATUSES: SpeciesStatus[] = [
+  'conservee',
+  'retiree',
+  'nouvelle',
+  'ecartee',
+];
+
+export const speciesKey = (name: string | null | undefined) =>
+  (name || '').trim().toLowerCase();
+
+/** Statut déduit des dates : tout observé après les travaux est « nouvelle ». */
+export function defaultSpeciesStatuses(
+  waypoints: PropertyWaypoint[],
+  workDate: string | null | undefined,
+): Record<string, SpeciesStatus> {
+  const seenBefore = new Set<string>();
+  const seenAfter = new Set<string>();
+  for (const w of waypoints) {
+    const key = speciesKey(w.scientificName);
+    if (!key) continue;
+    if (isAfterWorks(w.observationDate, workDate)) seenAfter.add(key);
+    else seenBefore.add(key);
+  }
+  const out: Record<string, SpeciesStatus> = {};
+  for (const key of new Set([...seenBefore, ...seenAfter])) {
+    out[key] = seenBefore.has(key) ? 'conservee' : 'nouvelle';
+  }
+  return out;
+}
+
+export interface CortegeEntry {
+  scientificName: string;
+  commonName: string | null;
+  photoUrl: string | null;
+  count: number;
+  status: SpeciesStatus;
+  defaultStatus: SpeciesStatus;
+}
+
+/** Le cortège du lot, une ligne par espèce, statut résolu. */
+export function cortegeEntries(
+  waypoints: PropertyWaypoint[],
+  workDate: string | null | undefined,
+  overrides: Record<string, SpeciesStatus>,
+): CortegeEntry[] {
+  const defaults = defaultSpeciesStatuses(waypoints, workDate);
+  const by = new Map<string, CortegeEntry>();
+  for (const w of waypoints) {
+    const key = speciesKey(w.scientificName);
+    if (!key) continue;
+    const prev = by.get(key);
+    if (prev) {
+      prev.count += 1;
+      if (!prev.photoUrl && w.photoUrl) prev.photoUrl = w.photoUrl;
+      if (!prev.commonName && w.commonName) prev.commonName = w.commonName;
+      continue;
+    }
+    by.set(key, {
+      scientificName: w.scientificName,
+      commonName: w.commonName || null,
+      photoUrl: w.photoUrl || null,
+      count: 1,
+      status: overrides[key] ?? defaults[key] ?? 'conservee',
+      defaultStatus: defaults[key] ?? 'conservee',
+    });
+  }
+  return Array.from(by.values()).sort((a, b) => b.count - a.count);
+}
+
+/** Deux pools issus du tri : ce qui pesait avant, ce qui pèsera après. */
+export function poolsFromStatuses(
+  waypoints: PropertyWaypoint[],
+  workDate: string | null | undefined,
+  overrides: Record<string, SpeciesStatus>,
+): { before: BiodiversitySpecies[]; afterObserved: BiodiversitySpecies[] } {
+  const defaults = defaultSpeciesStatuses(waypoints, workDate);
+  const statusOf = (name: string) => {
+    const key = speciesKey(name);
+    return overrides[key] ?? defaults[key] ?? 'conservee';
+  };
+  const beforeWp = waypoints.filter((w) => {
+    const s = statusOf(w.scientificName);
+    return s === 'conservee' || s === 'retiree';
+  });
+  const afterWp = waypoints.filter((w) => {
+    const s = statusOf(w.scientificName);
+    return s === 'conservee' || s === 'nouvelle';
+  });
+  return { before: poolFromWaypoints(beforeWp), afterObserved: poolFromWaypoints(afterWp) };
+}

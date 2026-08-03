@@ -5872,6 +5872,41 @@ export type Database = {
           },
         ]
       }
+      propriete_chantier_species_phases: {
+        Row: {
+          chantier_id: string
+          created_at: string
+          id: string
+          scientific_name: string
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          chantier_id: string
+          created_at?: string
+          id?: string
+          scientific_name: string
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          chantier_id?: string
+          created_at?: string
+          id?: string
+          scientific_name?: string
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_chantier_species_phases_chantier_id_fkey"
+            columns: ["chantier_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_chantiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_chantiers: {
         Row: {
           created_at: string
