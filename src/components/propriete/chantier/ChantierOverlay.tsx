@@ -451,6 +451,23 @@ export const ChantierOverlay: React.FC<Props> = ({
               </section>
             </div>
 
+            <IcgPipeline
+              reading={before}
+              jury={beforeJury}
+              observationCount={beforeWaypoints.length}
+            />
+
+            <SpeciesJury
+              jury={beforeJury}
+              title="Le jury des espèces · avant travaux"
+            />
+
+            {afterJury && (
+              <SpeciesJury jury={afterJury} title={`Le jury des espèces · ${afterLabel}`} />
+            )}
+
+
+
             <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
               <p className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] opacity-55">
                 <FlaskConical className="h-3 w-3" /> Prélèvements du lot · {lotSamples.length}
