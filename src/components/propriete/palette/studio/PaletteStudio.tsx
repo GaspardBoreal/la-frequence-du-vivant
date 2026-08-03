@@ -1206,8 +1206,18 @@ export const PaletteStudio: React.FC<Props> = ({
           />
         )}
 
+        {/* Le Chantier — démonstration avant / après d'un lot d'ouvrages */}
+        {chantierOpen && (
+          <ChantierOverlay
+            proprieteId={proprieteId}
+            objets={objets}
+            onClose={() => setChantierOpen(false)}
+          />
+        )}
+
       </div>
     </div>,
+
     document.body,
   );
 };
