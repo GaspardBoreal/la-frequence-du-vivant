@@ -41,6 +41,9 @@ import { OpportunityActionsPicker } from '@/components/crm/opportunities/Opportu
 import { ALL_ACTION_CODES, isValidActionCode, type OpportunityActionCode } from '@/lib/crmOpportunityActions';
 import { toast } from 'sonner';
 import { OpportunityDocumentsSection } from '@/components/crm/opportunities/OpportunityDocumentsSection';
+import { PartnerAuditDrawer } from '@/components/crm/opportunities/PartnerAuditDrawer';
+import { resolvePartnerAudit } from '@/lib/partnerAudits';
+
 
 const opportunitySchema = z.object({
   titre: z.string().max(250, 'Maximum 250 caractères').optional(),
