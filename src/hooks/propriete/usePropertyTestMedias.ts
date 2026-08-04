@@ -14,8 +14,38 @@ import { preparePhotoForUpload, insertWithStorageRollback } from '@/utils/upload
 import type { SoilBlockId, SoilTestId } from '@/components/propriete/analyze/media/soilTestCatalog';
 
 export const TEST_MEDIA_BUCKET = 'propriete-tests';
-export const MAX_VIDEO_BYTES = 60 * 1024 * 1024;
+/** Limite réelle du serveur Storage (plafond global du projet) : 50 Mo. */
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 export const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
+
+export const formatBytes = (n: number) =>
+  n >= 1024 * 1024 ? `${(n / (1024 * 1024)).toFixed(1)} Mo` : `${Math.max(1, Math.round(n / 1024))} Ko`;
+
+export const isVideoFile = (file: File) =>
+  (file.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name);
+
+/** Vérifie qu'un fichier est acceptable AVANT tout envoi. Renvoie un message si refusé. */
+export function checkTestMediaFile(file: File): string | null {
+  const video = isVideoFile(file);
+  const max = video ? MAX_VIDEO_BYTES : MAX_PHOTO_BYTES;
+  if (file.size > max) {
+    return video
+      ? `Vidéo de ${formatBytes(file.size)} — le serveur accepte ${formatBytes(MAX_VIDEO_BYTES)} au maximum. Filmez 20 s en 1080p plutôt qu'en 4K, ou compressez la séquence.`
+      : `Photo de ${formatBytes(file.size)} — ${formatBytes(MAX_PHOTO_BYTES)} au maximum.`;
+  }
+  return null;
+}
+
+/** Traduit une erreur d'envoi en phrase lisible. */
+function humanUploadError(status: number, raw: string): string {
+  if (status === 413 || /exceeded the maximum allowed size|payload too large/i.test(raw))
+    return `Fichier refusé par le serveur : il dépasse ${formatBytes(MAX_VIDEO_BYTES)}.`;
+  if (status === 400 && /mime|content type/i.test(raw)) return 'Format de fichier refusé par le serveur.';
+  if (status === 400) return `Fichier refusé par le serveur (trop lourd ou format non accepté).`;
+  if (status === 401 || status === 403) return 'Session expirée : reconnectez-vous puis réessayez.';
+  if (status === 0) return 'Connexion interrompue pendant l’envoi.';
+  return raw || `Erreur serveur (${status}).`;
+}
 
 export interface TestMedia {
   id: string;
