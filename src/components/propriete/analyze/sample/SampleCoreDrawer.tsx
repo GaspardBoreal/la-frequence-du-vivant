@@ -16,6 +16,7 @@ import {
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
 import {
   usePropertyTestMedias,
+  sortTestMedias,
   type TestMedia,
 } from '@/hooks/propriete/usePropertyTestMedias';
 import {
