@@ -127,16 +127,78 @@ const videoDimensions = (file: File) =>
     }
   });
 
+export type UploadItemStatus = 'pending' | 'preparing' | 'uploading' | 'saving' | 'done' | 'error';
+
+export interface UploadItem {
+  key: string;
+  name: string;
+  size: number;
+  sent: number;
+  isVideo: boolean;
+  status: UploadItemStatus;
+  error?: string;
+}
+
+/** Envoi instrumenté (progression octet par octet) vers une URL signée Storage. */
+function putSigned(signedUrl: string, file: File, onProgress: (sent: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', signedUrl, true);
+    if (file.type) xhr.setRequestHeader('content-type', file.type);
+    xhr.setRequestHeader('x-upsert', 'false');
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(e.loaded);
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(file.size);
+        resolve();
+      } else {
+        reject(new Error(humanUploadError(xhr.status, xhr.responseText || '')));
+      }
+    };
+    xhr.onerror = () => reject(new Error(humanUploadError(0, '')));
+    xhr.onabort = () => reject(new Error('Envoi annulé.'));
+    xhr.send(file);
+  });
+}
+
 export function useTestMediaUpload(target?: UploadTarget) {
   const qc = useQueryClient();
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [items, setItems] = useState<UploadItem[]>([]);
+
+  const patchItem = useCallback((key: string, next: Partial<UploadItem>) => {
+    setItems((prev) => prev.map((it) => (it.key === key ? { ...it, ...next } : it)));
+  }, []);
 
   const upload = useCallback(
     async (files: File[]) => {
       if (!target) return;
       const list = Array.from(files);
       if (list.length === 0) return;
-      setProgress({ done: 0, total: list.length });
+
+      const queued: { item: UploadItem; file: File }[] = list.map((file, i) => ({
+        file,
+        item: {
+          key: `${Date.now()}-${i}-${file.name}`,
+          name: file.name,
+          size: file.size,
+          sent: 0,
+          isVideo: isVideoFile(file),
+          status: 'pending' as UploadItemStatus,
+        },
+      }));
+
+      // Refus immédiat des fichiers hors limite : l'utilisateur voit pourquoi avant tout transfert.
+      queued.forEach((q) => {
+        const refus = checkTestMediaFile(q.file);
+        if (refus) {
+          q.item.status = 'error';
+          q.item.error = refus;
+        }
+      });
+
+      setItems((prev) => [...prev, ...queued.map((q) => q.item)]);
       let ok = 0;
 
       // Rang de départ : à la suite des médias déjà classés dans ce groupe.
@@ -155,17 +217,12 @@ export function useTestMediaUpload(target?: UploadTarget) {
         /* fallback : 1 */
       }
 
-
-
-      for (const file of list) {
+      for (const { file, item } of queued) {
+        if (item.status === 'error') continue;
+        const key = item.key;
         try {
-          const isVideo = (file.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm)$/i.test(file.name);
-          if (isVideo && file.size > MAX_VIDEO_BYTES) {
-            throw new Error('Vidéo trop lourde (60 Mo max)');
-          }
-          if (!isVideo && file.size > MAX_PHOTO_BYTES) {
-            throw new Error('Photo trop lourde (25 Mo max)');
-          }
+          const isVideo = item.isVideo;
+          patchItem(key, { status: 'preparing' });
 
           let processed = file;
           let takenAt: string | null = null;
@@ -190,11 +247,15 @@ export function useTestMediaUpload(target?: UploadTarget) {
             processed.name
           )}`;
 
-          const { error: upErr } = await supabase.storage
+          const { data: signed, error: signErr } = await supabase.storage
             .from(TEST_MEDIA_BUCKET)
-            .upload(path, processed, { contentType: processed.type || undefined, upsert: false });
-          if (upErr) throw upErr;
+            .createSignedUploadUrl(path);
+          if (signErr || !signed?.signedUrl) throw signErr ?? new Error('URL d’envoi indisponible.');
 
+          patchItem(key, { status: 'uploading', size: processed.size, sent: 0 });
+          await putSigned(signed.signedUrl, processed, (sent) => patchItem(key, { sent }));
+
+          patchItem(key, { status: 'saving' });
           await insertWithStorageRollback({
             bucket: TEST_MEDIA_BUCKET,
             storagePath: path,
@@ -222,24 +283,39 @@ export function useTestMediaUpload(target?: UploadTarget) {
               return true;
             },
           });
+          patchItem(key, { status: 'done', sent: processed.size });
           ok += 1;
         } catch (e: any) {
-          toast.error(`Échec : ${file.name}`, { description: e?.message ?? 'Réessayez.' });
-        } finally {
-          setProgress((p) => (p ? { ...p, done: p.done + 1 } : null));
+          patchItem(key, { status: 'error', error: e?.message ?? 'Envoi impossible.' });
         }
       }
 
-      setProgress(null);
       if (ok > 0) {
         toast.success(`${ok} preuve${ok > 1 ? 's' : ''} ajoutée${ok > 1 ? 's' : ''}`);
         qc.invalidateQueries({ queryKey: KEY(target.proprieteId) });
+        // Les lignes réussies s'effacent d'elles-mêmes ; les erreurs restent lisibles.
+        setTimeout(() => setItems((prev) => prev.filter((it) => it.status !== 'done')), 2200);
       }
     },
-    [target, qc]
+    [target, qc, patchItem]
   );
 
-  return { upload, progress };
+  const dismiss = useCallback((key: string) => {
+    setItems((prev) => prev.filter((it) => it.key !== key));
+  }, []);
+
+  const clearDone = useCallback(() => {
+    setItems((prev) => prev.filter((it) => it.status !== 'done'));
+  }, []);
+
+  const active = items.some((it) => it.status !== 'done' && it.status !== 'error');
+
+  /** Compat historique : compteur agrégé pour les vues qui l'utilisent encore. */
+  const progress = items.length
+    ? { done: items.filter((it) => it.status === 'done' || it.status === 'error').length, total: items.length }
+    : null;
+
+  return { upload, items, dismiss, clearDone, busy: active, progress };
 }
 
 export function useTestMediaMutations(proprieteId?: string) {
