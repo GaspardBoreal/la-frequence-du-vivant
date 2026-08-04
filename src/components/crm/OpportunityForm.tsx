@@ -256,7 +256,16 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
             <OpportunityActionsPicker
               value={actionsRealisees}
               onChange={setActionsRealisees}
+              onOpenAudit={() => setAuditOpen(true)}
             />
+
+            <PartnerAuditDrawer
+              open={auditOpen}
+              onClose={() => setAuditOpen(false)}
+              audit={resolvedAudit}
+              fallbackName={auditCandidates.find(Boolean) ?? null}
+            />
+
 
 
 
