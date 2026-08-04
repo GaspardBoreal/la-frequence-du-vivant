@@ -4,7 +4,7 @@ import { Camera, Filter, Images, LayoutGrid, MapPin, Video } from 'lucide-react'
 import { AnalyzeCard } from '../AnalyzeCard';
 import { SOIL_TESTS, soilTestAccent, soilTestLabel } from './soilTestCatalog';
 import { TestMediaViewer } from './TestMediaViewer';
-import type { TestMedia } from '@/hooks/propriete/usePropertyTestMedias';
+import { sortTestMedias, type TestMedia } from '@/hooks/propriete/usePropertyTestMedias';
 
 type GroupMode = 'chrono' | 'test' | 'sample';
 
