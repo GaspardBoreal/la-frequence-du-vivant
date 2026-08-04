@@ -1,4 +1,6 @@
 import type { PartnerAudit } from './types';
+import { vienneNatureSynthesis } from './vienneNatureSynthesis';
+
 
 const CONTENT = `## Audit de visibilité — La Fréquence du Vivant × Vienne Nature
 
