@@ -185,84 +185,50 @@ export const TestMediaDrawer: React.FC<{
               Aucune preuve visuelle pour l’instant.
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <AnimatePresence initial={false}>
-                {medias.map((m, i) => (
-                  <motion.div
-                    key={m.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.94 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ delay: i * 0.02 }}
-                    className="group relative rounded-xl overflow-hidden bg-white border border-[hsl(var(--ds-line))] shadow-sm"
-                  >
-                    <button
-                      onClick={() => setViewer(i)}
-                      className="block w-full aspect-square bg-[hsl(var(--ds-forest))]/8"
-                    >
-                      {m.media_type === 'video' ? (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Video className="w-7 h-7 text-[hsl(var(--ds-forest))]/60" />
-                        </div>
-                      ) : (
-                        <img
-                          src={m.url}
-                          alt={m.caption ?? 'Preuve de terrain'}
-                          loading="lazy"
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                    </button>
-
-                    <div className="absolute top-1.5 left-1.5 rounded-full bg-black/55 text-white text-[9px] px-1.5 py-0.5 backdrop-blur-sm">
-                      {fmt(m.created_at)}
-                    </div>
-
-                    {!readOnly && (
-                      <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => setEditing(editing === m.id ? null : m.id)}
-                          aria-label="Légender"
-                          className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-[hsl(var(--ds-forest-deep))]"
-                        >
-                          <Pencil className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => remove.mutate(m)}
-                          aria-label="Supprimer"
-                          className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-red-600"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-
-                    <div className="px-2 py-1.5">
-                      {editing === m.id && !readOnly ? (
-                        <input
-                          autoFocus
-                          defaultValue={m.caption ?? ''}
-                          placeholder="Légende…"
-                          onBlur={(e) => {
-                            patch.mutate({ id: m.id, caption: e.target.value.trim() || null });
+            <>
+              {!readOnly && medias.length > 1 && (
+                <div className="flex items-center gap-1.5 text-[11px] text-[hsl(var(--ds-forest-deep))]/60">
+                  <GripVertical className="w-3.5 h-3.5" />
+                  Glissez les vignettes pour définir l’ordre d’affichage et d’impression.
+                </div>
+              )}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={onDragEnd}
+              >
+                <SortableContext
+                  items={medias.map((m) => m.id)}
+                  strategy={rectSortingStrategy}
+                  disabled={readOnly}
+                >
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <AnimatePresence initial={false}>
+                      {medias.map((m, i) => (
+                        <SortableTile
+                          key={m.id}
+                          media={m}
+                          index={i}
+                          total={medias.length}
+                          readOnly={readOnly}
+                          editing={editing === m.id}
+                          onOpen={() => setViewer(i)}
+                          onToggleEdit={() => setEditing(editing === m.id ? null : m.id)}
+                          onCaption={(caption) => {
+                            patch.mutate({ id: m.id, caption });
                             setEditing(null);
                           }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                          }}
-                          className="w-full bg-transparent text-[11px] outline-none border-b border-[hsl(var(--ds-forest))]/30 text-[hsl(var(--ds-forest-deep))]"
+                          onRemove={() => remove.mutate(m)}
+                          onMove={(d) => move(m.id, d)}
                         />
-                      ) : (
-                        <div className="text-[11px] text-[hsl(var(--ds-forest-deep))]/70 truncate">
-                          {m.caption || (m.media_type === 'video' ? 'Vidéo' : 'Photo')}
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </>
+          )}
+
           )}
         </div>
 
