@@ -1,7 +1,13 @@
 import type { PartnerAudit } from './types';
 import { vienneNatureAudit } from './vienneNature';
 
-export type { PartnerAudit };
+export type {
+  PartnerAudit,
+  PartnerAuditKpi,
+  PartnerAuditLever,
+  PartnerAuditSynthesis,
+} from './types';
+
 
 /** Mot de passe d'accès aux pages publiques /partenaires/:slug */
 export const PARTNER_AUDIT_PASSWORD = 'WINWIN20262037';
