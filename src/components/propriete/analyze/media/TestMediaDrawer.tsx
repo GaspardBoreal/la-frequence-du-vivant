@@ -241,6 +241,150 @@ export const TestMediaDrawer: React.FC<{
   );
 };
 
+/** Vignette classable (glisser-déposer + flèches tactiles). */
+const SortableTile: React.FC<{
+  media: TestMedia;
+  index: number;
+  total: number;
+  readOnly: boolean;
+  editing: boolean;
+  onOpen: () => void;
+  onToggleEdit: () => void;
+  onCaption: (caption: string | null) => void;
+  onRemove: () => void;
+  onMove: (delta: number) => void;
+}> = ({
+  media: m,
+  index,
+  total,
+  readOnly,
+  editing,
+  onOpen,
+  onToggleEdit,
+  onCaption,
+  onRemove,
+  onMove,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: m.id,
+    disabled: readOnly,
+  });
+
+  return (
+    <motion.div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      layout
+      initial={{ opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      className={`group relative rounded-xl overflow-hidden bg-white border shadow-sm ${
+        isDragging
+          ? 'z-20 border-[hsl(var(--ds-gold))] shadow-xl ring-2 ring-[hsl(var(--ds-gold))]/50'
+          : 'border-[hsl(var(--ds-line))]'
+      }`}
+    >
+      <button onClick={onOpen} className="block w-full aspect-square bg-[hsl(var(--ds-forest))]/8">
+        {m.media_type === 'video' ? (
+          <div className="w-full h-full flex items-center justify-center">
+            <Video className="w-7 h-7 text-[hsl(var(--ds-forest))]/60" />
+          </div>
+        ) : (
+          <img
+            src={m.url}
+            alt={m.caption ?? 'Preuve de terrain'}
+            loading="lazy"
+            className="w-full h-full object-cover"
+          />
+        )}
+      </button>
+
+      {/* Rang */}
+      <div className="absolute top-1.5 left-1.5 flex items-center gap-1">
+        <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[hsl(var(--ds-gold))] text-[10px] font-bold text-[hsl(var(--ds-forest-deep))] flex items-center justify-center shadow">
+          {index + 1}
+        </span>
+        <span className="rounded-full bg-black/55 text-white text-[9px] px-1.5 py-0.5 backdrop-blur-sm">
+          {fmt(m.created_at)}
+        </span>
+      </div>
+
+      {!readOnly && (
+        <>
+          {/* Poignée de glissement */}
+          <button
+            {...attributes}
+            {...listeners}
+            aria-label="Déplacer"
+            className="absolute bottom-9 left-1.5 w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-[hsl(var(--ds-forest-deep))] cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity touch-none"
+          >
+            <GripVertical className="w-3 h-3" />
+          </button>
+
+          {/* Flèches tactiles */}
+          {total > 1 && (
+            <div className="absolute bottom-9 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+              <button
+                onClick={() => onMove(-1)}
+                disabled={index === 0}
+                aria-label="Reculer"
+                className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-[hsl(var(--ds-forest-deep))] disabled:opacity-30"
+              >
+                <ChevronLeft className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => onMove(1)}
+                disabled={index === total - 1}
+                aria-label="Avancer"
+                className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-[hsl(var(--ds-forest-deep))] disabled:opacity-30"
+              >
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
+          <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={onToggleEdit}
+              aria-label="Légender"
+              className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-[hsl(var(--ds-forest-deep))]"
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+            <button
+              onClick={onRemove}
+              aria-label="Supprimer"
+              className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-red-600"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        </>
+      )}
+
+      <div className="px-2 py-1.5">
+        {editing && !readOnly ? (
+          <input
+            autoFocus
+            defaultValue={m.caption ?? ''}
+            placeholder="Légende…"
+            onBlur={(e) => onCaption(e.target.value.trim() || null)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+            }}
+            className="w-full bg-transparent text-[11px] outline-none border-b border-[hsl(var(--ds-forest))]/30 text-[hsl(var(--ds-forest-deep))]"
+          />
+        ) : (
+          <div className="text-[11px] text-[hsl(var(--ds-forest-deep))]/70 truncate">
+            {m.caption || (m.media_type === 'video' ? 'Vidéo' : 'Photo')}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+
 /** Pastille compacte à poser dans une ligne de prélèvement. */
 export const TestMediaBadge: React.FC<{
   target: UploadTarget;
