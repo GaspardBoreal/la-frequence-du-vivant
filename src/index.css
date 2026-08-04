@@ -797,33 +797,36 @@
   .samples-register .register-state-pill,
   .samples-register .register-coords { white-space: nowrap !important; }
   .samples-register .register-coords { font-size: 5.7pt !important; }
-  /* Sceau des strates : une seule ligne, réduit pour tenir dans la colonne État */
+  /* Sceau des strates : une seule ligne, taille dédiée impression (size="print") */
   .samples-register .samples-register-seal {
     display: inline-flex !important;
     flex-wrap: nowrap !important;
     justify-content: flex-end;
     gap: 0 !important;
     max-width: 100%;
-  }
-  .samples-register .samples-register-seal > * {
-    transform: scale(0.44);
-    transform-origin: center;
-    margin: -5px -4px;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   /* Pastille d'état miniature */
   .samples-register .register-state-pill {
-    font-size: 4.2pt !important;
+    font-size: 4.4pt !important;
     letter-spacing: 0.02em !important;
     padding: 0.1mm 0.6mm !important;
     gap: 0.4mm !important;
     line-height: 1 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   .samples-register .register-state-pill svg { width: 3.4pt !important; height: 3.4pt !important; }
-  /* Colonne État : tout le contenu en très petit */
+  /* Colonne État : tout le contenu en très petit, couleurs conservées */
   .samples-register td:nth-child(7),
-  .samples-register td:nth-child(7) * { font-size: 4.2pt !important; line-height: 1 !important; }
+  .samples-register td:nth-child(7) * {
+    font-size: 4.4pt !important;
+    line-height: 1 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   .samples-register td:nth-child(7) { padding: 1mm 0.6mm !important; }
-
   /* Jauges contraintes pour ne pas élargir leur colonne */
   .samples-register .register-ph-gauge { width: 10mm !important; max-width: 100% !important; }
   .samples-register .register-life-gauge { width: 10mm !important; max-width: 100% !important; }
