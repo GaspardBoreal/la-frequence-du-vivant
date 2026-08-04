@@ -214,7 +214,7 @@ export const SamplesRegisterTable: React.FC<{
                           <span className="print-nowrap inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-[hsl(var(--ds-gold))]">
                             <MapPin className="w-2.5 h-2.5" /> Géolocalisé
                           </span>
-                          <span className="print-nowrap block text-[8.5px] tabular-nums text-[hsl(var(--ds-forest))]/55">
+                          <span className="register-coords print-nowrap block text-[8.5px] tabular-nums text-[hsl(var(--ds-forest))]/55">
                             {s.lat.toFixed(5)} · {s.lng.toFixed(5)}
                           </span>
                         </>
