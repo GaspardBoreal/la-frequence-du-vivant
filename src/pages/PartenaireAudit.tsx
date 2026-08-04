@@ -90,11 +90,15 @@ const PartenaireAudit: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background print:hidden">
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
         <title>{`Audit de visibilité — La Fréquence du Vivant × ${audit.partnerName}`}</title>
       </Helmet>
+
+      <PartnerAuditPrintLayout audit={audit} />
+
+
 
       <header className="border-b border-border/60 bg-gradient-to-b from-primary/10 to-transparent">
         <div className="mx-auto w-full max-w-3xl px-6 py-12">
