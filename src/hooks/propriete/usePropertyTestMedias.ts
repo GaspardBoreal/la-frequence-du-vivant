@@ -109,6 +109,24 @@ export function useTestMediaUpload(target?: UploadTarget) {
       setProgress({ done: 0, total: list.length });
       let ok = 0;
 
+      // Rang de départ : à la suite des médias déjà classés dans ce groupe.
+      let nextOrder = 1;
+      try {
+        const { data: last } = await (supabase as any)
+          .from('propriete_test_medias')
+          .select('order_index')
+          .eq('propriete_id', target.proprieteId)
+          .eq('sample_id', target.sampleId)
+          .eq('test_id', target.testId)
+          .order('order_index', { ascending: false })
+          .limit(1);
+        nextOrder = ((last?.[0]?.order_index as number) ?? 0) + 1;
+      } catch {
+        /* fallback : 1 */
+      }
+
+
+
       for (const file of list) {
         try {
           const isVideo = (file.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm)$/i.test(file.name);
