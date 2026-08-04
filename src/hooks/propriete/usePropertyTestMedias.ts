@@ -186,7 +186,7 @@ export function useTestMediaUpload(target?: UploadTarget) {
                 duration_s: duration,
                 taken_at: takenAt,
                 uploaded_by: auth.user?.id,
-                order_index: Math.floor(Date.now() / 1000) % 100000,
+                order_index: nextOrder++,
               });
               if (error) throw error;
               return true;
