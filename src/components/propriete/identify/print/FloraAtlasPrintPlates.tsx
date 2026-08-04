@@ -58,31 +58,34 @@ const Pastille: React.FC<{ letter: string; value: number; hue: string; title: st
 
 const Vignette: React.FC<{
   plant: PlantIndicator;
-  photo?: string | null;
-  field?: boolean;
+  /** Candidats ordonnés : terrain d'abord, puis photo de référence. */
+  candidates: Array<{ url: string; field: boolean }>;
   index: number;
-}> = ({ plant, photo, field, index }) => {
-  const [broken, setBroken] = React.useState(false);
-  const showPhoto = !!photo && !broken;
+}> = ({ plant, candidates, index }) => {
+  const [attempt, setAttempt] = React.useState(0);
+  React.useEffect(() => setAttempt(0), [candidates.map((c) => c.url).join('|')]);
+  const current = candidates[attempt];
   return (
   <figure className="flora-atlas-cell print-avoid-break">
     <div className="flora-atlas-photo">
-      {showPhoto ? (
+      {current ? (
         <img
-          src={photo!}
+          key={current.url}
+          src={current.url}
           alt={plant.nom}
           loading="eager"
           decoding="sync"
-          crossOrigin="anonymous"
-          onError={() => setBroken(true)}
+          referrerPolicy="no-referrer"
+          onError={() => setAttempt((a) => a + 1)}
         />
       ) : (
         <div className="flora-atlas-photo-fallback">
-          <FamilyIcon family={plant.famille} active size={34} />
+          <FamilyIcon family={plant.famille} active size={40} />
+          <span className="flora-atlas-nophoto">photo indisponible</span>
         </div>
       )}
       <span className="flora-atlas-num">{index}</span>
-      {field && showPhoto && <span className="flora-atlas-field">Terrain</span>}
+      {current?.field && <span className="flora-atlas-field">Terrain</span>}
     </div>
 
     <figcaption>
@@ -103,6 +106,7 @@ const Vignette: React.FC<{
   </figure>
   );
 };
+
 
 
 interface Props {
@@ -143,24 +147,25 @@ export const FloraAtlasPrintPlates: React.FC<Props> = ({
   /**
    * Photos marcheurs indexées à trois niveaux : nom scientifique exact,
    * genre (obs. déterminées au genre : « Achillea »), nom vernaculaire.
+   * On conserve plusieurs URLs par clé pour pouvoir enchaîner les replis.
    */
   const fieldIndex = React.useMemo(() => {
-    const exact = new Map<string, string>();
-    const genus = new Map<string, string>();
-    const common = new Map<string, string>();
+    const exact = new Map<string, string[]>();
+    const genus = new Map<string, string[]>();
+    const common = new Map<string, string[]>();
+    const add = (m: Map<string, string[]>, k: string, urls: string[]) => {
+      if (!k || urls.length === 0) return;
+      const arr = m.get(k);
+      if (arr) arr.push(...urls);
+      else m.set(k, [...urls]);
+    };
     for (const s of species ?? []) {
-      const url = (s as any).photos?.[0];
-      if (!url) continue;
-      const sci = norm((s as any).scientificName);
-      const com = norm((s as any).commonName);
-      if (sci && !exact.has(sci)) exact.set(sci, url);
-      const g = firstWord((s as any).scientificName);
-      if (g && !genus.has(g)) genus.set(g, url);
-      if (com) {
-        if (!common.has(com)) common.set(com, url);
-        const cg = firstWord((s as any).commonName);
-        if (cg && !common.has(cg)) common.set(cg, url);
-      }
+      const urls: string[] = ((s as any).photos ?? []).filter(Boolean).slice(0, 3);
+      if (urls.length === 0) continue;
+      add(exact, norm((s as any).scientificName), urls);
+      add(genus, firstWord((s as any).scientificName), urls);
+      add(common, norm((s as any).commonName), urls);
+      add(common, firstWord((s as any).commonName), urls);
     }
     return { exact, genus, common };
   }, [species]);
@@ -172,17 +177,26 @@ export const FloraAtlasPrintPlates: React.FC<Props> = ({
     pages.push(plants.slice(i, i + ATLAS_PER_PAGE));
   }
 
-  const fieldPhotoOf = (p: PlantIndicator) =>
+  const fieldPhotosOf = (p: PlantIndicator): string[] =>
     fieldIndex.exact.get(norm(p.latin)) ??
     fieldIndex.genus.get(firstWord(p.latin)) ??
     fieldIndex.common.get(norm(p.nom)) ??
     fieldIndex.common.get(firstWord(p.nom)) ??
-    null;
+    [];
 
-  const photoOf = (p: PlantIndicator) =>
-    fieldPhotoOf(p) ??
-    thumbs.data?.get((p.latin ?? p.nom).trim().toLowerCase())?.photo_url ??
-    null;
+  const candidatesOf = (p: PlantIndicator): Array<{ url: string; field: boolean }> => {
+    const seen = new Set<string>();
+    const out: Array<{ url: string; field: boolean }> = [];
+    for (const url of fieldPhotosOf(p)) {
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      out.push({ url, field: true });
+    }
+    const ref = thumbs.data?.get((p.latin ?? p.nom).trim().toLowerCase())?.photo_url;
+    if (ref && !seen.has(ref)) out.push({ url: ref, field: false });
+    return out;
+  };
+
 
 
 
@@ -208,8 +222,8 @@ export const FloraAtlasPrintPlates: React.FC<Props> = ({
               <Vignette
                 key={p.id}
                 plant={p}
-                photo={photoOf(p)}
-                field={!!fieldPhotoOf(p)}
+                candidates={candidatesOf(p)}
+
                 index={pi * ATLAS_PER_PAGE + i + 1}
               />
             ))}
