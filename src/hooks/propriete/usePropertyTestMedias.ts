@@ -53,6 +53,7 @@ export function usePropertyTestMedias(proprieteId?: string) {
         .from('propriete_test_medias')
         .select('*')
         .eq('propriete_id', proprieteId)
+        .order('order_index', { ascending: true })
         .order('created_at', { ascending: true });
       if (error) throw error;
       const rows = (data ?? []) as TestMedia[];
