@@ -48,7 +48,13 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
   const webUrl = audit ? `${window.location.origin}/partenaires/${audit.slug}` : null;
 
   const node = (
-    <div className="fixed inset-0 z-[4000] flex flex-col bg-background print:hidden">
+    <div
+      className="fixed inset-0 z-[4000] flex flex-col bg-background print:hidden"
+      style={{ pointerEvents: 'auto' }}
+      onWheelCapture={(e) => e.stopPropagation()}
+      onTouchMoveCapture={(e) => e.stopPropagation()}
+    >
+
       {/* En-tête */}
       <header className="shrink-0 border-b border-border/60 bg-background">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-6 py-4">
