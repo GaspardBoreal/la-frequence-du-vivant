@@ -222,8 +222,8 @@ export const FloraAtlasPrintPlates: React.FC<Props> = ({
               <Vignette
                 key={p.id}
                 plant={p}
-                photo={photoOf(p)}
-                field={!!fieldPhotoOf(p)}
+                candidates={candidatesOf(p)}
+
                 index={pi * ATLAS_PER_PAGE + i + 1}
               />
             ))}
