@@ -150,9 +150,10 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
             </div>
             <PartnerAuditContent content={audit.content} />
             <div className="h-16" />
-
           </div>
+          )
         ) : (
+
           <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-primary/30 bg-primary/10">
               <Sparkles className="h-7 w-7 text-primary" />
