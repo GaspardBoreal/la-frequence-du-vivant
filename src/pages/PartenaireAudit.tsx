@@ -1,13 +1,16 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Lock, Printer, ExternalLink, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PartnerAuditContent } from '@/components/partners/PartnerAuditContent';
 import { PartnerAuditPrintLayout } from '@/components/partners/PartnerAuditPrintLayout';
+import PartnerAuditViewSwitcher, { type PartnerAuditView } from '@/components/partners/PartnerAuditViewSwitcher';
+import PartnerAuditSynthesis from '@/components/partners/synthese/PartnerAuditSynthesis';
 import { usePartnerAuditPrint } from '@/hooks/usePartnerAuditPrint';
 import { getPartnerAuditBySlug, PARTNER_AUDIT_PASSWORD } from '@/lib/partnerAudits';
+
 
 const storageKey = (slug: string) => `partner-audit-unlocked:${slug}`;
 
