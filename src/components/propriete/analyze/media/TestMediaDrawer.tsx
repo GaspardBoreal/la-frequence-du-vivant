@@ -228,8 +228,6 @@ export const TestMediaDrawer: React.FC<{
               </DndContext>
             </>
           )}
-
-          )}
         </div>
 
         <TestMediaViewer
