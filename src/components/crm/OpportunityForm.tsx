@@ -108,6 +108,22 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
     );
   }, [opportunity?.id]);
 
+  // --- Audit partenariat rattaché à l'opportunité ---
+  const [auditOpen, setAuditOpen] = React.useState(false);
+  const auditCandidates = React.useMemo(
+    () => [
+      opportunity?.titre,
+      opportunity?.entreprise,
+      ...linkedCompanies.map((c) => c.denomination),
+    ],
+    [opportunity?.titre, opportunity?.entreprise, linkedCompanies],
+  );
+  const resolvedAudit = React.useMemo(
+    () => resolvePartnerAudit(auditCandidates),
+    [auditCandidates],
+  );
+
+
   React.useEffect(() => {
     if (existingLinks && opportunity) {
       setLinkedCompanies(existingLinks.companies);
