@@ -109,6 +109,8 @@ const AdminApiMcp = lazyWithRetry(() => import('./pages/AdminApiMcp'));
 const AdminTaxonomyCuration = lazyWithRetry(() => import('./pages/AdminTaxonomyCuration'));
 const AdminAuditFrugalHub = lazyWithRetry(() => import('./pages/AdminAuditFrugalHub'));
 const PublicAuditFrugal = lazyWithRetry(() => import('./pages/PublicAuditFrugal'));
+const PartenaireAudit = lazyWithRetry(() => import('./pages/PartenaireAudit'));
+
 const AgentIA = lazyWithRetry(() => import('./pages/AgentIA'));
 const AgentIAFiche = lazyWithRetry(() => import('./pages/AgentIAFiche'));
 const InterregSudoeMdv = lazyWithRetry(() => import('./pages/InterregSudoeMdv'));
