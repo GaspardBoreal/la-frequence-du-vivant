@@ -41,6 +41,9 @@ import { OpportunityActionsPicker } from '@/components/crm/opportunities/Opportu
 import { ALL_ACTION_CODES, isValidActionCode, type OpportunityActionCode } from '@/lib/crmOpportunityActions';
 import { toast } from 'sonner';
 import { OpportunityDocumentsSection } from '@/components/crm/opportunities/OpportunityDocumentsSection';
+import { PartnerAuditDrawer } from '@/components/crm/opportunities/PartnerAuditDrawer';
+import { resolvePartnerAudit } from '@/lib/partnerAudits';
+
 
 const opportunitySchema = z.object({
   titre: z.string().max(250, 'Maximum 250 caractères').optional(),
@@ -107,6 +110,22 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
         .sort((a, b) => ALL_ACTION_CODES.indexOf(a) - ALL_ACTION_CODES.indexOf(b))
     );
   }, [opportunity?.id]);
+
+  // --- Audit partenariat rattaché à l'opportunité ---
+  const [auditOpen, setAuditOpen] = React.useState(false);
+  const auditCandidates = React.useMemo(
+    () => [
+      opportunity?.titre,
+      opportunity?.entreprise,
+      ...linkedCompanies.map((c) => c.denomination),
+    ],
+    [opportunity?.titre, opportunity?.entreprise, linkedCompanies],
+  );
+  const resolvedAudit = React.useMemo(
+    () => resolvePartnerAudit(auditCandidates),
+    [auditCandidates],
+  );
+
 
   React.useEffect(() => {
     if (existingLinks && opportunity) {
@@ -256,7 +275,16 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
             <OpportunityActionsPicker
               value={actionsRealisees}
               onChange={setActionsRealisees}
+              onOpenAudit={() => setAuditOpen(true)}
             />
+
+            <PartnerAuditDrawer
+              open={auditOpen}
+              onClose={() => setAuditOpen(false)}
+              audit={resolvedAudit}
+              fallbackName={auditCandidates.find(Boolean) ?? null}
+            />
+
 
 
 

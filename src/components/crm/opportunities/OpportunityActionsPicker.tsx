@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check } from 'lucide-react';
+import { Check, FileSearch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OPPORTUNITY_ACTIONS, type OpportunityActionCode } from '@/lib/crmOpportunityActions';
 
@@ -7,17 +7,21 @@ interface OpportunityActionsPickerProps {
   value: OpportunityActionCode[];
   onChange: (next: OpportunityActionCode[]) => void;
   className?: string;
+  /** Ouvre l'audit partenariat rattaché à l'opportunité */
+  onOpenAudit?: () => void;
 }
 
 /**
- * Sélecteur multi-actions design : 4 cartes ordonnées, toggle au clic.
- * Met en avant la progression (X/4) et célèbre le « process complet ».
+ * Sélecteur multi-actions design : cartes ordonnées, toggle au clic.
+ * Met en avant la progression (X/N) et célèbre le « process complet ».
  */
 export const OpportunityActionsPicker: React.FC<OpportunityActionsPickerProps> = ({
   value,
   onChange,
   className,
+  onOpenAudit,
 }) => {
+
   const set = React.useMemo(() => new Set(value), [value]);
   const completed = value.length;
   const total = OPPORTUNITY_ACTIONS.length;
@@ -67,16 +71,17 @@ export const OpportunityActionsPicker: React.FC<OpportunityActionsPickerProps> =
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-5">
         {OPPORTUNITY_ACTIONS.map((action, idx) => {
           const Icon = action.icon;
           const selected = set.has(action.code);
           const hue = action.hue;
           return (
+            <div key={action.code} className="flex flex-col gap-1.5">
             <button
-              key={action.code}
               type="button"
               onClick={() => toggle(action.code)}
+
               aria-pressed={selected}
               className={cn(
                 'group relative flex flex-col items-start gap-2 rounded-xl border p-3 text-left transition-all duration-200',
@@ -124,6 +129,19 @@ export const OpportunityActionsPicker: React.FC<OpportunityActionsPickerProps> =
                 </div>
               </div>
             </button>
+
+            {action.code === 'audit_partenariat' && onOpenAudit && (
+              <button
+                type="button"
+                onClick={onOpenAudit}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-foreground/25 px-2 py-1.5 text-[11px] font-medium text-foreground/80 transition-colors hover:border-foreground/50 hover:bg-muted/60"
+              >
+                <FileSearch className="h-3.5 w-3.5" />
+                Ouvrir l'audit
+              </button>
+            )}
+            </div>
+
           );
         })}
       </div>
