@@ -64,7 +64,14 @@ export const PalettePrintLayout: React.FC<Props> = ({
   const hasAtelier = propertyZones.length > 0 || objets.length > 0;
   const chromatic = hasChromaticPage(objets);
   const sheetPages = ouvrageSheetPageCount(objets);
-  const total = 2 + (hasAtelier ? 2 : 0) + (chromatic ? 1 : 0) + sheetPages + 1;
+  /** Planches d'emplacement : deux par page A4. */
+  const zonePages = React.useMemo(() => {
+    const out: PaletteZoneView[][] = [];
+    for (let i = 0; i < zones.length; i += 2) out.push(zones.slice(i, i + 2));
+    return out;
+  }, [zones]);
+  const total = 2 + zonePages.length + (hasAtelier ? 2 : 0) + (chromatic ? 1 : 0) + sheetPages + 1;
+
 
   const Foot: React.FC<{ index: number }> = ({ index }) => (
     <footer className="synthesize-print-foot">
