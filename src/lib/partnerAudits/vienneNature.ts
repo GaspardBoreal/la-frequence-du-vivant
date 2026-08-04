@@ -1,4 +1,6 @@
 import type { PartnerAudit } from './types';
+import { vienneNatureSynthesis } from './vienneNatureSynthesis';
+
 
 const CONTENT = `## Audit de visibilité — La Fréquence du Vivant × Vienne Nature
 
@@ -159,4 +161,6 @@ export const vienneNatureAudit: PartnerAudit = {
     'Semrush (base FR), Google Search Console (propriété la-frequence-du-vivant.com), inspection directe des sites.',
   matchers: ['vienne nature', 'vienne-nature', 'protec nature environnement vienne'],
   content: CONTENT,
+  synthesis: vienneNatureSynthesis,
 };
+

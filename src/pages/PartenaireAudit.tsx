@@ -1,13 +1,16 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Lock, Printer, ExternalLink, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PartnerAuditContent } from '@/components/partners/PartnerAuditContent';
 import { PartnerAuditPrintLayout } from '@/components/partners/PartnerAuditPrintLayout';
+import PartnerAuditViewSwitcher, { type PartnerAuditView } from '@/components/partners/PartnerAuditViewSwitcher';
+import PartnerAuditSynthesis from '@/components/partners/synthese/PartnerAuditSynthesis';
 import { usePartnerAuditPrint } from '@/hooks/usePartnerAuditPrint';
 import { getPartnerAuditBySlug, PARTNER_AUDIT_PASSWORD } from '@/lib/partnerAudits';
+
 
 const storageKey = (slug: string) => `partner-audit-unlocked:${slug}`;
 
@@ -21,6 +24,18 @@ const PartenaireAudit: React.FC = () => {
   );
   const [value, setValue] = React.useState('');
   const [error, setError] = React.useState(false);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const hasSynthesis = Boolean(audit?.synthesis);
+  const view: PartnerAuditView =
+    searchParams.get('vue') === 'detail' || !hasSynthesis ? 'detail' : 'synthese';
+  const setView = (v: PartnerAuditView) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('vue', v);
+    setSearchParams(next, { replace: true });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,46 +116,60 @@ const PartenaireAudit: React.FC = () => {
 
       <PartnerAuditPrintLayout audit={audit} />
 
-
-
-      <header className="border-b border-border/60 bg-gradient-to-b from-primary/10 to-transparent">
-        <div className="mx-auto w-full max-w-3xl px-6 py-12">
-          <p className="text-[11px] uppercase tracking-[0.22em] text-primary/80">
-            Document de partenariat — confidentiel
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            La Fréquence du Vivant <span className="text-primary">×</span> {audit.partnerName}
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm text-muted-foreground">{audit.subtitle}</p>
-          <div className="mt-5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span>{audit.dateLabel}</span>
-            {audit.partnerSite && (
-              <a
-                href={audit.partnerSite}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-primary underline underline-offset-2"
-              >
-                <ExternalLink className="h-3.5 w-3.5" /> {audit.partnerSite.replace(/^https?:\/\//, '')}
-              </a>
-            )}
-            <Button variant="outline" size="sm" className="ml-auto print:hidden" onClick={print}>
-              <Printer className="mr-1.5 h-4 w-4" /> Imprimer / PDF
-            </Button>
-          </div>
+      {/* Barre de navigation entre les deux lectures */}
+      <div className="sticky top-0 z-30 border-b border-border/50 bg-background/85 backdrop-blur print:hidden">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-3 px-6 py-3">
+          {hasSynthesis && <PartnerAuditViewSwitcher value={view} onChange={setView} />}
+          <Button variant="outline" size="sm" className="ml-auto" onClick={print}>
+            <Printer className="mr-1.5 h-4 w-4" /> Imprimer / PDF
+          </Button>
         </div>
-      </header>
+      </div>
 
-      <main className="mx-auto w-full max-w-3xl px-6 py-10">
-        <p className="mb-8 rounded-xl border border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground">
-          {audit.sources}
-        </p>
-        <PartnerAuditContent content={audit.content} />
-        <footer className="mt-16 border-t border-border/60 pt-6 text-xs text-muted-foreground">
-          La Fréquence du Vivant — document de travail transmis à {audit.partnerName}. Diffusion restreinte.
-        </footer>
-      </main>
+      {view === 'synthese' && audit.synthesis ? (
+        <PartnerAuditSynthesis audit={audit} />
+      ) : (
+        <>
+          <header className="border-b border-border/60 bg-gradient-to-b from-primary/10 to-transparent">
+            <div className="mx-auto w-full max-w-3xl px-6 py-12">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-primary/80">
+                Document de partenariat — confidentiel
+              </p>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+                La Fréquence du Vivant <span className="text-primary">×</span> {audit.partnerName}
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm text-muted-foreground">{audit.subtitle}</p>
+              <div className="mt-5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                <span>{audit.dateLabel}</span>
+                {audit.partnerSite && (
+                  <a
+                    href={audit.partnerSite}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-primary underline underline-offset-2"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />{' '}
+                    {audit.partnerSite.replace(/^https?:\/\//, '')}
+                  </a>
+                )}
+              </div>
+            </div>
+          </header>
+
+          <main className="mx-auto w-full max-w-3xl px-6 py-10">
+            <p className="mb-8 rounded-xl border border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground">
+              {audit.sources}
+            </p>
+            <PartnerAuditContent content={audit.content} />
+            <footer className="mt-16 border-t border-border/60 pt-6 text-xs text-muted-foreground">
+              La Fréquence du Vivant — document de travail transmis à {audit.partnerName}. Diffusion
+              restreinte.
+            </footer>
+          </main>
+        </>
+      )}
     </div>
+
   );
 };
 

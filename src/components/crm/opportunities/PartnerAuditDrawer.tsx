@@ -5,8 +5,11 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PartnerAuditContent } from '@/components/partners/PartnerAuditContent';
 import { PartnerAuditPrintLayout } from '@/components/partners/PartnerAuditPrintLayout';
+import PartnerAuditViewSwitcher, { type PartnerAuditView } from '@/components/partners/PartnerAuditViewSwitcher';
+import PartnerAuditSynthesis from '@/components/partners/synthese/PartnerAuditSynthesis';
 import { usePartnerAuditPrint } from '@/hooks/usePartnerAuditPrint';
 import { PARTNER_AUDIT_PASSWORD, type PartnerAudit } from '@/lib/partnerAudits';
+
 
 interface PartnerAuditDrawerProps {
   open: boolean;
@@ -28,6 +31,10 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
   fallbackName,
 }) => {
   const print = usePartnerAuditPrint();
+  const hasSynthesis = Boolean(audit?.synthesis);
+  const [view, setView] = React.useState<PartnerAuditView>('synthese');
+  const effectiveView: PartnerAuditView = hasSynthesis ? view : 'detail';
+
 
   React.useEffect(() => {
     if (!open) return;
@@ -102,12 +109,19 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
               </p>
             )}
           </div>
+
+          {hasSynthesis && (
+            <PartnerAuditViewSwitcher value={effectiveView} onChange={setView} />
+          )}
         </div>
       </header>
 
       {/* Corps */}
       <div className="flex-1 overflow-y-auto">
         {audit ? (
+          effectiveView === 'synthese' && audit.synthesis ? (
+            <PartnerAuditSynthesis audit={audit} />
+          ) : (
           <div className="mx-auto w-full max-w-3xl px-6 py-8">
             <div className="mb-8 space-y-3 rounded-xl border border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground">
               <p>{audit.sources}</p>
@@ -137,7 +151,9 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
             <PartnerAuditContent content={audit.content} />
             <div className="h-16" />
           </div>
+          )
         ) : (
+
           <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-primary/30 bg-primary/10">
               <Sparkles className="h-7 w-7 text-primary" />
