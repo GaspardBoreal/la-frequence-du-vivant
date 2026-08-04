@@ -31,6 +31,10 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
   fallbackName,
 }) => {
   const print = usePartnerAuditPrint();
+  const hasSynthesis = Boolean(audit?.synthesis);
+  const [view, setView] = React.useState<PartnerAuditView>('synthese');
+  const effectiveView: PartnerAuditView = hasSynthesis ? view : 'detail';
+
 
   React.useEffect(() => {
     if (!open) return;
