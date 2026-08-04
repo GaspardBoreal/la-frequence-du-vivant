@@ -25,6 +25,18 @@ const PartenaireAudit: React.FC = () => {
   const [value, setValue] = React.useState('');
   const [error, setError] = React.useState(false);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const hasSynthesis = Boolean(audit?.synthesis);
+  const view: PartnerAuditView =
+    searchParams.get('vue') === 'detail' || !hasSynthesis ? 'detail' : 'synthese';
+  const setView = (v: PartnerAuditView) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('vue', v);
+    setSearchParams(next, { replace: true });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (value.trim().toUpperCase() === PARTNER_AUDIT_PASSWORD) {
