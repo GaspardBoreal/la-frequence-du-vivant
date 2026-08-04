@@ -148,13 +148,13 @@ export const SamplesRegisterTable: React.FC<{
     <div className="samples-register overflow-x-auto rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] print:rounded-none">
       <table className="w-full min-w-[680px] text-left text-[11px] border-collapse print:min-w-0">
         <colgroup>
-          <col style={{ width: '15%' }} />
-          <col style={{ width: '13%' }} />
-          <col style={{ width: '13%' }} />
-          <col style={{ width: '13%' }} />
-          <col style={{ width: '11%' }} />
-          <col style={{ width: '24%' }} />
-          <col style={{ width: '11%' }} />
+          <col style={{ width: '16%' }} />
+          <col style={{ width: '16%' }} />
+          <col style={{ width: '12%' }} />
+          <col style={{ width: '12%' }} />
+          <col style={{ width: '10%' }} />
+          <col style={{ width: '22%' }} />
+          <col style={{ width: '12%' }} />
         </colgroup>
         <thead className="samples-register-head">
           <tr className="bg-[hsl(var(--ds-forest))]/[0.07] border-b-2 border-[hsl(var(--ds-gold))]/70">
