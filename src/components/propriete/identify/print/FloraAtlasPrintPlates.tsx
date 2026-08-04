@@ -58,31 +58,34 @@ const Pastille: React.FC<{ letter: string; value: number; hue: string; title: st
 
 const Vignette: React.FC<{
   plant: PlantIndicator;
-  photo?: string | null;
-  field?: boolean;
+  /** Candidats ordonnés : terrain d'abord, puis photo de référence. */
+  candidates: Array<{ url: string; field: boolean }>;
   index: number;
-}> = ({ plant, photo, field, index }) => {
-  const [broken, setBroken] = React.useState(false);
-  const showPhoto = !!photo && !broken;
+}> = ({ plant, candidates, index }) => {
+  const [attempt, setAttempt] = React.useState(0);
+  React.useEffect(() => setAttempt(0), [candidates.map((c) => c.url).join('|')]);
+  const current = candidates[attempt];
   return (
   <figure className="flora-atlas-cell print-avoid-break">
     <div className="flora-atlas-photo">
-      {showPhoto ? (
+      {current ? (
         <img
-          src={photo!}
+          key={current.url}
+          src={current.url}
           alt={plant.nom}
           loading="eager"
           decoding="sync"
-          crossOrigin="anonymous"
-          onError={() => setBroken(true)}
+          referrerPolicy="no-referrer"
+          onError={() => setAttempt((a) => a + 1)}
         />
       ) : (
         <div className="flora-atlas-photo-fallback">
-          <FamilyIcon family={plant.famille} active size={34} />
+          <FamilyIcon family={plant.famille} active size={40} />
+          <span className="flora-atlas-nophoto">photo indisponible</span>
         </div>
       )}
       <span className="flora-atlas-num">{index}</span>
-      {field && showPhoto && <span className="flora-atlas-field">Terrain</span>}
+      {current?.field && <span className="flora-atlas-field">Terrain</span>}
     </div>
 
     <figcaption>
@@ -103,6 +106,7 @@ const Vignette: React.FC<{
   </figure>
   );
 };
+
 
 
 interface Props {
