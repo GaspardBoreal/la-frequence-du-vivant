@@ -310,8 +310,8 @@ export const SamplesRegisterTable: React.FC<{
                     <StrataSeal
                       className="samples-register-seal"
                       sample={s}
-                      size="row"
-                      mono={printOnly}
+                      size={printOnly ? 'print' : 'row'}
+                      mono={false}
                       onSelect={
                         printOnly
                           ? undefined

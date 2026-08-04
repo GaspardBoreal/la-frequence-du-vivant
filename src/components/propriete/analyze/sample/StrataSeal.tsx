@@ -3,9 +3,10 @@ import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
 import type { SoilBlockId } from '@/components/propriete/analyze/media/soilTestCatalog';
 import { glyphMarkup, strataState, MUTED } from './strataGlyphs';
 
-type SealSize = 'row' | 'popup' | 'card';
+type SealSize = 'row' | 'popup' | 'card' | 'print';
 
 const DIM: Record<SealSize, { icon: number; gap: number; label: boolean; value: boolean }> = {
+  print: { icon: 11, gap: 2, label: false, value: false },
   row: { icon: 18, gap: 5, label: false, value: false },
   popup: { icon: 26, gap: 8, label: false, value: true },
   card: { icon: 32, gap: 12, label: true, value: true },
