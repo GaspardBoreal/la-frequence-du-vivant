@@ -7,7 +7,6 @@ import {
   UploadCloud,
   Video,
   X,
-  Loader2,
   Pencil,
   GripVertical,
   ChevronLeft,
