@@ -279,6 +279,16 @@ export function useTestMediaMutations(proprieteId?: string) {
   return { remove, patch, reorder };
 }
 
+/** Tri canonique des preuves de terrain : ordre choisi par l'utilisateur, puis date. */
+export const sortTestMedias = <T extends { order_index?: number | null; created_at: string }>(
+  list: T[],
+): T[] =>
+  [...list].sort((a, b) => {
+    const d = (a.order_index ?? 0) - (b.order_index ?? 0);
+    if (d !== 0) return d;
+    return String(a.created_at).localeCompare(String(b.created_at));
+  });
+
 /** Index rapide : combien de médias par couple test × prélèvement. */
 export function useTestMediaIndex(medias: TestMedia[] | undefined) {
   return useMemo(() => {
