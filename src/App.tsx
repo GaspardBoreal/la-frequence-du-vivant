@@ -361,6 +361,8 @@ function App() {
             } />
 
             <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />
+            <Route path="/partenaires/:slug" element={<PartenaireAudit />} />
+
             <Route path="/api-mcp" element={<ApiMcpPublic />} />
             <Route path="/admin" element={
               <AdminAuth>
