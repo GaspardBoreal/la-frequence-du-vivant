@@ -10,7 +10,10 @@ import {
   OuvrageSheetsPrint,
   ouvrageSheetPageCount,
 } from '@/components/propriete/print/OuvragePrintSheet';
+import { PaletteOathPage } from '@/components/propriete/print/palette/PaletteOathPage';
+import { PaletteZonePlate } from '@/components/propriete/print/palette/PaletteZonePlate';
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
+
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import type { ProprieteParcelle } from '@/hooks/propriete/usePropertyParcelles';
 import type {
