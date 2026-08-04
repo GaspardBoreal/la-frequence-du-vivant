@@ -110,7 +110,7 @@ export const TestMediaPrintPlates: React.FC<{
               </div>
             </header>
 
-            <div className="combined-print-plate-grid">
+            <div className={`combined-print-plate-grid ${densityClass(plate.photos.length)}`}>
               {plate.photos.map((p) => (
                 <figure key={p.id} className="combined-print-thumb">
                   <div className="combined-print-thumb-frame">
