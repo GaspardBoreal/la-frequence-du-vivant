@@ -59,7 +59,7 @@ export const TestMediaDrawer: React.FC<{
   medias: TestMedia[];
   readOnly?: boolean;
 }> = ({ open, onClose, target, medias: rawMedias, readOnly = false }) => {
-  const { upload, progress } = useTestMediaUpload(target);
+  const { upload, items, dismiss } = useTestMediaUpload(target);
   const { remove, patch, reorder } = useTestMediaMutations(target.proprieteId);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = React.useState(false);
