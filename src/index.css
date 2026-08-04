@@ -2228,6 +2228,7 @@
 
 /* === SYNTHESIZE PRINT — portail A4 dédié « Je synthétise » === */
 #synthesize-print-portal { display: none; }
+#palette-print-portal { display: none; }
 
 @media print {
   body.synthesize-print-mode {
@@ -2235,8 +2236,10 @@
     padding: 0 !important;
     background: #fff !important;
   }
-  body.synthesize-print-mode > *:not(#synthesize-print-portal) { display: none !important; }
-  body.synthesize-print-mode #synthesize-print-portal { display: block !important; }
+  body.synthesize-print-mode > *:not(#synthesize-print-portal):not(#palette-print-portal) { display: none !important; }
+  body.synthesize-print-mode #synthesize-print-portal,
+  body.synthesize-print-mode #palette-print-portal { display: block !important; }
+
 
   .synthesize-print-page {
     position: relative;
