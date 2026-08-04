@@ -5,8 +5,11 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PartnerAuditContent } from '@/components/partners/PartnerAuditContent';
 import { PartnerAuditPrintLayout } from '@/components/partners/PartnerAuditPrintLayout';
+import PartnerAuditViewSwitcher, { type PartnerAuditView } from '@/components/partners/PartnerAuditViewSwitcher';
+import PartnerAuditSynthesis from '@/components/partners/synthese/PartnerAuditSynthesis';
 import { usePartnerAuditPrint } from '@/hooks/usePartnerAuditPrint';
 import { PARTNER_AUDIT_PASSWORD, type PartnerAudit } from '@/lib/partnerAudits';
+
 
 interface PartnerAuditDrawerProps {
   open: boolean;
