@@ -1,10 +1,12 @@
-import { FileText, ClipboardList, MessageSquareDashed, PackageCheck, type LucideIcon } from 'lucide-react';
+import { FileText, ClipboardList, MessageSquareDashed, PackageCheck, Radar, type LucideIcon } from 'lucide-react';
 
 export type OpportunityActionCode =
   | 'plaquette_envoyee'
+  | 'audit_partenariat'
   | 'fiche_preparation_marche'
   | 'point_avancement'
   | 'pack_vivant_complet';
+
 
 export interface OpportunityActionDef {
   code: OpportunityActionCode;
@@ -26,7 +28,16 @@ export const OPPORTUNITY_ACTIONS: OpportunityActionDef[] = [
     hue: '210 90% 56%', // bleu
   },
   {
+    code: 'audit_partenariat',
+    label: 'Audit partenariat',
+    shortLabel: 'Audit',
+    description: 'Audit de visibilité croisée SEO & GEO du partenaire',
+    icon: Radar,
+    hue: '176 70% 42%', // turquoise
+  },
+  {
     code: 'fiche_preparation_marche',
+
     label: 'Fiche préparation Marche',
     shortLabel: 'Fiche prépa',
     description: 'Fiche de préparation de la marche partagée',
