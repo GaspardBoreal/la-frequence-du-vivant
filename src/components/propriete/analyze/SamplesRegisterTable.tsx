@@ -319,14 +319,15 @@ export const SamplesRegisterTable: React.FC<{
                       }
                     />
                     {incomplete ? (
-                      <span className="print-nowrap inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-amber-800">
+                      <span className="register-state-pill print-nowrap inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-amber-800">
                         <AlertTriangle className="w-2.5 h-2.5" /> À compléter
                       </span>
                     ) : (
-                      <span className="print-nowrap inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-forest))]/30 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-[hsl(var(--ds-forest))]">
+                      <span className="register-state-pill print-nowrap inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-forest))]/30 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-[hsl(var(--ds-forest))]">
                         <Check className="w-2.5 h-2.5" /> Complet
                       </span>
                     )}
+
                   </span>
                 </td>
               </tr>
