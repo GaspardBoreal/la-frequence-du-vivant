@@ -147,6 +147,15 @@ export const SamplesRegisterTable: React.FC<{
   return (
     <div className="samples-register overflow-x-auto rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] print:rounded-none">
       <table className="w-full min-w-[680px] text-left text-[11px] border-collapse print:min-w-0">
+        <colgroup>
+          <col style={{ width: '15%' }} />
+          <col style={{ width: '13%' }} />
+          <col style={{ width: '13%' }} />
+          <col style={{ width: '13%' }} />
+          <col style={{ width: '11%' }} />
+          <col style={{ width: '24%' }} />
+          <col style={{ width: '11%' }} />
+        </colgroup>
         <thead className="samples-register-head">
           <tr className="bg-[hsl(var(--ds-forest))]/[0.07] border-b-2 border-[hsl(var(--ds-gold))]/70">
             <Th>Prélèvement</Th>
@@ -158,6 +167,7 @@ export const SamplesRegisterTable: React.FC<{
             <Th className="text-right">État</Th>
           </tr>
         </thead>
+
 
         <tbody>
           {r.samples.map((s, rowIdx) => {
