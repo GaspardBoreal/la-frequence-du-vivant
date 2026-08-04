@@ -16,6 +16,7 @@ import {
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
 import {
   usePropertyTestMedias,
+  sortTestMedias,
   type TestMedia,
 } from '@/hooks/propriete/usePropertyTestMedias';
 import {
@@ -296,9 +297,12 @@ const DrawerInner: React.FC<{
 
   const mediasFor = React.useCallback(
     (block: SoilBlockId) =>
-      allMedias.filter((m) => m.sample_id === s?.id && m.block === block && !!m.url),
+      sortTestMedias(
+        allMedias.filter((m) => m.sample_id === s?.id && m.block === block && !!m.url),
+      ),
     [allMedias, s?.id],
   );
+
 
   const life = React.useMemo(() => scoreLife(s?.life_signs, s?.worm_count), [s]);
   const hasLife = (s?.life_signs?.length ?? 0) > 0 || typeof s?.worm_count === 'number';

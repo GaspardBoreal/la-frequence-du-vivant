@@ -53,6 +53,7 @@ export function usePropertyTestMedias(proprieteId?: string) {
         .from('propriete_test_medias')
         .select('*')
         .eq('propriete_id', proprieteId)
+        .order('order_index', { ascending: true })
         .order('created_at', { ascending: true });
       if (error) throw error;
       const rows = (data ?? []) as TestMedia[];
@@ -107,6 +108,24 @@ export function useTestMediaUpload(target?: UploadTarget) {
       if (list.length === 0) return;
       setProgress({ done: 0, total: list.length });
       let ok = 0;
+
+      // Rang de départ : à la suite des médias déjà classés dans ce groupe.
+      let nextOrder = 1;
+      try {
+        const { data: last } = await (supabase as any)
+          .from('propriete_test_medias')
+          .select('order_index')
+          .eq('propriete_id', target.proprieteId)
+          .eq('sample_id', target.sampleId)
+          .eq('test_id', target.testId)
+          .order('order_index', { ascending: false })
+          .limit(1);
+        nextOrder = ((last?.[0]?.order_index as number) ?? 0) + 1;
+      } catch {
+        /* fallback : 1 */
+      }
+
+
 
       for (const file of list) {
         try {
@@ -167,7 +186,7 @@ export function useTestMediaUpload(target?: UploadTarget) {
                 duration_s: duration,
                 taken_at: takenAt,
                 uploaded_by: auth.user?.id,
-                order_index: Math.floor(Date.now() / 1000) % 100000,
+                order_index: nextOrder++,
               });
               if (error) throw error;
               return true;
@@ -225,8 +244,50 @@ export function useTestMediaMutations(proprieteId?: string) {
     onError: (e: any) => toast.error(e?.message ?? 'Enregistrement impossible'),
   });
 
-  return { remove, patch };
+  /** Réordonne les preuves d'un couple prélèvement × test (ordre = index du tableau). */
+  const reorder = useMutation({
+    mutationFn: async ({
+      sampleId,
+      testId,
+      ids,
+    }: {
+      sampleId: string;
+      testId: SoilTestId;
+      ids: string[];
+    }) => {
+      // Optimiste : le cache reflète immédiatement le nouvel ordre.
+      qc.setQueryData(KEY(proprieteId), (prev: TestMedia[] | undefined) => {
+        if (!prev) return prev;
+        const rank = new Map(ids.map((id, i) => [id, i + 1]));
+        return [...prev]
+          .map((m) => (rank.has(m.id) ? { ...m, order_index: rank.get(m.id)! } : m))
+          .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+      });
+      const { error } = await (supabase as any).rpc('reorder_propriete_test_medias', {
+        _propriete_id: proprieteId,
+        _sample_id: sampleId,
+        _test_id: testId,
+        _ids: ids,
+      });
+      if (error) throw error;
+    },
+    onSettled: invalidate,
+    onError: (e: any) => toast.error(e?.message ?? 'Réordonnancement impossible'),
+  });
+
+
+  return { remove, patch, reorder };
 }
+
+/** Tri canonique des preuves de terrain : ordre choisi par l'utilisateur, puis date. */
+export const sortTestMedias = <T extends { order_index?: number | null; created_at: string }>(
+  list: T[],
+): T[] =>
+  [...list].sort((a, b) => {
+    const d = (a.order_index ?? 0) - (b.order_index ?? 0);
+    if (d !== 0) return d;
+    return String(a.created_at).localeCompare(String(b.created_at));
+  });
 
 /** Index rapide : combien de médias par couple test × prélèvement. */
 export function useTestMediaIndex(medias: TestMedia[] | undefined) {

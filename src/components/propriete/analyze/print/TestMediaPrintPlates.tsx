@@ -35,6 +35,9 @@ export const buildTestMediaPlates = (medias: TestMedia[] | undefined): TestMedia
       .sort((a, b) => {
         const la = (a.sample_label ?? '').localeCompare(b.sample_label ?? '');
         if (la !== 0) return la;
+        // Ordre choisi par l'utilisateur au sein d'un prélèvement, puis date.
+        const oi = (a.order_index ?? 0) - (b.order_index ?? 0);
+        if (oi !== 0) return oi;
         return String(dateOf(a)).localeCompare(String(dateOf(b)));
       });
     if (photos.length === 0) return;

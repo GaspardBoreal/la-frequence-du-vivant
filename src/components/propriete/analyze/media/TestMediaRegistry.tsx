@@ -4,7 +4,7 @@ import { Camera, Filter, Images, LayoutGrid, MapPin, Video } from 'lucide-react'
 import { AnalyzeCard } from '../AnalyzeCard';
 import { SOIL_TESTS, soilTestAccent, soilTestLabel } from './soilTestCatalog';
 import { TestMediaViewer } from './TestMediaViewer';
-import type { TestMedia } from '@/hooks/propriete/usePropertyTestMedias';
+import { sortTestMedias, type TestMedia } from '@/hooks/propriete/usePropertyTestMedias';
 
 type GroupMode = 'chrono' | 'test' | 'sample';
 
@@ -36,14 +36,18 @@ export const TestMediaRegistry: React.FC<{
   );
 
   const filtered = React.useMemo(() => {
-    return medias
+    const base = medias
       .filter((m) => (test === 'all' ? true : m.test_id === test))
       .filter((m) => (sample === 'all' ? true : m.sample_id === sample))
       .filter((m) => (kind === 'all' ? true : m.media_type === kind))
       .filter((m) => (from ? dayOf(m.created_at) >= from : true))
-      .filter((m) => (to ? dayOf(m.created_at) <= to : true))
-      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-  }, [medias, test, sample, kind, from, to]);
+      .filter((m) => (to ? dayOf(m.created_at) <= to : true));
+    // Vue chronologique : plus récent d'abord. Vues groupées : ordre choisi par l'utilisateur.
+    return group === 'chrono'
+      ? base.sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+      : sortTestMedias(base);
+  }, [medias, test, sample, kind, from, to, group]);
+
 
   const groups = React.useMemo(() => {
     if (group === 'chrono') return [{ key: 'all', label: '', items: filtered }];
