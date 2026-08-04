@@ -276,7 +276,7 @@ export function useTestMediaMutations(proprieteId?: string) {
   });
 
 
-  return { remove, patch };
+  return { remove, patch, reorder };
 }
 
 /** Index rapide : combien de médias par couple test × prélèvement. */
