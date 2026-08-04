@@ -244,6 +244,38 @@ export function useTestMediaMutations(proprieteId?: string) {
     onError: (e: any) => toast.error(e?.message ?? 'Enregistrement impossible'),
   });
 
+  /** Réordonne les preuves d'un couple prélèvement × test (ordre = index du tableau). */
+  const reorder = useMutation({
+    mutationFn: async ({
+      sampleId,
+      testId,
+      ids,
+    }: {
+      sampleId: string;
+      testId: SoilTestId;
+      ids: string[];
+    }) => {
+      // Optimiste : le cache reflète immédiatement le nouvel ordre.
+      qc.setQueryData(KEY(proprieteId), (prev: TestMedia[] | undefined) => {
+        if (!prev) return prev;
+        const rank = new Map(ids.map((id, i) => [id, i + 1]));
+        return [...prev]
+          .map((m) => (rank.has(m.id) ? { ...m, order_index: rank.get(m.id)! } : m))
+          .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+      });
+      const { error } = await (supabase as any).rpc('reorder_propriete_test_medias', {
+        _propriete_id: proprieteId,
+        _sample_id: sampleId,
+        _test_id: testId,
+        _ids: ids,
+      });
+      if (error) throw error;
+    },
+    onSettled: invalidate,
+    onError: (e: any) => toast.error(e?.message ?? 'Réordonnancement impossible'),
+  });
+
+
   return { remove, patch };
 }
 
