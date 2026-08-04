@@ -61,19 +61,30 @@ const Vignette: React.FC<{
   photo?: string | null;
   field?: boolean;
   index: number;
-}> = ({ plant, photo, field, index }) => (
+}> = ({ plant, photo, field, index }) => {
+  const [broken, setBroken] = React.useState(false);
+  const showPhoto = !!photo && !broken;
+  return (
   <figure className="flora-atlas-cell print-avoid-break">
     <div className="flora-atlas-photo">
-      {photo ? (
-        <img src={photo} alt={plant.nom} loading="eager" decoding="sync" crossOrigin="anonymous" />
+      {showPhoto ? (
+        <img
+          src={photo!}
+          alt={plant.nom}
+          loading="eager"
+          decoding="sync"
+          crossOrigin="anonymous"
+          onError={() => setBroken(true)}
+        />
       ) : (
         <div className="flora-atlas-photo-fallback">
           <FamilyIcon family={plant.famille} active size={34} />
         </div>
       )}
       <span className="flora-atlas-num">{index}</span>
-      {field && <span className="flora-atlas-field">Terrain</span>}
+      {field && showPhoto && <span className="flora-atlas-field">Terrain</span>}
     </div>
+
     <figcaption>
       <span className="flora-atlas-name">{plant.nom}</span>
       {plant.latin && <span className="flora-atlas-latin">{plant.latin}</span>}
