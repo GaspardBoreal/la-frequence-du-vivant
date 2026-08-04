@@ -7,7 +7,11 @@ import {
   withGeomCoords,
   type Ring,
 } from '@/lib/geomTransform';
-import { measureFor } from '@/components/propriete/palette/studio/geoMetrics';
+import {
+  computeDimensions,
+  measureFor,
+  type ObjetDimensions,
+} from '@/components/propriete/palette/studio/geoMetrics';
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
 
@@ -25,6 +29,11 @@ export interface ObjetTransformApi {
   morph: (geometry: any) => void;
   baseMeasure: number;
   measure: number;
+  /** Cotation vivante (côtés, encombrement, périmètre) des sommets courants. */
+  dimensions: ObjetDimensions;
+  /** Affichage du calque de cotes (mémorisé). */
+  showDims: boolean;
+  toggleDims: () => void;
   /** Géométrie GeoJSON reconstruite à partir des sommets courants. */
   geometry: any;
   start: (objet: ProprieteObjet) => void;
@@ -41,10 +50,19 @@ export interface ObjetTransformApi {
  * pas japonais, massif…). Générique sur le type de géométrie, non destructif :
  * rien n'est écrit en base avant « Valider ».
  */
+const DIMS_KEY = 'atelier.objet.showDims';
+
 export function useObjetTransform(
   onSave?: (objet: ProprieteObjet, geometry: any) => void,
 ): ObjetTransformApi {
   const [objet, setObjet] = React.useState<ProprieteObjet | null>(null);
+  const [showDims, setShowDims] = React.useState<boolean>(() => {
+    try {
+      return localStorage.getItem(DIMS_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
   const [coords, setCoords] = React.useState<Ring>([]);
   const [history, setHistory] = React.useState<Array<{ coords: Ring; geometry: any }>>([]);
   const [smoothCount, setSmoothCount] = React.useState(0);
@@ -121,6 +139,20 @@ export function useObjetTransform(
     [geometry, unit],
   );
 
+  const dimensions = React.useMemo(() => computeDimensions(coords, kind), [coords, kind]);
+
+  const toggleDims = React.useCallback(() => {
+    setShowDims((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem(DIMS_KEY, next ? '1' : '0');
+      } catch {
+        /* stockage indisponible */
+      }
+      return next;
+    });
+  }, []);
+
   const dirty = React.useMemo(() => {
     const a = baseRef.current;
     if (a.length !== coords.length) return true;
@@ -150,6 +182,9 @@ export function useObjetTransform(
     morph,
     baseMeasure,
     measure,
+    dimensions,
+    showDims,
+    toggleDims,
     geometry,
     start,
     pushHistory,

@@ -73,3 +73,109 @@ export const measureFor = (unit: 'm2' | 'ml' | 'u', geom: any): number => {
 
 export const fmtMeasure = (unit: 'm2' | 'ml' | 'u', value: number): string =>
   unit === 'm2' ? fmtArea(value) : unit === 'ml' ? fmtLength(value) : `${value} u`;
+
+/* ── Cotation « mètre du jardinier » ──────────────────────────────────────── */
+
+export interface DimSegment {
+  /** Index du segment dans l'anneau ouvert. */
+  index: number;
+  /** Longueur en mètres. */
+  lengthM: number;
+  /** Milieu [lat, lng] du segment. */
+  mid: [number, number];
+  /** Cap du segment en degrés (0 = est), pour l'orientation de l'étiquette. */
+  angleDeg: number;
+}
+
+/** Format court : cm sous 1 m, m au-delà, km au-delà de 1000 m. */
+export const fmtShort = (m: number): string => {
+  if (!isFinite(m)) return '—';
+  if (m < 1) return `${Math.round(m * 100)} cm`;
+  if (m >= 1000) return `${(m / 1000).toFixed(2)} km`;
+  return `${m.toFixed(m < 10 ? 2 : 1).replace('.', ',')} m`;
+};
+
+/** Cotes de chaque côté d'un tracé [lng, lat][]. `closed` ferme l'anneau. */
+export const segmentDims = (coords: Array<[number, number]>, closed: boolean): DimSegment[] => {
+  if (!coords || coords.length < 2) return [];
+  const pts = coords.slice();
+  const first = pts[0];
+  const last = pts[pts.length - 1];
+  const alreadyClosed = first[0] === last[0] && first[1] === last[1];
+  if (closed && !alreadyClosed) pts.push(first);
+  const out: DimSegment[] = [];
+  for (let i = 1; i < pts.length; i++) {
+    const [lng1, lat1] = pts[i - 1];
+    const [lng2, lat2] = pts[i];
+    if (lng1 === lng2 && lat1 === lat2) continue;
+    const lengthM = haversineM(lat1, lng1, lat2, lng2);
+    const kx = Math.cos(((lat1 + lat2) / 2) * (Math.PI / 180)) || 1;
+    // Angle écran : y descend vers le sud → on inverse la latitude.
+    let angleDeg = (Math.atan2(-(lat2 - lat1), (lng2 - lng1) * kx) * 180) / Math.PI;
+    if (angleDeg > 90) angleDeg -= 180;
+    if (angleDeg < -90) angleDeg += 180;
+    out.push({
+      index: i - 1,
+      lengthM,
+      mid: [(lat1 + lat2) / 2, (lng1 + lng2) / 2],
+      angleDeg,
+    });
+  }
+  return out;
+};
+
+export interface BBoxDims {
+  widthM: number;
+  depthM: number;
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+}
+
+/** Encombrement (largeur E-O × profondeur N-S) en mètres. */
+export const bboxDims = (coords: Array<[number, number]>): BBoxDims | null => {
+  if (!coords?.length) return null;
+  let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+  for (const [lng, lat] of coords) {
+    if (lng < minLng) minLng = lng;
+    if (lng > maxLng) maxLng = lng;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+  }
+  const midLat = (minLat + maxLat) / 2;
+  return {
+    widthM: haversineM(midLat, minLng, midLat, maxLng),
+    depthM: haversineM(minLat, minLng, maxLat, minLng),
+    minLat, maxLat, minLng, maxLng,
+  };
+};
+
+export interface ObjetDimensions {
+  segments: DimSegment[];
+  bbox: BBoxDims | null;
+  perimeterM: number;
+  areaM2: number;
+  vertices: number;
+}
+
+/** Cotation complète des sommets en cours d'édition. */
+export const computeDimensions = (
+  coords: Array<[number, number]>,
+  kind: 'Point' | 'LineString' | 'Polygon' | null,
+): ObjetDimensions => {
+  const closed = kind === 'Polygon';
+  const segments = kind && kind !== 'Point' ? segmentDims(coords, closed) : [];
+  const uniq = coords.length > 1
+    && coords[0][0] === coords[coords.length - 1][0]
+    && coords[0][1] === coords[coords.length - 1][1]
+    ? coords.length - 1
+    : coords.length;
+  return {
+    segments,
+    bbox: bboxDims(coords),
+    perimeterM: segments.reduce((s, seg) => s + seg.lengthM, 0),
+    areaM2: closed ? ringAreaM2(coords) : 0,
+    vertices: uniq,
+  };
+};

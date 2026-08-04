@@ -936,6 +936,7 @@ export const PaletteStudio: React.FC<Props> = ({
                 }
                 onGestureStart={objetTransform.pushHistory}
                 onPreview={objetTransform.preview}
+                showDims={objetTransform.showDims}
               />
             )}
 

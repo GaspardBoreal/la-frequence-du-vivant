@@ -1,6 +1,6 @@
 import React from 'react';
-import { Check, Move, RotateCw, Scaling, Spline, Undo2, X } from 'lucide-react';
-import { fmtMeasure } from './geoMetrics';
+import { Check, Move, Ruler, RotateCw, Scaling, Spline, Undo2, X } from 'lucide-react';
+import { fmtMeasure, fmtShort } from './geoMetrics';
 import type { ObjetTransformApi } from '@/hooks/propriete/useObjetTransform';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
 import { MAP_CHROME_TOP_PADDING } from '@/components/maps/mapChrome';
@@ -66,6 +66,32 @@ export const ObjetTransformBar: React.FC<{ api: ObjetTransformApi; color: string
               <RotateCw className="h-3 w-3" /> pastille dorée = rotation (Maj = 15°)
             </span>
           </>
+        )}
+
+        {api.kind !== 'Point' && (
+          <button
+            onClick={api.toggleDims}
+            title="Afficher les dimensions exactes de chaque côté"
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition ${
+              api.showDims
+                ? 'border-[hsl(var(--ds-forest))] bg-[hsl(var(--ds-forest))]/12 text-[hsl(var(--ds-forest-deep))]'
+                : 'border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/60'
+            }`}
+          >
+            <Ruler className="h-3 w-3" /> Coter
+          </button>
+        )}
+
+        {api.showDims && api.dimensions.bbox && api.kind !== 'Point' && (
+          <span className="hidden items-center gap-1.5 rounded-full bg-[hsl(var(--ds-forest))]/8 px-2.5 py-1 text-[10.5px] tabular-nums text-[hsl(var(--ds-forest-deep))] sm:inline-flex">
+            <strong>{fmtShort(api.dimensions.bbox.widthM)}</strong>
+            <span className="opacity-50">×</span>
+            <strong>{fmtShort(api.dimensions.bbox.depthM)}</strong>
+            <span className="opacity-50">·</span>
+            <span>périm. {fmtShort(api.dimensions.perimeterM)}</span>
+            <span className="opacity-50">·</span>
+            <span>{api.dimensions.vertices} sommets</span>
+          </span>
         )}
 
         {api.canSmooth && (
