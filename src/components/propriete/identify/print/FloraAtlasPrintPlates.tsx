@@ -101,7 +101,9 @@ const Vignette: React.FC<{
       </span>
     </figcaption>
   </figure>
-);
+  );
+};
+
 
 interface Props {
   observedIds: string[];
