@@ -128,6 +128,42 @@ export const PalettePrintLayout: React.FC<Props> = ({
 
       <Page index={page++}>{summary('p1')}</Page>
 
+      <Page index={page++}>
+        <PaletteOathPage
+          siteRule={siteRule}
+          zones={zones}
+          propertyName={propertyName}
+          commune={commune}
+          completedAt={completedAt}
+        />
+      </Page>
+
+      <Page index={page++}>{summary('p1')}</Page>
+
+      {zonePages.map((batch, pi) => (
+        <Page key={`zones-${pi}`} index={page++}>
+          <div className="print-exact space-y-3 text-[hsl(var(--ds-forest-deep))]">
+            {pi === 0 && (
+              <header>
+                <p className="text-[9px] uppercase tracking-[0.28em] opacity-55">
+                  {propertyName ?? 'Propriété'} · Palette végétale
+                </p>
+                <h3 className="font-serif text-[26px] leading-tight">
+                  Une palette par emplacement
+                </h3>
+                <p className="mt-1 max-w-[80%] text-[10.5px] italic leading-snug opacity-70">
+                  « Chaque emplacement a sa lumière, son eau et sa terre : la même espèce y sera
+                  tantôt évidente, tantôt fautive. »
+                </p>
+              </header>
+            )}
+            {batch.map((z) => (
+              <PaletteZonePlate key={z.id} zone={z} index={zones.indexOf(z)} />
+            ))}
+          </div>
+        </Page>
+      ))}
+
       {hasAtelier && (
         <>
           <Page index={page++}>
@@ -164,9 +200,8 @@ export const PalettePrintLayout: React.FC<Props> = ({
           zoneSelectedSpecies={zoneSelectedSpecies}
           propertyName={propertyName}
           pageClassName="synthesize-print-page"
-          renderFoot={(pi) => <Foot index={(hasAtelier ? 4 : 2) + (chromatic ? 1 : 0) + pi} />}
+          renderFoot={(pi) => <Foot index={page + pi - 1} />}
         />
-
       )}
 
       <Page index={total}>{summary('p2')}</Page>
@@ -175,3 +210,4 @@ export const PalettePrintLayout: React.FC<Props> = ({
 };
 
 export default PalettePrintLayout;
+
