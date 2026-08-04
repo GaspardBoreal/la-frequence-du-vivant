@@ -2660,8 +2660,6 @@
   body.partner-audit-print-mode > *:not(#partner-audit-print-portal) { display: none !important; }
   body.partner-audit-print-mode #partner-audit-print-portal { display: block !important; }
 
-  body.partner-audit-print-mode @page { size: A4; }
-
   .pa-print-doc,
   .pa-print-doc * {
     -webkit-print-color-adjust: exact !important;
@@ -2677,8 +2675,8 @@
   .pa-print-cover {
     position: relative;
     box-sizing: border-box;
-    width: 190mm;
-    min-height: 272mm;
+    width: 100%;
+    min-height: 250mm;
     padding: 26mm 0 0;
     break-after: page;
     page-break-after: always;
@@ -2750,7 +2748,7 @@
   }
 
   /* --- Corps --- */
-  .pa-print-body { width: 190mm; }
+  .pa-print-body { width: 100%; }
 
   .pa-print-prose { font-size: 10.5pt; line-height: 1.6; color: #1c2420; }
   .pa-print-prose h2 {
@@ -2828,5 +2826,3 @@
     color: #8a8377;
   }
 }
-
-@page { margin: 14mm 10mm; }
