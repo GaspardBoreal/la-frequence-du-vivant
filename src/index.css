@@ -2228,6 +2228,7 @@
 
 /* === SYNTHESIZE PRINT — portail A4 dédié « Je synthétise » === */
 #synthesize-print-portal { display: none; }
+#palette-print-portal { display: none; }
 
 @media print {
   body.synthesize-print-mode {
@@ -2235,8 +2236,10 @@
     padding: 0 !important;
     background: #fff !important;
   }
-  body.synthesize-print-mode > *:not(#synthesize-print-portal) { display: none !important; }
-  body.synthesize-print-mode #synthesize-print-portal { display: block !important; }
+  body.synthesize-print-mode > *:not(#synthesize-print-portal):not(#palette-print-portal) { display: none !important; }
+  body.synthesize-print-mode #synthesize-print-portal,
+  body.synthesize-print-mode #palette-print-portal { display: block !important; }
+
 
   .synthesize-print-page {
     position: relative;
@@ -2594,8 +2597,11 @@
    et la page sortirait fantôme. On neutralise animations et transformations
    dans les racines de synthèse, sans toucher aux opacités graduées de l'atlas. */
 @media print {
+  #palette-print-portal .synthesize-print-root-wrap,
+  #palette-print-portal .synthesize-print-root-wrap *,
   #identify-print-portal .identify-print-root,
   #identify-print-portal .identify-print-root *:not(.flora-atlas-pastille):not(.flora-atlas-pastille *),
+
   #analyze-print-portal .analyze-print-root,
   #analyze-print-portal .analyze-print-root *,
   #synthesize-print-portal .synthesize-print-root,
