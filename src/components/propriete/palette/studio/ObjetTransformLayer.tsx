@@ -7,6 +7,7 @@ import {
   translateRing,
   type Ring,
 } from '@/lib/geomTransform';
+import ObjetDimensionsLayer from './ObjetDimensionsLayer';
 
 type HandleId = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
 
@@ -66,6 +67,8 @@ interface Props {
   onGestureStart: () => void;
   /** Aperçu temps réel. */
   onPreview: (coords: Ring) => void;
+  /** Affiche le calque de cotes (« le mètre du jardinier »). */
+  showDims?: boolean;
 }
 
 /**
@@ -80,7 +83,9 @@ export const ObjetTransformLayer: React.FC<Props> = ({
   color,
   onGestureStart,
   onPreview,
+  showDims = false,
 }) => {
+  const [hoveredSeg, setHoveredSeg] = React.useState<number | null>(null);
   const map = useMap();
   const liveRef = React.useRef<Ring>(coords);
   liveRef.current = coords;
@@ -223,6 +228,30 @@ export const ObjetTransformLayer: React.FC<Props> = ({
         pathOptions={{ color, weight: 1, opacity: 0.55, dashArray: '4 5' }}
         interactive={false}
       />
+
+      {showDims && (
+        <ObjetDimensionsLayer
+          coords={coords}
+          kind={kind}
+          color={color}
+          hoveredIndex={hoveredSeg}
+        />
+      )}
+
+      {/* Segments sensibles : survol = cote mise en avant */}
+      {showDims &&
+        positions.slice(0, -1).map((p, i) => (
+          <Polyline
+            key={`hit-${i}`}
+            positions={[p, positions[i + 1]] as any}
+            pathOptions={{ color, weight: 12, opacity: 0 }}
+            eventHandlers={{
+              mouseover: () => setHoveredSeg(i),
+              mouseout: () => setHoveredSeg((v) => (v === i ? null : v)),
+              ...grab('move'),
+            }}
+          />
+        ))}
 
       {/* Forme en cours d'édition (glisser = déplacer) */}
       {kind === 'Polygon' ? (
