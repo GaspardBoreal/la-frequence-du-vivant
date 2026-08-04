@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, AlertTriangle, X, Video, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { Check, AlertTriangle, X, Video, Image as ImageIcon } from 'lucide-react';
 import { formatBytes, type UploadItem } from '@/hooks/propriete/usePropertyTestMedias';
 
 const STATUS_LABEL: Record<UploadItem['status'], string> = {
