@@ -64,6 +64,14 @@ export const buildTestMediaPlates = (medias: TestMedia[] | undefined): TestMedia
 export const testMediaPlateCount = (medias: TestMedia[] | undefined): number =>
   buildTestMediaPlates(medias).length;
 
+/** Gabarit adaptatif : la grille se verrouille au nombre de vignettes de la page. */
+const densityClass = (count: number) => {
+  if (count <= 4) return 'combined-print-plate-grid--d4';
+  if (count <= 6) return 'combined-print-plate-grid--d6';
+  if (count <= 9) return 'combined-print-plate-grid--d9';
+  return 'combined-print-plate-grid--d12';
+};
+
 const formatDate = (value?: string | null) => {
   if (!value) return '—';
   const d = new Date(value);
@@ -110,7 +118,7 @@ export const TestMediaPrintPlates: React.FC<{
               </div>
             </header>
 
-            <div className="combined-print-plate-grid">
+            <div className={`combined-print-plate-grid ${densityClass(plate.photos.length)}`}>
               {plate.photos.map((p) => (
                 <figure key={p.id} className="combined-print-thumb">
                   <div className="combined-print-thumb-frame">
