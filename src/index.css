@@ -809,19 +809,19 @@
   }
   /* Pastille d'état miniature */
   .samples-register .register-state-pill {
-    font-size: 4.4pt !important;
+    font-size: 3.8pt !important;
     letter-spacing: 0.02em !important;
-    padding: 0.1mm 0.6mm !important;
-    gap: 0.4mm !important;
+    padding: 0.05mm 0.5mm !important;
+    gap: 0.3mm !important;
     line-height: 1 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  .samples-register .register-state-pill svg { width: 3.4pt !important; height: 3.4pt !important; }
+  .samples-register .register-state-pill svg { width: 2.8pt !important; height: 2.8pt !important; }
   /* Colonne État : tout le contenu en très petit, couleurs conservées */
   .samples-register td:nth-child(7),
   .samples-register td:nth-child(7) * {
-    font-size: 4.4pt !important;
+    font-size: 3.8pt !important;
     line-height: 1 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
