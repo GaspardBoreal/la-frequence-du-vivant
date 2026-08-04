@@ -2669,6 +2669,8 @@
     font-family: Georgia, 'Times New Roman', serif;
     color: #1c2420;
     background: #fff;
+    padding: 14mm 12mm;
+    box-sizing: border-box;
   }
 
   /* --- Page de garde --- */
