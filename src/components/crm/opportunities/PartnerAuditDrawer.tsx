@@ -109,12 +109,19 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
               </p>
             )}
           </div>
+
+          {hasSynthesis && (
+            <PartnerAuditViewSwitcher value={effectiveView} onChange={setView} />
+          )}
         </div>
       </header>
 
       {/* Corps */}
       <div className="flex-1 overflow-y-auto">
         {audit ? (
+          effectiveView === 'synthese' && audit.synthesis ? (
+            <PartnerAuditSynthesis audit={audit} />
+          ) : (
           <div className="mx-auto w-full max-w-3xl px-6 py-8">
             <div className="mb-8 space-y-3 rounded-xl border border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground">
               <p>{audit.sources}</p>
@@ -143,6 +150,7 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
             </div>
             <PartnerAuditContent content={audit.content} />
             <div className="h-16" />
+
           </div>
         ) : (
           <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
