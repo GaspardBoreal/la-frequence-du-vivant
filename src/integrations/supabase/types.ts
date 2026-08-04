@@ -9020,6 +9020,15 @@ export type Database = {
         Args: { _ids: string[]; _objet_id: string }
         Returns: undefined
       }
+      reorder_propriete_test_medias: {
+        Args: {
+          _ids: string[]
+          _propriete_id: string
+          _sample_id: string
+          _test_id: string
+        }
+        Returns: undefined
+      }
       reposition_marcheur_media_gps: {
         Args: { _lat: number; _lon: number; _media_id: string; _note?: string }
         Returns: Json
