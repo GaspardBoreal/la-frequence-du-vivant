@@ -61,19 +61,30 @@ const Vignette: React.FC<{
   photo?: string | null;
   field?: boolean;
   index: number;
-}> = ({ plant, photo, field, index }) => (
+}> = ({ plant, photo, field, index }) => {
+  const [broken, setBroken] = React.useState(false);
+  const showPhoto = !!photo && !broken;
+  return (
   <figure className="flora-atlas-cell print-avoid-break">
     <div className="flora-atlas-photo">
-      {photo ? (
-        <img src={photo} alt={plant.nom} loading="eager" decoding="sync" crossOrigin="anonymous" />
+      {showPhoto ? (
+        <img
+          src={photo!}
+          alt={plant.nom}
+          loading="eager"
+          decoding="sync"
+          crossOrigin="anonymous"
+          onError={() => setBroken(true)}
+        />
       ) : (
         <div className="flora-atlas-photo-fallback">
           <FamilyIcon family={plant.famille} active size={34} />
         </div>
       )}
       <span className="flora-atlas-num">{index}</span>
-      {field && <span className="flora-atlas-field">Terrain</span>}
+      {field && showPhoto && <span className="flora-atlas-field">Terrain</span>}
     </div>
+
     <figcaption>
       <span className="flora-atlas-name">{plant.nom}</span>
       {plant.latin && <span className="flora-atlas-latin">{plant.latin}</span>}
@@ -90,7 +101,9 @@ const Vignette: React.FC<{
       </span>
     </figcaption>
   </figure>
-);
+  );
+};
+
 
 interface Props {
   observedIds: string[];
@@ -101,12 +114,16 @@ interface Props {
   pageClassName?: string;
 }
 
-const norm = (s: string) =>
+const norm = (s: string | null | undefined) =>
   (s || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/\s+(spp?|sp)\.?$/i, '')
+    .trim();
+
+/** Premier mot normalisé — genre latin ou racine vernaculaire (« Achillée »). */
+const firstWord = (s: string | null | undefined) => norm(s).split(/\s+/)[0] || '';
 
 /**
  * Atlas du cortège bio-indicateur — 24 vignettes par page A4 (4 × 6).
@@ -123,17 +140,29 @@ export const FloraAtlasPrintPlates: React.FC<Props> = ({
   const thumbs = useSpeciesThumbs(plants.map((p) => p.latin ?? p.nom));
   const { species } = usePropertySpeciesPool(proprieteId);
 
-  /** Photos marcheurs indexées par nom scientifique ET nom français normalisés. */
-  const fieldByName = React.useMemo(() => {
-    const m = new Map<string, string>();
+  /**
+   * Photos marcheurs indexées à trois niveaux : nom scientifique exact,
+   * genre (obs. déterminées au genre : « Achillea »), nom vernaculaire.
+   */
+  const fieldIndex = React.useMemo(() => {
+    const exact = new Map<string, string>();
+    const genus = new Map<string, string>();
+    const common = new Map<string, string>();
     for (const s of species ?? []) {
       const url = (s as any).photos?.[0];
       if (!url) continue;
-      for (const key of [norm((s as any).scientificName), norm((s as any).commonName)]) {
-        if (key && !m.has(key)) m.set(key, url);
+      const sci = norm((s as any).scientificName);
+      const com = norm((s as any).commonName);
+      if (sci && !exact.has(sci)) exact.set(sci, url);
+      const g = firstWord((s as any).scientificName);
+      if (g && !genus.has(g)) genus.set(g, url);
+      if (com) {
+        if (!common.has(com)) common.set(com, url);
+        const cg = firstWord((s as any).commonName);
+        if (cg && !common.has(cg)) common.set(cg, url);
       }
     }
-    return m;
+    return { exact, genus, common };
   }, [species]);
 
   if (plants.length === 0) return null;
@@ -144,12 +173,17 @@ export const FloraAtlasPrintPlates: React.FC<Props> = ({
   }
 
   const fieldPhotoOf = (p: PlantIndicator) =>
-    fieldByName.get(norm(p.latin ?? '')) ?? fieldByName.get(norm(p.nom)) ?? null;
+    fieldIndex.exact.get(norm(p.latin)) ??
+    fieldIndex.genus.get(firstWord(p.latin)) ??
+    fieldIndex.common.get(norm(p.nom)) ??
+    fieldIndex.common.get(firstWord(p.nom)) ??
+    null;
 
   const photoOf = (p: PlantIndicator) =>
     fieldPhotoOf(p) ??
     thumbs.data?.get((p.latin ?? p.nom).trim().toLowerCase())?.photo_url ??
     null;
+
 
 
   return (
