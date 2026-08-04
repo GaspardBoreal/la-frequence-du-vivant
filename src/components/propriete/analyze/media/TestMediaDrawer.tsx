@@ -393,7 +393,7 @@ export const TestMediaBadge: React.FC<{
 }> = ({ target, medias, readOnly }) => {
   const [open, setOpen] = React.useState(false);
   const accent = soilTestAccent(target.testId);
-  const first = medias.find((m) => m.media_type === 'photo');
+  const first = sortTestMedias(medias).find((m) => m.media_type === 'photo');
 
   return (
     <>
