@@ -7,7 +7,6 @@ import {
   UploadCloud,
   Video,
   X,
-  Loader2,
   Pencil,
   GripVertical,
   ChevronLeft,
@@ -35,11 +34,14 @@ import {
   useTestMediaMutations,
   useTestMediaUpload,
   sortTestMedias,
+  MAX_VIDEO_BYTES,
+  formatBytes,
   type TestMedia,
   type UploadTarget,
 } from '@/hooks/propriete/usePropertyTestMedias';
 import { soilTestAccent, soilTestLabel } from './soilTestCatalog';
 import { TestMediaViewer } from './TestMediaViewer';
+import { TestMediaUploadProgress } from './TestMediaUploadProgress';
 
 const fmt = (iso: string) =>
   new Date(iso).toLocaleString('fr-FR', {
@@ -56,7 +58,7 @@ export const TestMediaDrawer: React.FC<{
   medias: TestMedia[];
   readOnly?: boolean;
 }> = ({ open, onClose, target, medias: rawMedias, readOnly = false }) => {
-  const { upload, progress } = useTestMediaUpload(target);
+  const { upload, items, dismiss } = useTestMediaUpload(target);
   const { remove, patch, reorder } = useTestMediaMutations(target.proprieteId);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = React.useState(false);
@@ -156,7 +158,7 @@ export const TestMediaDrawer: React.FC<{
                 Déposez vos photos ou vidéos
               </div>
               <div className="text-[11px] text-[hsl(var(--ds-forest-deep))]/60 mt-0.5">
-                JPG · PNG · HEIC · MP4 / MOV (60 Mo max) — plusieurs fichiers possibles
+                JPG · PNG · HEIC · MP4 / MOV ({formatBytes(MAX_VIDEO_BYTES)} max) — plusieurs fichiers possibles
               </div>
               <input
                 ref={inputRef}
@@ -172,12 +174,8 @@ export const TestMediaDrawer: React.FC<{
             </div>
           )}
 
-          {progress && (
-            <div className="flex items-center gap-2 rounded-xl bg-white/70 border border-[hsl(var(--ds-line))] px-3 py-2 text-[12px] text-[hsl(var(--ds-forest-deep))]">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Envoi {progress.done}/{progress.total}…
-            </div>
-          )}
+          <TestMediaUploadProgress items={items} accent={accent} onDismiss={dismiss} />
+
 
           {/* Grille */}
           {medias.length === 0 ? (
