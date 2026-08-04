@@ -761,38 +761,53 @@
     table-layout: fixed;
   }
   /* Largeurs justes : chaque colonne selon le poids réel de son contenu */
-  .samples-register th:nth-child(1), .samples-register td:nth-child(1) { width: 15%; }
-  .samples-register th:nth-child(2), .samples-register td:nth-child(2) { width: 13%; }
-  .samples-register th:nth-child(3), .samples-register td:nth-child(3) { width: 13%; }
-  .samples-register th:nth-child(4), .samples-register td:nth-child(4) { width: 13%; }
-  .samples-register th:nth-child(5), .samples-register td:nth-child(5) { width: 11%; }
-  .samples-register th:nth-child(6), .samples-register td:nth-child(6) { width: 24%; }
-  .samples-register th:nth-child(7), .samples-register td:nth-child(7) { width: 11%; }
+  .samples-register table { max-width: 100% !important; }
+  .samples-register th:nth-child(1), .samples-register td:nth-child(1) { width: 16%; }
+  .samples-register th:nth-child(2), .samples-register td:nth-child(2) { width: 16%; }
+  .samples-register th:nth-child(3), .samples-register td:nth-child(3) { width: 12%; }
+  .samples-register th:nth-child(4), .samples-register td:nth-child(4) { width: 12%; }
+  .samples-register th:nth-child(5), .samples-register td:nth-child(5) { width: 10%; }
+  .samples-register th:nth-child(6), .samples-register td:nth-child(6) { width: 22%; }
+  .samples-register th:nth-child(7), .samples-register td:nth-child(7) { width: 12%; }
   .samples-register thead { display: table-header-group; }
   .samples-register tfoot { display: table-footer-group; }
   .samples-register th,
   .samples-register td {
-    padding: 1.5mm 1.6mm !important;
-    /* jamais de coupe au milieu d'un mot */
+    padding: 1.5mm 1.4mm !important;
+    /* rien ne peut déborder sur la colonne voisine */
+    overflow: hidden;
     overflow-wrap: break-word;
     word-break: normal;
     hyphens: none;
   }
-  .samples-register th { letter-spacing: 0.08em !important; font-size: 6.4pt !important; }
+  .samples-register th { letter-spacing: 0.06em !important; font-size: 6.2pt !important; }
   /* Libellés secondaires : une ligne, lisibles */
   .samples-register td span[class*="text-[8.5px]"],
   .samples-register td span[class*="text-[9px]"] {
-    font-size: 6.6pt !important;
-    letter-spacing: 0.06em !important;
+    font-size: 6.4pt !important;
+    letter-spacing: 0.04em !important;
     line-height: 1.25 !important;
   }
-  /* Mentions courtes : jamais coupées */
+  /* À l'impression, aucun contenu ne reste insécable : sinon il chevauche */
   .samples-register .print-nowrap,
-  .samples-register .tabular-nums { white-space: nowrap; }
+  .samples-register .tabular-nums,
+  .samples-register td,
+  .samples-register th { white-space: normal !important; }
+  .samples-register .register-coords { white-space: nowrap; font-size: 5.9pt !important; }
+  /* Sceau des strates : réduit pour tenir dans la colonne État */
+  .samples-register .samples-register-seal {
+    display: inline-flex !important;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 1px !important;
+    max-width: 100%;
+  }
+  .samples-register .samples-register-seal > * { transform: scale(0.62); transform-origin: center; margin: -3px; }
   /* Jauges contraintes pour ne pas élargir leur colonne */
-  .samples-register .register-ph-gauge { width: 12mm !important; }
-  .samples-register .register-life-gauge { width: 12mm !important; }
-  .samples-register .register-gauge-cran { width: 2.6mm !important; }
+  .samples-register .register-ph-gauge { width: 11mm !important; max-width: 100% !important; }
+  .samples-register .register-life-gauge { width: 11mm !important; max-width: 100% !important; }
+  .samples-register .register-gauge-cran { width: 2.2mm !important; }
+
 
 
   .samples-register tr { break-inside: avoid; page-break-inside: avoid; }

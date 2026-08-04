@@ -148,13 +148,13 @@ export const SamplesRegisterTable: React.FC<{
     <div className="samples-register overflow-x-auto rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] print:rounded-none">
       <table className="w-full min-w-[680px] text-left text-[11px] border-collapse print:min-w-0">
         <colgroup>
-          <col style={{ width: '15%' }} />
-          <col style={{ width: '13%' }} />
-          <col style={{ width: '13%' }} />
-          <col style={{ width: '13%' }} />
-          <col style={{ width: '11%' }} />
-          <col style={{ width: '24%' }} />
-          <col style={{ width: '11%' }} />
+          <col style={{ width: '16%' }} />
+          <col style={{ width: '16%' }} />
+          <col style={{ width: '12%' }} />
+          <col style={{ width: '12%' }} />
+          <col style={{ width: '10%' }} />
+          <col style={{ width: '22%' }} />
+          <col style={{ width: '12%' }} />
         </colgroup>
         <thead className="samples-register-head">
           <tr className="bg-[hsl(var(--ds-forest))]/[0.07] border-b-2 border-[hsl(var(--ds-gold))]/70">
@@ -214,7 +214,7 @@ export const SamplesRegisterTable: React.FC<{
                           <span className="print-nowrap inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-[hsl(var(--ds-gold))]">
                             <MapPin className="w-2.5 h-2.5" /> Géolocalisé
                           </span>
-                          <span className="print-nowrap block text-[8.5px] tabular-nums text-[hsl(var(--ds-forest))]/55">
+                          <span className="register-coords print-nowrap block text-[8.5px] tabular-nums text-[hsl(var(--ds-forest))]/55">
                             {s.lat.toFixed(5)} · {s.lng.toFixed(5)}
                           </span>
                         </>
@@ -305,9 +305,10 @@ export const SamplesRegisterTable: React.FC<{
                 </td>
 
                 {/* État */}
-                <td className="px-2.5 py-2.5 text-right whitespace-nowrap">
-                  <span className="inline-flex flex-col items-end gap-1">
+                <td className="px-2.5 py-2.5 text-right print:whitespace-normal whitespace-nowrap">
+                  <span className="inline-flex flex-col items-end gap-1 max-w-full">
                     <StrataSeal
+                      className="samples-register-seal"
                       sample={s}
                       size="row"
                       mono={printOnly}
