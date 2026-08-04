@@ -756,20 +756,50 @@
   .samples-register table {
     width: 100% !important;
     min-width: 0 !important;
-    font-size: 8.6pt !important;
-    line-height: 1.25 !important;
+    font-size: 8.4pt !important;
+    line-height: 1.2 !important;
     table-layout: fixed;
   }
+  /* Largeurs justes : chaque colonne selon le poids réel de son contenu */
+  .samples-register th:nth-child(1), .samples-register td:nth-child(1) { width: 15%; }
+  .samples-register th:nth-child(2), .samples-register td:nth-child(2) { width: 13%; }
+  .samples-register th:nth-child(3), .samples-register td:nth-child(3) { width: 13%; }
+  .samples-register th:nth-child(4), .samples-register td:nth-child(4) { width: 13%; }
+  .samples-register th:nth-child(5), .samples-register td:nth-child(5) { width: 11%; }
+  .samples-register th:nth-child(6), .samples-register td:nth-child(6) { width: 24%; }
+  .samples-register th:nth-child(7), .samples-register td:nth-child(7) { width: 11%; }
   .samples-register thead { display: table-header-group; }
   .samples-register tfoot { display: table-footer-group; }
   .samples-register th,
   .samples-register td {
-    padding: 1.6mm 1.8mm !important;
-    word-break: break-word;
+    padding: 1.5mm 1.6mm !important;
+    /* jamais de coupe au milieu d'un mot */
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: none;
   }
+  .samples-register th { letter-spacing: 0.08em !important; font-size: 6.4pt !important; }
+  /* Libellés secondaires : une ligne, lisibles */
+  .samples-register td span[class*="text-[8.5px]"],
+  .samples-register td span[class*="text-[9px]"] {
+    font-size: 6.6pt !important;
+    letter-spacing: 0.06em !important;
+    line-height: 1.25 !important;
+  }
+  /* Mentions courtes : jamais coupées */
+  .samples-register .print-nowrap,
+  .samples-register .tabular-nums { white-space: nowrap; }
+  /* Jauges contraintes pour ne pas élargir leur colonne */
+  .samples-register .register-ph-gauge { width: 12mm !important; }
+  .samples-register .register-life-gauge { width: 12mm !important; }
+  .samples-register .register-gauge-cran { width: 2.6mm !important; }
+
+
   .samples-register tr { break-inside: avoid; page-break-inside: avoid; }
+  .samples-register tfoot tr { break-inside: avoid; page-break-inside: avoid; }
   .samples-register .samples-register-row:hover { background: transparent !important; }
   .samples-register-foot td { font-weight: 600; }
+
 }
 
 

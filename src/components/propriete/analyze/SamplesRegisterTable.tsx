@@ -106,7 +106,7 @@ const PhGauge: React.FC<{ value: number }> = ({ value }) => (
 
 const LifeGauge: React.FC<{ score: number; color: string }> = ({ score, color }) => (
   <span
-    className="mt-1 block relative"
+    className="register-life-gauge mt-1 block relative"
     style={{ height: 3, width: 56, borderRadius: 2, background: 'hsl(var(--ds-forest) / 0.15)' }}
     aria-hidden
   >
@@ -147,6 +147,15 @@ export const SamplesRegisterTable: React.FC<{
   return (
     <div className="samples-register overflow-x-auto rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] print:rounded-none">
       <table className="w-full min-w-[680px] text-left text-[11px] border-collapse print:min-w-0">
+        <colgroup>
+          <col style={{ width: '15%' }} />
+          <col style={{ width: '13%' }} />
+          <col style={{ width: '13%' }} />
+          <col style={{ width: '13%' }} />
+          <col style={{ width: '11%' }} />
+          <col style={{ width: '24%' }} />
+          <col style={{ width: '11%' }} />
+        </colgroup>
         <thead className="samples-register-head">
           <tr className="bg-[hsl(var(--ds-forest))]/[0.07] border-b-2 border-[hsl(var(--ds-gold))]/70">
             <Th>Prélèvement</Th>
@@ -158,6 +167,7 @@ export const SamplesRegisterTable: React.FC<{
             <Th className="text-right">État</Th>
           </tr>
         </thead>
+
 
         <tbody>
           {r.samples.map((s, rowIdx) => {
@@ -201,10 +211,10 @@ export const SamplesRegisterTable: React.FC<{
                     <span className="min-w-0">
                       {s.lat != null && s.lng != null ? (
                         <>
-                          <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-[hsl(var(--ds-gold))]">
+                          <span className="print-nowrap inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-[hsl(var(--ds-gold))]">
                             <MapPin className="w-2.5 h-2.5" /> Géolocalisé
                           </span>
-                          <span className="block text-[8.5px] tabular-nums text-[hsl(var(--ds-forest))]/55">
+                          <span className="print-nowrap block text-[8.5px] tabular-nums text-[hsl(var(--ds-forest))]/55">
                             {s.lat.toFixed(5)} · {s.lng.toFixed(5)}
                           </span>
                         </>
@@ -308,11 +318,11 @@ export const SamplesRegisterTable: React.FC<{
                       }
                     />
                     {incomplete ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-amber-800">
+                      <span className="print-nowrap inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-amber-800">
                         <AlertTriangle className="w-2.5 h-2.5" /> À compléter
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-forest))]/30 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-[hsl(var(--ds-forest))]">
+                      <span className="print-nowrap inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-forest))]/30 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wider text-[hsl(var(--ds-forest))]">
                         <Check className="w-2.5 h-2.5" /> Complet
                       </span>
                     )}
