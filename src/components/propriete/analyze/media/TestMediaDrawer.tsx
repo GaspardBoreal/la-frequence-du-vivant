@@ -1,10 +1,40 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Camera, Plus, Trash2, UploadCloud, Video, X, Loader2, Pencil } from 'lucide-react';
+import {
+  Camera,
+  Plus,
+  Trash2,
+  UploadCloud,
+  Video,
+  X,
+  Loader2,
+  Pencil,
+  GripVertical,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   useTestMediaMutations,
   useTestMediaUpload,
+  sortTestMedias,
   type TestMedia,
   type UploadTarget,
 } from '@/hooks/propriete/usePropertyTestMedias';
@@ -25,19 +55,46 @@ export const TestMediaDrawer: React.FC<{
   target: UploadTarget;
   medias: TestMedia[];
   readOnly?: boolean;
-}> = ({ open, onClose, target, medias, readOnly = false }) => {
+}> = ({ open, onClose, target, medias: rawMedias, readOnly = false }) => {
   const { upload, progress } = useTestMediaUpload(target);
-  const { remove, patch } = useTestMediaMutations(target.proprieteId);
+  const { remove, patch, reorder } = useTestMediaMutations(target.proprieteId);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = React.useState(false);
   const [viewer, setViewer] = React.useState<number | null>(null);
   const [editing, setEditing] = React.useState<string | null>(null);
   const accent = soilTestAccent(target.testId);
 
+  const medias = React.useMemo(() => sortTestMedias(rawMedias), [rawMedias]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const commitOrder = (ids: string[]) =>
+    reorder.mutate({ sampleId: target.sampleId, testId: target.testId, ids });
+
+  const onDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const ids = medias.map((m) => m.id);
+    const next = arrayMove(ids, ids.indexOf(String(active.id)), ids.indexOf(String(over.id)));
+    commitOrder(next);
+  };
+
+  const move = (id: string, delta: number) => {
+    const ids = medias.map((m) => m.id);
+    const from = ids.indexOf(id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= ids.length) return;
+    commitOrder(arrayMove(ids, from, to));
+  };
+
   const onFiles = (files: FileList | null) => {
     if (!files || readOnly) return;
     upload(Array.from(files));
   };
+
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
