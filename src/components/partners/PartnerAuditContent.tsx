@@ -7,11 +7,19 @@ import { cn } from '@/lib/utils';
  * Rendu éditorial partagé d'un audit partenaire (Markdown GFM).
  * Utilisé dans le CRM (drawer) et sur la page publique /partenaires/:slug.
  */
-export const PartnerAuditContent: React.FC<{ content: string; className?: string }> = ({
-  content,
-  className,
-}) => (
-  <div className={cn('space-y-4 text-[15px] leading-relaxed', className)}>
+export const PartnerAuditContent: React.FC<{
+  content: string;
+  className?: string;
+  variant?: 'screen' | 'print';
+}> = ({ content, className, variant = 'screen' }) => (
+  <div
+    className={cn(
+      'space-y-4 text-[15px] leading-relaxed',
+      variant === 'print' && 'pa-print-prose',
+      className,
+    )}
+  >
+
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
