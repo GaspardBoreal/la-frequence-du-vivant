@@ -305,9 +305,10 @@ export const SamplesRegisterTable: React.FC<{
                 </td>
 
                 {/* État */}
-                <td className="px-2.5 py-2.5 text-right whitespace-nowrap">
-                  <span className="inline-flex flex-col items-end gap-1">
+                <td className="px-2.5 py-2.5 text-right print:whitespace-normal whitespace-nowrap">
+                  <span className="inline-flex flex-col items-end gap-1 max-w-full">
                     <StrataSeal
+                      className="samples-register-seal"
                       sample={s}
                       size="row"
                       mono={printOnly}
