@@ -35,11 +35,14 @@ import {
   useTestMediaMutations,
   useTestMediaUpload,
   sortTestMedias,
+  MAX_VIDEO_BYTES,
+  formatBytes,
   type TestMedia,
   type UploadTarget,
 } from '@/hooks/propriete/usePropertyTestMedias';
 import { soilTestAccent, soilTestLabel } from './soilTestCatalog';
 import { TestMediaViewer } from './TestMediaViewer';
+import { TestMediaUploadProgress } from './TestMediaUploadProgress';
 
 const fmt = (iso: string) =>
   new Date(iso).toLocaleString('fr-FR', {
