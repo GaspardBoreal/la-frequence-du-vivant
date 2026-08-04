@@ -5,6 +5,8 @@ import { Lock, Printer, ExternalLink, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PartnerAuditContent } from '@/components/partners/PartnerAuditContent';
+import { PartnerAuditPrintLayout } from '@/components/partners/PartnerAuditPrintLayout';
+import { usePartnerAuditPrint } from '@/hooks/usePartnerAuditPrint';
 import { getPartnerAuditBySlug, PARTNER_AUDIT_PASSWORD } from '@/lib/partnerAudits';
 
 const storageKey = (slug: string) => `partner-audit-unlocked:${slug}`;
@@ -12,6 +14,7 @@ const storageKey = (slug: string) => `partner-audit-unlocked:${slug}`;
 const PartenaireAudit: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const audit = getPartnerAuditBySlug(slug);
+  const print = usePartnerAuditPrint();
 
   const [unlocked, setUnlocked] = React.useState(() =>
     slug ? sessionStorage.getItem(storageKey(slug)) === '1' : false,
@@ -121,7 +124,7 @@ const PartenaireAudit: React.FC = () => {
                 <ExternalLink className="h-3.5 w-3.5" /> {audit.partnerSite.replace(/^https?:\/\//, '')}
               </a>
             )}
-            <Button variant="outline" size="sm" className="ml-auto print:hidden" onClick={() => window.print()}>
+            <Button variant="outline" size="sm" className="ml-auto print:hidden" onClick={print}>
               <Printer className="mr-1.5 h-4 w-4" /> Imprimer / PDF
             </Button>
           </div>
