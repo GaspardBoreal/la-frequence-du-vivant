@@ -107,11 +107,6 @@ const PartenaireOffre: React.FC = () => {
 
       <div className="sticky top-0 z-30 border-b border-border/50 bg-background/85 backdrop-blur print:hidden">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-3 px-6 py-3">
-          <Button asChild variant="ghost" size="sm">
-            <Link to={`/partenaires/${offer.slug}`}>
-              <ArrowLeft className="mr-1.5 h-4 w-4" /> Audit de visibilité
-            </Link>
-          </Button>
           <Button variant="outline" size="sm" className="ml-auto" onClick={print}>
             <Printer className="mr-1.5 h-4 w-4" /> Imprimer / PDF
           </Button>
