@@ -9,6 +9,7 @@ import PartnerAuditViewSwitcher, { type PartnerAuditView } from '@/components/pa
 import PartnerAuditSynthesis from '@/components/partners/synthese/PartnerAuditSynthesis';
 import { usePartnerAuditPrint } from '@/hooks/usePartnerAuditPrint';
 import { PARTNER_AUDIT_PASSWORD, type PartnerAudit } from '@/lib/partnerAudits';
+import { getPartnerOfferBySlug } from '@/lib/partnerOffers';
 
 
 interface PartnerAuditDrawerProps {
@@ -53,6 +54,7 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
   if (!open || typeof document === 'undefined') return null;
 
   const webUrl = audit ? `${window.location.origin}/partenaires/${audit.slug}` : null;
+  const offer = audit ? getPartnerOfferBySlug(audit.slug) : null;
 
   const node = (
     <div
@@ -84,6 +86,17 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
                 <Button variant="outline" size="sm" onClick={print}>
                   <Printer className="mr-1.5 h-4 w-4" /> Imprimer
                 </Button>
+                {offer && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      window.open(`/partenaires/${offer.slug}/offre`, '_blank', 'noopener')
+                    }
+                  >
+                    <Link2 className="mr-1.5 h-4 w-4" /> Outils &amp; Services
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   onClick={() => window.open(`/partenaires/${audit.slug}`, '_blank', 'noopener')}
