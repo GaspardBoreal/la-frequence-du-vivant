@@ -2590,6 +2590,75 @@
 .flora-atlas-source { font-style: italic; }
 .flora-atlas-sign { letter-spacing: 1.4pt; text-transform: uppercase; margin-left: auto; }
 
+/* --- Encart légende (dernière planche) --- */
+.flora-atlas-legend {
+  margin-top: 3mm;
+  border: 0.25mm solid #d9cdb0;
+  border-radius: 1.5mm;
+  background: #faf6ea;
+  padding: 2mm 2.6mm 1.8mm;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  flex: 0 0 auto;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+.flora-atlas-legend-title {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 5.6pt;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6b7c5a;
+  margin-bottom: 1.4mm;
+}
+.flora-atlas-legend-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.2mm 3mm;
+}
+.flora-atlas-legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.1mm;
+}
+.flora-atlas-legend-chip {
+  flex: 0 0 auto;
+  min-width: 4mm; height: 4mm; padding: 0 0.7mm;
+  border-radius: 0.9mm;
+  display: flex; align-items: center; justify-content: center;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 5.2pt; font-weight: 700; color: #fdf9f2;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+.flora-atlas-legend-text { display: block; line-height: 1.22; }
+.flora-atlas-legend-text strong {
+  display: block;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 5.4pt; font-weight: 700; color: #2a3a2a;
+}
+.flora-atlas-legend-text em {
+  display: block;
+  font-family: Helvetica, Arial, sans-serif;
+  font-style: normal;
+  font-size: 5pt; color: #8a7c64;
+}
+.flora-atlas-legend-note {
+  margin-top: 1.4mm;
+  border-top: 0.18mm solid #e2d9c2;
+  padding-top: 1mm;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 5.6pt;
+  color: #8a7c64;
+  line-height: 1.25;
+}
+.flora-atlas-page--with-legend .flora-atlas-grid { gap: 3mm 4mm; }
+.flora-atlas-page--with-legend .flora-atlas-foot { margin-top: 2mm; padding-top: 1.4mm; }
+
+
+
 
 /* === FILET DE SÉCURITÉ IMPRESSION ===
    Les portails d'impression sont `display:none` jusqu'au window.print() :
