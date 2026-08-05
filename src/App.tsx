@@ -110,6 +110,7 @@ const AdminTaxonomyCuration = lazyWithRetry(() => import('./pages/AdminTaxonomyC
 const AdminAuditFrugalHub = lazyWithRetry(() => import('./pages/AdminAuditFrugalHub'));
 const PublicAuditFrugal = lazyWithRetry(() => import('./pages/PublicAuditFrugal'));
 const PartenaireAudit = lazyWithRetry(() => import('./pages/PartenaireAudit'));
+const PartenaireOffre = lazyWithRetry(() => import('./pages/PartenaireOffre'));
 
 const AgentIA = lazyWithRetry(() => import('./pages/AgentIA'));
 const AgentIAFiche = lazyWithRetry(() => import('./pages/AgentIAFiche'));
@@ -361,6 +362,7 @@ function App() {
             } />
 
             <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />
+            <Route path="/partenaires/:slug/offre" element={<PartenaireOffre />} />
             <Route path="/partenaires/:slug" element={<PartenaireAudit />} />
 
             <Route path="/api-mcp" element={<ApiMcpPublic />} />
