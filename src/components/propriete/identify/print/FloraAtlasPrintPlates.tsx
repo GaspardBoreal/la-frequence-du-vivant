@@ -107,6 +107,50 @@ const Vignette: React.FC<{
   );
 };
 
+/** Encart imprimé : comment lire les 4 pastilles + méthode employée. */
+const AXIS_LEGEND: Record<string, { title: string; neg: string; pos: string }> = {
+  eau: { title: 'Eau · bilan hydrique', neg: 'très sec', pos: 'humide' },
+  texture: { title: 'Texture du sol', neg: 'sable léger', pos: 'argile lourde' },
+  nutri: { title: 'Nutrition · azote', neg: 'sol pauvre', pos: 'sol riche' },
+  ph: { title: 'pH · réaction', neg: 'acide', pos: 'calcaire' },
+};
+
+const AtlasLegendBox: React.FC = () => (
+  <aside className="flora-atlas-legend print-avoid-break">
+    <div className="flora-atlas-legend-title">
+      Lire les pastilles — coefficients écologiques, échelle −3 à +3
+    </div>
+    <div className="flora-atlas-legend-grid">
+      {AXES.map((ax) => {
+        const l = AXIS_LEGEND[ax.key];
+        return (
+          <div key={ax.key} className="flora-atlas-legend-item">
+            <span
+              className="flora-atlas-legend-chip"
+              style={{ background: ax.hue }}
+            >
+              {ax.letter}
+            </span>
+            <span className="flora-atlas-legend-text">
+              <strong>{l.title}</strong>
+              <em>
+                −3 {l.neg} · 0 indifférent · +3 {l.pos}
+              </em>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+    <div className="flora-atlas-legend-note">
+      Pastille pâle = espèce indifférente sur cet axe ; plus la couleur est
+      dense, plus l&apos;indication est forte. Méthode : lecture
+      bio-indicatrice D.S. — référentiel {ECO_SOURCE}
+    </div>
+  </aside>
+);
+
+
+
 
 
 interface Props {
@@ -203,7 +247,12 @@ export const FloraAtlasPrintPlates: React.FC<Props> = ({
   return (
     <>
       {pages.map((page, pi) => (
-        <section key={pi} className={`${pageClassName} flora-atlas-page`}>
+        <section
+          key={pi}
+          className={`${pageClassName} flora-atlas-page${
+            pi === pages.length - 1 ? ' flora-atlas-page--with-legend' : ''
+          }`}
+        >
           <header className="flora-atlas-head">
             <div>
               <div className="flora-atlas-eyebrow">Étape 3 · Atlas du cortège</div>
@@ -230,15 +279,19 @@ export const FloraAtlasPrintPlates: React.FC<Props> = ({
 
           </div>
 
+          {pi === pages.length - 1 && <AtlasLegendBox />}
+
           <footer className="flora-atlas-foot">
-            <span>
-              E&nbsp;eau · T&nbsp;texture · N&nbsp;nutrition · pH&nbsp;réaction — signe «&nbsp;+&nbsp;» :
-              frais / argileux / riche / calcaire ; signe «&nbsp;−&nbsp;» : sec / sableux / pauvre / acide.
-            </span>
-            {pi === pages.length - 1 && <span className="flora-atlas-source">{ECO_SOURCE}</span>}
+            {pi !== pages.length - 1 && (
+              <span>
+                E&nbsp;eau · T&nbsp;texture · N&nbsp;nutrition · pH&nbsp;réaction — signe «&nbsp;+&nbsp;» :
+                frais / argileux / riche / calcaire ; signe «&nbsp;−&nbsp;» : sec / sableux / pauvre / acide.
+              </span>
+            )}
             <span className="flora-atlas-sign">
               {propertyName ?? 'Propriété'} · Fréquence du Vivant
             </span>
+
           </footer>
         </section>
       ))}
