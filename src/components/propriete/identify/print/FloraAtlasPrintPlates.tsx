@@ -247,7 +247,12 @@ export const FloraAtlasPrintPlates: React.FC<Props> = ({
   return (
     <>
       {pages.map((page, pi) => (
-        <section key={pi} className={`${pageClassName} flora-atlas-page`}>
+        <section
+          key={pi}
+          className={`${pageClassName} flora-atlas-page${
+            pi === pages.length - 1 ? ' flora-atlas-page--with-legend' : ''
+          }`}
+        >
           <header className="flora-atlas-head">
             <div>
               <div className="flora-atlas-eyebrow">Étape 3 · Atlas du cortège</div>
@@ -274,15 +279,19 @@ export const FloraAtlasPrintPlates: React.FC<Props> = ({
 
           </div>
 
+          {pi === pages.length - 1 && <AtlasLegendBox />}
+
           <footer className="flora-atlas-foot">
-            <span>
-              E&nbsp;eau · T&nbsp;texture · N&nbsp;nutrition · pH&nbsp;réaction — signe «&nbsp;+&nbsp;» :
-              frais / argileux / riche / calcaire ; signe «&nbsp;−&nbsp;» : sec / sableux / pauvre / acide.
-            </span>
-            {pi === pages.length - 1 && <span className="flora-atlas-source">{ECO_SOURCE}</span>}
+            {pi !== pages.length - 1 && (
+              <span>
+                E&nbsp;eau · T&nbsp;texture · N&nbsp;nutrition · pH&nbsp;réaction — signe «&nbsp;+&nbsp;» :
+                frais / argileux / riche / calcaire ; signe «&nbsp;−&nbsp;» : sec / sableux / pauvre / acide.
+              </span>
+            )}
             <span className="flora-atlas-sign">
               {propertyName ?? 'Propriété'} · Fréquence du Vivant
             </span>
+
           </footer>
         </section>
       ))}
