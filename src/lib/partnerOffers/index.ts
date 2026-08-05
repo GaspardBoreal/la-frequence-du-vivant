@@ -11,8 +11,8 @@ export type {
   OfferQuestion,
 } from './types';
 
-/** Même mur de mot de passe que les audits partenaires. */
-export { PARTNER_AUDIT_PASSWORD as PARTNER_OFFER_PASSWORD } from '@/lib/partnerAudits';
+/** Mot de passe dédié au dossier Outils & Services (distinct de l'audit). */
+export const PARTNER_OFFER_PASSWORD = 'DATA-IA-BIODIV-2026-2027';
 
 export const PARTNER_OFFERS: PartnerOffer[] = [vienneNatureOffer];
 
