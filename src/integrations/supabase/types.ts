@@ -5465,6 +5465,78 @@ export type Database = {
           },
         ]
       }
+      news: {
+        Row: {
+          created_at: string
+          description: string | null
+          external_link: string
+          id: string
+          image_url: string | null
+          metadata: Json
+          published: boolean
+          started_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          external_link: string
+          id?: string
+          image_url?: string | null
+          metadata?: Json
+          published?: boolean
+          started_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          external_link?: string
+          id?: string
+          image_url?: string | null
+          metadata?: Json
+          published?: boolean
+          started_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      news_dedup: {
+        Row: {
+          decision: string | null
+          first_seen_at: string
+          last_seen_at: string
+          seen_count: number
+          source: string | null
+          title: string | null
+          title_key: string | null
+          url_key: string
+        }
+        Insert: {
+          decision?: string | null
+          first_seen_at?: string
+          last_seen_at?: string
+          seen_count?: number
+          source?: string | null
+          title?: string | null
+          title_key?: string | null
+          url_key: string
+        }
+        Update: {
+          decision?: string | null
+          first_seen_at?: string
+          last_seen_at?: string
+          seen_count?: number
+          source?: string | null
+          title?: string | null
+          title_key?: string | null
+          url_key?: string
+        }
+        Relationships: []
+      }
       observation_gps_overrides: {
         Row: {
           created_at: string
