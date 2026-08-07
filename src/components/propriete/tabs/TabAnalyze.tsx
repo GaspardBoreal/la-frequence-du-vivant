@@ -27,6 +27,8 @@ import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCou
 import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
 import { TestMediaBadge } from '@/components/propriete/analyze/media/TestMediaDrawer';
 import { TestMediaRegistry } from '@/components/propriete/analyze/media/TestMediaRegistry';
+import { SoilHistoryPanel } from '@/components/propriete/analyze/SoilHistoryPanel';
+
 import {
   usePropertyTestMedias,
   useTestMediaIndex,
