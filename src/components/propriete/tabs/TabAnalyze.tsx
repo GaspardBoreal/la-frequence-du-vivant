@@ -27,6 +27,8 @@ import { usePropertySpeciesCount } from '@/hooks/propriete/usePropertySpeciesCou
 import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
 import { TestMediaBadge } from '@/components/propriete/analyze/media/TestMediaDrawer';
 import { TestMediaRegistry } from '@/components/propriete/analyze/media/TestMediaRegistry';
+import { SoilHistoryPanel } from '@/components/propriete/analyze/SoilHistoryPanel';
+
 import {
   usePropertyTestMedias,
   useTestMediaIndex,
@@ -200,14 +202,30 @@ export const TabAnalyze: React.FC<{
   });
   const soloPortalRef = soloPrint.portalRef;
 
+  /** Horodatage du dernier carnet imprimé (preuve papier hors ligne). */
+  const printStampKey = proprieteId ? `soil-print-stamp:${proprieteId}` : null;
+  const [printStamp, setPrintStamp] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    setPrintStamp(printStampKey ? localStorage.getItem(printStampKey) : null);
+  }, [printStampKey]);
+
   const handleConfirmPrint = (choice: PrintChoice) => {
     setPrintOpen(false);
+    if (printStampKey) {
+      const now = new Date().toISOString();
+      localStorage.setItem(printStampKey, now);
+      setPrintStamp(now);
+    }
     if (choice === 'combined') {
       setCombinedPrinting(true);
       return;
     }
     setSoloPrinting(true);
   };
+
+  const printOutdated =
+    !!savedAt && (!printStamp || new Date(savedAt) > new Date(printStamp));
+
 
 
   const printDialogAndPortal = (
@@ -291,7 +309,9 @@ export const TabAnalyze: React.FC<{
             </>
           }
         />
+        <SoilHistoryPanel proprieteId={proprieteId} />
         <AnalyzeSummary
+
           proprieteId={proprieteId}
           state={state}
 
@@ -337,6 +357,18 @@ export const TabAnalyze: React.FC<{
           </Button>
         </div>
       )}
+
+      {printOutdated && (
+        <div className="rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-4 py-2 text-xs text-[hsl(var(--ds-forest-deep))]">
+          Le registre a changé depuis votre dernier carnet imprimé
+          {printStamp ? ` (${new Date(printStamp).toLocaleDateString('fr-FR')})` : ''} —
+          pensez à réimprimer pour garder une preuve papier à jour.
+        </div>
+      )}
+
+      <SoilHistoryPanel proprieteId={proprieteId} />
+
+
 
       {/* Blocs 1 → 4 : pleine largeur pour laisser respirer les cartes et pictos */}
       <div className="space-y-5">

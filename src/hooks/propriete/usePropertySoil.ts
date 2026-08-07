@@ -168,7 +168,11 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
       const id = targetId ?? proprieteId;
       if (!id || id !== proprieteId) return;
       if (readOnly) return;
+      // Jamais d'écriture tant que la version serveur n'a pas été lue :
+      // le registre par défaut A·B·C ne doit jamais partir en base.
+      if (!query.isSuccess || loadedIdRef.current !== proprieteId) return;
       setSaving(true);
+
       const allowDestructive = destructiveRef.current;
       const { error } = await supabase.rpc('upsert_propriete_soil' as any, {
         p_propriete_id: id,
@@ -193,7 +197,7 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
       }
       qc.invalidateQueries({ queryKey: ['propriete-soil', id] });
     },
-    [proprieteId, qc, readOnly]
+    [proprieteId, qc, readOnly, query.isSuccess]
   );
 
   useEffect(() => {
