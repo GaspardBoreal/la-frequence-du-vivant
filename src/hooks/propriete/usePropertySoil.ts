@@ -70,7 +70,18 @@ const EMPTY: PropertySoilState = {
   updated_at: null,
 };
 
-export function usePropertySoil(proprieteId?: string) {
+export interface UsePropertySoilOptions {
+  /**
+   * Lecture seule : aucune sauvegarde automatique n'est émise par cette instance.
+   * Indispensable pour les onglets qui ne font qu'afficher le registre
+   * (J'identifie, La palette, La synthèse) — sans cela, plusieurs instances
+   * concurrentes réécrivent le registre entier et s'écrasent mutuellement.
+   */
+  readOnly?: boolean;
+}
+
+export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilOptions) {
+  const readOnly = options?.readOnly === true;
   const qc = useQueryClient();
   const query = useQuery<PropertySoilState>({
     queryKey: ['propriete-soil', proprieteId],
