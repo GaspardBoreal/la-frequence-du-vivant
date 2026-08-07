@@ -1,59 +1,50 @@
-# Connecter n8n en écriture Postgres sur `news` et `news_dedup`
+# Incident « J'analyse » — perte des données de sol (Jardin Monde DEVIAT)
 
-Objectif : n8n écrit directement dans la base via une connexion PostgreSQL, sans donner à n8n les pleins pouvoirs sur les 150+ tables du projet.
+## Ce que j'ai constaté dans la base (vérifié)
 
-## 1. Récupérer les identifiants (à faire par vous, dans Supabase)
+La fiche sol de la propriété existe toujours (une seule ligne, jamais supprimée) :
 
-Le mot de passe Postgres n'existe nulle part dans le code : seul Supabase le connaît, et il n'est affichable qu'une fois. S'il n'a pas été noté, il faut le réinitialiser.
+- Dernière écriture : **7 août 2026, 08:01:38 UTC (10:01 Paris)**, par le compte `b821bb9c…` (gaspard.boreal), c'est-à-dire la session ouverte ce matin à 08:00 dans l'aperçu — **pas** un compte tiers.
+- Les 3 prélèvements A, B, C sont là, **avec leurs coordonnées GPS**, mais **tous les champs de test ont disparu** : structure, texture, pH par carotte, vie du sol, vers de terre, descriptions.
+- Les anciennes colonnes globales ont survécu : structure « grumeleuse », texture « limoneux », pH 7.7, terrain « naturel ». Ce sont aujourd'hui les seuls vestiges de la lecture.
+- Il n'existe **aucune table d'historique** sur les diagnostics de sol : la version précédente n'est plus dans la base.
 
-1. Dashboard Supabase du projet → **Project Settings → Database**
-2. **Database password → Reset database password** → copier la valeur tout de suite
-3. Section **Connection string → Session pooler** (port `5432`, compatible IPv4, requis pour n8n Cloud) : y relever `host`, `port`, `database` (`postgres`) et `user`
+## Mécanisme le plus probable (à confirmer avant correction)
 
-Réinitialiser ce mot de passe n'a aucun impact sur l'application : elle utilise les clés API, pas le mot de passe Postgres.
+Six écrans différents chargent la fiche sol en même temps (J'analyse, J'identifie, Palette, Synthèse, Le Chantier, l'IA de jardin). Chacun garde **sa propre copie** des prélèvements et **ré-enregistre la totalité du tableau** 1,5 s après le moindre changement. Une copie chargée trop tôt (ou restée figée pendant que la donnée changeait ailleurs) écrase alors la version complète par sa version pauvre. Les coordonnées survivent parce qu'elles sont réécrites par la carte ; les résultats de tests, eux, sont perdus.
 
-## 2. Créer un rôle dédié `n8n_writer` (côté projet, via migration)
+C'est cohérent avec ce qu'on observe, mais je le vérifie par la trace exacte avant de toucher au code : une simple consultation ne doit jamais déclencher d'écriture.
 
-Plutôt que de brancher n8n avec le compte `postgres` (superutilisateur, accès total, RLS contournée partout), création d'un rôle limité :
+## 1 · Récupérer les données
 
-- rôle `n8n_writer` avec mot de passe, `LOGIN`, `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`
-- `GRANT USAGE ON SCHEMA public`
-- `GRANT SELECT, INSERT, UPDATE ON public.news` et `public.news_dedup` — pas de `DELETE`, pas d'accès aux autres tables
-- aucune autre table ni fonction accessible : toute requête hors périmètre échoue en `permission denied`
+Par ordre de chance de succès :
 
-Le mot de passe de ce rôle sera généré par vous et fourni au moment de la migration (je ne l'inscris pas en clair dans le fichier ; le champ sera à remplacer avant validation), ou généré aléatoirement et communiqué une seule fois.
+1. **Restauration Supabase** (seule voie qui rend la donnée exacte). Dans le Dashboard Supabase → Database → Backups : si le PITR est actif, revenir à hier soir ; sinon prendre la sauvegarde quotidienne la plus récente. On restaure **dans un projet bac à sable**, on en extrait uniquement le tableau `samples` de cette propriété, et on le réinjecte. Aucune autre donnée du site n'est touchée. Cette étape se fait depuis votre compte Supabase, je vous guide écran par écran.
+2. **Vos impressions PDF** : le « Registre des prélèvements » et le cahier « J'analyse » imprimés ces dernières semaines contiennent la totalité des tests, carotte par carotte. Si vous en avez un, je ressaisis les valeurs à l'identique.
+3. **Repli partiel** : à défaut, on remet au moins la lecture globale connue (naturel / grumeleuse / limoneux / pH 7.7) sur les trois carottes, en la marquant comme reconstituée.
 
-## 3. Contrainte d'unicité pour l'anti-doublon
+## 2 · Que cela n'arrive plus jamais
 
-`news_dedup` n'a pas de clé primaire déclarée sur `url_key`. Sans elle, le pattern n8n « insérer sinon incrémenter » n'est pas fiable.
+Quatre garde-fous, du plus urgent au plus structurel :
 
-- ajout d'un index unique sur `news_dedup.url_key` (après contrôle et fusion d'éventuels doublons existants)
+1. **Boîte noire du sol** : une table d'historique qui archive automatiquement chaque version des prélèvements avant modification, avec l'auteur et l'heure. Toute perte future devient réparable en un clic.
+2. **Verrou anti-effacement** : la base refuse une écriture qui viderait les tests de prélèvements déjà renseignés, sauf suppression explicite demandée par l'utilisateur. Une consultation ne peut plus rien détruire.
+3. **Écriture par un seul écran** : seul « J'analyse » enregistre ; les cinq autres écrans passent en lecture seule sur le sol. Fin des sauvegardes concurrentes.
+4. **Enregistrement par touche, pas par tableau entier** : on n'envoie plus que la carotte modifiée, jamais tout le registre — même en cas de bug, on ne peut plus perdre que le champ en cours.
 
-Cela permet dans n8n un simple `INSERT ... ON CONFLICT (url_key) DO UPDATE SET last_seen_at = now(), seen_count = news_dedup.seen_count + 1`.
-
-## 4. Configuration du credential n8n
-
-Nœud **Postgres** → nouveau credential :
-
-```text
-Host      : aws-0-<region>.pooler.supabase.com   (depuis Session pooler)
-Port      : 5432
-Database  : postgres
-User      : n8n_writer
-Password  : <mot de passe du rôle>
-SSL       : require
-```
-
-Colonnes utiles côté n8n :
-- `news` : `title` (obligatoire), `external_link` (obligatoire), `description`, `image_url`, `started_at`, `metadata` (jsonb), `published` (défaut `false`)
-- `news_dedup` : `url_key` (obligatoire), `title_key`, `source`, `title`, `decision`, `seen_count`
-
-## 5. Vérification
-
-Test de lecture/écriture sur `news` avec le rôle `n8n_writer`, puis test négatif : une lecture sur une table hors périmètre doit être refusée.
+Et une **restauration à portée de main** : dans « J'analyse », un menu « Versions précédentes » listant les archives datées avec aperçu et bouton « Restaurer ».
 
 ## Détails techniques
 
-- Le Session pooler est indispensable si n8n tourne en cloud (la connexion directe `db.<ref>.supabase.co` est IPv6-only).
-- Une connexion Postgres directe contourne les RLS par construction ; le garde-fou repose donc sur les `GRANT` du rôle, d'où le périmètre strict à deux tables.
-- Rien à changer dans le code de l'application : ce chantier est uniquement base de données + configuration n8n.
+- Table `public.propriete_soil_diagnostics`, ligne `cc23477d-…`, propriété `664670f9-…`.
+- Nouvelle table `propriete_soil_history` (propriete_id, samples jsonb, colonnes globales, changed_by, changed_at) alimentée par un trigger `BEFORE UPDATE`, RLS alignée sur `can_access_propriete`, GRANT `authenticated` (select) / `service_role` (all).
+- Trigger de garde : si `OLD.samples` contient des champs de test et que `NEW.samples` les perd sans que le nombre de prélèvements change, l'écriture est rejetée (contournable par un paramètre explicite `p_force`).
+- `upsert_propriete_soil` : ajout d'un mode « patch d'un prélèvement » (`p_sample_patch jsonb`) fusionné côté SQL, à la place du remplacement complet.
+- `usePropertySoil` : séparation lecture/écriture — un hook `usePropertySoilRead` (React Query, lecture seule) pour Identify / Palette / Synthèse / Chantier / chat, l'autosave restant exclusivement dans `TabAnalyze`. Suppression du snapshot local figé (`loadedIdRef`) au profit d'un état dérivé du cache.
+- RPC `restore_propriete_soil_version(history_id)` pour le menu de restauration.
+- Ordre d'exécution : (a) trace précise de l'écriture de 08:01 et confirmation du mécanisme, (b) boîte noire + verrou (migration), (c) récupération de la donnée, (d) refonte lecture/écriture, (e) menu Versions.
+
+## À décider avec vous
+
+- Avez-vous un PDF « Registre des prélèvements » de cette propriété ? Cela peut suffire à tout retrouver sans restauration.
+- Souhaitez-vous que je vous guide dès maintenant sur la sauvegarde Supabase (je ne peux pas la déclencher à votre place) ?
