@@ -68,7 +68,7 @@ export const TabIdentify: React.FC<{
     markComplete,
   } = usePropertyFlora(proprieteId);
 
-  const { state: soil, completedAt: soilCompletedAt } = usePropertySoil(proprieteId);
+  const { state: soil, completedAt: soilCompletedAt } = usePropertySoil(proprieteId, { readOnly: true });
   const [submitting, setSubmitting] = React.useState(false);
 
   const profile = useMemo(() => computeFloraProfile(state.observed_plants), [state.observed_plants]);

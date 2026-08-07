@@ -46,7 +46,7 @@ export function useProprieteChatProviders(proprieteId?: string): {
 } {
   const focus = useProprieteChatFocus();
   const { species, waypoints } = usePropertySpeciesPool(proprieteId);
-  const { state: soil } = usePropertySoil(proprieteId);
+  const { state: soil } = usePropertySoil(proprieteId, { readOnly: true });
   const { objets } = useProprieteObjets(proprieteId);
   const { zones } = useProprieteZones(proprieteId);
   const { data: parcelles } = useProprieteParcelles(proprieteId);

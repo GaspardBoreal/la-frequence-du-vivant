@@ -88,7 +88,7 @@ export const TabSynthesize: React.FC<Props> = ({
   } = usePropertySynthesis(proprieteId);
 
   const observation = usePropertyObservation(proprieteId);
-  const { state: soilState, completedAt: soilCompletedAt } = usePropertySoil(proprieteId);
+  const { state: soilState, completedAt: soilCompletedAt } = usePropertySoil(proprieteId, { readOnly: true });
   const flora = usePropertyFlora(proprieteId);
   const speciesCount = usePropertySpeciesCount(proprieteId);
   const { data: galleryPhotos = [] } = usePropertyGallery(proprieteId);

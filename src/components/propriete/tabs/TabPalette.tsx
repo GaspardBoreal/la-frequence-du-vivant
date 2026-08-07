@@ -92,7 +92,7 @@ export const TabPalette: React.FC<Props> = ({
   const palette = usePropertyPalette(proprieteId);
   const { zones, upsertZone, deleteZone } = useProprieteZones(proprieteId);
 
-  const { state: soilState, completedAt: soilCompletedAt } = usePropertySoil(proprieteId);
+  const { state: soilState, completedAt: soilCompletedAt } = usePropertySoil(proprieteId, { readOnly: true });
   const flora = usePropertyFlora(proprieteId);
   const synthesis = usePropertySynthesis(proprieteId);
   const observation = usePropertyObservation(proprieteId);

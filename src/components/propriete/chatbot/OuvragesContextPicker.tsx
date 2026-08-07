@@ -31,7 +31,7 @@ const DETAILS: { key: OuvrageDetailLevel; label: string; hint: string }[] = [
 export const OuvragesContextPicker: React.FC<{ proprieteId?: string }> = ({ proprieteId }) => {
   const focus = useProprieteChatFocus();
   const { objets } = useProprieteObjets(proprieteId);
-  const { state: soil } = usePropertySoil(proprieteId);
+  const { state: soil } = usePropertySoil(proprieteId, { readOnly: true });
   const { waypoints } = usePropertySpeciesPool(proprieteId);
 
   const rows = useMemo(() => {

@@ -95,7 +95,7 @@ export const ChantierOverlay: React.FC<Props> = ({
   const [printing, setPrinting] = React.useState(false);
 
   const pool = usePropertySpeciesPool(proprieteId);
-  const soil = usePropertySoil(proprieteId);
+  const soil = usePropertySoil(proprieteId, { readOnly: true });
   const objetPhotos = useObjetPhotos(proprieteId);
   const { overrides, setPhase } = useChantierMediaPhases(active?.id);
   const lotObjetIds = active?.objet_ids ?? [];
