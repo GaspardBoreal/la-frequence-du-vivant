@@ -37,17 +37,18 @@ Deux façons de les récupérer, à combiner :
 
 Rien n'est écrasé en aveugle : les valeurs sont posées dans un ordre où chaque étape est vérifiable au regard du PDF.
 
+## Périmètre strict
+
+**Les 7 prélèvements A → G sont reconstitués.** Aucune autre section n'est touchée : ni « J'observe », ni « J'identifie », ni la Palette, ni l'Atelier, ni les photos. Une seule ligne de base de données est modifiée, celle du diagnostic de sol.
+
 ## Détails techniques
 
-- Écriture unique via `upsert_propriete_soil` sur `propriete_soil_diagnostics` (propriété `664670f9-…`), tableau `samples` reconstruit avec `structure_test`/`structure_result`, `texture_test`/`texture_result`, `ph_test`/`ph_value`, `life_test`/`life_signs`/`worm_count`, `location`, `lat`, `lng`.
+- Écriture unique via `upsert_propriete_soil` sur `propriete_soil_diagnostics` (propriété `664670f9-…`), tableau `samples` reconstruit avec `structure_test`/`structure_result`, `texture_test`/`texture_result`, `ph_test`/`ph_value`, `life_test`/`life_signs`/`worm_count`, `location`, `lat`, `lng`. Les colonnes globales héritées (`terrain_status`, `structure`, `texture`, `ph`) restent inchangées.
 - Mapping registre → modèle : bêche → `beche`/`grumeleuse` ; boudin → `boudin`/`limon` ; bandelette → `bandelette`/`8.0` ; bêche vivante → `beche_vivante` avec `worm_count` et `life_signs` (`vers`, `galeries`, `taupinieres`, `racines`, `matiere_organique`).
 - F et G : `id`/`label` conformes aux `sample_id` déjà présents dans `propriete_test_medias` (sinon les photos se détachent des carottes). `sample_location` repris de la table médias.
-- La vérification des totaux s'appuie sur `buildSoilReading` (3/5 texture, 1/5 structure, pH 8.0, indice 28/100) avant / après ajout de F et G.
+- Aucune migration, aucun changement de code dans cette étape : uniquement une écriture de données sur la fiche sol.
+- Vérification par `buildSoilReading` : 5 géolocalisés, structure 1/5, texture 3/5, pH 8.0, indice 28/100 sur le socle A→E, puis contrôle après ajout de F et G.
 
 ## Reste à traiter plus tard
 
 La section « Que cela n'arrive plus jamais » (historique, verrou anti-effacement, écriture par un seul écran) est mise de côté à votre demande — à reprendre juste après la reconstitution.
-
-## Une question
-
-Vous parliez de 6 prélèvements : les photos en montrent 7 (A à G). Faut-il reconstituer les sept, ou l'un des deux derniers (F ou G) est-il un doublon à écarter ?
