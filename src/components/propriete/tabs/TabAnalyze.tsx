@@ -342,6 +342,9 @@ export const TabAnalyze: React.FC<{
         </div>
       )}
 
+      <SoilHistoryPanel proprieteId={proprieteId} />
+
+
       {/* Blocs 1 → 4 : pleine largeur pour laisser respirer les cartes et pictos */}
       <div className="space-y-5">
         <div id="analyze-block-terrain" className="scroll-mt-24">
