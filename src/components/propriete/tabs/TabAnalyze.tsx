@@ -293,7 +293,9 @@ export const TabAnalyze: React.FC<{
             </>
           }
         />
+        <SoilHistoryPanel proprieteId={proprieteId} />
         <AnalyzeSummary
+
           proprieteId={proprieteId}
           state={state}
 
