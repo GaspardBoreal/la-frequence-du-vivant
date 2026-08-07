@@ -260,8 +260,11 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
         ...s,
         samples: s.samples.map((sm) => (sm.id === id ? { ...sm, label } : sm)),
       })),
-    removeSample: (id: string) =>
-      setLocal((s) => ({ ...s, samples: s.samples.filter((sm) => sm.id !== id) })),
+    removeSample: (id: string) => {
+      // Suppression volontaire : on lève explicitement le garde-fou serveur.
+      destructiveRef.current = true;
+      setLocal((s) => ({ ...s, samples: s.samples.filter((sm) => sm.id !== id) }));
+    },
     /** Réinsère un prélèvement supprimé à sa position d'origine (annulation). */
     restoreSample: (sample: SoilSample, at: number) =>
       setLocal((s) => {
