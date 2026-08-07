@@ -197,7 +197,7 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
       }
       qc.invalidateQueries({ queryKey: ['propriete-soil', id] });
     },
-    [proprieteId, qc, readOnly]
+    [proprieteId, qc, readOnly, query.isSuccess]
   );
 
   useEffect(() => {
