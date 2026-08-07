@@ -202,14 +202,30 @@ export const TabAnalyze: React.FC<{
   });
   const soloPortalRef = soloPrint.portalRef;
 
+  /** Horodatage du dernier carnet imprimé (preuve papier hors ligne). */
+  const printStampKey = proprieteId ? `soil-print-stamp:${proprieteId}` : null;
+  const [printStamp, setPrintStamp] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    setPrintStamp(printStampKey ? localStorage.getItem(printStampKey) : null);
+  }, [printStampKey]);
+
   const handleConfirmPrint = (choice: PrintChoice) => {
     setPrintOpen(false);
+    if (printStampKey) {
+      const now = new Date().toISOString();
+      localStorage.setItem(printStampKey, now);
+      setPrintStamp(now);
+    }
     if (choice === 'combined') {
       setCombinedPrinting(true);
       return;
     }
     setSoloPrinting(true);
   };
+
+  const printOutdated =
+    !!savedAt && (!printStamp || new Date(savedAt) > new Date(printStamp));
+
 
 
   const printDialogAndPortal = (
