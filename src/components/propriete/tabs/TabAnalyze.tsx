@@ -358,7 +358,16 @@ export const TabAnalyze: React.FC<{
         </div>
       )}
 
+      {printOutdated && (
+        <div className="rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-4 py-2 text-xs text-[hsl(var(--ds-forest-deep))]">
+          Le registre a changé depuis votre dernier carnet imprimé
+          {printStamp ? ` (${new Date(printStamp).toLocaleDateString('fr-FR')})` : ''} —
+          pensez à réimprimer pour garder une preuve papier à jour.
+        </div>
+      )}
+
       <SoilHistoryPanel proprieteId={proprieteId} />
+
 
 
       {/* Blocs 1 → 4 : pleine largeur pour laisser respirer les cartes et pictos */}
