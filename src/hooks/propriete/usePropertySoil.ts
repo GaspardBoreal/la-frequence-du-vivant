@@ -112,7 +112,7 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
     },
   });
 
-  const [local, setLocal] = useState<PropertySoilState>(EMPTY);
+  const [local, setLocalRaw] = useState<PropertySoilState>(EMPTY);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const loadedIdRef = useRef<string | null>(null);
@@ -120,7 +120,18 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
   /** Miroir synchrone du registre : permet de calculer id/lettre AVANT le setState. */
   const localRef = useRef<PropertySoilState>(EMPTY);
   localRef.current = local;
+  /** Vrai uniquement après une modification réelle de l'utilisateur. */
+  const dirtyRef = useRef(false);
+  /** Vrai quand la prochaine écriture supprime volontairement un prélèvement. */
+  const destructiveRef = useRef(false);
+  /** Empreinte de la dernière version serveur absorbée. */
+  const serverStampRef = useRef<string | null>(null);
 
+  /** Tout changement passant par ce setter est considéré comme une saisie utilisateur. */
+  const setLocal: typeof setLocalRaw = useCallback((value) => {
+    dirtyRef.current = true;
+    setLocalRaw(value);
+  }, []);
 
   useEffect(() => {
     if (proprieteId !== loadedIdRef.current) {
@@ -128,16 +139,26 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
         clearTimeout(debounceRef.current);
         debounceRef.current = null;
       }
-      setLocal(EMPTY);
+      dirtyRef.current = false;
+      destructiveRef.current = false;
+      serverStampRef.current = null;
+      setLocalRaw(EMPTY);
       setSavedAt(null);
       loadedIdRef.current = null;
     }
   }, [proprieteId]);
 
+  // Hydratation initiale, puis resynchronisation quand le serveur change
+  // (tant qu'aucune saisie locale n'est en attente d'enregistrement).
   useEffect(() => {
     if (!proprieteId || !query.data) return;
-    if (loadedIdRef.current === proprieteId) return;
-    setLocal(query.data);
+    const stamp = query.data.updated_at ?? 'init';
+    if (loadedIdRef.current === proprieteId) {
+      if (dirtyRef.current) return;
+      if (serverStampRef.current === stamp) return;
+    }
+    serverStampRef.current = stamp;
+    setLocalRaw(query.data);
     setSavedAt(query.data.updated_at ?? null);
     loadedIdRef.current = proprieteId;
   }, [proprieteId, query.data]);
@@ -146,7 +167,9 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
     async (state: PropertySoilState, completed = false, targetId?: string) => {
       const id = targetId ?? proprieteId;
       if (!id || id !== proprieteId) return;
+      if (readOnly) return;
       setSaving(true);
+      const allowDestructive = destructiveRef.current;
       const { error } = await supabase.rpc('upsert_propriete_soil' as any, {
         p_propriete_id: id,
         p_terrain_status: state.terrain_status ?? null,
@@ -158,34 +181,41 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
         p_life_signs: state.life_signs ?? [],
         p_synthesis: state.synthesis ?? null,
         p_completed: completed ? true : null,
+        p_allow_destructive: allowDestructive,
       });
       setSaving(false);
       if (error) throw error;
+      destructiveRef.current = false;
+      dirtyRef.current = false;
       setSavedAt(new Date().toISOString());
       if (completed) {
-        setLocal((s) => ({ ...s, completed_at: new Date().toISOString() }));
+        setLocalRaw((s) => ({ ...s, completed_at: new Date().toISOString() }));
       }
       qc.invalidateQueries({ queryKey: ['propriete-soil', id] });
     },
-    [proprieteId, qc]
+    [proprieteId, qc, readOnly]
   );
 
   useEffect(() => {
+    if (readOnly) return;
     if (!proprieteId || loadedIdRef.current !== proprieteId) return;
+    // Aucune saisie utilisateur : on n'écrit rien (protection anti-écrasement).
+    if (!dirtyRef.current) return;
     const targetId = proprieteId;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      persist(local, false, targetId).catch(() => {});
+      persist(localRef.current, false, targetId).catch(() => {});
     }, 1500);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [local, proprieteId]);
+  }, [local, proprieteId, readOnly]);
 
   return {
     state: local,
     setLocal,
+    readOnly,
     loading: query.isLoading,
     saving,
     savedAt,
