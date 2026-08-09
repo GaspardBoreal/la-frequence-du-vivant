@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import PartnerRoadmapContent from '@/components/partners/roadmap/PartnerRoadmapContent';
 import RoadmapPrintLayout from '@/components/partners/roadmap/RoadmapPrintLayout';
 import RoadmapTocNav from '@/components/partners/roadmap/RoadmapTocNav';
+import { RoadmapFilterProvider } from '@/components/partners/roadmap/RoadmapFilterContext';
+
 
 import { usePartnerRoadmapPrint } from '@/hooks/usePartnerRoadmapPrint';
 import { getPartnerRoadmap } from '@/lib/partnerRoadmaps';
