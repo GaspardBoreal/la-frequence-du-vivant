@@ -3231,3 +3231,209 @@
     color: #8a8377;
   }
 }
+
+/* === FEUILLE DE ROUTE PARTENAIRE — portail d'impression A4 === */
+#partner-roadmap-print-portal { display: none; }
+
+@media print {
+  body.partner-roadmap-print-mode {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  body.partner-roadmap-print-mode > *:not(#partner-roadmap-print-portal) { display: none !important; }
+  body.partner-roadmap-print-mode #partner-roadmap-print-portal { display: block !important; }
+
+  .rm-print-doc,
+  .rm-print-doc * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .rm-print-doc {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: #1c2420;
+    background: #fff;
+    padding: 12mm 11mm;
+    box-sizing: border-box;
+    font-size: 9pt;
+    line-height: 1.5;
+  }
+
+  /* Couverture */
+  .rm-cover {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 250mm;
+    padding: 24mm 0 0;
+    display: flex;
+    flex-direction: column;
+    break-after: page;
+    page-break-after: always;
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+  .rm-cover-rule {
+    width: 46mm;
+    height: 2.2mm;
+    background: linear-gradient(90deg, #0d6b58 0%, #c9a227 100%);
+    border-radius: 2mm;
+    margin-bottom: 13mm;
+  }
+  .rm-kicker {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 8.5pt;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #0d6b58;
+    margin: 0 0 6mm;
+  }
+  .rm-cover-title { font-size: 27pt; line-height: 1.15; font-weight: 600; margin: 0 0 6mm; color: #14241f; }
+  .rm-x { color: #c9a227; }
+  .rm-cover-sub { font-size: 12pt; line-height: 1.5; color: #45544e; margin: 0 0 10mm; max-width: 145mm; }
+  .rm-cover-meta {
+    display: flex;
+    gap: 14mm;
+    border-top: 0.4mm solid #d8d2c4;
+    border-bottom: 0.4mm solid #d8d2c4;
+    padding: 5mm 0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 9pt;
+  }
+  .rm-cover-meta > div { display: flex; flex-direction: column; gap: 1.5mm; max-width: 58mm; }
+  .rm-label {
+    display: block;
+    font-size: 7.5pt;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #8a8377;
+  }
+  .rm-cover-intro {
+    margin: 8mm 0 0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 9.5pt;
+    line-height: 1.6;
+    color: #34423c;
+    max-width: 152mm;
+  }
+  .rm-cover-sources {
+    margin: 6mm 0 0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 8.5pt;
+    line-height: 1.55;
+    color: #6d786f;
+    max-width: 152mm;
+  }
+  .rm-cover-foot {
+    margin-top: auto;
+    padding-top: 8mm;
+    border-top: 0.3mm solid #e4dfd3;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #8a8377;
+  }
+
+  /* Sections */
+  .rm-section { break-before: page; page-break-before: always; }
+  .rm-h2 {
+    font-size: 14pt;
+    color: #0d6b58;
+    border-bottom: 0.4mm solid #cfd8d3;
+    padding-bottom: 2mm;
+    margin: 0 0 4mm;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  .rm-lead { font-size: 8.8pt; color: #5b6862; margin: 0 0 4mm; }
+  .rm-h3 { font-size: 9.5pt; color: #14241f; margin: 0 0 1.8mm; font-weight: 600; }
+  .rm-h3-space { margin-top: 6mm; break-after: avoid; page-break-after: avoid; }
+
+  .rm-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 7.6pt; }
+  .rm-table thead { display: table-header-group; }
+  .rm-table th {
+    background: #eef3f0;
+    color: #0d6b58;
+    text-align: left;
+    font-size: 7pt;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 1.8mm 2mm;
+    border-bottom: 0.3mm solid #cfd8d3;
+  }
+  .rm-table td {
+    padding: 1.8mm 2mm;
+    border-bottom: 0.2mm solid #e8e3d8;
+    color: #24302b;
+    vertical-align: top;
+    word-break: break-word;
+    hyphens: auto;
+  }
+  .rm-table tbody tr { break-inside: avoid; page-break-inside: avoid; }
+  .rm-table tbody tr:nth-child(even) td { background: #faf8f3; }
+  .rm-dim { color: #8a8377; font-size: 7pt; }
+  .rm-quote { font-style: italic; color: #45544e; }
+
+  .rm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+  .rm-card {
+    border: 0.25mm solid #d8d2c4;
+    border-left: 1mm solid #0d6b58;
+    border-radius: 1.5mm;
+    padding: 3mm 3.5mm;
+    background: #fcfbf7;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .rm-card p { margin: 0 0 1.8mm; font-size: 8.2pt; line-height: 1.45; color: #24302b; }
+  .rm-meta { font-size: 7.6pt !important; color: #45544e !important; }
+  .rm-label-inline {
+    font-size: 6.8pt;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #8a8377;
+    margin-right: 1mm;
+  }
+
+  .rm-svg { width: 100%; height: auto; display: block; margin: 2mm 0 4mm; break-inside: avoid; }
+  .rm-diagram { break-inside: avoid; page-break-inside: avoid; margin-bottom: 4mm; }
+  .rm-diagram svg { width: 100%; height: auto; display: block; }
+
+  /* Frise */
+  .rm-gantt { margin-top: 2mm; }
+  .rm-gantt-row { display: flex; align-items: center; gap: 3mm; margin-bottom: 2mm; }
+  .rm-gantt-code { width: 8mm; font-size: 8pt; font-weight: 600; color: #0d6b58; }
+  .rm-gantt-track {
+    position: relative;
+    flex: 1;
+    height: 4mm;
+    background: #f0ede4;
+    border-radius: 1mm;
+    display: block;
+  }
+  .rm-gantt-bar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: #0d6b58;
+    border-radius: 1mm;
+    display: block;
+  }
+  .rm-gantt-when { width: 42mm; text-align: right; font-size: 7.4pt; color: #6d786f; }
+
+  .rm-closing {
+    margin-top: 6mm;
+    padding: 3.5mm 4mm;
+    border: 0.25mm solid #c9a227;
+    border-radius: 1.5mm;
+    background: #fdfaf0;
+    font-size: 8.6pt;
+    line-height: 1.55;
+    color: #24302b;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .rm-end {
+    margin-top: 6mm;
+    padding-top: 3mm;
+    border-top: 0.3mm solid #e4dfd3;
+    font-size: 8pt;
+    color: #8a8377;
+  }
+}
