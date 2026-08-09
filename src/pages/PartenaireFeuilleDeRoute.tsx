@@ -141,6 +141,9 @@ const PartenaireFeuilleDeRoute: React.FC = () => {
         </div>
       </header>
 
+      <RoadmapTocNav />
+
+
       <main className="mx-auto w-full max-w-5xl px-6 py-10 print:hidden">
         <p className="mb-6 max-w-3xl text-sm leading-relaxed text-foreground/90">{roadmap.intro}</p>
         <p className="mb-10 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm leading-relaxed text-foreground/85">
