@@ -216,7 +216,11 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
           lead="Pour chaque chantier : ce que l'on construit, ce que cela produit, la charge estimée et l'état d'avancement."
         />
         <div className="space-y-10">
-          {roadmap.priorities.map((p) => (
+          {roadmap.priorities.map((p) => {
+            const done = p.tasks.filter(
+              (t) => resolve(p.code, taskKey(t.title), t.status) === 'done',
+            ).length;
+            return (
             <article key={p.code} className="rounded-2xl border border-border/60 bg-card/30 p-6">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="rounded-md bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
@@ -226,39 +230,33 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
                 <span className="text-xs text-muted-foreground">
                   {p.window} · {priorityEffort(p.tasks)} j · {p.tasks.length} chantiers
                 </span>
+                <span className="ml-auto">
+                  <RoadmapProgressBar
+                    done={done}
+                    total={p.tasks.length}
+                    label={`${done}/${p.tasks.length} chantiers livrés`}
+                  />
+                </span>
               </div>
               <p className="mt-2 max-w-3xl text-sm italic text-muted-foreground">{p.rationale}</p>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                {p.tasks.map((t) => (
-                  <div
-                    key={t.title}
-                    className="rounded-xl border border-border/50 bg-background/40 p-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <h4 className="text-sm font-semibold text-foreground">{t.title}</h4>
-                      <StatusPill status={t.status} />
-                    </div>
-                    <p className="mt-2 text-sm leading-relaxed text-foreground/80">{t.detail}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      <span className="uppercase tracking-wide text-muted-foreground/70">
-                        Produit&nbsp;:
-                      </span>{' '}
-                      {t.output}
-                    </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                      <span className="rounded-full border border-border/60 px-2 py-0.5">
-                        {t.effortDays} j
-                      </span>
-                      {t.themeId && themeById.get(t.themeId) && (
-                        <span className="rounded-full border border-border/60 px-2 py-0.5">
-                          {themeById.get(t.themeId)!.label}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                {p.tasks.map((t) => {
+                  const key = taskKey(t.title);
+                  return (
+                    <TaskCard
+                      key={t.title}
+                      roadmap={roadmap}
+                      priority={p}
+                      task={t}
+                      status={resolve(p.code, key, t.status)}
+                      themeLabel={t.themeId ? themeById.get(t.themeId)?.label : undefined}
+                      onStatus={(s) => setStatus(p.code, key, s)}
+                    />
+                  );
+                })}
               </div>
+
 
               {p.code === 'P3' && (
                 <div className="mt-6 space-y-5">
