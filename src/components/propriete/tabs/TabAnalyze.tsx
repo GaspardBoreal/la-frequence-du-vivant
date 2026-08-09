@@ -358,6 +358,7 @@ export const TabAnalyze: React.FC<{
           onReopenAll={() => setMode('edit')}
           onPrint={() => setPrintOpen(true)}
         />
+        <SoilHistoryPanel proprieteId={proprieteId} />
         {printDialogAndPortal}
       </div>
     );
