@@ -22,6 +22,8 @@ export const RoadmapTocNav: React.FC<{
   embedded?: boolean;
 }> = ({ scrollRoot, className, embedded }) => {
   const [active, setActive] = React.useState<string>(ROADMAP_SECTIONS[0].id);
+  const filterCtx = useRoadmapFilter();
+
 
   React.useEffect(() => {
     const els = ROADMAP_SECTIONS.map((s) => document.getElementById(s.id)).filter(
