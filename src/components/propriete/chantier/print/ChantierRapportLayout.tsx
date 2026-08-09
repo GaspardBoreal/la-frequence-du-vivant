@@ -4,6 +4,9 @@ import type { Planting } from '@/hooks/propriete/useOuvrageScenarios';
 import type { IcgDelta, IcgReading, SpeciesJuryResult, SpeciesVerdict } from '@/lib/chantierIcg';
 import { MATCH_LABEL, PHASE_LABEL, type MediaPhase } from '@/lib/chantierIcg';
 import { printImageUrl } from '@/components/propriete/print/printImageUrl';
+import { buildScaleReadings } from '@/lib/soilFloraScales';
+import type { ConcordanceDetail } from '@/lib/plantIndicatorKb';
+
 
 export interface RapportSpecies {
   scientificName: string;
