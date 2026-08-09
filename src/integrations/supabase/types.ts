@@ -5678,6 +5678,39 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_roadmap_task_status: {
+        Row: {
+          created_at: string
+          id: string
+          priority_code: string
+          roadmap_date: string
+          roadmap_slug: string
+          status: string
+          task_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          priority_code: string
+          roadmap_date: string
+          roadmap_slug: string
+          status?: string
+          task_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          priority_code?: string
+          roadmap_date?: string
+          roadmap_slug?: string
+          status?: string
+          task_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pheno_ai_suggestions: {
         Row: {
           alternative_macro: number | null
