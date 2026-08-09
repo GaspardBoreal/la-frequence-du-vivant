@@ -412,7 +412,6 @@ export const TabAnalyze: React.FC<{
         </div>
       )}
 
-      <SoilHistoryPanel proprieteId={proprieteId} />
 
 
 
