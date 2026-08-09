@@ -43,6 +43,7 @@ import { toast } from 'sonner';
 import { OpportunityDocumentsSection } from '@/components/crm/opportunities/OpportunityDocumentsSection';
 import { PartnerAuditDrawer } from '@/components/crm/opportunities/PartnerAuditDrawer';
 import { resolvePartnerAudit } from '@/lib/partnerAudits';
+import { resolvePartnerRoadmap } from '@/lib/partnerRoadmaps';
 
 
 const opportunitySchema = z.object({
