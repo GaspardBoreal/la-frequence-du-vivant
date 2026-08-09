@@ -270,11 +270,43 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
           title="Les chantiers, par ordre de priorité"
           lead="Pour chaque chantier : ce que l'on construit, ce que cela produit, la charge estimée et l'état d'avancement."
         />
+
+        {/* Filtre d'avancement, collant sous le sommaire */}
+        <div className="sticky top-[96px] z-10 -mx-2 mb-6 rounded-full border border-border/50 bg-background/90 px-2 py-1.5 backdrop-blur print:hidden">
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => applyFilter(f.id)}
+                aria-pressed={filter === f.id}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  filter === f.id
+                    ? 'bg-primary/15 text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {f.label}
+                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                  {f.n}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="space-y-10">
           {roadmap.priorities.map((p) => {
             const done = p.tasks.filter(
               (t) => resolve(p.code, taskKey(t.title), t.status) === 'done',
             ).length;
+            const visibleTasks = p.tasks.filter((t) => {
+              if (filter === 'all') return true;
+              const key = taskKey(t.title);
+              if (pinned.has(`${p.code}:${key}`)) return true;
+              return resolve(p.code, key, t.status) === filter;
+            });
+            if (visibleTasks.length === 0) return null;
             return (
             <article key={p.code} className="rounded-2xl border border-border/60 bg-card/30 p-6">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -283,7 +315,10 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
                 </span>
                 <h3 className="text-xl font-semibold text-foreground">{p.title}</h3>
                 <span className="text-xs text-muted-foreground">
-                  {p.window} · {priorityEffort(p.tasks)} j · {p.tasks.length} chantiers
+                  {p.window} · {priorityEffort(p.tasks)} j ·{' '}
+                  {filter === 'all'
+                    ? `${p.tasks.length} chantiers`
+                    : `${visibleTasks.length} sur ${p.tasks.length} chantiers`}
                 </span>
                 <span className="ml-auto">
                   <RoadmapProgressBar
@@ -296,7 +331,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
               <p className="mt-2 max-w-3xl text-sm italic text-muted-foreground">{p.rationale}</p>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                {p.tasks.map((t) => {
+                {visibleTasks.map((t) => {
                   const key = taskKey(t.title);
                   return (
                     <TaskCard
@@ -306,11 +341,12 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
                       task={t}
                       status={resolve(p.code, key, t.status)}
                       themeLabel={t.themeId ? themeById.get(t.themeId)?.label : undefined}
-                      onStatus={(s) => setStatus(p.code, key, s)}
+                      onStatus={(s) => changeStatus(p.code, key, s)}
                     />
                   );
                 })}
               </div>
+
 
 
               {p.code === 'P3' && (
