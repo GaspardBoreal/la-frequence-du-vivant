@@ -100,8 +100,9 @@ const SafeMapContainer = forwardRef<LeafletMap | null, SafeMapContainerProps>((p
       const node = containerRef.current;
 
       if (instance) {
-        instance.remove();
         mapInstanceRef.current = null;
+        instance.stop();
+        instance.remove();
       }
 
       if (node) {

@@ -33,7 +33,6 @@ import { useProprieteParcelles, centroidOfParcelles } from '@/hooks/propriete/us
 
 import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
-import ZonesMapBlock from '@/components/propriete/palette/ZonesMapBlock';
 import OuvragesRegister from '@/components/propriete/palette/OuvragesRegister';
 import PaletteRecommandee from '@/components/propriete/palette/recommandee/PaletteRecommandee';
 import PaletteStudio from '@/components/propriete/palette/studio/PaletteStudio';
@@ -80,6 +79,8 @@ interface Props {
   proprieteCodePostal?: string | null;
   proprieteCenter?: [number, number] | null;
   bio?: PropertyBiodiversity;
+  atelierOpen?: boolean;
+  onAtelierClose?: () => void;
 }
 
 export const TabPalette: React.FC<Props> = ({
@@ -90,6 +91,8 @@ export const TabPalette: React.FC<Props> = ({
   proprieteCodePostal,
   proprieteCenter,
   bio,
+  atelierOpen = false,
+  onAtelierClose,
 }) => {
   const palette = usePropertyPalette(proprieteId);
   const { zones, upsertZone, deleteZone } = useProprieteZones(proprieteId);
@@ -134,13 +137,6 @@ export const TabPalette: React.FC<Props> = ({
 
   const [activeZoneId, setActiveZoneId] = React.useState<string | null>(null);
 
-  /** Ouverture de l'Atelier du jardin depuis la navigation « Mon projet ». */
-  const [atelierOpen, setAtelierOpen] = React.useState(false);
-  React.useEffect(() => {
-    const open = () => setAtelierOpen(true);
-    window.addEventListener('propriete:open-atelier', open);
-    return () => window.removeEventListener('propriete:open-atelier', open);
-  }, []);
   const [submitting, setSubmitting] = React.useState(false);
   const [ruleEditing, setRuleEditing] = React.useState(false);
   const [mode, setMode] = React.useState<'summary' | 'edit'>(
@@ -626,6 +622,32 @@ export const TabPalette: React.FC<Props> = ({
     </div>
   );
 
+  const atelier = proprieteId ? (
+    <PaletteStudio
+      open={atelierOpen}
+      onClose={onAtelierClose ?? (() => {})}
+      proprieteId={proprieteId}
+      center={derivedCenter}
+      parcelles={parcelles}
+      zones={zones}
+      activeZoneId={activeZoneId}
+      onSelectZone={setActiveZoneId}
+      onCreateZone={(geometry) =>
+        upsertZone({ nom: `Zone ${zones.length + 1}`, geometry })
+      }
+      onPatchZone={(z, patch) =>
+        upsertZone({
+          id: z.id,
+          nom: patch.nom ?? z.nom,
+          geometry: patch.geometry ?? z.geometry,
+          couleur: patch.couleur ?? z.couleur,
+          note: patch.note ?? z.note,
+        })
+      }
+      onDeleteZone={(id) => deleteZone(id)}
+    />
+  ) : null;
+
 
   /* ---------------- Vue scellée ---------------- */
   if (palette.completedAt && mode === 'summary') {
@@ -649,6 +671,7 @@ export const TabPalette: React.FC<Props> = ({
           zonesSlot={emplacementsWidget}
         />
         {printDialogAndPortal}
+        {atelier}
       </div>
     );
   }
@@ -1143,31 +1166,7 @@ export const TabPalette: React.FC<Props> = ({
 
       {printDialogAndPortal}
 
-      {proprieteId && (
-        <PaletteStudio
-          open={atelierOpen}
-          onClose={() => setAtelierOpen(false)}
-          proprieteId={proprieteId}
-          center={derivedCenter}
-          parcelles={parcelles}
-          zones={zones}
-          activeZoneId={activeZoneId}
-          onSelectZone={setActiveZoneId}
-          onCreateZone={(geometry) =>
-            upsertZone({ nom: `Zone ${zones.length + 1}`, geometry })
-          }
-          onPatchZone={(z, patch) =>
-            upsertZone({
-              id: z.id,
-              nom: patch.nom ?? z.nom,
-              geometry: patch.geometry ?? z.geometry,
-              couleur: patch.couleur ?? z.couleur,
-              note: patch.note ?? z.note,
-            })
-          }
-          onDeleteZone={(id) => deleteZone(id)}
-        />
-      )}
+      {atelier}
     </div>
   );
 };

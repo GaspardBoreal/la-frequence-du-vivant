@@ -359,6 +359,7 @@ const PropTabs: React.FC<{
 }> = ({ proprieteId, proprieteNom, proprieteVille, proprieteAdresse, proprieteCodePostal, proprieteCenter }) => {
   const { data: bio } = usePropertyBiodiversity(proprieteId);
   const [tab, setTab] = React.useState<string>('portrait');
+  const [atelierOpen, setAtelierOpen] = React.useState(false);
 
   const handleTabChange = React.useCallback((value: string) => {
     setTab(value);
@@ -383,10 +384,10 @@ const PropTabs: React.FC<{
 
   const openAtelier = React.useCallback(() => {
     handleTabChange('palette');
-    window.setTimeout(() => {
-      window.dispatchEvent(new Event('propriete:open-atelier'));
-    }, 60);
+    setAtelierOpen(true);
   }, [handleTabChange]);
+
+  const closeAtelier = React.useCallback(() => setAtelierOpen(false), []);
 
   const projectActive = ['portrait', 'synthesize', 'palette'].includes(tab);
   const projectLabel =
@@ -529,6 +530,8 @@ const PropTabs: React.FC<{
             proprieteCodePostal={proprieteCodePostal}
             proprieteCenter={proprieteCenter}
             bio={bio}
+            atelierOpen={atelierOpen}
+            onAtelierClose={closeAtelier}
           />
         </TabsContent>
       </Tabs>

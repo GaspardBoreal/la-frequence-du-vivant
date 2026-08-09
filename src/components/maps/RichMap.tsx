@@ -43,6 +43,8 @@ export interface RichMapProps {
   fitMaxZoom?: number;
   /** Padding in px for the auto-fit (default [40, 40]) */
   fitPadding?: [number, number];
+  /** Animate the automatic bounds fit (default true). */
+  fitAnimate?: boolean;
   /** Initial map style (default 'geopoetic') */
   initialStyle?: MapStyle;
   /** Which built-in controls to render */
@@ -79,6 +81,7 @@ export const RichMap: React.FC<RichMapProps> = ({
   bounds,
   fitMaxZoom,
   fitPadding,
+  fitAnimate = true,
   initialStyle = 'geopoetic',
   controls = { zoom: true, style: true, geolocate: true, cadastre: false, weather: false },
   marcheRoute,
@@ -157,7 +160,7 @@ export const RichMap: React.FC<RichMapProps> = ({
         <DynamicTileLayer mapStyle={mapStyle} maxZoom={maxZoom} />
 
         {bounds && bounds.length > 0 && (
-          <FitBounds positions={bounds} maxZoom={fitMaxZoom} padding={fitPadding} />
+          <FitBounds positions={bounds} maxZoom={fitMaxZoom} padding={fitPadding} animate={fitAnimate} />
         )}
 
         {/* Marche route (background trace) */}

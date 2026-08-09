@@ -413,7 +413,23 @@ export const PaletteStudio: React.FC<Props> = ({
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || el?.isContentEditable) return;
-      if (inspirationOpen) setInspirationOpen(false);
+      // Une surface ouverte au-dessus (Scénographe, immersion…) consomme Échap.
+      if (fullscreenSurfaces.get() > 1) return;
+      if (lightboxId) setLightboxId(null);
+      else if (galleryObjetId) setGalleryObjetId(null);
+      else if (chantierOpen) setChantierOpen(false);
+      else if (gpsConsole) {
+        setGpsConsole(false);
+        setGpsFocusId(null);
+      }
+      else if (herbierOpen) {
+        setHerbierOpen(false);
+        setHoveredSpeciesKey(null);
+      }
+      else if (libraryOpen) setLibraryOpen(false);
+      else if (inspirationOpen) setInspirationOpen(false);
+      else if (selectedObjetId) setSelectedObjetId(null);
+      else if (activeZoneId) onSelectZone(null);
       else if (tool) setTool(null);
       else if (zoneDraw) setZoneDraw(false);
       else onClose();
@@ -423,7 +439,31 @@ export const PaletteStudio: React.FC<Props> = ({
       document.body.style.overflow = prev;
       window.removeEventListener('keydown', onKey);
     };
-  }, [open, tool, zoneDraw, inspirationOpen, onClose]);
+  }, [
+    open, lightboxId, galleryObjetId, chantierOpen, gpsConsole, herbierOpen,
+    libraryOpen, inspirationOpen, selectedObjetId, activeZoneId, tool, zoneDraw,
+    onSelectZone, onClose,
+  ]);
+
+  React.useEffect(() => {
+    if (open) return;
+    setLightboxId(null);
+    setGalleryObjetId(null);
+    setChantierOpen(false);
+    setGpsConsole(false);
+    setGpsFocusId(null);
+    setHerbierOpen(false);
+    setHoveredSpeciesKey(null);
+    setLibraryOpen(false);
+    setInspirationOpen(false);
+    setSelectedObjetId(null);
+    setTool(null);
+    setZoneDraw(false);
+    setPendingInspiration(null);
+    inlineGps.cancel();
+    zoneTransform.cancel();
+    objetTransform.cancel();
+  }, [open]);
 
   const bounds = React.useMemo<Array<[number, number]>>(() => {
     const pts: Array<[number, number]> = [];
@@ -752,6 +792,7 @@ export const PaletteStudio: React.FC<Props> = ({
             bounds={bounds.length > 1 ? bounds : undefined}
             fitMaxZoom={19}
             fitPadding={[60, 60]}
+            fitAnimate={false}
             controls={{ zoom: true, style: true, geolocate: true, cadastre: true }}
             maxZoom={24}
             scrollWheelZoom
