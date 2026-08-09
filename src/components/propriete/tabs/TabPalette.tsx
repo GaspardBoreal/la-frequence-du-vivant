@@ -50,7 +50,7 @@ import {
 
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
 import { computePoleScores } from '@/lib/plantIndicatorKb';
-import { PALETTE_SOURCES } from '@/lib/plantPaletteKb';
+import { PALETTE_SOURCES, PALETTE_KB } from '@/lib/plantPaletteKb';
 import {
   buildExclusions,
   buildImplementation,
