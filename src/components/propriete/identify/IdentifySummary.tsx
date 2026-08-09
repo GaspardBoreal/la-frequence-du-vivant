@@ -1,4 +1,6 @@
 import React from 'react';
+import { SoilFloraScales } from '@/components/propriete/identify/scales/SoilFloraScales';
+import type { TextureKey } from '@/lib/soilFloraScales';
 import { motion } from 'framer-motion';
 import { Check, Pencil, Printer, RotateCcw, Leaf, AlertTriangle, Gauge, Sparkles } from 'lucide-react';
 import type { PropertyFloraState } from '@/hooks/propriete/usePropertyFlora';
@@ -452,6 +454,7 @@ export const IdentifySummary: React.FC<Props> = ({
   onPrint,
   printOnly = false,
   printSection = 'all',
+  textureCounts,
 }) => {
   const observed = state.observed_plants ?? [];
   const plants = React.useMemo(
