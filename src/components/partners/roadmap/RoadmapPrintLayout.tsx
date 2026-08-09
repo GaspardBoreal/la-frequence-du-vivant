@@ -90,6 +90,7 @@ const PrintSensorChart: React.FC<{ roadmap: PartnerRoadmap }> = ({ roadmap }) =>
  */
 export const RoadmapPrintLayout: React.FC<{ roadmap: PartnerRoadmap }> = ({ roadmap }) => {
   const [host, setHost] = React.useState<HTMLElement | null>(null);
+  const { resolve } = useRoadmapTaskStatus(roadmap.slug, roadmap.date);
 
   React.useEffect(() => {
     let el = document.getElementById(PORTAL_ID);
@@ -109,7 +110,6 @@ export const RoadmapPrintLayout: React.FC<{ roadmap: PartnerRoadmap }> = ({ road
   if (!host) return null;
 
   const themeById = new Map(roadmap.themes.map((t) => [t.id, t]));
-  const { resolve } = useRoadmapTaskStatus(roadmap.slug, roadmap.date);
   const totalTasks = roadmap.priorities.reduce((s, p) => s + p.tasks.length, 0);
   const totalDays = roadmap.priorities.reduce((s, p) => s + priorityEffort(p.tasks), 0);
 
