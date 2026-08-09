@@ -190,8 +190,10 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
     <>
       {createPortal(node, document.body)}
       {audit && <PartnerAuditPrintLayout audit={audit} />}
+      {roadmap && <RoadmapPrintLayout roadmap={roadmap} />}
     </>
   );
+
 };
 
 export default PartnerAuditDrawer;
