@@ -468,6 +468,8 @@ const PropTabs: React.FC<{
             proprieteAdresse={proprieteAdresse}
             proprieteCodePostal={proprieteCodePostal}
             proprieteCenter={proprieteCenter}
+            subTab={portraitSub}
+            onSubTabChange={setPortraitSub}
           />
         </TabsContent>
         <TabsContent value="observe" className="pt-5 min-h-[calc(100vh-8rem)]">
