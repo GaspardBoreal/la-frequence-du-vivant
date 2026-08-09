@@ -286,6 +286,14 @@ export const TabPalette: React.FC<Props> = ({
     ? palette.state.implementation
     : autoImplementation;
 
+  /** Refus de l'étape précédente traduits en identifiants de la base palette. */
+  const excludedPaletteIds = React.useMemo(() => {
+    const latins = new Set(exclusions.map((e) => e.latin.trim().toLowerCase()));
+    return PALETTE_KB.filter((s) => latins.has(s.latin.trim().toLowerCase())).map((s) => s.id);
+  }, [exclusions]);
+
+
+
   /** Refus réellement observés sur la propriété (étape 3 → étape 5). */
   const {
     presence: excludedPresence,
