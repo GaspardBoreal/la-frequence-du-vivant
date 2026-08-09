@@ -367,6 +367,16 @@ export const TabAnalyze: React.FC<{
 
   return (
     <div className="space-y-6">
+      <AnalyzeStickyBar
+        saving={saving}
+        savedAt={savedAt}
+        filled={filled}
+        total={TOTAL}
+        submitting={submitting}
+        onFinish={handleComplete}
+        onExit={handleExitWithoutValidating}
+      />
+
       <StepHeader
         current={2}
         savedAt={savedAt}
@@ -380,17 +390,19 @@ export const TabAnalyze: React.FC<{
         }
       />
 
-      {isDone && (
-        <div className="flex items-center justify-between rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-4 py-2 text-sm text-[hsl(var(--ds-forest-deep))]">
-          <span className="inline-flex items-center gap-1.5">
-            <Check className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
-            Mode édition — les modifications seront réenregistrées.
-          </span>
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-4 py-2 text-sm text-[hsl(var(--ds-forest-deep))]">
+        <span className="inline-flex items-center gap-1.5">
+          <Check className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
+          Mode édition — chaque saisie est enregistrée au fil de l'eau. Vous pouvez sortir à tout
+          moment.
+        </span>
+        {isDone && (
           <Button size="sm" variant="ghost" onClick={() => setMode('summary')} className="text-xs">
             Revenir à la synthèse
           </Button>
-        </div>
-      )}
+        )}
+      </div>
+
 
       {printOutdated && (
         <div className="rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-4 py-2 text-xs text-[hsl(var(--ds-forest-deep))]">
