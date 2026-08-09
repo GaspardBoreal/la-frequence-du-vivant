@@ -56,7 +56,9 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
           species_names: proposal.photos.map((p) => p.scientificName).filter(Boolean) as string[],
           resolution: resolution.id,
           preview_url: proposal.previewUrl,
-          is_public: true,
+          // Un simple aperçu ne publie rien : la galerie communautaire
+          // n'affiche la création qu'après un téléchargement effectif.
+          is_public: false,
           event_name_snapshot: proposal.event?.title ?? null,
           event_date_snapshot: proposal.event?.date ?? null,
           event_commune_snapshot: proposal.event?.commune ?? null,
