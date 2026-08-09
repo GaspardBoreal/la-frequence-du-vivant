@@ -411,10 +411,12 @@ const PropTabs: React.FC<{
             style={{ paddingTop: 'env(safe-area-inset-top)' }}
           >
           <div className="mx-auto max-w-5xl w-full flex items-center gap-2 pr-2">
-          <TabsList className="flex-1 flex overflow-x-auto justify-start md:justify-center bg-transparent rounded-none h-auto py-1.5">
+          <div className="flex-1 flex items-center overflow-x-auto justify-start md:justify-center py-1.5">
+          <TabsList className="flex bg-transparent rounded-none h-auto p-0">
             <TabsTrigger value="observe">J'observe</TabsTrigger>
             <TabsTrigger value="analyze">J'analyse</TabsTrigger>
             <TabsTrigger value="identify">J'identifie</TabsTrigger>
+          </TabsList>
             <span aria-hidden className="mx-2 self-center h-4 w-px shrink-0 rounded-full bg-gradient-to-b from-transparent via-primary/35 to-transparent" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -427,7 +429,7 @@ const PropTabs: React.FC<{
                   }`}
                 >
                   Mon projet
-                  {projectActive && (
+                  {projectActive && projectLabel && (
                     <span className="hidden sm:inline text-xs opacity-70">· {projectLabel}</span>
                   )}
                   <ChevronDown className="h-3.5 w-3.5" />
@@ -442,7 +444,8 @@ const PropTabs: React.FC<{
                 <DropdownMenuItem onSelect={openAtelier}>Atelier du jardin</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </TabsList>
+          </div>
+
 
           <button
             type="button"
