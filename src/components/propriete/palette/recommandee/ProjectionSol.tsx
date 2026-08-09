@@ -1,13 +1,14 @@
 import React from 'react';
 import { Droplets, Layers, Sprout, FlaskConical } from 'lucide-react';
 import StrateColumn from './StrateColumn';
-import SpeciesLine from './SpeciesLine';
+import SpeciesCard from './SpeciesCard';
 import { AXIS_LABEL, type SiteProfile } from '@/lib/paletteEngine';
-import type { ProjectedStrate } from '@/lib/paletteProjections';
+import type { ProjectedSpecies, ProjectedStrate } from '@/lib/paletteProjections';
 
 interface Props {
   strates: ProjectedStrate[];
   profile: SiteProfile;
+  onOpen?: (sp: ProjectedSpecies) => void;
 }
 
 const AXES: Array<{ key: 'eau' | 'texture' | 'nutrition' | 'ph'; icon: React.ElementType; label: string }> = [
@@ -33,7 +34,7 @@ const qualify = (key: string, v: number) => {
 };
 
 /** Projection 1 — le sol commande, la palette obéit. */
-const ProjectionSol: React.FC<Props> = ({ strates, profile }) => (
+const ProjectionSol: React.FC<Props> = ({ strates, profile, onOpen }) => (
   <div className="space-y-5">
     <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
       {AXES.map(({ key, icon: Icon, label }) => (
@@ -61,10 +62,11 @@ const ProjectionSol: React.FC<Props> = ({ strates, profile }) => (
       {strates.map((block, i) => (
         <StrateColumn key={block.strate} block={block} index={i}>
           {block.species.map((sp, j) => (
-            <SpeciesLine
+            <SpeciesCard
               key={sp.species.id}
               sp={sp}
               index={j}
+              onOpen={onOpen}
               metric={`${sp.rank}%`}
               gauge={sp.rank}
               note={

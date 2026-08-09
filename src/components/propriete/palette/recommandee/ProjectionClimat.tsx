@@ -2,19 +2,20 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Thermometer } from 'lucide-react';
 import StrateColumn from './StrateColumn';
-import SpeciesLine from './SpeciesLine';
-import { climateTraits, flatten, type ProjectedStrate } from '@/lib/paletteProjections';
+import SpeciesCard from './SpeciesCard';
+import { climateTraits, flatten, type ProjectedSpecies, type ProjectedStrate } from '@/lib/paletteProjections';
 
 interface Props {
   strates: ProjectedStrate[];
   horizon: number;
   onHorizonChange: (v: number) => void;
+  onOpen?: (sp: ProjectedSpecies) => void;
 }
 
 const yearOf = (h: number) => Math.round(2026 + h * 24);
 
 /** Projection 3 — le climat de demain : la zone de confort glisse. */
-const ProjectionClimat: React.FC<Props> = ({ strates, horizon, onHorizonChange }) => {
+const ProjectionClimat: React.FC<Props> = ({ strates, horizon, onHorizonChange, onOpen }) => {
   const species = React.useMemo(() => flatten(strates), [strates]);
   const fragile = species.filter((s) => climateTraits(s.species, horizon).hold < 55).length;
 
@@ -84,10 +85,11 @@ const ProjectionClimat: React.FC<Props> = ({ strates, horizon, onHorizonChange }
             {block.species.map((sp, j) => {
               const c = climateTraits(sp.species, horizon);
               return (
-                <SpeciesLine
+                <SpeciesCard
                   key={sp.species.id}
                   sp={sp}
                   index={j}
+                  onOpen={onOpen}
                   dimmed={c.hold < 55}
                   metric={`${c.hold}%`}
                   gauge={c.hold}

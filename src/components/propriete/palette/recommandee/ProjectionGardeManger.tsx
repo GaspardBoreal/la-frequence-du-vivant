@@ -1,11 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import StrateColumn from './StrateColumn';
-import SpeciesLine from './SpeciesLine';
-import { MONTH_FULL, foodTraits, flatten, monthShort, type ProjectedStrate } from '@/lib/paletteProjections';
+import SpeciesCard from './SpeciesCard';
+import { MONTH_FULL, foodTraits, flatten, monthShort, type ProjectedSpecies, type ProjectedStrate } from '@/lib/paletteProjections';
 
 interface Props {
   strates: ProjectedStrate[];
+  onOpen?: (sp: ProjectedSpecies) => void;
 }
 
 const SIZE = 260;
@@ -13,7 +14,7 @@ const R_OUT = 116;
 const R_IN = 66;
 
 /** Projection 2 — le garde-manger : douze mois, les creux se voient. */
-const ProjectionGardeManger: React.FC<Props> = ({ strates }) => {
+const ProjectionGardeManger: React.FC<Props> = ({ strates, onOpen }) => {
   const [hovered, setHovered] = React.useState<number | null>(null);
   const species = React.useMemo(() => flatten(strates), [strates]);
 
@@ -113,10 +114,11 @@ const ProjectionGardeManger: React.FC<Props> = ({ strates }) => {
               const t = foodTraits(sp.species);
               const active = hovered === null || t.months.includes(hovered + 1);
               return (
-                <SpeciesLine
+                <SpeciesCard
                   key={sp.species.id}
                   sp={sp}
                   index={j}
+                  onOpen={onOpen}
                   dimmed={!active}
                   metric={t.months.length ? t.months.map((m) => monthShort(m)).join('·') : undefined}
                   gauge={sp.rank}
