@@ -248,7 +248,10 @@ export const ConcordanceBlock: React.FC<{
 
           <EcoSourceNote compact />
         </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
     </AnalyzeCard>
+
   );
 };
