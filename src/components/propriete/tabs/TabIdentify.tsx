@@ -74,11 +74,13 @@ export const TabIdentify: React.FC<{
 
   const profile = useMemo(() => computeFloraProfile(state.observed_plants), [state.observed_plants]);
   const textureCounts = React.useMemo(() => textureCountsFromState(soil), [soil]);
-  const soilAvailable = !!(soil.structure || soil.texture || soil.ph != null || (soil.life_signs?.length ?? 0) > 0);
+  /** Source de vérité unique du sol : les prélèvements priment (cf. soilLiteFromState) */
+  const soilLite = React.useMemo(() => soilLiteFromState(soil), [soil]);
+  const soilAvailable = soilLiteAvailable(soilLite);
   const scores = useMemo(() => computePoleScores(state.observed_plants), [state.observed_plants]);
   const detail = useMemo(
-    () => computeConcordanceDetail(state.observed_plants, soil),
-    [state.observed_plants, soil]
+    () => computeConcordanceDetail(state.observed_plants, soilLite),
+    [state.observed_plants, soilLite]
   );
   const autoNarrative = useMemo(() => narratePoleScores(scores), [scores]);
 
