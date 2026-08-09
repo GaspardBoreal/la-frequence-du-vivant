@@ -232,11 +232,17 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
         cur.has(v) ? cur.delete(v) : cur.add(v);
         return { ...s, life_signs: Array.from(cur) };
       }),
-    updateSample: (id: string, patch: Partial<SoilSample>) =>
+    updateSample: (id: string, patch: Partial<SoilSample>) => {
+      // Effacement volontaire d'une valeur (bouton « Effacer », décochage,
+      // désélection d'une pastille) : on lève explicitement le garde-fou serveur,
+      // sinon l'écriture est refusée et toute la session de saisie est perdue.
+      const current = (localRef.current.samples ?? []).find((sm) => sm.id === id);
+      if (current && isClearingPatch(current, patch)) destructiveRef.current = true;
       setLocal((s) => ({
         ...s,
         samples: s.samples.map((sm) => (sm.id === id ? { ...sm, ...patch } : sm)),
-      })),
+      }));
+    },
     /**
      * Ajoute un prélèvement et renvoie son identifiant (null si le maximum est atteint).
      * L'id et la lettre sont calculés en amont du setState : la valeur retournée est
