@@ -539,6 +539,14 @@ const PropTabs: React.FC<{
             onAtelierClose={closeAtelier}
           />
         </TabsContent>
+        <TabsContent value="clinique" className="pt-5 min-h-[calc(100vh-8rem)]">
+          <TabClinique
+            proprieteId={proprieteId}
+            proprieteNom={proprieteNom}
+            proprieteVille={proprieteVille}
+            proprieteCenter={proprieteCenter}
+          />
+        </TabsContent>
       </Tabs>
       <SampleCoreDrawerHost />
       <ProprieteChatBotMount proprieteId={proprieteId} proprieteNom={proprieteNom} />
