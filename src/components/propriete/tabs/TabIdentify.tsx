@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertyFlora } from '@/hooks/propriete/usePropertyFlora';
 import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
-import { textureCountsFromState } from '@/lib/soilLiteFromState';
+import { textureCountsFromState, soilLiteFromState, soilLiteAvailable } from '@/lib/soilLiteFromState';
 import { usePropertyObservation } from '@/hooks/propriete/usePropertyObservation';
 import { usePropertyGallery } from '@/hooks/propriete/usePropertyGallery';
 import { useProprieteParcelles, centroidOfParcelles } from '@/hooks/propriete/usePropertyParcelles';
