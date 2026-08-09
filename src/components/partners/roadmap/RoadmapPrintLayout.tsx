@@ -2,6 +2,8 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import type { PartnerRoadmap } from '@/lib/partnerRoadmaps';
 import { STATUS_LABEL, priorityEffort } from '@/lib/partnerRoadmaps';
+import { taskKey } from '@/lib/partnerRoadmaps/prompt';
+import { useRoadmapTaskStatus } from '@/hooks/useRoadmapTaskStatus';
 import { SensorChainDiagram, NavigationShiftDiagram } from './RoadmapDiagrams';
 
 const PORTAL_ID = 'partner-roadmap-print-portal';
@@ -227,7 +229,7 @@ export const RoadmapPrintLayout: React.FC<{ roadmap: PartnerRoadmap }> = ({ road
                   <span className="rm-label-inline" style={{ marginLeft: '3mm' }}>
                     État
                   </span>
-                  {STATUS_LABEL[t.status]}
+                  {STATUS_LABEL[resolve(p.code, taskKey(t.title), t.status)]}
                   {t.themeId && themeById.get(t.themeId) && (
                     <>
                       <span className="rm-label-inline" style={{ marginLeft: '3mm' }}>
