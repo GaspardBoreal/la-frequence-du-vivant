@@ -288,7 +288,9 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
                 </div>
               )}
             </article>
-          ))}
+            );
+          })}
+
         </div>
       </section>
 
