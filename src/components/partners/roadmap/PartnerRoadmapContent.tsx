@@ -1,19 +1,13 @@
 import React from 'react';
-import { Quote, CircleDot, CheckCircle2, Circle, CalendarDays } from 'lucide-react';
-import type { PartnerRoadmap } from '@/lib/partnerRoadmaps';
-import { STATUS_LABEL, priorityEffort } from '@/lib/partnerRoadmaps';
+import { Quote, CalendarDays, ClipboardCopy, Check } from 'lucide-react';
+import type { PartnerRoadmap, RoadmapPriority, RoadmapTask, WorkStatus } from '@/lib/partnerRoadmaps';
+import { priorityEffort } from '@/lib/partnerRoadmaps';
+import { taskKey, buildLovablePrompt } from '@/lib/partnerRoadmaps/prompt';
+import { useRoadmapTaskStatus } from '@/hooks/useRoadmapTaskStatus';
+import { toast } from 'sonner';
 import { SensorChainDiagram, NavigationShiftDiagram } from './RoadmapDiagrams';
 import { EffortByPriorityChart, ThemeFamilyChart, SensorSampleChart } from './RoadmapCharts';
-
-const StatusPill: React.FC<{ status: string }> = ({ status }) => {
-  const Icon = status === 'done' ? CheckCircle2 : status === 'doing' ? CircleDot : Circle;
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-      <Icon className="h-3 w-3" />
-      {STATUS_LABEL[status] ?? status}
-    </span>
-  );
-};
+import { RoadmapTaskStatusControl, RoadmapProgressBar } from './RoadmapTaskStatusControl';
 
 const SectionTitle: React.FC<{ index: string; title: string; lead?: string }> = ({
   index,
@@ -27,13 +21,85 @@ const SectionTitle: React.FC<{ index: string; title: string; lead?: string }> = 
   </header>
 );
 
+const TaskCard: React.FC<{
+  roadmap: PartnerRoadmap;
+  priority: RoadmapPriority;
+  task: RoadmapTask;
+  status: WorkStatus;
+  themeLabel?: string;
+  onStatus: (s: WorkStatus) => void;
+}> = ({ roadmap, priority, task, status, themeLabel, onStatus }) => {
+  const [copied, setCopied] = React.useState(false);
+
+  const copyPrompt = async () => {
+    const prompt = buildLovablePrompt(roadmap, priority, task);
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      toast.success('Prompt copié', { description: task.title });
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Copie impossible', { description: 'Autorisez le presse-papiers.' });
+    }
+  };
+
+  return (
+    <div
+      className={`group rounded-xl border p-4 transition-colors ${
+        status === 'done'
+          ? 'border-border/40 bg-background/20 opacity-75'
+          : status === 'doing'
+            ? 'border-amber-500/40 bg-amber-500/[0.04]'
+            : 'border-border/50 bg-background/40'
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <h4
+          className={`text-sm font-semibold text-foreground ${
+            status === 'done' ? 'line-through decoration-border decoration-1' : ''
+          }`}
+        >
+          {task.title}
+        </h4>
+        <RoadmapTaskStatusControl value={status} onChange={onStatus} />
+      </div>
+      <p className="mt-2 text-sm leading-relaxed text-foreground/80">{task.detail}</p>
+      <p className="mt-2 text-xs text-muted-foreground">
+        <span className="uppercase tracking-wide text-muted-foreground/70">Produit&nbsp;:</span>{' '}
+        {task.output}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+        <span className="rounded-full border border-border/60 px-2 py-0.5">{task.effortDays} j</span>
+        {themeLabel && (
+          <span className="rounded-full border border-border/60 px-2 py-0.5">{themeLabel}</span>
+        )}
+        <button
+          type="button"
+          onClick={copyPrompt}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20 print:hidden"
+        >
+          {copied ? <Check className="h-3 w-3" /> : <ClipboardCopy className="h-3 w-3" />}
+          {copied ? 'Prompt copié' : 'Copier le prompt'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ roadmap }) => {
   const themeById = React.useMemo(
     () => new Map(roadmap.themes.map((t) => [t.id, t])),
     [roadmap.themes],
   );
+  const { resolve, setStatus } = useRoadmapTaskStatus(roadmap.slug, roadmap.date);
   const totalTasks = roadmap.priorities.reduce((s, p) => s + p.tasks.length, 0);
   const totalDays = roadmap.priorities.reduce((s, p) => s + priorityEffort(p.tasks), 0);
+  const doneTasks = roadmap.priorities.reduce(
+    (s, p) =>
+      s + p.tasks.filter((t) => resolve(p.code, taskKey(t.title), t.status) === 'done').length,
+    0,
+  );
+
 
   return (
     <div className="space-y-16">
@@ -43,7 +109,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
           { k: 'Sujets relevés', v: roadmap.themes.length },
           { k: 'Chantiers', v: totalTasks },
           { k: 'Charge estimée', v: `${Math.round(totalDays)} j` },
-          { k: 'Priorités', v: roadmap.priorities.length },
+          { k: 'Avancement', v: `${doneTasks}/${totalTasks}` },
         ].map((s) => (
           <div key={s.k} className="rounded-xl border border-border/60 bg-card/50 p-4">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.k}</p>
@@ -53,7 +119,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
       </section>
 
       {/* 1 — Ce qui est ressorti */}
-      <section>
+      <section id="roadmap-01" className="scroll-mt-32">
         <SectionTitle
           index="01"
           title="Ce qui est ressorti de l'entretien"
@@ -92,7 +158,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
       </section>
 
       {/* 2 — Lecture d'ensemble */}
-      <section>
+      <section id="roadmap-02" className="scroll-mt-32">
         <SectionTitle
           index="02"
           title="Lecture d'ensemble"
@@ -143,14 +209,18 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
       </section>
 
       {/* 3 — Les chantiers */}
-      <section>
+      <section id="roadmap-03" className="scroll-mt-32">
         <SectionTitle
           index="03"
           title="Les chantiers, par ordre de priorité"
           lead="Pour chaque chantier : ce que l'on construit, ce que cela produit, la charge estimée et l'état d'avancement."
         />
         <div className="space-y-10">
-          {roadmap.priorities.map((p) => (
+          {roadmap.priorities.map((p) => {
+            const done = p.tasks.filter(
+              (t) => resolve(p.code, taskKey(t.title), t.status) === 'done',
+            ).length;
+            return (
             <article key={p.code} className="rounded-2xl border border-border/60 bg-card/30 p-6">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="rounded-md bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
@@ -160,39 +230,33 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
                 <span className="text-xs text-muted-foreground">
                   {p.window} · {priorityEffort(p.tasks)} j · {p.tasks.length} chantiers
                 </span>
+                <span className="ml-auto">
+                  <RoadmapProgressBar
+                    done={done}
+                    total={p.tasks.length}
+                    label={`${done}/${p.tasks.length} chantiers livrés`}
+                  />
+                </span>
               </div>
               <p className="mt-2 max-w-3xl text-sm italic text-muted-foreground">{p.rationale}</p>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                {p.tasks.map((t) => (
-                  <div
-                    key={t.title}
-                    className="rounded-xl border border-border/50 bg-background/40 p-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <h4 className="text-sm font-semibold text-foreground">{t.title}</h4>
-                      <StatusPill status={t.status} />
-                    </div>
-                    <p className="mt-2 text-sm leading-relaxed text-foreground/80">{t.detail}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      <span className="uppercase tracking-wide text-muted-foreground/70">
-                        Produit&nbsp;:
-                      </span>{' '}
-                      {t.output}
-                    </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                      <span className="rounded-full border border-border/60 px-2 py-0.5">
-                        {t.effortDays} j
-                      </span>
-                      {t.themeId && themeById.get(t.themeId) && (
-                        <span className="rounded-full border border-border/60 px-2 py-0.5">
-                          {themeById.get(t.themeId)!.label}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                {p.tasks.map((t) => {
+                  const key = taskKey(t.title);
+                  return (
+                    <TaskCard
+                      key={t.title}
+                      roadmap={roadmap}
+                      priority={p}
+                      task={t}
+                      status={resolve(p.code, key, t.status)}
+                      themeLabel={t.themeId ? themeById.get(t.themeId)?.label : undefined}
+                      onStatus={(s) => setStatus(p.code, key, s)}
+                    />
+                  );
+                })}
               </div>
+
 
               {p.code === 'P3' && (
                 <div className="mt-6 space-y-5">
@@ -224,12 +288,14 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
                 </div>
               )}
             </article>
-          ))}
+            );
+          })}
+
         </div>
       </section>
 
       {/* 4 — Planning */}
-      <section>
+      <section id="roadmap-04" className="scroll-mt-32">
         <SectionTitle index="04" title="Planning" lead="Jalons de livraison retenus." />
         <ol className="relative space-y-5 border-l border-border/60 pl-6">
           {roadmap.milestones.map((m) => (
@@ -251,7 +317,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
       </section>
 
       {/* 5 — Verbatims complets */}
-      <section>
+      <section id="roadmap-05" className="scroll-mt-32">
         <SectionTitle
           index="05"
           title="Extraits de l'entretien"

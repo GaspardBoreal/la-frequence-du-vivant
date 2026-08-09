@@ -2,6 +2,8 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import type { PartnerRoadmap } from '@/lib/partnerRoadmaps';
 import { STATUS_LABEL, priorityEffort } from '@/lib/partnerRoadmaps';
+import { taskKey } from '@/lib/partnerRoadmaps/prompt';
+import { useRoadmapTaskStatus } from '@/hooks/useRoadmapTaskStatus';
 import { SensorChainDiagram, NavigationShiftDiagram } from './RoadmapDiagrams';
 
 const PORTAL_ID = 'partner-roadmap-print-portal';
@@ -88,6 +90,7 @@ const PrintSensorChart: React.FC<{ roadmap: PartnerRoadmap }> = ({ roadmap }) =>
  */
 export const RoadmapPrintLayout: React.FC<{ roadmap: PartnerRoadmap }> = ({ roadmap }) => {
   const [host, setHost] = React.useState<HTMLElement | null>(null);
+  const { resolve } = useRoadmapTaskStatus(roadmap.slug, roadmap.date);
 
   React.useEffect(() => {
     let el = document.getElementById(PORTAL_ID);
@@ -109,6 +112,7 @@ export const RoadmapPrintLayout: React.FC<{ roadmap: PartnerRoadmap }> = ({ road
   const themeById = new Map(roadmap.themes.map((t) => [t.id, t]));
   const totalTasks = roadmap.priorities.reduce((s, p) => s + p.tasks.length, 0);
   const totalDays = roadmap.priorities.reduce((s, p) => s + priorityEffort(p.tasks), 0);
+
 
   return createPortal(
     <div className="rm-print-doc">
@@ -227,7 +231,7 @@ export const RoadmapPrintLayout: React.FC<{ roadmap: PartnerRoadmap }> = ({ road
                   <span className="rm-label-inline" style={{ marginLeft: '3mm' }}>
                     État
                   </span>
-                  {STATUS_LABEL[t.status]}
+                  {STATUS_LABEL[resolve(p.code, taskKey(t.title), t.status)]}
                   {t.themeId && themeById.get(t.themeId) && (
                     <>
                       <span className="rm-label-inline" style={{ marginLeft: '3mm' }}>

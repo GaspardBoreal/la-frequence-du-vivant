@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PartnerRoadmapContent from '@/components/partners/roadmap/PartnerRoadmapContent';
 import RoadmapPrintLayout from '@/components/partners/roadmap/RoadmapPrintLayout';
+import RoadmapTocNav from '@/components/partners/roadmap/RoadmapTocNav';
+
 import { usePartnerRoadmapPrint } from '@/hooks/usePartnerRoadmapPrint';
 import { getPartnerRoadmap } from '@/lib/partnerRoadmaps';
 import { PARTNER_AUDIT_PASSWORD } from '@/lib/partnerAudits';
@@ -140,6 +142,9 @@ const PartenaireFeuilleDeRoute: React.FC = () => {
           </div>
         </div>
       </header>
+
+      <RoadmapTocNav />
+
 
       <main className="mx-auto w-full max-w-5xl px-6 py-10 print:hidden">
         <p className="mb-6 max-w-3xl text-sm leading-relaxed text-foreground/90">{roadmap.intro}</p>
