@@ -140,20 +140,38 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
 
   return (
     <div className="space-y-16">
-      {/* Synthèse chiffrée */}
-      <section className="grid gap-3 sm:grid-cols-4">
-        {[
-          { k: 'Sujets relevés', v: roadmap.themes.length },
-          { k: 'Chantiers', v: totalTasks },
-          { k: 'Charge estimée', v: `${Math.round(totalDays)} j` },
-          { k: 'Avancement', v: `${doneTasks}/${totalTasks}` },
-        ].map((s) => (
-          <div key={s.k} className="rounded-xl border border-border/60 bg-card/50 p-4">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.k}</p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">{s.v}</p>
-          </div>
+      {/* Synthèse chiffrée — les trois états mènent d'un clic à la liste filtrée */}
+      <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="rounded-xl border border-border/60 bg-card/50 p-4">
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Sujets relevés</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground">{roadmap.themes.length}</p>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-card/50 p-4">
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Charge estimée</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground">{Math.round(totalDays)} j</p>
+        </div>
+        {FILTERS.filter((f) => f.id !== 'all').map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => applyFilter(f.id)}
+            className={`rounded-xl border p-4 text-left transition-colors ${
+              filter === f.id
+                ? 'border-primary/60 bg-primary/10'
+                : 'border-border/60 bg-card/50 hover:border-primary/40'
+            }`}
+          >
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Chantiers {f.label.toLowerCase()}
+            </p>
+            <p className="mt-1 text-2xl font-semibold text-foreground">
+              {f.n}
+              <span className="text-sm font-normal text-muted-foreground">/{totalTasks}</span>
+            </p>
+          </button>
         ))}
       </section>
+
 
       {/* 1 — Ce qui est ressorti */}
       <section id="roadmap-01" className="scroll-mt-32">
