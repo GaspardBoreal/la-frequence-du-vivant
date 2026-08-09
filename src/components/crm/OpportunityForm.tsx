@@ -282,14 +282,17 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
               value={actionsRealisees}
               onChange={setActionsRealisees}
               onOpenAudit={() => setAuditOpen(true)}
+              openLabel={!resolvedAudit && resolvedRoadmap ? 'Ouvrir la feuille de route' : "Ouvrir l'audit"}
             />
 
             <PartnerAuditDrawer
               open={auditOpen}
               onClose={() => setAuditOpen(false)}
               audit={resolvedAudit}
+              roadmap={resolvedRoadmap}
               fallbackName={auditCandidates.find(Boolean) ?? null}
             />
+
 
 
 
