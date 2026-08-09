@@ -643,6 +643,7 @@ const MarchesDuVivantConnexion = () => {
       <AppChoiceDialog
         open={appChoice.open}
         onOpenChange={(v) => setAppChoice((s) => ({ ...s, open: v }))}
+        onDismiss={() => navigate('/marches-du-vivant/mon-espace')}
         prenom={appChoice.prenom}
         proprietes={appChoice.proprietes}
       />
