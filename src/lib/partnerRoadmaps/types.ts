@@ -55,6 +55,8 @@ export interface PartnerRoadmap {
   date: string;
   partnerName: string;
   partnerContact: string;
+  /** Mots-clés de rattachement à une opportunité CRM (titre, entreprise, sociétés liées) */
+  matchers?: string[];
   partnerSite?: string;
   subtitle: string;
   interviewLabel: string;
