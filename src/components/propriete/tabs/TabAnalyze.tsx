@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRight, CheckCheck, Loader2, Check, BarChart3 } from 'lucide-react';
+import { ArrowRight, CheckCheck, Loader2, Check, BarChart3, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
@@ -28,6 +28,8 @@ import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
 import { TestMediaBadge } from '@/components/propriete/analyze/media/TestMediaDrawer';
 import { TestMediaRegistry } from '@/components/propriete/analyze/media/TestMediaRegistry';
 import { SoilHistoryPanel } from '@/components/propriete/analyze/SoilHistoryPanel';
+import { AnalyzeStickyBar } from '@/components/propriete/analyze/AnalyzeStickyBar';
+import { AnalyzeExitRecapDialog } from '@/components/propriete/analyze/AnalyzeExitRecapDialog';
 
 import {
   usePropertyTestMedias,
@@ -124,12 +126,15 @@ export const TabAnalyze: React.FC<{
       : 0) +
     ((state.synthesis ?? '').trim().length > 0 ? 1 : 0);
 
+  // ─── Sortie du mode édition : jamais bloquante ──────────────────────────
+  const [exitRecap, setExitRecap] = React.useState<null | { validated: boolean }>(null);
+
   const handleComplete = async () => {
     setSubmitting(true);
     try {
       await markComplete();
       toast.success('Étape 2 marquée comme terminée ✓');
-      setMode('summary');
+      setExitRecap({ validated: true });
     } catch (e: any) {
       toast.error("Échec de l'enregistrement", { description: e?.message ?? 'Réessayez.' });
     } finally {
@@ -137,8 +142,37 @@ export const TabAnalyze: React.FC<{
     }
   };
 
+  const handleExitWithoutValidating = () => setExitRecap({ validated: false });
+
+  const confirmExit = () => {
+    setExitRecap(null);
+    if (completedAt) {
+      setMode('summary');
+    } else {
+      toast.success('Vos saisies sont enregistrées', {
+        description: 'Vous pourrez reprendre cette étape à tout moment.',
+      });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const isDone = !!completedAt;
   const doneDate = completedAt ? new Date(completedAt).toLocaleDateString('fr-FR') : null;
+  const placedCount = state.samples.filter((s) => s.lat != null && s.lng != null).length;
+
+  const exitRecapDialog = (
+    <AnalyzeExitRecapDialog
+      open={!!exitRecap}
+      onOpenChange={(o) => !o && setExitRecap(null)}
+      validated={exitRecap?.validated ?? false}
+      samplesCount={state.samples.length}
+      placedCount={placedCount}
+      filled={filled}
+      total={TOTAL}
+      savedAt={savedAt}
+      onConfirm={confirmExit}
+    />
+  );
 
   // ─── Impression : dialogue + portail cahier complet ─────────────────────
   const observation = usePropertyObservation(proprieteId);
@@ -333,6 +367,16 @@ export const TabAnalyze: React.FC<{
 
   return (
     <div className="space-y-6">
+      <AnalyzeStickyBar
+        saving={saving}
+        savedAt={savedAt}
+        filled={filled}
+        total={TOTAL}
+        submitting={submitting}
+        onFinish={handleComplete}
+        onExit={handleExitWithoutValidating}
+      />
+
       <StepHeader
         current={2}
         savedAt={savedAt}
@@ -346,17 +390,19 @@ export const TabAnalyze: React.FC<{
         }
       />
 
-      {isDone && (
-        <div className="flex items-center justify-between rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-4 py-2 text-sm text-[hsl(var(--ds-forest-deep))]">
-          <span className="inline-flex items-center gap-1.5">
-            <Check className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
-            Mode édition — les modifications seront réenregistrées.
-          </span>
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-4 py-2 text-sm text-[hsl(var(--ds-forest-deep))]">
+        <span className="inline-flex items-center gap-1.5">
+          <Check className="w-4 h-4 text-[hsl(var(--ds-forest))]" />
+          Mode édition — chaque saisie est enregistrée au fil de l'eau. Vous pouvez sortir à tout
+          moment.
+        </span>
+        {isDone && (
           <Button size="sm" variant="ghost" onClick={() => setMode('summary')} className="text-xs">
             Revenir à la synthèse
           </Button>
-        </div>
-      )}
+        )}
+      </div>
+
 
       {printOutdated && (
         <div className="rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-4 py-2 text-xs text-[hsl(var(--ds-forest-deep))]">
@@ -524,6 +570,13 @@ export const TabAnalyze: React.FC<{
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
+            variant="ghost"
+            onClick={handleExitWithoutValidating}
+            className="text-[hsl(var(--ds-forest-deep))]"
+          >
+            <LogOut className="w-4 h-4 mr-2" /> Sortir sans valider
+          </Button>
+          <Button
             onClick={handleComplete}
             disabled={submitting}
             className={
@@ -538,8 +591,8 @@ export const TabAnalyze: React.FC<{
               <CheckCheck className="w-4 h-4 mr-2" />
             )}
             {isDone
-              ? `Étape terminée${doneDate ? ` le ${doneDate}` : ''} · Réenregistrer`
-              : "Marquer l'étape comme terminée"}
+              ? `Terminer${doneDate ? ` · enregistrée le ${doneDate}` : ''}`
+              : "Terminer l'étape"}
           </Button>
           <Button className="bg-[hsl(var(--ds-forest))] hover:bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))]">
             Étape suivante · J'identifie <ArrowRight className="w-4 h-4 ml-2" />
@@ -547,7 +600,9 @@ export const TabAnalyze: React.FC<{
         </div>
       </div>
       {printDialogAndPortal}
+      {exitRecapDialog}
     </div>
+
 
   );
 };
