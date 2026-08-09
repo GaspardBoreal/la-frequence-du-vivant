@@ -102,6 +102,8 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
       const evt = proposal.event?.title ? `-${proposal.event.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : '';
       downloadBlob(blob, `${label}${evt}-${resolution.id}.jpg`);
       if (savedId) {
+        // Le téléchargement vaut publication dans la galerie communautaire.
+        try { await supabase.from('wallpaper_generations').update({ is_public: true } as never).eq('id', savedId); } catch {}
         try { await supabase.rpc('increment_wallpaper_download', { wp_id: savedId }); } catch {}
       }
       setShowTuto(true);
