@@ -70,6 +70,23 @@ const EMPTY: PropertySoilState = {
   updated_at: null,
 };
 
+/** Champs surveillés par le garde-fou serveur `guard_propriete_soil_samples`. */
+const GUARDED_KEYS: (keyof SoilSample)[] = [
+  'location', 'lat', 'lng', 'photo_url', 'structure_test', 'structure_result',
+  'texture_test', 'texture_result', 'boudin_form', 'ph_test', 'ph_value',
+  'life_test', 'life_signs', 'worm_count',
+];
+
+const isEmptyValue = (v: unknown) =>
+  v == null || v === '' || (Array.isArray(v) && v.length === 0);
+
+/** Vrai si le patch vide une valeur jusqu'ici renseignée (effacement volontaire). */
+function isClearingPatch(current: SoilSample, patch: Partial<SoilSample>): boolean {
+  return GUARDED_KEYS.some(
+    (k) => k in patch && !isEmptyValue(current[k]) && isEmptyValue(patch[k]),
+  );
+}
+
 export interface UsePropertySoilOptions {
   /**
    * Lecture seule : aucune sauvegarde automatique n'est émise par cette instance.
