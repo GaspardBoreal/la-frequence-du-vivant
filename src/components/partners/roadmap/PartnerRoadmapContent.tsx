@@ -94,29 +94,84 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
   const { resolve, setStatus } = useRoadmapTaskStatus(roadmap.slug, roadmap.date);
   const totalTasks = roadmap.priorities.reduce((s, p) => s + p.tasks.length, 0);
   const totalDays = roadmap.priorities.reduce((s, p) => s + priorityEffort(p.tasks), 0);
-  const doneTasks = roadmap.priorities.reduce(
-    (s, p) =>
-      s + p.tasks.filter((t) => resolve(p.code, taskKey(t.title), t.status) === 'done').length,
-    0,
+
+  const counts = React.useMemo(() => {
+    const c = { done: 0, doing: 0, todo: 0 };
+    roadmap.priorities.forEach((p) =>
+      p.tasks.forEach((t) => {
+        c[resolve(p.code, taskKey(t.title), t.status)] += 1;
+      }),
+    );
+    return c;
+  }, [roadmap.priorities, resolve]);
+  
+
+  /** Filtre d'avancement de la section « Les chantiers ». */
+  const [filter, setFilter] = React.useState<WorkStatus | 'all'>('all');
+  /**
+   * Chantiers dont l'état vient d'être changé : ils restent visibles dans une liste
+   * filtrée jusqu'au prochain changement de filtre, pour ne pas perdre le focus.
+   */
+  const [pinned, setPinned] = React.useState<Set<string>>(() => new Set());
+
+  const changeStatus = React.useCallback(
+    (code: string, key: string, s: WorkStatus) => {
+      setPinned((prev) => new Set(prev).add(`${code}:${key}`));
+      setStatus(code, key, s);
+    },
+    [setStatus],
   );
+
+  const applyFilter = (f: WorkStatus | 'all') => {
+    setPinned(new Set());
+    setFilter(f);
+    document.getElementById('roadmap-03')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const FILTERS: { id: WorkStatus | 'all'; label: string; n: number }[] = [
+    { id: 'all', label: 'Tous', n: totalTasks },
+    { id: 'done', label: 'Faits', n: counts.done },
+    { id: 'doing', label: 'En cours', n: counts.doing },
+    { id: 'todo', label: 'À faire', n: counts.todo },
+  ];
+
+
 
 
   return (
     <div className="space-y-16">
-      {/* Synthèse chiffrée */}
-      <section className="grid gap-3 sm:grid-cols-4">
-        {[
-          { k: 'Sujets relevés', v: roadmap.themes.length },
-          { k: 'Chantiers', v: totalTasks },
-          { k: 'Charge estimée', v: `${Math.round(totalDays)} j` },
-          { k: 'Avancement', v: `${doneTasks}/${totalTasks}` },
-        ].map((s) => (
-          <div key={s.k} className="rounded-xl border border-border/60 bg-card/50 p-4">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.k}</p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">{s.v}</p>
-          </div>
+      {/* Synthèse chiffrée — les trois états mènent d'un clic à la liste filtrée */}
+      <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="rounded-xl border border-border/60 bg-card/50 p-4">
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Sujets relevés</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground">{roadmap.themes.length}</p>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-card/50 p-4">
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Charge estimée</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground">{Math.round(totalDays)} j</p>
+        </div>
+        {FILTERS.filter((f) => f.id !== 'all').map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => applyFilter(f.id)}
+            className={`rounded-xl border p-4 text-left transition-colors ${
+              filter === f.id
+                ? 'border-primary/60 bg-primary/10'
+                : 'border-border/60 bg-card/50 hover:border-primary/40'
+            }`}
+          >
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Chantiers {f.label.toLowerCase()}
+            </p>
+            <p className="mt-1 text-2xl font-semibold text-foreground">
+              {f.n}
+              <span className="text-sm font-normal text-muted-foreground">/{totalTasks}</span>
+            </p>
+          </button>
         ))}
       </section>
+
 
       {/* 1 — Ce qui est ressorti */}
       <section id="roadmap-01" className="scroll-mt-32">
@@ -215,11 +270,43 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
           title="Les chantiers, par ordre de priorité"
           lead="Pour chaque chantier : ce que l'on construit, ce que cela produit, la charge estimée et l'état d'avancement."
         />
+
+        {/* Filtre d'avancement, collant sous le sommaire */}
+        <div className="sticky top-[96px] z-10 -mx-2 mb-6 rounded-full border border-border/50 bg-background/90 px-2 py-1.5 backdrop-blur print:hidden">
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => applyFilter(f.id)}
+                aria-pressed={filter === f.id}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  filter === f.id
+                    ? 'bg-primary/15 text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {f.label}
+                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                  {f.n}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="space-y-10">
           {roadmap.priorities.map((p) => {
             const done = p.tasks.filter(
               (t) => resolve(p.code, taskKey(t.title), t.status) === 'done',
             ).length;
+            const visibleTasks = p.tasks.filter((t) => {
+              if (filter === 'all') return true;
+              const key = taskKey(t.title);
+              if (pinned.has(`${p.code}:${key}`)) return true;
+              return resolve(p.code, key, t.status) === filter;
+            });
+            if (visibleTasks.length === 0) return null;
             return (
             <article key={p.code} className="rounded-2xl border border-border/60 bg-card/30 p-6">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -228,7 +315,10 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
                 </span>
                 <h3 className="text-xl font-semibold text-foreground">{p.title}</h3>
                 <span className="text-xs text-muted-foreground">
-                  {p.window} · {priorityEffort(p.tasks)} j · {p.tasks.length} chantiers
+                  {p.window} · {priorityEffort(p.tasks)} j ·{' '}
+                  {filter === 'all'
+                    ? `${p.tasks.length} chantiers`
+                    : `${visibleTasks.length} sur ${p.tasks.length} chantiers`}
                 </span>
                 <span className="ml-auto">
                   <RoadmapProgressBar
@@ -241,7 +331,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
               <p className="mt-2 max-w-3xl text-sm italic text-muted-foreground">{p.rationale}</p>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                {p.tasks.map((t) => {
+                {visibleTasks.map((t) => {
                   const key = taskKey(t.title);
                   return (
                     <TaskCard
@@ -251,11 +341,12 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
                       task={t}
                       status={resolve(p.code, key, t.status)}
                       themeLabel={t.themeId ? themeById.get(t.themeId)?.label : undefined}
-                      onStatus={(s) => setStatus(p.code, key, s)}
+                      onStatus={(s) => changeStatus(p.code, key, s)}
                     />
                   );
                 })}
               </div>
+
 
 
               {p.code === 'P3' && (

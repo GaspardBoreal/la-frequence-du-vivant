@@ -57,7 +57,7 @@ export const RoadmapTocNav: React.FC<{
       className={`${embedded ? '' : 'sticky top-[52px]'} z-20 border-b border-border/50 bg-background/85 backdrop-blur print:hidden ${className ?? ''}`}
     >
       <div
-        className={`mx-auto flex w-full ${embedded ? '' : 'max-w-5xl px-6'} items-center gap-1 overflow-x-auto py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
+        className={`mx-auto flex w-full ${embedded ? '' : 'max-w-5xl px-6'} items-center justify-center gap-1 overflow-x-auto py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
       >
         {ROADMAP_SECTIONS.map((s) => {
           const isActive = active === s.id;
