@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PartnerRoadmapContent from '@/components/partners/roadmap/PartnerRoadmapContent';
 import RoadmapPrintLayout from '@/components/partners/roadmap/RoadmapPrintLayout';
+import RoadmapTocNav from '@/components/partners/roadmap/RoadmapTocNav';
+
 import { usePartnerRoadmapPrint } from '@/hooks/usePartnerRoadmapPrint';
 import { getPartnerRoadmap } from '@/lib/partnerRoadmaps';
 import { PARTNER_AUDIT_PASSWORD } from '@/lib/partnerAudits';
