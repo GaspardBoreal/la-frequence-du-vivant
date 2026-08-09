@@ -42,35 +42,17 @@ export function useSoilSamples(proprieteId?: string) {
   const moveMutation = useMutation({
     mutationFn: async (input: { id: string; lat: number; lng: number }) => {
       if (!proprieteId) return;
-      // On relit la version serveur juste avant d'écrire : jamais depuis un cache
-      // potentiellement périmé, sous peine d'écraser des saisies récentes.
-      const { data: fresh, error: readError } = await supabase
-        .from('propriete_soil_diagnostics' as any)
-        .select('*')
-        .eq('propriete_id', proprieteId)
-        .maybeSingle();
-      if (readError && (readError as any).code !== 'PGRST116') throw readError;
-      const row = (fresh as any) || null;
-      if (!row || !Array.isArray(row.samples) || row.samples.length === 0) return;
-      // Patch strictement limité au point déplacé.
-      const samples = row.samples.map((s: any) =>
-        s.id === input.id ? { ...s, lat: input.lat, lng: input.lng } : s,
-      );
-      const { error } = await supabase.rpc('upsert_propriete_soil' as any, {
+      // Écriture chirurgicale : la RPC ne peut modifier que lat/lng du prélèvement
+      // visé. Aucun autre champ du registre n'est renvoyé, donc jamais écrasé.
+      const { error } = await supabase.rpc('move_propriete_soil_sample' as any, {
         p_propriete_id: proprieteId,
-        p_terrain_status: row.terrain_status ?? null,
-        p_samples: samples as any,
-        p_structure: row.structure ?? null,
-        p_texture: row.texture ?? null,
-        p_boudin_shape: row.boudin_shape ?? null,
-        p_ph: row.ph ?? null,
-        p_life_signs: row.life_signs ?? [],
-        p_synthesis: row.synthesis ?? null,
-        p_completed: null,
-        p_allow_destructive: false,
+        p_sample_id: input.id,
+        p_lat: input.lat,
+        p_lng: input.lng,
       });
       if (error) throw error;
     },
+
 
     onMutate: async (input) => {
       await qc.cancelQueries({ queryKey: ['propriete-soil', proprieteId] });
