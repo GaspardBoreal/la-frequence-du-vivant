@@ -206,7 +206,7 @@ export const NewConsultationDialog: React.FC<{
                         key={s.scientificName}
                         type="button"
                         onClick={() => { setSubject(s.commonName || s.scientificName); setScientific(s.scientificName); }}
-                        className="rounded-full border border-[hsl(var(--ds-line))] bg-white/70 px-2.5 py-1 text-[11px] hover:border-[hsl(var(--ds-forest))]/60"
+                        className="rounded-full border border-[hsl(var(--ds-line))] bg-white px-2.5 py-1 text-[11px] text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/60"
                       >
                         {s.commonName || s.scientificName}
                         <span className="ml-1 italic opacity-60">{s.scientificName}</span>
@@ -280,7 +280,7 @@ export const NewConsultationDialog: React.FC<{
                         className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
                           organ === o
                             ? 'border-transparent bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))]'
-                            : 'border-[hsl(var(--ds-line))] bg-white/60 hover:border-[hsl(var(--ds-forest))]/50'
+                            : 'border-[hsl(var(--ds-line))] bg-white text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/50'
                         }`}
                       >
                         {o}
@@ -302,7 +302,7 @@ export const NewConsultationDialog: React.FC<{
                         className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
                           onset === o
                             ? 'border-transparent bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))]'
-                            : 'border-[hsl(var(--ds-line))] bg-white/60 hover:border-[hsl(var(--ds-forest))]/50'
+                            : 'border-[hsl(var(--ds-line))] bg-white text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/50'
                         }`}
                       >
                         {o}
@@ -325,7 +325,7 @@ export const NewConsultationDialog: React.FC<{
                       className={`rounded-lg border px-1 py-2 text-[10px] leading-tight transition ${
                         severity === i + 1
                           ? 'border-transparent bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))]'
-                          : 'border-[hsl(var(--ds-line))] bg-white/60 hover:border-[hsl(var(--ds-forest))]/50'
+                          : 'border-[hsl(var(--ds-line))] bg-white text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/50'
                       }`}
                     >
                       {s}
