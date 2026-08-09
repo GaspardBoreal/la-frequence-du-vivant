@@ -42,7 +42,7 @@ const ActionRow: React.FC<{ action: CareAction; onToggle: () => void }> = ({ act
           <span className="rounded-full bg-[hsl(var(--ds-forest-deep))] px-2 py-0.5 text-[9px] uppercase tracking-widest text-[hsl(var(--ds-cream))]">
             {INTENSITY_LABEL[action.intensity] || `Intensité ${action.intensity}`}
           </span>
-          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-[hsl(var(--ds-forest))]/70">
+          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-[hsl(var(--ds-forest-deep))]/80">
             {action.volet === 'preventif' ? <ShieldCheck className="h-3 w-3" /> : <Sprout className="h-3 w-3" />}
             {action.volet === 'preventif' ? 'Préventif' : 'Curatif'}
           </span>
@@ -63,7 +63,7 @@ const ActionRow: React.FC<{ action: CareAction; onToggle: () => void }> = ({ act
         {action.detail && (
           <p className="mt-0.5 text-xs leading-relaxed text-[hsl(var(--ds-forest))]/80">{action.detail}</p>
         )}
-        <div className="mt-1.5 flex flex-wrap gap-2 text-[10px] text-[hsl(var(--ds-forest))]/70">
+        <div className="mt-1.5 flex flex-wrap gap-2 text-[10px] text-[hsl(var(--ds-forest-deep))]/80">
           {action.frequency && (
             <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{action.frequency}</span>
           )}
@@ -121,7 +121,7 @@ export const ConsultationDrawer: React.FC<{
               <SheetTitle className="font-serif italic text-2xl text-[hsl(var(--ds-forest-deep))]">
                 {consultation.subject_label}
               </SheetTitle>
-              <SheetDescription className="text-[hsl(var(--ds-forest))]/75">
+              <SheetDescription className="text-[hsl(var(--ds-forest-deep))]/80">
                 {consultation.organ ? `${consultation.organ} · ` : ''}
                 {STATUS_LABEL[consultation.status]} · ouverte le{' '}
                 {new Date(consultation.opened_at).toLocaleDateString('fr-FR')}
@@ -141,7 +141,7 @@ export const ConsultationDrawer: React.FC<{
                   className={`rounded-full border px-3 py-1 text-[11px] transition ${
                     consultation.status === s
                       ? 'border-transparent bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))]'
-                      : 'border-[hsl(var(--ds-line))] bg-white/60 hover:border-[hsl(var(--ds-forest))]/50'
+                      : 'border-[hsl(var(--ds-line))] bg-white/60 text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/50'
                   }`}
                 >
                   {STATUS_LABEL[s]}
@@ -150,7 +150,7 @@ export const ConsultationDrawer: React.FC<{
             </div>
 
             {isLoading && (
-              <p className="mt-6 animate-pulse text-sm text-[hsl(var(--ds-forest))]/70">Lecture du dossier…</p>
+              <p className="mt-6 animate-pulse text-sm text-[hsl(var(--ds-forest-deep))]/80">Lecture du dossier…</p>
             )}
 
             {/* Hypothèses */}
@@ -176,7 +176,7 @@ export const ConsultationDrawer: React.FC<{
                         <div>
                           <p className="font-medium text-[hsl(var(--ds-forest-deep))]">{h.common_name}</p>
                           {h.scientific_name && (
-                            <p className="text-[11px] italic text-[hsl(var(--ds-forest))]/70">{h.scientific_name}</p>
+                            <p className="text-[11px] italic text-[hsl(var(--ds-forest-deep))]/80">{h.scientific_name}</p>
                           )}
                         </div>
                         <span className="shrink-0 rounded-full bg-[hsl(var(--ds-forest))]/10 px-2 py-0.5 text-[10px] text-[hsl(var(--ds-forest-deep))]">
@@ -184,7 +184,7 @@ export const ConsultationDrawer: React.FC<{
                         </span>
                       </div>
                       {h.what_you_see && (
-                        <p className="mt-2 text-xs leading-relaxed text-[hsl(var(--ds-forest))]/85">
+                        <p className="mt-2 text-xs leading-relaxed text-[hsl(var(--ds-forest-deep))]">
                           <span className="font-semibold">Ce qui se voit — </span>{h.what_you_see}
                         </p>
                       )}
@@ -194,7 +194,7 @@ export const ConsultationDrawer: React.FC<{
                         </p>
                       )}
                       {h.confusions && (
-                        <p className="mt-1.5 text-[11px] text-[hsl(var(--ds-forest))]/70">
+                        <p className="mt-1.5 text-[11px] text-[hsl(var(--ds-forest-deep))]/80">
                           <span className="font-semibold">À ne pas confondre — </span>{h.confusions}
                         </p>
                       )}
@@ -204,7 +204,7 @@ export const ConsultationDrawer: React.FC<{
                         className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] transition ${
                           consultation.retained_hypothesis_id === h.id
                             ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))]'
-                            : 'border border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+                            : 'border border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/50'
                         }`}
                       >
                         <Award className="h-3 w-3" />
@@ -223,7 +223,7 @@ export const ConsultationDrawer: React.FC<{
                   <h4 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.3em] text-[hsl(var(--ds-forest))]">
                     <CalendarClock className="h-3 w-3" /> Prescription vivante
                   </h4>
-                  <span className="text-[11px] text-[hsl(var(--ds-forest))]/70">{doneCount}/{actions.length} gestes</span>
+                  <span className="text-[11px] text-[hsl(var(--ds-forest-deep))]/80">{doneCount}/{actions.length} gestes</span>
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[hsl(var(--ds-line))]">
                   <motion.div
