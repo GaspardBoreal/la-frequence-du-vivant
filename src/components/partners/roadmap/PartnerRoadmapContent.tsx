@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { SensorChainDiagram, NavigationShiftDiagram } from './RoadmapDiagrams';
 import { EffortByPriorityChart, ThemeFamilyChart, SensorSampleChart } from './RoadmapCharts';
 import { RoadmapTaskStatusControl, RoadmapProgressBar } from './RoadmapTaskStatusControl';
+import { useRoadmapFilter } from './RoadmapFilterContext';
+
 
 const SectionTitle: React.FC<{ index: string; title: string; lead?: string }> = ({
   index,
