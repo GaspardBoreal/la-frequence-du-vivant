@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertyFlora } from '@/hooks/propriete/usePropertyFlora';
 import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
+import { textureCountsFromState } from '@/lib/soilLiteFromState';
 import { usePropertyObservation } from '@/hooks/propriete/usePropertyObservation';
 import { usePropertyGallery } from '@/hooks/propriete/usePropertyGallery';
 import { useProprieteParcelles, centroidOfParcelles } from '@/hooks/propriete/usePropertyParcelles';
@@ -72,6 +73,7 @@ export const TabIdentify: React.FC<{
   const [submitting, setSubmitting] = React.useState(false);
 
   const profile = useMemo(() => computeFloraProfile(state.observed_plants), [state.observed_plants]);
+  const textureCounts = React.useMemo(() => textureCountsFromState(soil), [soil]);
   const soilAvailable = !!(soil.structure || soil.texture || soil.ph != null || (soil.life_signs?.length ?? 0) > 0);
   const scores = useMemo(() => computePoleScores(state.observed_plants), [state.observed_plants]);
   const detail = useMemo(
@@ -377,7 +379,13 @@ export const TabIdentify: React.FC<{
           </div>
 
           <div id="identify-block-concordance" className="scroll-mt-24">
-            <ConcordanceBlock detail={detail} soilAvailable={soilAvailable && profile.count > 0} index={6} />
+            <ConcordanceBlock
+              detail={detail}
+              soilAvailable={soilAvailable && profile.count > 0}
+              hasFlora={profile.count > 0}
+              textureCounts={textureCounts}
+              index={6}
+            />
           </div>
 
           <div id="identify-block-narration" className="scroll-mt-24">
