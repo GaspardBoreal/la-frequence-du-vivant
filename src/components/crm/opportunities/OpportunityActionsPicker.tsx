@@ -9,6 +9,8 @@ interface OpportunityActionsPickerProps {
   className?: string;
   /** Ouvre l'audit partenariat rattaché à l'opportunité */
   onOpenAudit?: () => void;
+  /** Libellé du bouton d'ouverture du dossier partenaire */
+  openLabel?: string;
 }
 
 /**
@@ -20,6 +22,7 @@ export const OpportunityActionsPicker: React.FC<OpportunityActionsPickerProps> =
   onChange,
   className,
   onOpenAudit,
+  openLabel = "Ouvrir l'audit",
 }) => {
 
   const set = React.useMemo(() => new Set(value), [value]);
@@ -137,7 +140,7 @@ export const OpportunityActionsPicker: React.FC<OpportunityActionsPickerProps> =
                 className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-foreground/25 px-2 py-1.5 text-[11px] font-medium text-foreground/80 transition-colors hover:border-foreground/50 hover:bg-muted/60"
               >
                 <FileSearch className="h-3.5 w-3.5" />
-                Ouvrir l'audit
+                {openLabel}
               </button>
             )}
             </div>
