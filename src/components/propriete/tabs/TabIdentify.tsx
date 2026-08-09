@@ -295,7 +295,7 @@ export const TabIdentify: React.FC<{
           testMedias={testMedias}
           flora={state}
           floraCompletedAt={completedAt}
-          floraSoil={soil}
+          floraSoil={soilLite}
           floraTextureCounts={textureCounts}
           proprieteId={proprieteId}
         />,
