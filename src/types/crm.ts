@@ -152,8 +152,8 @@ export const KANBAN_COLUMNS: KanbanColumn[] = [
   { id: 'relance_1', title: 'Relance 1', color: 'bg-yellow-500' },
   { id: 'relance_2', title: 'Relance 2', color: 'bg-orange-500' },
   { id: 'relance_3', title: 'Relance 3', color: 'bg-red-500' },
-  { id: 'pas_interesse', title: 'Pas intéressé', color: 'bg-gray-500' },
   { id: 'gagne', title: 'Gagné', color: 'bg-green-500' },
+  { id: 'pas_interesse', title: 'Pas intéressé', color: 'bg-gray-500' },
   { id: 'perdu', title: 'Perdu', color: 'bg-gray-400' },
 ];
 
