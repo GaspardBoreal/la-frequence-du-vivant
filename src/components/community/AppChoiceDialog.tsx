@@ -39,7 +39,7 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, onDism
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 border-white/10 text-white">
         <DialogHeader>
           <DialogTitle className="text-xl text-white">
