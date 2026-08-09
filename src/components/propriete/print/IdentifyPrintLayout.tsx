@@ -8,6 +8,7 @@ interface Props {
   flora: PropertyFloraState;
   soil: SoilLite;
   soilAvailable: boolean;
+  textureCounts?: Record<'argile' | 'limon' | 'sable', number>;
   completedAt: string | null;
   propertyName?: string;
   proprieteId?: string;
@@ -24,6 +25,7 @@ export const IdentifyPrintLayout: React.FC<Props> = ({
   flora,
   soil,
   soilAvailable,
+  textureCounts,
   completedAt,
   propertyName,
   proprieteId,
@@ -49,6 +51,7 @@ export const IdentifyPrintLayout: React.FC<Props> = ({
       state={flora}
       soil={soil}
       soilAvailable={soilAvailable}
+      textureCounts={textureCounts}
       completedAt={completedAt}
       propertyName={propertyName}
       onEditBlock={() => {}}

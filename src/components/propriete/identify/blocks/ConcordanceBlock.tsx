@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Gauge } from 'lucide-react';
+import { AlertTriangle, Gauge, ChevronDown } from 'lucide-react';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import { IcgRing } from '../FloraPictos';
 import {
@@ -18,14 +18,30 @@ import {
   CONCORDANCE_GUIDE as GUIDE,
   CONCORDANCE_REMEDES as REMEDES,
 } from '../ConcordanceParts';
+import { SoilFloraScales } from '../scales/SoilFloraScales';
+import type { TextureKey } from '@/lib/soilFloraScales';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 
 export const ConcordanceBlock: React.FC<{
   detail: ConcordanceDetail;
   soilAvailable: boolean;
+  hasFlora?: boolean;
+  textureCounts?: Record<TextureKey, number>;
   index?: number;
-}> = ({ detail, soilAvailable, index = 2 }) => {
+}> = ({
+  detail,
+  soilAvailable,
+  hasFlora = true,
+  textureCounts = { argile: 0, limon: 0, sable: 0 },
+  index = 2,
+}) => {
   const { rows, points, max, icg, band, counts, reliability, evaluated } = detail;
+  const [open, setOpen] = React.useState(false);
 
   // Regroupement visuel par critère (2 pôles par critère)
   const isAxisStart = (r: ConcordanceRow, i: number) => i === 0 || rows[i - 1].axis !== r.axis;
@@ -38,12 +54,27 @@ export const ConcordanceBlock: React.FC<{
       subtitle="On confronte ligne à ligne ce que dit le sol (Étape 2) et ce que raconte la végétation (Étape 3)."
       index={index}
     >
-      {!soilAvailable ? (
-        <div className="rounded-xl border border-dashed border-[hsl(var(--ds-line))] p-4 text-[12px] italic text-[hsl(var(--ds-forest-deep))]/65 text-center">
-          Complétez d'abord l'Étape 2 « J'analyse le sol » pour révéler la concordance.
-        </div>
-      ) : (
+      <SoilFloraScales
+        detail={detail}
+        hasFlora={hasFlora}
+        soilAvailable={soilAvailable}
+        textureCounts={textureCounts}
+        className="mb-4"
+      />
+
+      {!soilAvailable ? null : (
+        <Collapsible open={open} onOpenChange={setOpen}>
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/60 px-3.5 py-2.5 text-left transition-colors hover:bg-[hsl(var(--ds-cream))]">
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--ds-forest))]">
+              Voir le détail (ICG, tableau des 8 lignes)
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-[hsl(var(--ds-forest))] transition-transform ${open ? 'rotate-180' : ''}`}
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-4">
         <div className="space-y-4">
+
           <div className="flex flex-col md:flex-row items-start gap-5">
             {/* Anneau ICG + fiabilité */}
             <motion.div
@@ -217,7 +248,10 @@ export const ConcordanceBlock: React.FC<{
 
           <EcoSourceNote compact />
         </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
     </AnalyzeCard>
+
   );
 };

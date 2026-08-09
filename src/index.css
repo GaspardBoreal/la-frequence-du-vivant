@@ -3437,3 +3437,21 @@
     color: #8a8377;
   }
 }
+
+/* ── Quatre curseurs sol / flore : lisibilité à l'impression ───────────── */
+@media print {
+  .soil-flora-scales {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .soil-flora-scale-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .soil-flora-scales * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
