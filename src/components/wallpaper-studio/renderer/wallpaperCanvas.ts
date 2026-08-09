@@ -480,10 +480,15 @@ function drawSignature(
   }
   // No date/commune/GPS/tagline — only the event title when an event is selected.
 
-  // Titre événement : sous le QR, bord droit aligné sur le bord droit du QR
+  // Titre événement : AU-DESSUS du QR (le QR touche déjà le bord bas),
+  // bord droit aligné sur le bord droit du QR.
   const gap = Math.round(h * 0.012);
   const rightEdge = qrRect ? qrRect.x + qrRect.w : w - padX;
-  const topBelowQr = qrRect ? qrRect.y + qrRect.h + gap : panelY;
+  const blockH = lines.length * smallSize * 1.5;
+  const topStart = Math.max(
+    0,
+    (qrRect ? qrRect.y : h - padX) - gap - blockH,
+  );
   const maxTextWidth = rightEdge - padX;
   lines.forEach((l, i) => {
     let text = l;
@@ -499,7 +504,7 @@ function drawSignature(
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.7)';
     ctx.shadowBlur = 6;
-    ctx.fillText(text, rightEdge - m.width, topBelowQr + i * smallSize * 1.5);
+    ctx.fillText(text, rightEdge - m.width, topStart + i * smallSize * 1.5);
     ctx.restore();
   });
 
