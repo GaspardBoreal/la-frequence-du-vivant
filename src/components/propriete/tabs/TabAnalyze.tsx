@@ -126,12 +126,15 @@ export const TabAnalyze: React.FC<{
       : 0) +
     ((state.synthesis ?? '').trim().length > 0 ? 1 : 0);
 
+  // ─── Sortie du mode édition : jamais bloquante ──────────────────────────
+  const [exitRecap, setExitRecap] = React.useState<null | { validated: boolean }>(null);
+
   const handleComplete = async () => {
     setSubmitting(true);
     try {
       await markComplete();
       toast.success('Étape 2 marquée comme terminée ✓');
-      setMode('summary');
+      setExitRecap({ validated: true });
     } catch (e: any) {
       toast.error("Échec de l'enregistrement", { description: e?.message ?? 'Réessayez.' });
     } finally {
@@ -139,8 +142,30 @@ export const TabAnalyze: React.FC<{
     }
   };
 
+  const handleExitWithoutValidating = () => setExitRecap({ validated: false });
+
+  const confirmExit = () => {
+    setExitRecap(null);
+    setMode('summary');
+  };
+
   const isDone = !!completedAt;
   const doneDate = completedAt ? new Date(completedAt).toLocaleDateString('fr-FR') : null;
+  const placedCount = state.samples.filter((s) => s.lat != null && s.lng != null).length;
+
+  const exitRecapDialog = (
+    <AnalyzeExitRecapDialog
+      open={!!exitRecap}
+      onOpenChange={(o) => !o && setExitRecap(null)}
+      validated={exitRecap?.validated ?? false}
+      samplesCount={state.samples.length}
+      placedCount={placedCount}
+      filled={filled}
+      total={TOTAL}
+      savedAt={savedAt}
+      onConfirm={confirmExit}
+    />
+  );
 
   // ─── Impression : dialogue + portail cahier complet ─────────────────────
   const observation = usePropertyObservation(proprieteId);
