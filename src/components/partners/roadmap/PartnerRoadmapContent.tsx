@@ -1,19 +1,13 @@
 import React from 'react';
-import { Quote, CircleDot, CheckCircle2, Circle, CalendarDays } from 'lucide-react';
-import type { PartnerRoadmap } from '@/lib/partnerRoadmaps';
-import { STATUS_LABEL, priorityEffort } from '@/lib/partnerRoadmaps';
+import { Quote, CalendarDays, ClipboardCopy, Check } from 'lucide-react';
+import type { PartnerRoadmap, RoadmapPriority, RoadmapTask, WorkStatus } from '@/lib/partnerRoadmaps';
+import { priorityEffort } from '@/lib/partnerRoadmaps';
+import { taskKey, buildLovablePrompt } from '@/lib/partnerRoadmaps/prompt';
+import { useRoadmapTaskStatus } from '@/hooks/useRoadmapTaskStatus';
+import { toast } from 'sonner';
 import { SensorChainDiagram, NavigationShiftDiagram } from './RoadmapDiagrams';
 import { EffortByPriorityChart, ThemeFamilyChart, SensorSampleChart } from './RoadmapCharts';
-
-const StatusPill: React.FC<{ status: string }> = ({ status }) => {
-  const Icon = status === 'done' ? CheckCircle2 : status === 'doing' ? CircleDot : Circle;
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-      <Icon className="h-3 w-3" />
-      {STATUS_LABEL[status] ?? status}
-    </span>
-  );
-};
+import { RoadmapTaskStatusControl, RoadmapProgressBar } from './RoadmapTaskStatusControl';
 
 const SectionTitle: React.FC<{ index: string; title: string; lead?: string }> = ({
   index,
@@ -27,13 +21,85 @@ const SectionTitle: React.FC<{ index: string; title: string; lead?: string }> = 
   </header>
 );
 
+const TaskCard: React.FC<{
+  roadmap: PartnerRoadmap;
+  priority: RoadmapPriority;
+  task: RoadmapTask;
+  status: WorkStatus;
+  themeLabel?: string;
+  onStatus: (s: WorkStatus) => void;
+}> = ({ roadmap, priority, task, status, themeLabel, onStatus }) => {
+  const [copied, setCopied] = React.useState(false);
+
+  const copyPrompt = async () => {
+    const prompt = buildLovablePrompt(roadmap, priority, task);
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      toast.success('Prompt copié', { description: task.title });
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Copie impossible', { description: 'Autorisez le presse-papiers.' });
+    }
+  };
+
+  return (
+    <div
+      className={`group rounded-xl border p-4 transition-colors ${
+        status === 'done'
+          ? 'border-border/40 bg-background/20 opacity-75'
+          : status === 'doing'
+            ? 'border-amber-500/40 bg-amber-500/[0.04]'
+            : 'border-border/50 bg-background/40'
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <h4
+          className={`text-sm font-semibold text-foreground ${
+            status === 'done' ? 'line-through decoration-border decoration-1' : ''
+          }`}
+        >
+          {task.title}
+        </h4>
+        <RoadmapTaskStatusControl value={status} onChange={onStatus} />
+      </div>
+      <p className="mt-2 text-sm leading-relaxed text-foreground/80">{task.detail}</p>
+      <p className="mt-2 text-xs text-muted-foreground">
+        <span className="uppercase tracking-wide text-muted-foreground/70">Produit&nbsp;:</span>{' '}
+        {task.output}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+        <span className="rounded-full border border-border/60 px-2 py-0.5">{task.effortDays} j</span>
+        {themeLabel && (
+          <span className="rounded-full border border-border/60 px-2 py-0.5">{themeLabel}</span>
+        )}
+        <button
+          type="button"
+          onClick={copyPrompt}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20 print:hidden"
+        >
+          {copied ? <Check className="h-3 w-3" /> : <ClipboardCopy className="h-3 w-3" />}
+          {copied ? 'Prompt copié' : 'Copier le prompt'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ roadmap }) => {
   const themeById = React.useMemo(
     () => new Map(roadmap.themes.map((t) => [t.id, t])),
     [roadmap.themes],
   );
+  const { resolve, setStatus } = useRoadmapTaskStatus(roadmap.slug, roadmap.date);
   const totalTasks = roadmap.priorities.reduce((s, p) => s + p.tasks.length, 0);
   const totalDays = roadmap.priorities.reduce((s, p) => s + priorityEffort(p.tasks), 0);
+  const doneTasks = roadmap.priorities.reduce(
+    (s, p) =>
+      s + p.tasks.filter((t) => resolve(p.code, taskKey(t.title), t.status) === 'done').length,
+    0,
+  );
+
 
   return (
     <div className="space-y-16">
