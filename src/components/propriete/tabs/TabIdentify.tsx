@@ -311,7 +311,7 @@ export const TabIdentify: React.FC<{
         <StepHeader current={3} savedAt={savedAt} saving={saving} />
         <IdentifySummary
           state={state}
-          soil={soil}
+          soil={soilLite}
           soilAvailable={soilAvailable}
           textureCounts={textureCounts}
           completedAt={completedAt}
