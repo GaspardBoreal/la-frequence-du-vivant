@@ -8168,6 +8168,10 @@ export type Database = {
         Args: { _exploration_id: string; _user_id: string }
         Returns: boolean
       }
+      can_write_marcheur_observation: {
+        Args: { _marcheur_id: string }
+        Returns: boolean
+      }
       check_email_exists: { Args: { _email: string }; Returns: boolean }
       check_is_admin_user: { Args: { check_user_id: string }; Returns: boolean }
       check_system_initialization_safe: { Args: never; Returns: boolean }
