@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Check, Pencil, Printer, RotateCcw, ArrowRight } from 'lucide-react';
 import { OBSERVE_BLOCKS, SENSORIAL_FIELDS, type ObserveBlock } from './observeConfig';
 import { describeBlock, hasRisk, riskLabels } from './summarizeAnswers';
-import { SiteSignature } from './SiteSignature';
 
 interface Props {
   answers: Record<string, string[]>;
