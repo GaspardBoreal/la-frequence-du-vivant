@@ -1,0 +1,282 @@
+import React from 'react';
+import { Quote, CircleDot, CheckCircle2, Circle, CalendarDays } from 'lucide-react';
+import type { PartnerRoadmap } from '@/lib/partnerRoadmaps';
+import { STATUS_LABEL, priorityEffort } from '@/lib/partnerRoadmaps';
+import { SensorChainDiagram, NavigationShiftDiagram } from './RoadmapDiagrams';
+import { EffortByPriorityChart, ThemeFamilyChart, SensorSampleChart } from './RoadmapCharts';
+
+const StatusPill: React.FC<{ status: string }> = ({ status }) => {
+  const Icon = status === 'done' ? CheckCircle2 : status === 'doing' ? CircleDot : Circle;
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+      <Icon className="h-3 w-3" />
+      {STATUS_LABEL[status] ?? status}
+    </span>
+  );
+};
+
+const SectionTitle: React.FC<{ index: string; title: string; lead?: string }> = ({
+  index,
+  title,
+  lead,
+}) => (
+  <header className="mb-5">
+    <p className="text-[11px] uppercase tracking-[0.2em] text-primary/80">{index}</p>
+    <h2 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
+    {lead && <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{lead}</p>}
+  </header>
+);
+
+export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ roadmap }) => {
+  const themeById = React.useMemo(
+    () => new Map(roadmap.themes.map((t) => [t.id, t])),
+    [roadmap.themes],
+  );
+  const totalTasks = roadmap.priorities.reduce((s, p) => s + p.tasks.length, 0);
+  const totalDays = roadmap.priorities.reduce((s, p) => s + priorityEffort(p.tasks), 0);
+
+  return (
+    <div className="space-y-16">
+      {/* Synthèse chiffrée */}
+      <section className="grid gap-3 sm:grid-cols-4">
+        {[
+          { k: 'Sujets relevés', v: roadmap.themes.length },
+          { k: 'Chantiers', v: totalTasks },
+          { k: 'Charge estimée', v: `${Math.round(totalDays)} j` },
+          { k: 'Priorités', v: roadmap.priorities.length },
+        ].map((s) => (
+          <div key={s.k} className="rounded-xl border border-border/60 bg-card/50 p-4">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.k}</p>
+            <p className="mt-1 text-2xl font-semibold text-foreground">{s.v}</p>
+          </div>
+        ))}
+      </section>
+
+      {/* 1 — Ce qui est ressorti */}
+      <section>
+        <SectionTitle
+          index="01"
+          title="Ce qui est ressorti de l'entretien"
+          lead="Chaque sujet est repris tel qu'il a été formulé, avec l'extrait de l'échange qui le porte."
+        />
+        <div className="grid gap-4 md:grid-cols-2">
+          {roadmap.themes.map((t) => {
+            const quote = roadmap.verbatims.find((v) => v.themeId === t.id);
+            return (
+              <article
+                key={t.id}
+                className="rounded-2xl border border-border/60 bg-card/40 p-5 transition-colors hover:border-primary/40"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-base font-semibold text-foreground">{t.label}</h3>
+                  <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-primary">
+                    {t.family}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-foreground/85">{t.summary}</p>
+                {quote && (
+                  <blockquote className="mt-4 flex gap-2 border-l-2 border-primary/40 pl-3 text-sm italic text-muted-foreground">
+                    <Quote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/60" />
+                    <span>
+                      « {quote.quote} »
+                      <span className="ml-1 not-italic text-xs text-muted-foreground/70">
+                        — {quote.speaker}, {quote.at}
+                      </span>
+                    </span>
+                  </blockquote>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 2 — Lecture d'ensemble */}
+      <section>
+        <SectionTitle
+          index="02"
+          title="Lecture d'ensemble"
+          lead="Répartition de la charge par priorité et des sujets par famille."
+        />
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="rounded-2xl border border-border/60 bg-card/40 p-5">
+            <p className="mb-3 text-sm font-medium text-foreground">Charge estimée par priorité (jours)</p>
+            <EffortByPriorityChart roadmap={roadmap} />
+          </div>
+          <div className="rounded-2xl border border-border/60 bg-card/40 p-5">
+            <p className="mb-3 text-sm font-medium text-foreground">Familles de sujets</p>
+            <ThemeFamilyChart roadmap={roadmap} />
+          </div>
+        </div>
+
+        {/* Frise */}
+        <div className="mt-6 rounded-2xl border border-border/60 bg-card/40 p-5">
+          <p className="mb-4 text-sm font-medium text-foreground">
+            Frise de priorisation — août à octobre 2026
+          </p>
+          <div className="space-y-2.5">
+            {roadmap.priorities.map((p, i) => (
+              <div key={p.code} className="flex items-center gap-3">
+                <span className="w-8 shrink-0 text-xs font-semibold text-primary">{p.code}</span>
+                <div className="relative h-6 flex-1 overflow-hidden rounded-md bg-muted/40">
+                  <div
+                    className="absolute inset-y-0 rounded-md bg-primary/70"
+                    style={{
+                      left: `${p.startPct}%`,
+                      width: `${p.widthPct}%`,
+                      opacity: 1 - i * 0.09,
+                    }}
+                  />
+                </div>
+                <span className="hidden w-40 shrink-0 text-right text-[11px] text-muted-foreground sm:block">
+                  {p.window}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex justify-between text-[11px] text-muted-foreground">
+            <span>Août 2026</span>
+            <span>Septembre 2026</span>
+            <span>Octobre 2026</span>
+          </div>
+        </div>
+      </section>
+
+      {/* 3 — Les chantiers */}
+      <section>
+        <SectionTitle
+          index="03"
+          title="Les chantiers, par ordre de priorité"
+          lead="Pour chaque chantier : ce que l'on construit, ce que cela produit, la charge estimée et l'état d'avancement."
+        />
+        <div className="space-y-10">
+          {roadmap.priorities.map((p) => (
+            <article key={p.code} className="rounded-2xl border border-border/60 bg-card/30 p-6">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="rounded-md bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+                  {p.code}
+                </span>
+                <h3 className="text-xl font-semibold text-foreground">{p.title}</h3>
+                <span className="text-xs text-muted-foreground">
+                  {p.window} · {priorityEffort(p.tasks)} j · {p.tasks.length} chantiers
+                </span>
+              </div>
+              <p className="mt-2 max-w-3xl text-sm italic text-muted-foreground">{p.rationale}</p>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {p.tasks.map((t) => (
+                  <div
+                    key={t.title}
+                    className="rounded-xl border border-border/50 bg-background/40 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <h4 className="text-sm font-semibold text-foreground">{t.title}</h4>
+                      <StatusPill status={t.status} />
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-foreground/80">{t.detail}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      <span className="uppercase tracking-wide text-muted-foreground/70">
+                        Produit&nbsp;:
+                      </span>{' '}
+                      {t.output}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                      <span className="rounded-full border border-border/60 px-2 py-0.5">
+                        {t.effortDays} j
+                      </span>
+                      {t.themeId && themeById.get(t.themeId) && (
+                        <span className="rounded-full border border-border/60 px-2 py-0.5">
+                          {themeById.get(t.themeId)!.label}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {p.code === 'P3' && (
+                <div className="mt-6 space-y-5">
+                  <div className="rounded-xl border border-border/50 bg-background/40 p-5 text-muted-foreground">
+                    <p className="mb-3 text-sm font-medium text-foreground">
+                      Chaîne de la donnée capteurs
+                    </p>
+                    <SensorChainDiagram />
+                  </div>
+                  <div className="rounded-xl border border-border/50 bg-background/40 p-5">
+                    <p className="mb-1 text-sm font-medium text-foreground">
+                      Restitution cible : écart sol / air sur 7 jours
+                    </p>
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      Exemple de lecture : l'air oscille de 19 à 31 °C quand le sol à 60 cm ne bouge
+                      que de 0,6 °C — c'est cette inertie que les sondes rendent visible.
+                    </p>
+                    <SensorSampleChart roadmap={roadmap} />
+                  </div>
+                </div>
+              )}
+
+              {p.code === 'P4' && (
+                <div className="mt-6 rounded-xl border border-border/50 bg-background/40 p-5 text-muted-foreground">
+                  <p className="mb-3 text-sm font-medium text-foreground">
+                    Reconfiguration de la navigation
+                  </p>
+                  <NavigationShiftDiagram />
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* 4 — Planning */}
+      <section>
+        <SectionTitle index="04" title="Planning" lead="Jalons de livraison retenus." />
+        <ol className="relative space-y-5 border-l border-border/60 pl-6">
+          {roadmap.milestones.map((m) => (
+            <li key={m.date} className="relative">
+              <span className="absolute -left-[31px] top-1 flex h-4 w-4 items-center justify-center rounded-full border border-primary/50 bg-background">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              </span>
+              <div className="flex flex-wrap items-baseline gap-x-3">
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <CalendarDays className="h-3.5 w-3.5 text-primary/70" />
+                  {m.date}
+                </span>
+                <span className="text-sm text-primary">{m.label}</span>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">{m.detail}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* 5 — Verbatims complets */}
+      <section>
+        <SectionTitle
+          index="05"
+          title="Extraits de l'entretien"
+          lead="Les passages sur lesquels s'appuie cette feuille de route, dans l'ordre de l'échange."
+        />
+        <div className="grid gap-3 md:grid-cols-2">
+          {roadmap.verbatims.map((v) => (
+            <blockquote
+              key={`${v.at}-${v.themeId}`}
+              className="rounded-xl border border-border/50 bg-card/30 p-4 text-sm"
+            >
+              <p className="italic text-foreground/85">« {v.quote} »</p>
+              <footer className="mt-2 text-xs text-muted-foreground">
+                {v.speaker} · {v.at} · {themeById.get(v.themeId)?.label}
+              </footer>
+            </blockquote>
+          ))}
+        </div>
+      </section>
+
+      <p className="rounded-2xl border border-primary/30 bg-primary/5 p-5 text-sm leading-relaxed text-foreground/90">
+        {roadmap.closing}
+      </p>
+    </div>
+  );
+};
+
+export default PartnerRoadmapContent;
