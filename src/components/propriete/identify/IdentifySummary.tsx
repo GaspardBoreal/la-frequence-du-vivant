@@ -150,21 +150,11 @@ const LEVELS = ['tres_faible', 'faible', 'moyen', 'fort', 'tres_fort'] as const;
 const RichPoles: React.FC<{
   scores: ReturnType<typeof computePoleScores>;
   plantCount: number;
-  sentence: string;
-}> = ({ scores, plantCount, sentence }) => {
+}> = ({ scores, plantCount }) => {
   if (plantCount === 0) return <Empty />;
   return (
     <div className="space-y-4">
-      {sentence && (
-        <div className="rounded-2xl border-l-[3px] border-[hsl(var(--ds-gold))] border-y border-r border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-forest))]/[0.05] px-4 py-3">
-          <div className="text-[9px] font-bold tracking-[0.3em] uppercase text-[hsl(var(--ds-forest))]/75">
-            Lecture d’ensemble
-          </div>
-          <p className="mt-1 font-serif italic text-[15px] leading-relaxed text-[hsl(var(--ds-forest-deep))]/90">
-            {sentence}
-          </p>
-        </div>
-      )}
+
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
         {PAIRS.map((pair) => {
@@ -667,7 +657,7 @@ export const IdentifySummary: React.FC<Props> = ({
               printOnly={printOnly}
             >
               {!printOnly ? (
-                <RichPoles scores={scores} plantCount={plants.length} sentence={sentence} />
+                <RichPoles scores={scores} plantCount={plants.length} />
               ) : (
               <div className="space-y-2">
                 {scores.map((s) => (
