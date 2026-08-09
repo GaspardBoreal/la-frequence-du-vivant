@@ -603,10 +603,8 @@ export const TabPalette: React.FC<Props> = ({
         subtitle="Herbacées, arbustes, lianes, arbres. La même liste d’espèces, relue selon ce que vous cherchez : l’accord avec le sol, la table nourricière, ou la tenue dans les étés à venir. Le tracé des emplacements et des ouvrages se fait désormais dans l’Atelier du jardin."
         index={1}
       >
-        <PaletteRecommandee
-          profile={siteProfile}
-          exclude={exclusions.map((e) => e.latin)}
-        />
+        <PaletteRecommandee profile={siteProfile} exclude={excludedPaletteIds} />
+
       </AnalyzeCard>
     </div>
   );
