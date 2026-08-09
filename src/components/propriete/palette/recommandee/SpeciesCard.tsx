@@ -44,7 +44,7 @@ const SpeciesCard: React.FC<Props> = ({ sp, index, metric, gauge, note, dimmed, 
           commonName={sp.species.fr}
           kingdom="Plantae"
           size="lg"
-          className="!h-full !w-full !rounded-none transition-transform duration-500 group-hover:scale-[1.04]"
+          className="!h-full !w-full !rounded-none [&_img]:!h-full [&_img]:!w-full [&_img]:!rounded-none [&>div]:!h-full [&>div]:!w-full [&>div]:!rounded-none transition-transform duration-500 group-hover:scale-[1.04]"
         />
         {metric && (
           <span className="absolute left-2 top-2 rounded-full bg-[hsl(var(--ds-forest-deep))]/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[hsl(var(--ds-cream))] backdrop-blur-sm">

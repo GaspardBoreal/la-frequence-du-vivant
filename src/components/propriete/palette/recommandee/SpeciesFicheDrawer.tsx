@@ -64,7 +64,7 @@ const SpeciesFicheDrawer: React.FC<Props> = ({ sp, profile, projection, horizon,
                   commonName={sp.species.fr}
                   kingdom="Plantae"
                   size="lg"
-                  className="!h-full !w-full !rounded-none"
+                  className="!h-full !w-full !rounded-none [&_img]:!h-full [&_img]:!w-full [&_img]:!rounded-none [&>div]:!h-full [&>div]:!w-full [&>div]:!rounded-none"
                 />
               </div>
               <p className="bg-[hsl(var(--ds-forest))]/8 px-3 py-1.5 text-[10px] text-[hsl(var(--ds-forest-deep))]/60">
