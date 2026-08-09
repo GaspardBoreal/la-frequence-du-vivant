@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRight, CheckCheck, Loader2, Check, Printer } from 'lucide-react';
+import { ArrowRight, CheckCheck, Loader2, Check, Printer, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
@@ -23,6 +24,7 @@ import { NarrativeBlock } from '@/components/propriete/identify/blocks/Narrative
 import { DeltaBlock } from '@/components/propriete/identify/blocks/DeltaBlock';
 import { RevealMapBlock } from '@/components/propriete/identify/blocks/RevealMapBlock';
 import { SentinellesBlock } from '@/components/propriete/identify/blocks/SentinellesBlock';
+import { VerdictHeader } from '@/components/propriete/identify/blocks/VerdictHeader';
 import { IdentifySummary, type IdentifyBlockId } from '@/components/propriete/identify/IdentifySummary';
 import { PrintChoiceDialog, type PrintChoice } from '@/components/propriete/print/PrintChoiceDialog';
 import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintLayout';
@@ -158,6 +160,7 @@ export const TabIdentify: React.FC<{
   const isDone = !!completedAt;
   const doneDate = completedAt ? new Date(completedAt).toLocaleDateString('fr-FR') : null;
 
+  const [detailOpen, setDetailOpen] = React.useState(false);
   const [mode, setMode] = React.useState<'summary' | 'edit'>(completedAt ? 'summary' : 'edit');
   React.useEffect(() => {
     if (completedAt) setMode('summary');
@@ -318,6 +321,7 @@ export const TabIdentify: React.FC<{
           propertyName={proprieteNom}
           onEditBlock={(id) => {
             setMode('edit');
+            if (id !== 'cortege') setDetailOpen(true);
             scrollToBlock(id);
           }}
           onReopenAll={() => setMode('edit')}
@@ -349,77 +353,123 @@ export const TabIdentify: React.FC<{
 
       {!state.skip_bioindication && (
         <>
-          {/* Nouveautés depuis 30j — accroche de retour */}
-          <DeltaBlock proprieteId={proprieteId} index={0} />
+          {/* 1 · Le verdict — quatre mots, trois secondes */}
+          <VerdictHeader
+            detail={detail}
+            hasFlora={profile.count > 0}
+            soilAvailable={soilAvailable}
+            textureCounts={textureCounts}
+          />
 
-          {/* Preuve spatiale : carte des observations marcheurs */}
-          <RevealMapBlock proprieteId={proprieteId} index={1} />
-
-          <IdentifyBriefBlock index={2} />
-
-          <div id="identify-block-cortege" className="scroll-mt-24 space-y-6">
-            <EcoMatrixBlock
-              observed={state.observed_plants}
-              onToggle={togglePlant}
-              index={3}
-              proprieteId={proprieteId}
-            />
-
-            <CortegeBlock observed={state.observed_plants} onToggle={togglePlant} index={4} proprieteId={proprieteId} />
+          {/* 2 · Le cortège révélé */}
+          <div id="identify-block-cortege" className="scroll-mt-24">
+            <CortegeBlock observed={state.observed_plants} onToggle={togglePlant} index={0} proprieteId={proprieteId} />
           </div>
 
-          <div id="identify-block-poles" className="scroll-mt-24">
-            <IntensitiesBlock
-              scores={scores}
-              plantCount={profile.count}
-              narrative={autoNarrative}
-              index={5}
-              onUseNarrative={(t) =>
-                setField(
-                  'flora_conclusion',
-                  (state.flora_conclusion ?? '').trim() ? `${state.flora_conclusion}\n${t}` : t
-                )
-              }
-            />
+          {/* 3 · Second rideau — le détail pour ceux qui le veulent */}
+          <div className="rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/50">
+            <button
+              type="button"
+              onClick={() => setDetailOpen((v) => !v)}
+              aria-expanded={detailOpen}
+              aria-controls="identify-detail-curtain"
+              className="flex w-full items-center justify-between gap-3 rounded-3xl px-5 py-4 text-left"
+            >
+              <span>
+                <span className="block font-serif text-[17px] text-[hsl(var(--ds-forest-deep))]">
+                  Le détail par espèce
+                </span>
+                <span className="mt-0.5 block text-[11.5px] text-[hsl(var(--ds-forest-deep))]/60">
+                  Matrice écologique, intensités, concordance sol ↔ flore et narration
+                </span>
+              </span>
+              <ChevronDown
+                className={`h-5 w-5 shrink-0 text-[hsl(var(--ds-forest-deep))]/70 transition-transform duration-300 ${detailOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            <AnimatePresence initial={false}>
+              {detailOpen && (
+                <motion.div
+                  id="identify-detail-curtain"
+                  key="curtain"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.35, ease: 'easeInOut' }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-6 px-3 pb-5 pt-1 md:px-5">
+                    <DeltaBlock proprieteId={proprieteId} index={0} />
+
+                    <RevealMapBlock proprieteId={proprieteId} index={1} />
+
+                    <IdentifyBriefBlock index={2} />
+
+                    <EcoMatrixBlock
+                      observed={state.observed_plants}
+                      onToggle={togglePlant}
+                      index={3}
+                      proprieteId={proprieteId}
+                    />
+
+                    <div id="identify-block-poles" className="scroll-mt-24">
+                      <IntensitiesBlock
+                        scores={scores}
+                        plantCount={profile.count}
+                        narrative={autoNarrative}
+                        index={5}
+                        onUseNarrative={(t) =>
+                          setField(
+                            'flora_conclusion',
+                            (state.flora_conclusion ?? '').trim() ? `${state.flora_conclusion}\n${t}` : t
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div id="identify-block-concordance" className="scroll-mt-24">
+                      <ConcordanceBlock
+                        detail={detail}
+                        soilAvailable={soilAvailable && profile.count > 0}
+                        hasFlora={profile.count > 0}
+                        textureCounts={textureCounts}
+                        index={6}
+                      />
+                    </div>
+
+                    <div id="identify-block-narration" className="scroll-mt-24">
+                      <NarrativeBlock
+                        conclusion={state.flora_conclusion ?? ''}
+                        onChangeConclusion={(v) => setField('flora_conclusion', v)}
+                        notes={state.notes ?? ''}
+                        onChangeNotes={(v) => setField('notes', v)}
+                        autoNarrative={autoNarrative}
+                        aiContext={narrationAiContext}
+                        contextKey={narrationContextKey}
+                        contextReady={profile.count > 0 && soilAvailable}
+                        notReadyReason={
+                          profile.count === 0
+                            ? 'Cochez au moins une plante bio-indicatrice dans le tableau ci-dessus pour activer la rédaction assistée.'
+                            : !soilAvailable
+                              ? 'Renseignez l’Étape 2 « J’analyse le sol » : la narration s’appuie sur la concordance sol ↔ flore.'
+                              : undefined
+                        }
+                        index={7}
+                      />
+                    </div>
+                    <div id="identify-block-notes" className="scroll-mt-24" />
+
+                    {/* Humains derrière la donnée */}
+                    <SentinellesBlock proprieteId={proprieteId} index={8} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-
-          <div id="identify-block-concordance" className="scroll-mt-24">
-            <ConcordanceBlock
-              detail={detail}
-              soilAvailable={soilAvailable && profile.count > 0}
-              hasFlora={profile.count > 0}
-              textureCounts={textureCounts}
-              index={6}
-            />
-          </div>
-
-          <div id="identify-block-narration" className="scroll-mt-24">
-            <NarrativeBlock
-              conclusion={state.flora_conclusion ?? ''}
-              onChangeConclusion={(v) => setField('flora_conclusion', v)}
-              notes={state.notes ?? ''}
-              onChangeNotes={(v) => setField('notes', v)}
-              autoNarrative={autoNarrative}
-              aiContext={narrationAiContext}
-              contextKey={narrationContextKey}
-              contextReady={profile.count > 0 && soilAvailable}
-              notReadyReason={
-                profile.count === 0
-                  ? 'Cochez au moins une plante bio-indicatrice dans le tableau ci-dessus pour activer la rédaction assistée.'
-                  : !soilAvailable
-                    ? 'Renseignez l’Étape 2 « J’analyse le sol » : la narration s’appuie sur la concordance sol ↔ flore.'
-                    : undefined
-              }
-              index={7}
-
-            />
-          </div>
-          <div id="identify-block-notes" className="scroll-mt-24" />
-
-          {/* Humains derrière la donnée */}
-          <SentinellesBlock proprieteId={proprieteId} index={8} />
         </>
       )}
+
 
       {/* Actions */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-5 md:p-6">
