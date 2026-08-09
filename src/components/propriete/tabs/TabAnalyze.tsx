@@ -28,6 +28,8 @@ import { KINGDOM_ORDER, KINGDOM_LABELS_FR } from '@/lib/kingdomLabels';
 import { TestMediaBadge } from '@/components/propriete/analyze/media/TestMediaDrawer';
 import { TestMediaRegistry } from '@/components/propriete/analyze/media/TestMediaRegistry';
 import { SoilHistoryPanel } from '@/components/propriete/analyze/SoilHistoryPanel';
+import { AnalyzeStickyBar } from '@/components/propriete/analyze/AnalyzeStickyBar';
+import { AnalyzeExitRecapDialog } from '@/components/propriete/analyze/AnalyzeExitRecapDialog';
 
 import {
   usePropertyTestMedias,
