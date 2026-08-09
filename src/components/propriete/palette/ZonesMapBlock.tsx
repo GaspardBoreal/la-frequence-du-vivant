@@ -82,6 +82,14 @@ export const ZonesMapBlock: React.FC<Props> = ({
 
   const [fullscreen, setFullscreen] = React.useState(false);
   const [studioOpen, setStudioOpen] = React.useState(false);
+
+  /** Ouverture directe de l'Atelier depuis la barre de navigation (« Mon projet »). */
+  React.useEffect(() => {
+    if (!proprieteId) return;
+    const open = () => setStudioOpen(true);
+    window.addEventListener('propriete:open-atelier', open);
+    return () => window.removeEventListener('propriete:open-atelier', open);
+  }, [proprieteId]);
   const [showSoil, setShowSoil] = React.useState(true);
   const [menuZone, setMenuZone] = React.useState<{ id: string; x: number; y: number } | null>(null);
   const transform = useZoneTransform(onPatchZone);
