@@ -160,6 +160,20 @@ const MarchesDuVivantConnexion = () => {
         const list: ProprieteAccess[] = ((apps as any)?.proprietesAccessibles ?? []) as ProprieteAccess[];
 
         if (list.length >= 1) {
+          // Préférence mémorisée (« Toujours ouvrir cet espace ») : on court-circuite.
+          const pref = getDefaultAppTarget();
+          if (pref === 'mon-espace') {
+            navigate('/marches-du-vivant/mon-espace');
+            return;
+          }
+          if (pref?.startsWith('propriete:')) {
+            const slug = pref.slice('propriete:'.length);
+            if (list.some((p) => p.slug === slug)) {
+              navigate(`/propriete/${slug}`);
+              return;
+            }
+            clearDefaultAppTarget();
+          }
           // Récupère le prénom pour personnaliser le dialogue.
           const { data: prof } = await supabase
             .from('community_profiles')
