@@ -268,7 +268,7 @@ export const TabIdentify: React.FC<{
       {soloPrinting && soloPortalRef.current && createPortal(
         <IdentifyPrintLayout
           flora={state}
-          soil={soil}
+          soil={soilLite}
           soilAvailable={soilAvailable}
           textureCounts={textureCounts}
           completedAt={completedAt}
