@@ -109,8 +109,10 @@ export const RoadmapPrintLayout: React.FC<{ roadmap: PartnerRoadmap }> = ({ road
   if (!host) return null;
 
   const themeById = new Map(roadmap.themes.map((t) => [t.id, t]));
+  const { resolve } = useRoadmapTaskStatus(roadmap.slug, roadmap.date);
   const totalTasks = roadmap.priorities.reduce((s, p) => s + p.tasks.length, 0);
   const totalDays = roadmap.priorities.reduce((s, p) => s + priorityEffort(p.tasks), 0);
+
 
   return createPortal(
     <div className="rm-print-doc">
