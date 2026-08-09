@@ -727,7 +727,7 @@ export const TabPalette: React.FC<Props> = ({
       </div>
 
 
-      {/* 02 — Emplacements & ouvrages */}
+      {/* 02 — Palette végétale recommandée */}
       {emplacementsWidget}
 
       {/* Palettes par zone — repliées par défaut, signature lisible dans le bandeau */}
