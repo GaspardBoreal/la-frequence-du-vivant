@@ -143,20 +143,24 @@ const PartenaireFeuilleDeRoute: React.FC = () => {
         </div>
       </header>
 
-      <RoadmapTocNav />
+      <RoadmapFilterProvider>
+        <RoadmapTocNav />
 
+        <main className="mx-auto w-full max-w-5xl px-6 py-10 print:hidden">
+          <p className="mb-6 max-w-3xl text-sm leading-relaxed text-foreground/90">
+            {roadmap.intro}
+          </p>
+          <p className="mb-10 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm leading-relaxed text-foreground/85">
+            {roadmap.context}
+          </p>
+          <PartnerRoadmapContent roadmap={roadmap} />
+          <footer className="mt-16 border-t border-border/60 pt-6 text-xs text-muted-foreground">
+            La Fréquence du Vivant — document de travail transmis à {roadmap.partnerName}. Diffusion
+            restreinte.
+          </footer>
+        </main>
+      </RoadmapFilterProvider>
 
-      <main className="mx-auto w-full max-w-5xl px-6 py-10 print:hidden">
-        <p className="mb-6 max-w-3xl text-sm leading-relaxed text-foreground/90">{roadmap.intro}</p>
-        <p className="mb-10 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm leading-relaxed text-foreground/85">
-          {roadmap.context}
-        </p>
-        <PartnerRoadmapContent roadmap={roadmap} />
-        <footer className="mt-16 border-t border-border/60 pt-6 text-xs text-muted-foreground">
-          La Fréquence du Vivant — document de travail transmis à {roadmap.partnerName}. Diffusion
-          restreinte.
-        </footer>
-      </main>
     </div>
   );
 };
