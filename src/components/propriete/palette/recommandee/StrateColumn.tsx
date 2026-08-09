@@ -14,7 +14,7 @@ const StrateColumn: React.FC<Props> = ({ block, index, children }) => (
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.35, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] }}
-    className="rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-paper))]/50 p-3.5"
+    className="rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/35 p-3.5"
   >
     <header className="mb-3 px-1">
       <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--ds-forest))]">
