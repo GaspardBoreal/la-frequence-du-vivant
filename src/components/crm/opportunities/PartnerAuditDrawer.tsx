@@ -69,9 +69,27 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-6 py-4">
           <div className="flex items-start gap-3">
             <p className="mt-0.5 flex-1 text-[11px] uppercase tracking-[0.2em] text-primary/80">
-              Jalon 2 · Audit partenariat
+              {isRoadmapView ? 'Jalon 3 · Feuille de route' : 'Jalon 2 · Audit partenariat'}
             </p>
-            {audit && (
+            {isRoadmapView && roadmap ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={printRoadmap}>
+                  <Printer className="mr-1.5 h-4 w-4" /> Imprimer
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    window.open(
+                      `/partenaires/${roadmap.slug}/${roadmap.date}`,
+                      '_blank',
+                      'noopener',
+                    )
+                  }
+                >
+                  <ExternalLink className="mr-1.5 h-4 w-4" /> Voir la version web
+                </Button>
+              </div>
+            ) : audit ? (
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
@@ -104,7 +122,7 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
                   <ExternalLink className="mr-1.5 h-4 w-4" /> Voir la version web
                 </Button>
               </div>
-            )}
+            ) : null}
             <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fermer">
               <X className="h-5 w-5" />
             </Button>
@@ -112,16 +130,23 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
 
           <div className="min-w-0">
             <h2 className="text-xl font-semibold leading-tight text-foreground md:text-2xl">
-              {audit
-                ? `La Fréquence du Vivant × ${audit.partnerName}`
-                : fallbackName || 'Audit partenariat'}
+              {isRoadmapView && roadmap
+                ? `La Fréquence du Vivant × ${roadmap.partnerName}`
+                : audit
+                  ? `La Fréquence du Vivant × ${audit.partnerName}`
+                  : fallbackName || 'Audit partenariat'}
             </h2>
-            {audit && (
+            {isRoadmapView && roadmap ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {roadmap.subtitle} · {roadmap.interviewLabel}
+              </p>
+            ) : audit ? (
               <p className="mt-1 text-sm text-muted-foreground">
                 {audit.subtitle} · {audit.dateLabel}
               </p>
-            )}
+            ) : null}
           </div>
+
 
           {availableViews.length > 1 && (
             <PartnerAuditViewSwitcher
