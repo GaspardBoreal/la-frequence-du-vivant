@@ -14,7 +14,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
+
+const PAGE_SIZES = [10, 25, 50, 100];
 
 interface SoilVersion {
   id: string;
@@ -54,6 +64,8 @@ export const SoilHistoryPanel: React.FC<{ proprieteId?: string }> = ({ propriete
   const [open, setOpen] = React.useState(false);
   const [pending, setPending] = React.useState<SoilVersion | null>(null);
   const [restoring, setRestoring] = React.useState(false);
+  const [pageSize, setPageSize] = React.useState(25);
+  const [page, setPage] = React.useState(1);
 
   const { data: versions = [], isLoading } = useQuery<SoilVersion[]>({
     queryKey: ['propriete-soil-history', proprieteId],
@@ -64,11 +76,21 @@ export const SoilHistoryPanel: React.FC<{ proprieteId?: string }> = ({ propriete
         .select('id, changed_at, samples_count, snapshot')
         .eq('propriete_id', proprieteId!)
         .order('changed_at', { ascending: false })
-        .limit(40);
+        .limit(500);
       if (error) throw error;
       return (data as any) ?? [];
     },
   });
+
+  const pageCount = Math.max(1, Math.ceil(versions.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const from = versions.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const to = Math.min(safePage * pageSize, versions.length);
+  const pageVersions = versions.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [pageSize, proprieteId]);
 
   const restore = async (v: SoilVersion) => {
     if (!proprieteId) return;
@@ -134,7 +156,7 @@ export const SoilHistoryPanel: React.FC<{ proprieteId?: string }> = ({ propriete
             </p>
           ) : (
             <ul className="space-y-1.5">
-              {versions.map((v) => {
+              {pageVersions.map((v) => {
                 const samples: SoilSample[] = Array.isArray(v.snapshot?.samples)
                   ? v.snapshot.samples
                   : [];
@@ -166,6 +188,51 @@ export const SoilHistoryPanel: React.FC<{ proprieteId?: string }> = ({ propriete
                 );
               })}
             </ul>
+          )}
+
+          {versions.length > 0 && (
+            <div className="mt-3 flex flex-col gap-2 border-t border-[hsl(var(--ds-line))] pt-3 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-[11px] tabular-nums text-[hsl(var(--ds-forest))]/70">
+                {from}–{to} sur {versions.length} version{versions.length > 1 ? 's' : ''}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  disabled={safePage <= 1}
+                  onClick={() => setPage(safePage - 1)}
+                  aria-label="Page précédente"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </Button>
+                <span className="min-w-[52px] text-center text-[11px] tabular-nums text-[hsl(var(--ds-forest-deep))]">
+                  {safePage} / {pageCount}
+                </span>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  disabled={safePage >= pageCount}
+                  onClick={() => setPage(safePage + 1)}
+                  aria-label="Page suivante"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
+                <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                  <SelectTrigger className="h-7 w-[78px] text-[11px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZES.map((s) => (
+                      <SelectItem key={s} value={String(s)} className="text-xs">
+                        {s} / page
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           )}
         </div>
       )}
