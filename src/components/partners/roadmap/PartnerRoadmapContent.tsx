@@ -94,11 +94,48 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
   const { resolve, setStatus } = useRoadmapTaskStatus(roadmap.slug, roadmap.date);
   const totalTasks = roadmap.priorities.reduce((s, p) => s + p.tasks.length, 0);
   const totalDays = roadmap.priorities.reduce((s, p) => s + priorityEffort(p.tasks), 0);
-  const doneTasks = roadmap.priorities.reduce(
-    (s, p) =>
-      s + p.tasks.filter((t) => resolve(p.code, taskKey(t.title), t.status) === 'done').length,
-    0,
+
+  const counts = React.useMemo(() => {
+    const c = { done: 0, doing: 0, todo: 0 };
+    roadmap.priorities.forEach((p) =>
+      p.tasks.forEach((t) => {
+        c[resolve(p.code, taskKey(t.title), t.status)] += 1;
+      }),
+    );
+    return c;
+  }, [roadmap.priorities, resolve]);
+  const doneTasks = counts.done;
+
+  /** Filtre d'avancement de la section « Les chantiers ». */
+  const [filter, setFilter] = React.useState<WorkStatus | 'all'>('all');
+  /**
+   * Chantiers dont l'état vient d'être changé : ils restent visibles dans une liste
+   * filtrée jusqu'au prochain changement de filtre, pour ne pas perdre le focus.
+   */
+  const [pinned, setPinned] = React.useState<Set<string>>(() => new Set());
+
+  const changeStatus = React.useCallback(
+    (code: string, key: string, s: WorkStatus) => {
+      setPinned((prev) => new Set(prev).add(`${code}:${key}`));
+      setStatus(code, key, s);
+    },
+    [setStatus],
   );
+
+  const applyFilter = (f: WorkStatus | 'all') => {
+    setPinned(new Set());
+    setFilter(f);
+    document.getElementById('roadmap-03')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const FILTERS: { id: WorkStatus | 'all'; label: string; n: number }[] = [
+    { id: 'all', label: 'Tous', n: totalTasks },
+    { id: 'done', label: 'Faits', n: counts.done },
+    { id: 'doing', label: 'En cours', n: counts.doing },
+    { id: 'todo', label: 'À faire', n: counts.todo },
+  ];
+
+
 
 
   return (
