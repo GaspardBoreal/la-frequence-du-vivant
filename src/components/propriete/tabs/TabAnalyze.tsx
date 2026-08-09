@@ -598,7 +598,9 @@ export const TabAnalyze: React.FC<{
           </Button>
         </div>
       </div>
-      {printDialogAndPortal}
+
+      <SoilHistoryPanel proprieteId={proprieteId} />
+
       {exitRecapDialog}
     </div>
 
