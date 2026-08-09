@@ -109,7 +109,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
           { k: 'Sujets relevés', v: roadmap.themes.length },
           { k: 'Chantiers', v: totalTasks },
           { k: 'Charge estimée', v: `${Math.round(totalDays)} j` },
-          { k: 'Priorités', v: roadmap.priorities.length },
+          { k: 'Avancement', v: `${doneTasks}/${totalTasks}` },
         ].map((s) => (
           <div key={s.k} className="rounded-xl border border-border/60 bg-card/50 p-4">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.k}</p>
@@ -119,7 +119,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
       </section>
 
       {/* 1 — Ce qui est ressorti */}
-      <section>
+      <section id="roadmap-01" className="scroll-mt-32">
         <SectionTitle
           index="01"
           title="Ce qui est ressorti de l'entretien"
@@ -158,7 +158,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
       </section>
 
       {/* 2 — Lecture d'ensemble */}
-      <section>
+      <section id="roadmap-02" className="scroll-mt-32">
         <SectionTitle
           index="02"
           title="Lecture d'ensemble"
@@ -209,7 +209,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
       </section>
 
       {/* 3 — Les chantiers */}
-      <section>
+      <section id="roadmap-03" className="scroll-mt-32">
         <SectionTitle
           index="03"
           title="Les chantiers, par ordre de priorité"
@@ -295,7 +295,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
       </section>
 
       {/* 4 — Planning */}
-      <section>
+      <section id="roadmap-04" className="scroll-mt-32">
         <SectionTitle index="04" title="Planning" lead="Jalons de livraison retenus." />
         <ol className="relative space-y-5 border-l border-border/60 pl-6">
           {roadmap.milestones.map((m) => (
@@ -317,7 +317,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
       </section>
 
       {/* 5 — Verbatims complets */}
-      <section>
+      <section id="roadmap-05" className="scroll-mt-32">
         <SectionTitle
           index="05"
           title="Extraits de l'entretien"
