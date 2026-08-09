@@ -10,6 +10,8 @@ import PartnerAuditSynthesis from '@/components/partners/synthese/PartnerAuditSy
 import PartnerRoadmapContent from '@/components/partners/roadmap/PartnerRoadmapContent';
 import RoadmapPrintLayout from '@/components/partners/roadmap/RoadmapPrintLayout';
 import RoadmapTocNav from '@/components/partners/roadmap/RoadmapTocNav';
+import { RoadmapFilterProvider } from '@/components/partners/roadmap/RoadmapFilterContext';
+
 import { usePartnerAuditPrint } from '@/hooks/usePartnerAuditPrint';
 import { usePartnerRoadmapPrint } from '@/hooks/usePartnerRoadmapPrint';
 import { PARTNER_AUDIT_PASSWORD, type PartnerAudit } from '@/lib/partnerAudits';
