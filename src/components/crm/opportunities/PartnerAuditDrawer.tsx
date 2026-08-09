@@ -7,21 +7,28 @@ import { PartnerAuditContent } from '@/components/partners/PartnerAuditContent';
 import { PartnerAuditPrintLayout } from '@/components/partners/PartnerAuditPrintLayout';
 import PartnerAuditViewSwitcher, { type PartnerAuditView } from '@/components/partners/PartnerAuditViewSwitcher';
 import PartnerAuditSynthesis from '@/components/partners/synthese/PartnerAuditSynthesis';
+import PartnerRoadmapContent from '@/components/partners/roadmap/PartnerRoadmapContent';
+import RoadmapPrintLayout from '@/components/partners/roadmap/RoadmapPrintLayout';
 import { usePartnerAuditPrint } from '@/hooks/usePartnerAuditPrint';
+import { usePartnerRoadmapPrint } from '@/hooks/usePartnerRoadmapPrint';
 import { PARTNER_AUDIT_PASSWORD, type PartnerAudit } from '@/lib/partnerAudits';
 import { getPartnerOfferBySlug } from '@/lib/partnerOffers';
+import type { PartnerRoadmap } from '@/lib/partnerRoadmaps';
 
 
 interface PartnerAuditDrawerProps {
   open: boolean;
   onClose: () => void;
   audit: PartnerAudit | null;
+  /** Feuille de route partenaire rattachée à l'opportunité, si elle existe */
+  roadmap?: PartnerRoadmap | null;
   /** Nom affiché quand aucun audit n'existe encore */
   fallbackName?: string | null;
 }
 
 /**
- * Panneau plein écran affichant l'audit partenariat rattaché à l'opportunité.
+ * Panneau plein écran affichant le dossier partenaire rattaché à l'opportunité
+ * (audit et/ou feuille de route).
  * Rendu via un portail sur <body> pour échapper au contexte d'empilement
  * de la modale « Modifier l'opportunité ».
  */
@@ -29,12 +36,26 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
   open,
   onClose,
   audit,
+  roadmap = null,
   fallbackName,
 }) => {
   const print = usePartnerAuditPrint();
+  const printRoadmap = usePartnerRoadmapPrint();
   const hasSynthesis = Boolean(audit?.synthesis);
+
+  const availableViews = React.useMemo<PartnerAuditView[]>(() => {
+    const v: PartnerAuditView[] = [];
+    if (hasSynthesis) v.push('synthese');
+    if (audit) v.push('detail');
+    if (roadmap) v.push('roadmap');
+    return v;
+  }, [hasSynthesis, audit, roadmap]);
+
   const [view, setView] = React.useState<PartnerAuditView>('synthese');
-  const effectiveView: PartnerAuditView = hasSynthesis ? view : 'detail';
+  const effectiveView: PartnerAuditView = availableViews.includes(view)
+    ? view
+    : (availableViews[0] ?? 'detail');
+  const isRoadmapView = effectiveView === 'roadmap' && Boolean(roadmap);
 
 
   React.useEffect(() => {
@@ -54,7 +75,11 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
   if (!open || typeof document === 'undefined') return null;
 
   const webUrl = audit ? `${window.location.origin}/partenaires/${audit.slug}` : null;
+  const roadmapUrl = roadmap
+    ? `${window.location.origin}/partenaires/${roadmap.slug}/${roadmap.date}`
+    : null;
   const offer = audit ? getPartnerOfferBySlug(audit.slug) : null;
+
 
   const node = (
     <div
