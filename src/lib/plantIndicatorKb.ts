@@ -474,6 +474,11 @@ const floraToLevel = (points: number, ratio: number): ReadLevel =>
  * Une ligne sans donnée sol n'est pas évaluée : elle vaut 0 point et reste comptée
  * dans le dénominateur fixe de 16 (le guide ne réduit jamais le maximum).
  * ICG = (score obtenu ÷ 16) × 100.
+ *
+ * IMPORTANT — cohérence de l'ICG dans toute l'application : le `soil` passé ici
+ * doit TOUJOURS être construit par `soilLiteFromState()` (les prélèvements de
+ * l'Étape 2 priment, les champs globaux hérités ne servent que de repli).
+ * Passer un `PropertySoilState` brut donne un ICG divergent d'un écran à l'autre.
  */
 export function computeConcordanceDetail(observedIds: string[], soil: SoilLite): ConcordanceDetail {
   const scores = computePoleScores(observedIds);
