@@ -23,6 +23,8 @@ interface Props {
   proprieteAdresse?: string | null;
   proprieteCodePostal?: string | null;
   proprieteCenter?: [number, number] | null;
+  subTab?: SubTab;
+  onSubTabChange?: (v: SubTab) => void;
 }
 
 type ViewMode = 'bento' | 'motion' | 'constellation';
@@ -38,6 +40,8 @@ export const TabPortrait: React.FC<Props> = ({
   proprieteAdresse,
   proprieteCodePostal,
   proprieteCenter,
+  subTab: subTabProp,
+  onSubTabChange,
 }) => {
   const { data: photos = [], isLoading } = usePropertyGallery(proprieteId);
   const { data: canCurate = false } = useCanCurateGallery(proprieteId);
