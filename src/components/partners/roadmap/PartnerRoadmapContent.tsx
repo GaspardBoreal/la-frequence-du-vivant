@@ -104,7 +104,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
     );
     return c;
   }, [roadmap.priorities, resolve]);
-  const doneTasks = counts.done;
+  
 
   /** Filtre d'avancement de la section « Les chantiers ». */
   const [filter, setFilter] = React.useState<WorkStatus | 'all'>('all');
