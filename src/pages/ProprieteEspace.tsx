@@ -373,6 +373,31 @@ const PropTabs: React.FC<{
     window.addEventListener('propriete:goto-tab', onGoto);
     return () => window.removeEventListener('propriete:goto-tab', onGoto);
   }, [handleTabChange]);
+
+  const [portraitSub, setPortraitSub] = React.useState<'galerie' | 'cadastre'>('galerie');
+
+  const goPortrait = React.useCallback((sub: 'galerie' | 'cadastre') => {
+    setPortraitSub(sub);
+    handleTabChange('portrait');
+  }, [handleTabChange]);
+
+  const openAtelier = React.useCallback(() => {
+    handleTabChange('palette');
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('propriete:open-atelier'));
+    }, 60);
+  }, [handleTabChange]);
+
+  const projectActive = ['portrait', 'synthesize', 'palette'].includes(tab);
+  const projectLabel =
+    tab === 'portrait'
+      ? portraitSub === 'cadastre' ? 'Cadastre' : 'Galerie'
+      : tab === 'synthesize'
+        ? 'Je synthétise'
+        : tab === 'palette'
+          ? 'Palette végétale'
+          : '';
+
   return (
     <div className="space-y-5">
       <NudgeMarcheBanner
