@@ -63,7 +63,7 @@ const SpeciesCard: React.FC<Props> = ({ sp, index, metric, gauge, note, dimmed, 
           scientificName={sp.species.latin}
           commonName={sp.species.fr}
           size="sm"
-          className="font-semibold text-[hsl(var(--ds-forest-deep))]"
+          className="font-semibold [&_span]:!text-[hsl(var(--ds-forest-deep))] [&_span]:font-semibold [&_span]:leading-snug"
         />
 
         {typeof gauge === 'number' && (
