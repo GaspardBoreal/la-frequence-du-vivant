@@ -106,27 +106,42 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
   }, [roadmap.priorities, resolve]);
   
 
-  /** Filtre d'avancement de la section « Les chantiers ». */
-  const [filter, setFilter] = React.useState<WorkStatus | 'all'>('all');
-  /**
-   * Chantiers dont l'état vient d'être changé : ils restent visibles dans une liste
-   * filtrée jusqu'au prochain changement de filtre, pour ne pas perdre le focus.
-   */
-  const [pinned, setPinned] = React.useState<Set<string>>(() => new Set());
+  /** Filtre d'avancement partagé avec le sommaire (2ᵉ rangée). */
+  const ctx = useRoadmapFilter();
+  const [localFilter, setLocalFilter] = React.useState<WorkStatus | 'all'>('all');
+  const [localPinned, setLocalPinned] = React.useState<Set<string>>(() => new Set());
+
+  const filter = ctx ? ctx.filter : localFilter;
+  const pinned = ctx ? ctx.pinned : localPinned;
+
+  // Publie les compteurs vers le sommaire.
+  const setCounts = ctx?.setCounts;
+  React.useEffect(() => {
+    setCounts?.({ total: totalTasks, ...counts });
+  }, [setCounts, totalTasks, counts]);
 
   const changeStatus = React.useCallback(
     (code: string, key: string, s: WorkStatus) => {
-      setPinned((prev) => new Set(prev).add(`${code}:${key}`));
+      const k = `${code}:${key}`;
+      if (ctx) ctx.pin(k);
+      else setLocalPinned((prev) => new Set(prev).add(k));
       setStatus(code, key, s);
     },
-    [setStatus],
+    [setStatus, ctx],
   );
 
-  const applyFilter = (f: WorkStatus | 'all') => {
-    setPinned(new Set());
-    setFilter(f);
-    document.getElementById('roadmap-03')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  const applyFilter = React.useCallback(
+    (f: WorkStatus | 'all') => {
+      if (ctx) {
+        ctx.applyFilter(f);
+        return;
+      }
+      setLocalPinned(new Set());
+      setLocalFilter(f);
+      document.getElementById('roadmap-03')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+    [ctx],
+  );
 
   const FILTERS: { id: WorkStatus | 'all'; label: string; n: number }[] = [
     { id: 'all', label: 'Tous', n: totalTasks },
@@ -134,6 +149,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
     { id: 'doing', label: 'En cours', n: counts.doing },
     { id: 'todo', label: 'À faire', n: counts.todo },
   ];
+
 
 
 
