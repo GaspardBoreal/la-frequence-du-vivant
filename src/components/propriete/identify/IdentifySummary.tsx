@@ -45,9 +45,20 @@ interface Props {
   printOnly?: boolean;
   /** p1 = cortège + pôles, p2 = concordance, p3 = narration + notes + sources */
   printSection?: 'all' | 'p1' | 'p2' | 'p3';
+  /** Répartition des textures des prélèvements ; à défaut, déduite de la texture dominante */
+  textureCounts?: Record<TextureKey, number>;
 }
 
 const num = (n: number) => String(n).padStart(2, '0');
+
+/** Repli quand le détail des prélèvements n'est pas transmis */
+const fallbackTextureCounts = (soil: SoilLite): Record<TextureKey, number> => {
+  const t = soil.texture;
+  if (t === 'argile') return { argile: 1, limon: 0, sable: 0 };
+  if (t === 'limon') return { argile: 0, limon: 1, sable: 0 };
+  if (t === 'sable') return { argile: 0, limon: 0, sable: 1 };
+  return { argile: 0, limon: 0, sable: 0 };
+};
 
 const Section: React.FC<{
   number: number;
@@ -707,6 +718,14 @@ export const IdentifySummary: React.FC<Props> = ({
             printOnly={printOnly}
             warn={!soilAvailable}
           >
+            <SoilFloraScales
+              detail={detail}
+              hasFlora={(state.observed_plants?.length ?? 0) > 0}
+              soilAvailable={soilAvailable}
+              textureCounts={textureCounts ?? fallbackTextureCounts(soil)}
+              print={printOnly}
+              className="mb-4"
+            />
             {!soilAvailable ? (
               <p className="text-sm italic text-[hsl(var(--ds-forest-deep))]/60">
                 L'étape 2 « J'analyse le sol » n'est pas encore renseignée : la concordance
