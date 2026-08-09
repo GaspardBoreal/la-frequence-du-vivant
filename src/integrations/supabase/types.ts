@@ -8128,6 +8128,18 @@ export type Database = {
         }
         Returns: number
       }
+      audit_propriete_soil_guards: { Args: never; Returns: Json }
+      audit_propriete_soil_history: {
+        Args: { p_limit?: number }
+        Returns: {
+          changed_at: string
+          id: string
+          previous_count: number
+          propriete_id: string
+          propriete_nom: string
+          samples_count: number
+        }[]
+      }
       can_access_crm: { Args: { _user_id: string }; Returns: boolean }
       can_access_propriete: {
         Args: { _propriete_id: string }
@@ -9095,6 +9107,15 @@ export type Database = {
           migration_log: string
           rec_opus_id: string
         }[]
+      }
+      move_propriete_soil_sample: {
+        Args: {
+          p_lat: number
+          p_lng: number
+          p_propriete_id: string
+          p_sample_id: string
+        }
+        Returns: undefined
       }
       normalize_species_alias_key: { Args: { p_name: string }; Returns: string }
       peek_event_invitation: { Args: { _token: string }; Returns: Json }

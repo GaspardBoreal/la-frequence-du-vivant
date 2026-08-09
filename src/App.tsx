@@ -98,6 +98,8 @@ const ProprieteEspace = lazyWithRetry(() => import('./pages/ProprieteEspace'));
 const MarchesDuVivantExplorationMarcheur = lazyWithRetry(() => import('./pages/MarchesDuVivantExplorationMarcheur'));
 const AdminOutilsHub = lazyWithRetry(() => import('./pages/AdminOutilsHub'));
 const AdminGpsControl = lazyWithRetry(() => import('./pages/AdminGpsControl'));
+const AdminSoilRegistryAudit = lazyWithRetry(() => import('./pages/AdminSoilRegistryAudit'));
+
 const AdminFrequences = lazyWithRetry(() => import('./pages/AdminFrequences'));
 const CommunityAffiliateLanding = lazyWithRetry(() => import('./pages/CommunityAffiliateLanding'));
 const PartagePublic = lazyWithRetry(() => import('./pages/PartagePublic'));
@@ -361,6 +363,12 @@ function App() {
                 <AdminGpsControl />
               </AdminAuth>
             } />
+            <Route path="/admin/outils/registre-sol" element={
+              <AdminAuth>
+                <AdminSoilRegistryAudit />
+              </AdminAuth>
+            } />
+
 
             <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />
             <Route path="/partenaires/:slug/offre" element={<PartenaireOffre />} />
