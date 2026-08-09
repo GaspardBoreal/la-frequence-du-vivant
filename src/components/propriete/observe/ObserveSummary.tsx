@@ -288,10 +288,6 @@ export const ObserveSummary: React.FC<Props> = ({
         </p>
       </header>)}
 
-      {/* Signature du site — glyphe unique */}
-      {showFirstPage && (
-        <SiteSignature answers={answers} sensorial={sensorial} dateStr={dateStr} />
-      )}
 
 
       {/* Grille synthèse — blocs 01 → 05 */}
