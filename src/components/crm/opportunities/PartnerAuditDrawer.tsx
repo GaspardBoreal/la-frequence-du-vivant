@@ -183,9 +183,15 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
         </div>
       </header>
 
+      {/* Sommaire (feuille de route) */}
+      {effectiveView === 'roadmap' && roadmap && (
+        <RoadmapTocNav embedded scrollRoot={scrollRef.current} className="px-6" />
+      )}
+
       {/* Corps */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" ref={scrollRef}>
         {effectiveView === 'roadmap' && roadmap ? (
+
           <div className="mx-auto w-full max-w-5xl px-6 py-8">
             {roadmapUrl && (
               <div className="mb-8 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground">
