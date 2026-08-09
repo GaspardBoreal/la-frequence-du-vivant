@@ -1,4 +1,5 @@
 import React from 'react';
+import { speciesLatinBase } from '@/lib/speciesLatinBase';
 import { motion } from 'framer-motion';
 import { ExternalLink, AlertTriangle } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -34,7 +35,8 @@ const gapWord = (d: number) => (d <= 1 ? 'Accord' : d === 2 ? 'Nuance' : 'Écart
 /** Fiche espèce : identité, écologie confrontée au site, services, sources. */
 const SpeciesFicheDrawer: React.FC<Props> = ({ sp, profile, projection, horizon, onClose }) => {
   const latin = sp?.species.latin ?? '';
-  const { data: thumb } = useSpeciesThumb(sp ? latin : undefined);
+  const thumbLatin = speciesLatinBase(latin);
+  const { data: thumb } = useSpeciesThumb(sp ? thumbLatin : undefined);
 
   const food = sp ? foodTraits(sp.species) : null;
   const climate = sp ? climateTraits(sp.species, horizon) : null;
