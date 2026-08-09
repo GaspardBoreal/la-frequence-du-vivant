@@ -44,6 +44,7 @@ import CortegeTriage from './CortegeTriage';
 import ProjectionGuide from './ProjectionGuide';
 import IcgLadder, { IcgDeltaHero } from './IcgLadder';
 import IcgPipeline from './IcgPipeline';
+import ChantierScales from './ChantierScales';
 import SpeciesJury from './SpeciesJury';
 import MediaCurtain, { phasePhotos } from './MediaCurtain';
 import ChantierPhotoIntake from './ChantierPhotoIntake';
@@ -525,6 +526,12 @@ export const ChantierOverlay: React.FC<Props> = ({
                 )}
               </section>
             </div>
+
+            <ChantierScales
+              before={before.detail}
+              after={after ? after.detail : null}
+              afterLabel={afterLabel}
+            />
 
             <IcgPipeline
               reading={before}
