@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
 import { usePropertyFlora } from '@/hooks/propriete/usePropertyFlora';
 import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
-import { textureCountsFromState } from '@/lib/soilLiteFromState';
+import { textureCountsFromState, soilLiteFromState, soilLiteAvailable } from '@/lib/soilLiteFromState';
 import { usePropertyObservation } from '@/hooks/propriete/usePropertyObservation';
 import { usePropertyGallery } from '@/hooks/propriete/usePropertyGallery';
 import { useProprieteParcelles, centroidOfParcelles } from '@/hooks/propriete/usePropertyParcelles';
@@ -74,11 +74,13 @@ export const TabIdentify: React.FC<{
 
   const profile = useMemo(() => computeFloraProfile(state.observed_plants), [state.observed_plants]);
   const textureCounts = React.useMemo(() => textureCountsFromState(soil), [soil]);
-  const soilAvailable = !!(soil.structure || soil.texture || soil.ph != null || (soil.life_signs?.length ?? 0) > 0);
+  /** Source de vérité unique du sol : les prélèvements priment (cf. soilLiteFromState) */
+  const soilLite = React.useMemo(() => soilLiteFromState(soil), [soil]);
+  const soilAvailable = soilLiteAvailable(soilLite);
   const scores = useMemo(() => computePoleScores(state.observed_plants), [state.observed_plants]);
   const detail = useMemo(
-    () => computeConcordanceDetail(state.observed_plants, soil),
-    [state.observed_plants, soil]
+    () => computeConcordanceDetail(state.observed_plants, soilLite),
+    [state.observed_plants, soilLite]
   );
   const autoNarrative = useMemo(() => narratePoleScores(scores), [scores]);
 
@@ -98,7 +100,7 @@ export const TabIdentify: React.FC<{
         level: LEVEL_LABEL[s.level],
         points: s.points,
       })),
-      soil: soilAvailable ? (soil as unknown as Record<string, unknown>) : undefined,
+      soil: soilAvailable ? (soilLite as unknown as Record<string, unknown>) : undefined,
       concordance: soilAvailable
         ? {
             icg: detail.icg,
@@ -116,7 +118,7 @@ export const TabIdentify: React.FC<{
           }
         : undefined,
     }),
-    [proprieteNom, proprieteVille, bio?.speciesTotal, state.observed_plants, scores, soil, soilAvailable, detail],
+    [proprieteNom, proprieteVille, bio?.speciesTotal, state.observed_plants, scores, soilLite, soilAvailable, detail],
   );
 
   /** Signature des données : une régénération n'est pertinente que si elle change */
@@ -126,12 +128,12 @@ export const TabIdentify: React.FC<{
         proprieteId ?? '',
         (state.observed_plants ?? []).slice().sort().join(','),
         soilAvailable ? detail.icg : 'no-soil',
-        soil.structure ?? '',
-        soil.texture ?? '',
-        soil.ph ?? '',
-        (soil.life_signs ?? []).join('|'),
+        soilLite.structure ?? '',
+        soilLite.texture ?? '',
+        soilLite.ph ?? '',
+        (soilLite.life_signs ?? []).join('|'),
       ].join('#'),
-    [proprieteId, state.observed_plants, soilAvailable, detail.icg, soil],
+    [proprieteId, state.observed_plants, soilAvailable, detail.icg, soilLite],
   );
 
 
@@ -266,7 +268,7 @@ export const TabIdentify: React.FC<{
       {soloPrinting && soloPortalRef.current && createPortal(
         <IdentifyPrintLayout
           flora={state}
-          soil={soil}
+          soil={soilLite}
           soilAvailable={soilAvailable}
           textureCounts={textureCounts}
           completedAt={completedAt}
@@ -293,7 +295,7 @@ export const TabIdentify: React.FC<{
           testMedias={testMedias}
           flora={state}
           floraCompletedAt={completedAt}
-          floraSoil={soil}
+          floraSoil={soilLite}
           floraTextureCounts={textureCounts}
           proprieteId={proprieteId}
         />,
@@ -309,7 +311,7 @@ export const TabIdentify: React.FC<{
         <StepHeader current={3} savedAt={savedAt} saving={saving} />
         <IdentifySummary
           state={state}
-          soil={soil}
+          soil={soilLite}
           soilAvailable={soilAvailable}
           textureCounts={textureCounts}
           completedAt={completedAt}
