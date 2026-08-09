@@ -126,6 +126,11 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
     () => resolvePartnerAudit(auditCandidates),
     [auditCandidates],
   );
+  const resolvedRoadmap = React.useMemo(
+    () => resolvePartnerRoadmap(auditCandidates),
+    [auditCandidates],
+  );
+
 
 
   React.useEffect(() => {
