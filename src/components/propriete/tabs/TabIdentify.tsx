@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRight, CheckCheck, Loader2, Check, Printer } from 'lucide-react';
+import { ArrowRight, CheckCheck, Loader2, Check, Printer, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import type { PropertyBiodiversity } from '@/hooks/propriete/usePropertyBiodiversity';
@@ -23,6 +24,7 @@ import { NarrativeBlock } from '@/components/propriete/identify/blocks/Narrative
 import { DeltaBlock } from '@/components/propriete/identify/blocks/DeltaBlock';
 import { RevealMapBlock } from '@/components/propriete/identify/blocks/RevealMapBlock';
 import { SentinellesBlock } from '@/components/propriete/identify/blocks/SentinellesBlock';
+import { VerdictHeader } from '@/components/propriete/identify/blocks/VerdictHeader';
 import { IdentifySummary, type IdentifyBlockId } from '@/components/propriete/identify/IdentifySummary';
 import { PrintChoiceDialog, type PrintChoice } from '@/components/propriete/print/PrintChoiceDialog';
 import { CombinedPrintLayout } from '@/components/propriete/print/CombinedPrintLayout';
@@ -158,6 +160,7 @@ export const TabIdentify: React.FC<{
   const isDone = !!completedAt;
   const doneDate = completedAt ? new Date(completedAt).toLocaleDateString('fr-FR') : null;
 
+  const [detailOpen, setDetailOpen] = React.useState(false);
   const [mode, setMode] = React.useState<'summary' | 'edit'>(completedAt ? 'summary' : 'edit');
   React.useEffect(() => {
     if (completedAt) setMode('summary');
