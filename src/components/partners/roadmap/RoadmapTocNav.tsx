@@ -1,4 +1,6 @@
 import React from 'react';
+import { useRoadmapFilter } from './RoadmapFilterContext';
+
 
 export const ROADMAP_SECTIONS = [
   { id: 'roadmap-01', index: '01', label: "Ce qui est ressorti de l'entretien", short: 'Entretien' },
