@@ -40,7 +40,7 @@ const SpeciesCard: React.FC<Props> = ({ sp, index, metric, gauge, note, dimmed, 
       {/* Photo de référence */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-[hsl(var(--ds-forest))]/8">
         <SpeciesThumb
-          scientificName={sp.species.latin}
+          scientificName={speciesLatinBase(sp.species.latin)}
           commonName={sp.species.fr}
           kingdom="Plantae"
           size="lg"

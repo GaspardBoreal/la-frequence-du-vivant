@@ -39,7 +39,10 @@ const PaletteRecommandee: React.FC<Props> = ({ profile, exclude, loading, error 
   const [fiche, setFiche] = React.useState<ProjectedSpecies | null>(null);
 
   // Un seul appel batch pour toutes les vignettes visibles (cache serveur).
-  const latins = React.useMemo(() => flatten(strates).map((s) => s.species.latin), [strates]);
+  const latins = React.useMemo(
+    () => flatten(strates).map((s) => speciesLatinBase(s.species.latin)),
+    [strates],
+  );
   useSpeciesThumbs(latins);
 
   const active = PROJECTIONS.find((p) => p.id === projection)!;
