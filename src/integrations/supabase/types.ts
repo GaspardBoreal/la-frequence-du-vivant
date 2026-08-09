@@ -8941,6 +8941,10 @@ export type Database = {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
       }
+      is_marcheur_fiche_curator: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       is_system_initialized: { Args: never; Returns: boolean }
       is_thumb_curator: { Args: { _user_id: string }; Returns: boolean }
       list_event_invited_readers: {
