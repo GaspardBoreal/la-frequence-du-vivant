@@ -344,7 +344,7 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Resolve effective level: organizer requires admin role; walker requires auth
+    // Resolve effective level: organizer requires admin/curator role; walker requires auth
     let effectiveLevel: Level = 'public';
     const authHeader = req.headers.get('Authorization');
     if (authHeader && level !== 'public') {
@@ -353,10 +353,18 @@ Deno.serve(async (req) => {
       });
       const { data: { user } } = await userClient.auth.getUser();
       if (user) {
-        effectiveLevel = level === 'organizer' ? 'organizer' : 'walker';
-        // We could further verify admin role here; for V1 trust the caller's request
+        effectiveLevel = 'walker';
+        if (level === 'organizer') {
+          // Vérification serveur : admin OU curateur de cette exploration
+          const [{ data: isAdmin }, { data: isCurator }] = await Promise.all([
+            admin.rpc('check_is_admin_user', { check_user_id: user.id }),
+            admin.rpc('is_event_curator', { _user_id: user.id, _exploration_id: exploration_id }),
+          ]);
+          if (isAdmin || isCurator) effectiveLevel = 'organizer';
+        }
       }
     }
+
 
     // Fetch all data via the RPC
     const { data: payload, error } = await admin.rpc('get_exploration_export_data', {
