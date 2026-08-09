@@ -36,6 +36,7 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import ZonesMapBlock from '@/components/propriete/palette/ZonesMapBlock';
 import OuvragesRegister from '@/components/propriete/palette/OuvragesRegister';
 import PaletteRecommandee from '@/components/propriete/palette/recommandee/PaletteRecommandee';
+import PaletteStudio from '@/components/propriete/palette/studio/PaletteStudio';
 
 import { geometryAreaM2 } from '@/components/propriete/palette/studio/geoMetrics';
 import ExcludedSpeciesMap from '@/components/propriete/palette/ExcludedSpeciesMap';
@@ -132,6 +133,14 @@ export const TabPalette: React.FC<Props> = ({
   );
 
   const [activeZoneId, setActiveZoneId] = React.useState<string | null>(null);
+
+  /** Ouverture de l'Atelier du jardin depuis la navigation « Mon projet ». */
+  const [atelierOpen, setAtelierOpen] = React.useState(false);
+  React.useEffect(() => {
+    const open = () => setAtelierOpen(true);
+    window.addEventListener('propriete:open-atelier', open);
+    return () => window.removeEventListener('propriete:open-atelier', open);
+  }, []);
   const [submitting, setSubmitting] = React.useState(false);
   const [ruleEditing, setRuleEditing] = React.useState(false);
   const [mode, setMode] = React.useState<'summary' | 'edit'>(
@@ -1133,6 +1142,32 @@ export const TabPalette: React.FC<Props> = ({
       </div>
 
       {printDialogAndPortal}
+
+      {proprieteId && (
+        <PaletteStudio
+          open={atelierOpen}
+          onClose={() => setAtelierOpen(false)}
+          proprieteId={proprieteId}
+          center={derivedCenter}
+          parcelles={parcelles}
+          zones={zones}
+          activeZoneId={activeZoneId}
+          onSelectZone={setActiveZoneId}
+          onCreateZone={(geometry) =>
+            upsertZone({ nom: `Zone ${zones.length + 1}`, geometry })
+          }
+          onPatchZone={(z, patch) =>
+            upsertZone({
+              id: z.id,
+              nom: patch.nom ?? z.nom,
+              geometry: patch.geometry ?? z.geometry,
+              couleur: patch.couleur ?? z.couleur,
+              note: patch.note ?? z.note,
+            })
+          }
+          onDeleteZone={(id) => deleteZone(id)}
+        />
+      )}
     </div>
   );
 };
