@@ -15,7 +15,7 @@ import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
-import { AppChoiceDialog } from '@/components/community/AppChoiceDialog';
+import { AppChoiceDialog, getDefaultAppTarget, clearDefaultAppTarget } from '@/components/community/AppChoiceDialog';
 import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
 import { absoluteUrlForPath, isOAuthConsentPath, readPendingOAuthRequest, safeNextPath } from '@/lib/oauthFlow';
 
