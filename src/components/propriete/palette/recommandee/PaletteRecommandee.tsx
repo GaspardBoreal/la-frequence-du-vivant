@@ -11,6 +11,10 @@ import {
 import ProjectionSol from './ProjectionSol';
 import ProjectionGardeManger from './ProjectionGardeManger';
 import ProjectionClimat from './ProjectionClimat';
+import PaletteSources from './PaletteSources';
+import SpeciesFicheDrawer from './SpeciesFicheDrawer';
+import { useSpeciesThumbs } from '@/hooks/useSpeciesThumb';
+import { flatten, type ProjectedSpecies } from '@/lib/paletteProjections';
 
 interface Props {
   profile: SiteProfile;
@@ -31,6 +35,12 @@ const PaletteRecommandee: React.FC<Props> = ({ profile, exclude, loading, error 
     () => projectPalette(profile, projection, { exclude, horizon }),
     [profile, projection, exclude, horizon],
   );
+
+  const [fiche, setFiche] = React.useState<ProjectedSpecies | null>(null);
+
+  // Un seul appel batch pour toutes les vignettes visibles (cache serveur).
+  const latins = React.useMemo(() => flatten(strates).map((s) => s.species.latin), [strates]);
+  useSpeciesThumbs(latins);
 
   const active = PROJECTIONS.find((p) => p.id === projection)!;
 
@@ -113,13 +123,32 @@ const PaletteRecommandee: React.FC<Props> = ({ profile, exclude, loading, error 
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
         >
-          {projection === 'sol' && <ProjectionSol strates={strates} profile={profile} />}
-          {projection === 'garde_manger' && <ProjectionGardeManger strates={strates} />}
+          {projection === 'sol' && (
+            <ProjectionSol strates={strates} profile={profile} onOpen={setFiche} />
+          )}
+          {projection === 'garde_manger' && (
+            <ProjectionGardeManger strates={strates} onOpen={setFiche} />
+          )}
           {projection === 'climat' && (
-            <ProjectionClimat strates={strates} horizon={horizon} onHorizonChange={setHorizon} />
+            <ProjectionClimat
+              strates={strates}
+              horizon={horizon}
+              onHorizonChange={setHorizon}
+              onOpen={setFiche}
+            />
           )}
         </motion.div>
       </AnimatePresence>
+
+      <PaletteSources />
+
+      <SpeciesFicheDrawer
+        sp={fiche}
+        profile={profile}
+        projection={projection}
+        horizon={horizon}
+        onClose={() => setFiche(null)}
+      />
     </div>
   );
 };
