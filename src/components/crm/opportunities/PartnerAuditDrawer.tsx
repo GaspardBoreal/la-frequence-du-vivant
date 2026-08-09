@@ -123,15 +123,46 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
             )}
           </div>
 
-          {hasSynthesis && (
-            <PartnerAuditViewSwitcher value={effectiveView} onChange={setView} />
+          {availableViews.length > 1 && (
+            <PartnerAuditViewSwitcher
+              value={effectiveView}
+              onChange={setView}
+              available={availableViews}
+            />
           )}
         </div>
       </header>
 
       {/* Corps */}
       <div className="flex-1 overflow-y-auto">
-        {audit ? (
+        {effectiveView === 'roadmap' && roadmap ? (
+          <div className="mx-auto w-full max-w-5xl px-6 py-8">
+            {roadmapUrl && (
+              <div className="mb-8 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground">
+                <span className="truncate font-mono text-foreground/80">{roadmapUrl}</span>
+                <span>— mot de passe</span>
+                <span className="rounded bg-background px-1.5 py-0.5 font-mono font-semibold text-foreground">
+                  {PARTNER_AUDIT_PASSWORD}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      `${roadmapUrl} — mot de passe ${PARTNER_AUDIT_PASSWORD}`,
+                    );
+                    toast.success('Lien et mot de passe copiés');
+                  }}
+                >
+                  <Link2 className="mr-1.5 h-3.5 w-3.5" /> Copier le lien
+                </Button>
+              </div>
+            )}
+            <PartnerRoadmapContent roadmap={roadmap} />
+            <div className="h-16" />
+          </div>
+        ) : audit ? (
           effectiveView === 'synthese' && audit.synthesis ? (
             <PartnerAuditSynthesis audit={audit} />
           ) : (
@@ -182,6 +213,7 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
             </Button>
           </div>
         )}
+
       </div>
     </div>
   );
