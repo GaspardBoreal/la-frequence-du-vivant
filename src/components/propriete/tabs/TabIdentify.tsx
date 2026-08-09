@@ -100,7 +100,7 @@ export const TabIdentify: React.FC<{
         level: LEVEL_LABEL[s.level],
         points: s.points,
       })),
-      soil: soilAvailable ? (soil as unknown as Record<string, unknown>) : undefined,
+      soil: soilAvailable ? (soilLite as unknown as Record<string, unknown>) : undefined,
       concordance: soilAvailable
         ? {
             icg: detail.icg,
@@ -118,7 +118,7 @@ export const TabIdentify: React.FC<{
           }
         : undefined,
     }),
-    [proprieteNom, proprieteVille, bio?.speciesTotal, state.observed_plants, scores, soil, soilAvailable, detail],
+    [proprieteNom, proprieteVille, bio?.speciesTotal, state.observed_plants, scores, soilLite, soilAvailable, detail],
   );
 
   /** Signature des données : une régénération n'est pertinente que si elle change */
@@ -128,12 +128,12 @@ export const TabIdentify: React.FC<{
         proprieteId ?? '',
         (state.observed_plants ?? []).slice().sort().join(','),
         soilAvailable ? detail.icg : 'no-soil',
-        soil.structure ?? '',
-        soil.texture ?? '',
-        soil.ph ?? '',
-        (soil.life_signs ?? []).join('|'),
+        soilLite.structure ?? '',
+        soilLite.texture ?? '',
+        soilLite.ph ?? '',
+        (soilLite.life_signs ?? []).join('|'),
       ].join('#'),
-    [proprieteId, state.observed_plants, soilAvailable, detail.icg, soil],
+    [proprieteId, state.observed_plants, soilAvailable, detail.icg, soilLite],
   );
 
 
