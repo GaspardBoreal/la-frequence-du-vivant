@@ -5,7 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
+    'authorization, x-client-info, apikey, content-type, x-cron-secret',
 };
 
 const RADIUS_KM = 0.5; // 500 m, cohérent avec sync-biodiversity-snapshot
@@ -41,6 +41,49 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // ---- Authorisation ----------------------------------------------------
+    // Appels autorisés :
+    //  1. service role (batch interne) ou header x-cron-secret valide
+    //  2. utilisateur authentifié agissant sur SES données
+    //  3. administrateur ou curateur d'exploration
+    const cronSecret = Deno.env.get('CRON_SHARED_SECRET');
+    const providedCron = req.headers.get('x-cron-secret');
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const token = authHeader.replace('Bearer ', '').trim();
+
+    const isInternal =
+      (!!cronSecret && !!providedCron && providedCron === cronSecret) ||
+      (!!token && token === SERVICE_ROLE);
+
+    if (!isInternal) {
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'Authorization requise' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: userData, error: userErr } = await admin.auth.getUser(token);
+      const caller = userData?.user;
+      if (userErr || !caller) {
+        return new Response(JSON.stringify({ error: 'Utilisateur non authentifié' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      let allowed = caller.id === user_id;
+      if (!allowed) {
+        const [{ data: isAdmin }, { data: isCurator }] = await Promise.all([
+          admin.rpc('check_is_admin_user', { check_user_id: caller.id }),
+          admin.rpc('is_event_curator', { _user_id: caller.id, _exploration_id: exploration_id }),
+        ]);
+        allowed = !!isAdmin || !!isCurator;
+      }
+      if (!allowed) {
+        return new Response(JSON.stringify({ error: 'Accès refusé' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
 
     // Create log row
     const { data: logRow } = await admin.from('marcheur_backfill_log').insert({

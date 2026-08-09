@@ -79,6 +79,35 @@ Deno.serve(async (req) => {
     }
     const p = v.data;
 
+    // ---- Autorisation d'envoi -------------------------------------------
+    // Seuls les administrateurs et les membres du CRM peuvent envoyer un email
+    // à des tiers. Tout autre utilisateur authentifié ne peut écrire qu'à sa
+    // propre adresse (emails transactionnels type bienvenue), sans pièce
+    // jointe ni expéditeur/cc/bcc personnalisés.
+    const callerId = userData.user.id;
+    const callerEmail = (userData.user.email ?? '').toLowerCase();
+    const [{ data: isAdmin }, { data: canCrm }] = await Promise.all([
+      supabase.rpc('check_is_admin_user', { check_user_id: callerId }),
+      supabase.rpc('can_access_crm', { _user_id: callerId }),
+    ]);
+    const isPrivileged = !!isAdmin || !!canCrm;
+
+    if (!isPrivileged) {
+      const targets = toArr(p.to).map((e) => e.toLowerCase());
+      const onlySelf = targets.length === 1 && targets[0] === callerEmail;
+      if (!onlySelf || toArr(p.cc).length > 0 || toArr(p.bcc).length > 0) {
+        return new Response(JSON.stringify({ error: 'Envoi autorisé uniquement vers votre propre adresse' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      // Neutralise les champs sensibles pour les utilisateurs non privilégiés
+      p.from = undefined;
+      p.cc = undefined;
+      p.bcc = undefined;
+      p.attachments = [];
+    }
+
+
+
     const host = Deno.env.get('SMTP_HOST');
     const portStr = Deno.env.get('SMTP_PORT');
     const username = Deno.env.get('SMTP_USER');

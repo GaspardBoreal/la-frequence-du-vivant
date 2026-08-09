@@ -72,6 +72,18 @@ Deno.serve(async (req) => {
     if (errorResponse) return errorResponse;
     if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
 
+    // Autorisation métier : seuls les membres du CRM peuvent importer des sociétés
+    const authz = createServiceClient();
+    const { data: canCrm } = await authz.rpc('can_access_crm', { _user_id: user.id });
+    const { data: isAdminUser } = await authz.rpc('check_is_admin_user', { check_user_id: user.id });
+    if (!canCrm && !isAdminUser) {
+      return new Response(JSON.stringify({ error: 'Accès refusé - rôle CRM requis' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+
+
     const { sirens, assigned_to, tags } = (await req.json()) as ImportPayload;
     if (!Array.isArray(sirens) || sirens.length === 0) {
       return new Response(JSON.stringify({ error: 'sirens[] required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

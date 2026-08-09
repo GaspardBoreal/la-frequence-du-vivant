@@ -37,6 +37,14 @@ Deno.serve(async (req) => {
       return json(400, { error: 'exploration_id_required' });
     }
 
+    // Autorisation : réservé aux administrateurs et curateurs de l'exploration
+    const callerId = userData.user.id;
+    const [{ data: isAdmin }, { data: isCurator }] = await Promise.all([
+      admin.rpc('check_is_admin_user', { check_user_id: callerId }),
+      admin.rpc('is_event_curator', { _user_id: callerId, _exploration_id: explorationId }),
+    ]);
+    if (!isAdmin && !isCurator) return json(403, { error: 'forbidden' });
+
     // Resolve all events belonging to this exploration
     const { data: events, error: evErr } = await admin
       .from('marche_events')
