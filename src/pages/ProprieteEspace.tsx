@@ -446,6 +446,8 @@ const PropTabs: React.FC<{
                 <DropdownMenuItem onSelect={() => handleTabChange('synthesize')}>Je synthétise</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handleTabChange('palette')}>Palette végétale</DropdownMenuItem>
                 <DropdownMenuItem onSelect={openAtelier}>Atelier du jardin</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => handleTabChange('clinique')}>Clinique du jardin</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
