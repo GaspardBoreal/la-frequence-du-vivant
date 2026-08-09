@@ -284,9 +284,10 @@ export const vdtpRoadmap: PartnerRoadmap = {
           title: 'Refonte de la concordance sol / flore en échelles à 5 crans',
           detail:
             "Un curseur unique par facteur : Eau (sec ↔ frais et humide), Nutrition (pauvre ↔ riche), pH (acide ↔ calcaire). La texture n'est plus un triangle mais un libellé (« argilo-limoneux »), éventuellement accompagné de trois jauges argile / limon / sable.",
-          output: 'Une lecture immédiate du site en quatre curseurs, sans jargon.',
+          output:
+            "Une lecture immédiate du site en quatre curseurs, sans jargon. Livré : les trois curseurs à 5 crans et le mot de texture (avec ses trois jauges argile / limon / sable) sont en place dans J'identifie, Je synthétise, l'avant / après du chantier et les impressions.",
           effortDays: 4,
-          status: 'todo',
+          status: 'done',
           themeId: 'echelles',
         },
         {
