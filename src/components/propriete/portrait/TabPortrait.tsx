@@ -158,11 +158,13 @@ export const TabPortrait: React.FC<Props> = ({
 
   return (
     <div className="space-y-5">
-      {/* Sous-onglets Portrait */}
-      <div className="flex items-center gap-1 rounded-full bg-muted/40 p-1 w-fit border border-border/60">
-        <SubTabPill active={subTab === 'galerie'} onClick={() => setSubTab('galerie')} icon={Images} label="Galerie" />
-        <SubTabPill active={subTab === 'cadastre'} onClick={() => setSubTab('cadastre')} icon={MapIcon} label="Cadastre" />
-      </div>
+      {/* Sous-onglets Portrait — masqués quand la barre principale pilote la sélection */}
+      {!controlledSub && (
+        <div className="flex items-center gap-1 rounded-full bg-muted/40 p-1 w-fit border border-border/60">
+          <SubTabPill active={subTab === 'galerie'} onClick={() => setSubTab('galerie')} icon={Images} label="Galerie" />
+          <SubTabPill active={subTab === 'cadastre'} onClick={() => setSubTab('cadastre')} icon={MapIcon} label="Cadastre" />
+        </div>
+      )}
 
       {subTab === 'cadastre' ? (
         <PortraitCadastre
