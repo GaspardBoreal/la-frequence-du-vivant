@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { SensorChainDiagram, NavigationShiftDiagram } from './RoadmapDiagrams';
 import { EffortByPriorityChart, ThemeFamilyChart, SensorSampleChart } from './RoadmapCharts';
 import { RoadmapTaskStatusControl, RoadmapProgressBar } from './RoadmapTaskStatusControl';
+import { useRoadmapFilter } from './RoadmapFilterContext';
+
 
 const SectionTitle: React.FC<{ index: string; title: string; lead?: string }> = ({
   index,
@@ -106,27 +108,42 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
   }, [roadmap.priorities, resolve]);
   
 
-  /** Filtre d'avancement de la section « Les chantiers ». */
-  const [filter, setFilter] = React.useState<WorkStatus | 'all'>('all');
-  /**
-   * Chantiers dont l'état vient d'être changé : ils restent visibles dans une liste
-   * filtrée jusqu'au prochain changement de filtre, pour ne pas perdre le focus.
-   */
-  const [pinned, setPinned] = React.useState<Set<string>>(() => new Set());
+  /** Filtre d'avancement partagé avec le sommaire (2ᵉ rangée). */
+  const ctx = useRoadmapFilter();
+  const [localFilter, setLocalFilter] = React.useState<WorkStatus | 'all'>('all');
+  const [localPinned, setLocalPinned] = React.useState<Set<string>>(() => new Set());
+
+  const filter = ctx ? ctx.filter : localFilter;
+  const pinned = ctx ? ctx.pinned : localPinned;
+
+  // Publie les compteurs vers le sommaire.
+  const setCounts = ctx?.setCounts;
+  React.useEffect(() => {
+    setCounts?.({ total: totalTasks, ...counts });
+  }, [setCounts, totalTasks, counts]);
 
   const changeStatus = React.useCallback(
     (code: string, key: string, s: WorkStatus) => {
-      setPinned((prev) => new Set(prev).add(`${code}:${key}`));
+      const k = `${code}:${key}`;
+      if (ctx) ctx.pin(k);
+      else setLocalPinned((prev) => new Set(prev).add(k));
       setStatus(code, key, s);
     },
-    [setStatus],
+    [setStatus, ctx],
   );
 
-  const applyFilter = (f: WorkStatus | 'all') => {
-    setPinned(new Set());
-    setFilter(f);
-    document.getElementById('roadmap-03')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  const applyFilter = React.useCallback(
+    (f: WorkStatus | 'all') => {
+      if (ctx) {
+        ctx.applyFilter(f);
+        return;
+      }
+      setLocalPinned(new Set());
+      setLocalFilter(f);
+      document.getElementById('roadmap-03')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+    [ctx],
+  );
 
   const FILTERS: { id: WorkStatus | 'all'; label: string; n: number }[] = [
     { id: 'all', label: 'Tous', n: totalTasks },
@@ -134,6 +151,7 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
     { id: 'doing', label: 'En cours', n: counts.doing },
     { id: 'todo', label: 'À faire', n: counts.todo },
   ];
+
 
 
 
@@ -264,37 +282,13 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
       </section>
 
       {/* 3 — Les chantiers */}
-      <section id="roadmap-03" className="scroll-mt-40">
+      <section id="roadmap-03" className="scroll-mt-[140px]">
         <SectionTitle
           index="03"
           title="Les chantiers, par ordre de priorité"
           lead="Pour chaque chantier : ce que l'on construit, ce que cela produit, la charge estimée et l'état d'avancement."
         />
 
-        {/* Filtre d'avancement, collé sous le sommaire (bandeau plein, opaque) */}
-        <div className="sticky top-[93px] z-20 -mx-6 mb-6 border-b border-border/50 bg-background px-6 py-2 shadow-sm print:hidden">
-          <div className="flex flex-wrap items-center justify-center gap-1.5">
-
-            {FILTERS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => applyFilter(f.id)}
-                aria-pressed={filter === f.id}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                  filter === f.id
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                {f.label}
-                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                  {f.n}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
 
         <div className="space-y-10">
           {roadmap.priorities.map((p) => {

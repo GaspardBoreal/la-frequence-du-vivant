@@ -10,6 +10,8 @@ import PartnerAuditSynthesis from '@/components/partners/synthese/PartnerAuditSy
 import PartnerRoadmapContent from '@/components/partners/roadmap/PartnerRoadmapContent';
 import RoadmapPrintLayout from '@/components/partners/roadmap/RoadmapPrintLayout';
 import RoadmapTocNav from '@/components/partners/roadmap/RoadmapTocNav';
+import { RoadmapFilterProvider } from '@/components/partners/roadmap/RoadmapFilterContext';
+
 import { usePartnerAuditPrint } from '@/hooks/usePartnerAuditPrint';
 import { usePartnerRoadmapPrint } from '@/hooks/usePartnerRoadmapPrint';
 import { PARTNER_AUDIT_PASSWORD, type PartnerAudit } from '@/lib/partnerAudits';
@@ -84,6 +86,8 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
 
 
   const node = (
+    <RoadmapFilterProvider>
+
     <div
       className="fixed inset-0 z-[4000] flex flex-col bg-background print:hidden"
       style={{ pointerEvents: 'auto' }}
@@ -274,7 +278,9 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
 
       </div>
     </div>
+    </RoadmapFilterProvider>
   );
+
 
   return (
     <>
