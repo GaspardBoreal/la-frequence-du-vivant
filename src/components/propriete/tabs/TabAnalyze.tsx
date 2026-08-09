@@ -570,6 +570,13 @@ export const TabAnalyze: React.FC<{
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
+            variant="ghost"
+            onClick={handleExitWithoutValidating}
+            className="text-[hsl(var(--ds-forest-deep))]"
+          >
+            <LogOut className="w-4 h-4 mr-2" /> Sortir sans valider
+          </Button>
+          <Button
             onClick={handleComplete}
             disabled={submitting}
             className={
@@ -584,8 +591,8 @@ export const TabAnalyze: React.FC<{
               <CheckCheck className="w-4 h-4 mr-2" />
             )}
             {isDone
-              ? `Étape terminée${doneDate ? ` le ${doneDate}` : ''} · Réenregistrer`
-              : "Marquer l'étape comme terminée"}
+              ? `Terminer${doneDate ? ` · enregistrée le ${doneDate}` : ''}`
+              : "Terminer l'étape"}
           </Button>
           <Button className="bg-[hsl(var(--ds-forest))] hover:bg-[hsl(var(--ds-forest-deep))] text-[hsl(var(--ds-cream))]">
             Étape suivante · J'identifie <ArrowRight className="w-4 h-4 ml-2" />
@@ -593,7 +600,9 @@ export const TabAnalyze: React.FC<{
         </div>
       </div>
       {printDialogAndPortal}
+      {exitRecapDialog}
     </div>
+
 
   );
 };
