@@ -9,6 +9,7 @@ import PartnerAuditViewSwitcher, { type PartnerAuditView } from '@/components/pa
 import PartnerAuditSynthesis from '@/components/partners/synthese/PartnerAuditSynthesis';
 import PartnerRoadmapContent from '@/components/partners/roadmap/PartnerRoadmapContent';
 import RoadmapPrintLayout from '@/components/partners/roadmap/RoadmapPrintLayout';
+import RoadmapTocNav from '@/components/partners/roadmap/RoadmapTocNav';
 import { usePartnerAuditPrint } from '@/hooks/usePartnerAuditPrint';
 import { usePartnerRoadmapPrint } from '@/hooks/usePartnerRoadmapPrint';
 import { PARTNER_AUDIT_PASSWORD, type PartnerAudit } from '@/lib/partnerAudits';
@@ -56,6 +57,7 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
     ? view
     : (availableViews[0] ?? 'detail');
   const isRoadmapView = effectiveView === 'roadmap' && Boolean(roadmap);
+  const [scrollEl, setScrollEl] = React.useState<HTMLDivElement | null>(null);
 
 
   React.useEffect(() => {
@@ -185,11 +187,11 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
 
       {/* Sommaire (feuille de route) */}
       {effectiveView === 'roadmap' && roadmap && (
-        <RoadmapTocNav embedded scrollRoot={scrollRef.current} className="px-6" />
+        <RoadmapTocNav embedded scrollRoot={scrollEl} className="px-6" />
       )}
 
       {/* Corps */}
-      <div className="flex-1 overflow-y-auto" ref={scrollRef}>
+      <div className="flex-1 overflow-y-auto" ref={setScrollEl}>
         {effectiveView === 'roadmap' && roadmap ? (
 
           <div className="mx-auto w-full max-w-5xl px-6 py-8">
