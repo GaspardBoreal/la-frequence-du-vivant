@@ -56,7 +56,9 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
           species_names: proposal.photos.map((p) => p.scientificName).filter(Boolean) as string[],
           resolution: resolution.id,
           preview_url: proposal.previewUrl,
-          is_public: true,
+          // Un simple aperçu ne publie rien : la galerie communautaire
+          // n'affiche la création qu'après un téléchargement effectif.
+          is_public: false,
           event_name_snapshot: proposal.event?.title ?? null,
           event_date_snapshot: proposal.event?.date ?? null,
           event_commune_snapshot: proposal.event?.commune ?? null,
@@ -100,6 +102,8 @@ const WallpaperPreviewModal: React.FC<{ open: boolean; onClose: () => void; prop
       const evt = proposal.event?.title ? `-${proposal.event.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : '';
       downloadBlob(blob, `${label}${evt}-${resolution.id}.jpg`);
       if (savedId) {
+        // Le téléchargement vaut publication dans la galerie communautaire.
+        try { await supabase.from('wallpaper_generations').update({ is_public: true } as never).eq('id', savedId); } catch {}
         try { await supabase.rpc('increment_wallpaper_download', { wp_id: savedId }); } catch {}
       }
       setShowTuto(true);

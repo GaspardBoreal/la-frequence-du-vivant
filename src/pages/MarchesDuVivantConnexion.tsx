@@ -15,7 +15,7 @@ import { useCommunityAuth } from '@/hooks/useCommunityAuth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
-import { AppChoiceDialog } from '@/components/community/AppChoiceDialog';
+import { AppChoiceDialog, getDefaultAppTarget, clearDefaultAppTarget } from '@/components/community/AppChoiceDialog';
 import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
 import { absoluteUrlForPath, isOAuthConsentPath, readPendingOAuthRequest, safeNextPath } from '@/lib/oauthFlow';
 
@@ -160,6 +160,20 @@ const MarchesDuVivantConnexion = () => {
         const list: ProprieteAccess[] = ((apps as any)?.proprietesAccessibles ?? []) as ProprieteAccess[];
 
         if (list.length >= 1) {
+          // Préférence mémorisée (« Toujours ouvrir cet espace ») : on court-circuite.
+          const pref = getDefaultAppTarget();
+          if (pref === 'mon-espace') {
+            navigate('/marches-du-vivant/mon-espace');
+            return;
+          }
+          if (pref?.startsWith('propriete:')) {
+            const slug = pref.slice('propriete:'.length);
+            if (list.some((p) => p.slug === slug)) {
+              navigate(`/propriete/${slug}`);
+              return;
+            }
+            clearDefaultAppTarget();
+          }
           // Récupère le prénom pour personnaliser le dialogue.
           const { data: prof } = await supabase
             .from('community_profiles')
@@ -643,6 +657,7 @@ const MarchesDuVivantConnexion = () => {
       <AppChoiceDialog
         open={appChoice.open}
         onOpenChange={(v) => setAppChoice((s) => ({ ...s, open: v }))}
+        onDismiss={() => navigate('/marches-du-vivant/mon-espace')}
         prenom={appChoice.prenom}
         proprietes={appChoice.proprietes}
       />

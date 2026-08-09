@@ -141,7 +141,6 @@ export const PalettePrintLayout: React.FC<Props> = ({
         />
       </Page>
 
-      <Page index={page++}>{summary('p1')}</Page>
 
       {zonePages.map((batch, pi) => (
         <Page key={`zones-${pi}`} index={page++}>

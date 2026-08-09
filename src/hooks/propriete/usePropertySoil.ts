@@ -70,6 +70,23 @@ const EMPTY: PropertySoilState = {
   updated_at: null,
 };
 
+/** Champs surveillés par le garde-fou serveur `guard_propriete_soil_samples`. */
+const GUARDED_KEYS: (keyof SoilSample)[] = [
+  'location', 'lat', 'lng', 'photo_url', 'structure_test', 'structure_result',
+  'texture_test', 'texture_result', 'boudin_form', 'ph_test', 'ph_value',
+  'life_test', 'life_signs', 'worm_count',
+];
+
+const isEmptyValue = (v: unknown) =>
+  v == null || v === '' || (Array.isArray(v) && v.length === 0);
+
+/** Vrai si le patch vide une valeur jusqu'ici renseignée (effacement volontaire). */
+function isClearingPatch(current: SoilSample, patch: Partial<SoilSample>): boolean {
+  return GUARDED_KEYS.some(
+    (k) => k in patch && !isEmptyValue(current[k]) && isEmptyValue(patch[k]),
+  );
+}
+
 export interface UsePropertySoilOptions {
   /**
    * Lecture seule : aucune sauvegarde automatique n'est émise par cette instance.
@@ -232,11 +249,17 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
         cur.has(v) ? cur.delete(v) : cur.add(v);
         return { ...s, life_signs: Array.from(cur) };
       }),
-    updateSample: (id: string, patch: Partial<SoilSample>) =>
+    updateSample: (id: string, patch: Partial<SoilSample>) => {
+      // Effacement volontaire d'une valeur (bouton « Effacer », décochage,
+      // désélection d'une pastille) : on lève explicitement le garde-fou serveur,
+      // sinon l'écriture est refusée et toute la session de saisie est perdue.
+      const current = (localRef.current.samples ?? []).find((sm) => sm.id === id);
+      if (current && isClearingPatch(current, patch)) destructiveRef.current = true;
       setLocal((s) => ({
         ...s,
         samples: s.samples.map((sm) => (sm.id === id ? { ...sm, ...patch } : sm)),
-      })),
+      }));
+    },
     /**
      * Ajoute un prélèvement et renvoie son identifiant (null si le maximum est atteint).
      * L'id et la lettre sont calculés en amont du setState : la valeur retournée est
