@@ -282,37 +282,13 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
       </section>
 
       {/* 3 — Les chantiers */}
-      <section id="roadmap-03" className="scroll-mt-40">
+      <section id="roadmap-03" className="scroll-mt-[140px]">
         <SectionTitle
           index="03"
           title="Les chantiers, par ordre de priorité"
           lead="Pour chaque chantier : ce que l'on construit, ce que cela produit, la charge estimée et l'état d'avancement."
         />
 
-        {/* Filtre d'avancement, collé sous le sommaire (bandeau plein, opaque) */}
-        <div className="sticky top-[93px] z-20 -mx-6 mb-6 border-b border-border/50 bg-background px-6 py-2 shadow-sm print:hidden">
-          <div className="flex flex-wrap items-center justify-center gap-1.5">
-
-            {FILTERS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => applyFilter(f.id)}
-                aria-pressed={filter === f.id}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                  filter === f.id
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                {f.label}
-                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                  {f.n}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
 
         <div className="space-y-10">
           {roadmap.priorities.map((p) => {
