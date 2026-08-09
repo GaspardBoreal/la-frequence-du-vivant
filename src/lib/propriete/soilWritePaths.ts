@@ -80,7 +80,7 @@ export const SOIL_WRITE_PATHS: SoilWritePath[] = [
   {
     id: 'mcp-edge',
     screen: 'Serveur MCP (accès machine)',
-    file: 'supabase/functions/mcp-server/index.ts',
+    file: 'supabase/functions/mcp/index.ts',
     regime: 'read_only',
     detail:
       'Expose le registre en lecture pour les agents. Aucun outil d\'écriture n\'est déclaré côté serveur.',
