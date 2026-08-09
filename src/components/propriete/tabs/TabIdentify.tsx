@@ -321,6 +321,7 @@ export const TabIdentify: React.FC<{
           propertyName={proprieteNom}
           onEditBlock={(id) => {
             setMode('edit');
+            if (id !== 'cortege') setDetailOpen(true);
             scrollToBlock(id);
           }}
           onReopenAll={() => setMode('edit')}
