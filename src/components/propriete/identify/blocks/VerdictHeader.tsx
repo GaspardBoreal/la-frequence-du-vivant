@@ -137,7 +137,7 @@ export const VerdictHeader: React.FC<VerdictHeaderProps> = ({
                 initial={animate ? { opacity: 0, y: 10 } : false}
                 animate={animate ? { opacity: 1, y: 0 } : undefined}
                 transition={{ duration: 0.45, delay: 0.07 * i, ease: 'easeOut' }}
-                className="relative overflow-hidden rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-paper))]/70 p-4"
+                className="relative overflow-hidden rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--background))]/60 p-4"
               >
                 <span
                   aria-hidden
