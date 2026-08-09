@@ -363,6 +363,12 @@ function App() {
                 <AdminGpsControl />
               </AdminAuth>
             } />
+            <Route path="/admin/outils/registre-sol" element={
+              <AdminAuth>
+                <AdminSoilRegistryAudit />
+              </AdminAuth>
+            } />
+
 
             <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />
             <Route path="/partenaires/:slug/offre" element={<PartenaireOffre />} />
