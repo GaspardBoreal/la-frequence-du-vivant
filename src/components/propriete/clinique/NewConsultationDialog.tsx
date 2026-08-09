@@ -343,7 +343,7 @@ export const NewConsultationDialog: React.FC<{
                   onChange={(e) => setAspect(e.target.value)}
                   rows={3}
                   placeholder="Taches brunes anguleuses, feuilles qui tombent, poudre blanche au revers…"
-                  className="mt-1.5 bg-white/70"
+                  className="mt-1.5 bg-white/70 text-[hsl(var(--ds-forest-deep))] placeholder:text-[hsl(var(--ds-forest-deep))]/45"
                 />
               </div>
 
