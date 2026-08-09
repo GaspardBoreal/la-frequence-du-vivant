@@ -3604,6 +3604,63 @@ export type Database = {
         }
         Relationships: []
       }
+      garden_pathogens_kb: {
+        Row: {
+          common_name: string
+          confusions: string | null
+          created_at: string
+          eco_actions: Json
+          favouring_conditions: string | null
+          gravity: string | null
+          hosts: string[]
+          id: string
+          kind: string
+          organs: string[]
+          prevention: Json
+          risk_months: number[]
+          scientific_name: string | null
+          signs: string | null
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          common_name: string
+          confusions?: string | null
+          created_at?: string
+          eco_actions?: Json
+          favouring_conditions?: string | null
+          gravity?: string | null
+          hosts?: string[]
+          id?: string
+          kind?: string
+          organs?: string[]
+          prevention?: Json
+          risk_months?: number[]
+          scientific_name?: string | null
+          signs?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          common_name?: string
+          confusions?: string | null
+          created_at?: string
+          eco_actions?: Json
+          favouring_conditions?: string | null
+          gravity?: string | null
+          hosts?: string[]
+          id?: string
+          kind?: string
+          organs?: string[]
+          prevention?: Json
+          risk_months?: number[]
+          scientific_name?: string | null
+          signs?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gaspard_events: {
         Row: {
           created_at: string
@@ -6098,6 +6155,251 @@ export type Database = {
           },
         ]
       }
+      propriete_consultation_actions: {
+        Row: {
+          consultation_id: string
+          created_at: string
+          detail: string | null
+          done: boolean
+          done_at: string | null
+          frequency: string | null
+          id: string
+          intensity: number
+          label: string
+          order_index: number
+          volet: string
+          weather_caution: string | null
+          window_end: string | null
+          window_start: string | null
+        }
+        Insert: {
+          consultation_id: string
+          created_at?: string
+          detail?: string | null
+          done?: boolean
+          done_at?: string | null
+          frequency?: string | null
+          id?: string
+          intensity?: number
+          label: string
+          order_index?: number
+          volet?: string
+          weather_caution?: string | null
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          consultation_id?: string
+          created_at?: string
+          detail?: string | null
+          done?: boolean
+          done_at?: string | null
+          frequency?: string | null
+          id?: string
+          intensity?: number
+          label?: string
+          order_index?: number
+          volet?: string
+          weather_caution?: string | null
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_consultation_actions_consultation_id_fkey"
+            columns: ["consultation_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_consultations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propriete_consultation_hypotheses: {
+        Row: {
+          common_name: string
+          confidence: number
+          confusions: string | null
+          consultation_id: string
+          created_at: string
+          gravity: string | null
+          id: string
+          kind: string | null
+          rank: number
+          scientific_name: string | null
+          terrain_reading: string | null
+          terrain_verdict: string | null
+          what_you_see: string | null
+        }
+        Insert: {
+          common_name: string
+          confidence?: number
+          confusions?: string | null
+          consultation_id: string
+          created_at?: string
+          gravity?: string | null
+          id?: string
+          kind?: string | null
+          rank?: number
+          scientific_name?: string | null
+          terrain_reading?: string | null
+          terrain_verdict?: string | null
+          what_you_see?: string | null
+        }
+        Update: {
+          common_name?: string
+          confidence?: number
+          confusions?: string | null
+          consultation_id?: string
+          created_at?: string
+          gravity?: string | null
+          id?: string
+          kind?: string | null
+          rank?: number
+          scientific_name?: string | null
+          terrain_reading?: string | null
+          terrain_verdict?: string | null
+          what_you_see?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_consultation_hypotheses_consultation_id_fkey"
+            columns: ["consultation_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_consultations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propriete_consultation_medias: {
+        Row: {
+          caption: string | null
+          consultation_id: string
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          media_type: string
+          metadata: Json | null
+          severity_at_capture: number | null
+          storage_path: string | null
+          taken_at: string | null
+          uploaded_by: string | null
+          url: string
+        }
+        Insert: {
+          caption?: string | null
+          consultation_id: string
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          media_type?: string
+          metadata?: Json | null
+          severity_at_capture?: number | null
+          storage_path?: string | null
+          taken_at?: string | null
+          uploaded_by?: string | null
+          url: string
+        }
+        Update: {
+          caption?: string | null
+          consultation_id?: string
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          media_type?: string
+          metadata?: Json | null
+          severity_at_capture?: number | null
+          storage_path?: string | null
+          taken_at?: string | null
+          uploaded_by?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_consultation_medias_consultation_id_fkey"
+            columns: ["consultation_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_consultations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propriete_consultations: {
+        Row: {
+          aspect: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          onset: string | null
+          opened_at: string
+          organ: string | null
+          propriete_id: string
+          retained_hypothesis_id: string | null
+          severity: number
+          status: string
+          subject_label: string
+          subject_scientific_name: string | null
+          subject_source: string
+          updated_at: string
+        }
+        Insert: {
+          aspect?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          onset?: string | null
+          opened_at?: string
+          organ?: string | null
+          propriete_id: string
+          retained_hypothesis_id?: string | null
+          severity?: number
+          status?: string
+          subject_label: string
+          subject_scientific_name?: string | null
+          subject_source?: string
+          updated_at?: string
+        }
+        Update: {
+          aspect?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          onset?: string | null
+          opened_at?: string
+          organ?: string | null
+          propriete_id?: string
+          retained_hypothesis_id?: string | null
+          severity?: number
+          status?: string
+          subject_label?: string
+          subject_scientific_name?: string | null
+          subject_source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_consultations_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_flora_diagnostics: {
         Row: {
           completed_at: string | null
@@ -6678,6 +6980,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "propriete_parcelles_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propriete_sensor_readings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          measured_at: string
+          metric: string
+          propriete_id: string
+          sensor_label: string | null
+          source: string
+          unit: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          measured_at?: string
+          metric: string
+          propriete_id: string
+          sensor_label?: string | null
+          source?: string
+          unit?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          measured_at?: string
+          metric?: string
+          propriete_id?: string
+          sensor_label?: string | null
+          source?: string
+          unit?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_sensor_readings_propriete_id_fkey"
             columns: ["propriete_id"]
             isOneToOne: false
             referencedRelation: "proprietes"
