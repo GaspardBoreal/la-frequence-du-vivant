@@ -268,6 +268,7 @@ export const TabIdentify: React.FC<{
           flora={state}
           soil={soil}
           soilAvailable={soilAvailable}
+          textureCounts={textureCounts}
           completedAt={completedAt}
           propertyName={proprieteNom}
           proprieteId={proprieteId}
@@ -293,6 +294,7 @@ export const TabIdentify: React.FC<{
           flora={state}
           floraCompletedAt={completedAt}
           floraSoil={soil}
+          floraTextureCounts={textureCounts}
           proprieteId={proprieteId}
         />,
         combinedPortalRef.current,
@@ -309,6 +311,7 @@ export const TabIdentify: React.FC<{
           state={state}
           soil={soil}
           soilAvailable={soilAvailable}
+          textureCounts={textureCounts}
           completedAt={completedAt}
           propertyName={proprieteNom}
           onEditBlock={(id) => {
