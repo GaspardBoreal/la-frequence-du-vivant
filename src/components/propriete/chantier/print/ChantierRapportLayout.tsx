@@ -135,6 +135,61 @@ const SpeciesPlate: React.FC<{ list: RapportSpecies[]; title: string; eyebrow: s
 );
 
 /** Le dossier papier du chantier : ce qui était, ce qui sera, et pourquoi. */
+
+/** Les quatre curseurs, version encre : lecture immédiate avant le tableau. */
+const PrintScales: React.FC<{
+  before: ConcordanceDetail;
+  after: ConcordanceDetail | null;
+  afterLabel: string;
+}> = ({ before, after, afterLabel }) => {
+  const b = buildScaleReadings(before, true);
+  const a = after ? buildScaleReadings(after, true) : null;
+  const pos = (n: number) => ((n - 0.5) / 5) * 100;
+
+  return (
+    <div className="mb-4 rounded border border-[#d8cfbb] p-3">
+      <p className="mb-2 text-[8pt] uppercase tracking-[0.2em] text-[#8a6d3b]">
+        Ce que dit le site — avant (rond clair) / {afterLabel.toLowerCase()} (rond plein)
+      </p>
+      <div className="space-y-2.5">
+        {b.map((r, i) => {
+          const av = r.flora;
+          const ap = a ? a[i].flora : null;
+          return (
+            <div key={r.axis.id}>
+              <div className="flex justify-between text-[8.4pt]">
+                <span className="font-semibold">{r.axis.label}</span>
+                <span>
+                  {av ? r.axis.steps[av - 1] : '—'}
+                  {ap != null && ap !== av ? ` → ${r.axis.steps[ap - 1]}` : ''}
+                </span>
+              </div>
+              <div className="relative mt-1 h-[6px] rounded-full bg-[#ece5d6]">
+                {av != null && (
+                  <span
+                    className="absolute top-1/2 h-[9px] w-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#8a6d3b] bg-white"
+                    style={{ left: `${pos(av)}%` }}
+                  />
+                )}
+                {ap != null && (
+                  <span
+                    className="absolute top-1/2 h-[9px] w-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#8a6d3b]"
+                    style={{ left: `${pos(ap)}%` }}
+                  />
+                )}
+              </div>
+              <div className="flex justify-between text-[7.4pt] text-[#5d5544]">
+                <span>{r.axis.left}</span>
+                <span>{r.axis.right}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 export const ChantierRapportLayout: React.FC<Props> = ({
   propertyName,
   commune,
@@ -261,6 +316,8 @@ export const ChantierRapportLayout: React.FC<Props> = ({
         >
           Comment l'ICG est calculé
         </Title>
+        <PrintScales before={before.detail} after={after ? after.detail : null} afterLabel={afterLabel} />
+
         <p className="mb-2 text-[9pt] font-semibold">Avant travaux</p>
         <IcgTable reading={before} delta={null} />
         <p className="mt-1.5 text-[8.6pt] italic text-[#5d5544]">{before.sentence}</p>
