@@ -26,6 +26,7 @@ import { TabIdentify } from '@/components/propriete/tabs/TabIdentify';
 import { TabSynthesize } from '@/components/propriete/tabs/TabSynthesize';
 import { TabPalette } from '@/components/propriete/tabs/TabPalette';
 import { TabPortrait } from '@/components/propriete/portrait/TabPortrait';
+import { TabClinique } from '@/components/propriete/tabs/TabClinique';
 import KenBurnsCarousel from '@/components/immersive-garden/KenBurnsCarousel';
 import { ProprieteVivantScopeProvider } from '@/contexts/ProprieteVivantScopeContext';
 import OrganicButton from '@/components/immersive-garden/OrganicButton';
@@ -389,7 +390,7 @@ const PropTabs: React.FC<{
 
   const closeAtelier = React.useCallback(() => setAtelierOpen(false), []);
 
-  const projectActive = ['portrait', 'synthesize', 'palette'].includes(tab);
+  const projectActive = ['portrait', 'synthesize', 'palette', 'clinique'].includes(tab);
   const projectLabel =
     tab === 'portrait'
       ? portraitSub === 'cadastre' ? 'Cadastre' : 'Galerie'
@@ -397,7 +398,9 @@ const PropTabs: React.FC<{
         ? 'Je synthétise'
         : tab === 'palette'
           ? 'Palette végétale'
-          : '';
+          : tab === 'clinique'
+            ? 'Clinique du jardin'
+            : '';
 
   return (
     <div className="space-y-5">
@@ -443,6 +446,8 @@ const PropTabs: React.FC<{
                 <DropdownMenuItem onSelect={() => handleTabChange('synthesize')}>Je synthétise</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handleTabChange('palette')}>Palette végétale</DropdownMenuItem>
                 <DropdownMenuItem onSelect={openAtelier}>Atelier du jardin</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => handleTabChange('clinique')}>Clinique du jardin</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -532,6 +537,14 @@ const PropTabs: React.FC<{
             bio={bio}
             atelierOpen={atelierOpen}
             onAtelierClose={closeAtelier}
+          />
+        </TabsContent>
+        <TabsContent value="clinique" className="pt-5 min-h-[calc(100vh-8rem)]">
+          <TabClinique
+            proprieteId={proprieteId}
+            proprieteNom={proprieteNom}
+            proprieteVille={proprieteVille}
+            proprieteCenter={proprieteCenter}
           />
         </TabsContent>
       </Tabs>
