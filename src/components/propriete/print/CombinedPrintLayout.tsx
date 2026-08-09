@@ -71,6 +71,7 @@ interface Props {
   flora?: PropertyFloraState | null;
   floraCompletedAt?: string | null;
   floraSoil?: SoilLite | null;
+  floraTextureCounts?: Record<'argile' | 'limon' | 'sable', number>;
   /** Étape 4 — incluse dans le cahier complet lorsque fournie. */
   synthesis?: PropertySynthesisState | null;
   synthesisModel?: SynthesisModel | null;
@@ -129,6 +130,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
   flora,
   floraCompletedAt,
   floraSoil,
+  floraTextureCounts,
   synthesis,
   synthesisModel,
   synthesisCompletedAt,
@@ -261,6 +263,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               state={flora}
               soil={identifySoil}
               soilAvailable={identifySoilAvailable}
+              textureCounts={floraTextureCounts}
               completedAt={floraCompletedAt ?? null}
               propertyName={propertyName}
               onEditBlock={() => {}}
@@ -274,6 +277,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               state={flora}
               soil={identifySoil}
               soilAvailable={identifySoilAvailable}
+              textureCounts={floraTextureCounts}
               completedAt={floraCompletedAt ?? null}
               propertyName={propertyName}
               onEditBlock={() => {}}
@@ -287,6 +291,7 @@ export const CombinedPrintLayout: React.FC<Props> = ({
               state={flora}
               soil={identifySoil}
               soilAvailable={identifySoilAvailable}
+              textureCounts={floraTextureCounts}
               completedAt={floraCompletedAt ?? null}
               propertyName={propertyName}
               onEditBlock={() => {}}
