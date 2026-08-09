@@ -276,7 +276,9 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
 
       </div>
     </div>
+    </RoadmapFilterProvider>
   );
+
 
   return (
     <>
