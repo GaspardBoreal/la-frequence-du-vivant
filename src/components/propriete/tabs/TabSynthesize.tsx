@@ -29,6 +29,7 @@ import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { SelectorRow } from '@/components/propriete/synthesize/SelectorRow';
 import { ItemsEditor } from '@/components/propriete/synthesize/ItemsEditor';
 import { IdentityCard } from '@/components/propriete/synthesize/IdentityCard';
+import { SoilFloraScales } from '@/components/propriete/identify/scales/SoilFloraScales';
 import {
   SynthesisSummary,
   type SynthesizeBlockId,
@@ -503,6 +504,18 @@ export const TabSynthesize: React.FC<Props> = ({
           Ce que les trois premières étapes ont déjà écrit
         </h3>
         <IdentityCard lines={model.identity} />
+
+        <SoilFloraScales
+          detail={concordance}
+          hasFlora={flora.state.observed_plants.length > 0}
+          soilAvailable={soilAvailable}
+          textureCounts={{
+            argile: soilReading.texture?.counts?.argile ?? 0,
+            limon: soilReading.texture?.counts?.limon ?? 0,
+            sable: soilReading.texture?.counts?.sable ?? 0,
+          }}
+          className="mt-5"
+        />
       </section>
 
       {/* 03 — Portrait + IA */}
