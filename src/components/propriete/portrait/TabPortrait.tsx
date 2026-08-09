@@ -23,6 +23,8 @@ interface Props {
   proprieteAdresse?: string | null;
   proprieteCodePostal?: string | null;
   proprieteCenter?: [number, number] | null;
+  subTab?: SubTab;
+  onSubTabChange?: (v: SubTab) => void;
 }
 
 type ViewMode = 'bento' | 'motion' | 'constellation';
@@ -38,6 +40,8 @@ export const TabPortrait: React.FC<Props> = ({
   proprieteAdresse,
   proprieteCodePostal,
   proprieteCenter,
+  subTab: subTabProp,
+  onSubTabChange,
 }) => {
   const { data: photos = [], isLoading } = usePropertyGallery(proprieteId);
   const { data: canCurate = false } = useCanCurateGallery(proprieteId);
@@ -46,7 +50,13 @@ export const TabPortrait: React.FC<Props> = ({
   const [viewMode, setViewMode] = useState<ViewMode>('bento');
   const [viewModeTouched, setViewModeTouched] = useState(false);
   const [printMode, setPrintMode] = useState(false);
-  const [subTab, setSubTab] = useState<SubTab>('galerie');
+  const [localSubTab, setLocalSubTab] = useState<SubTab>('galerie');
+  const controlledSub = subTabProp != null;
+  const subTab: SubTab = controlledSub ? subTabProp! : localSubTab;
+  const setSubTab = (v: SubTab) => {
+    if (!controlledSub) setLocalSubTab(v);
+    onSubTabChange?.(v);
+  };
 
   const gpsCount = useMemo(() => photos.filter((p) => p.lat != null && p.lng != null).length, [photos]);
   const gpsRatio = photos.length > 0 ? gpsCount / photos.length : 0;
@@ -158,11 +168,13 @@ export const TabPortrait: React.FC<Props> = ({
 
   return (
     <div className="space-y-5">
-      {/* Sous-onglets Portrait */}
-      <div className="flex items-center gap-1 rounded-full bg-muted/40 p-1 w-fit border border-border/60">
-        <SubTabPill active={subTab === 'galerie'} onClick={() => setSubTab('galerie')} icon={Images} label="Galerie" />
-        <SubTabPill active={subTab === 'cadastre'} onClick={() => setSubTab('cadastre')} icon={MapIcon} label="Cadastre" />
-      </div>
+      {/* Sous-onglets Portrait — masqués quand la barre principale pilote la sélection */}
+      {!controlledSub && (
+        <div className="flex items-center gap-1 rounded-full bg-muted/40 p-1 w-fit border border-border/60">
+          <SubTabPill active={subTab === 'galerie'} onClick={() => setSubTab('galerie')} icon={Images} label="Galerie" />
+          <SubTabPill active={subTab === 'cadastre'} onClick={() => setSubTab('cadastre')} icon={MapIcon} label="Cadastre" />
+        </div>
+      )}
 
       {subTab === 'cadastre' ? (
         <PortraitCadastre

@@ -2,7 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, TreePine, MapPin, Leaf, Search } from 'lucide-react';
+import { ArrowLeft, TreePine, MapPin, Leaf, Search, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCommunityAuth } from '@/hooks/useCommunityAuth';
@@ -366,6 +373,31 @@ const PropTabs: React.FC<{
     window.addEventListener('propriete:goto-tab', onGoto);
     return () => window.removeEventListener('propriete:goto-tab', onGoto);
   }, [handleTabChange]);
+
+  const [portraitSub, setPortraitSub] = React.useState<'galerie' | 'cadastre'>('galerie');
+
+  const goPortrait = React.useCallback((sub: 'galerie' | 'cadastre') => {
+    setPortraitSub(sub);
+    handleTabChange('portrait');
+  }, [handleTabChange]);
+
+  const openAtelier = React.useCallback(() => {
+    handleTabChange('palette');
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('propriete:open-atelier'));
+    }, 60);
+  }, [handleTabChange]);
+
+  const projectActive = ['portrait', 'synthesize', 'palette'].includes(tab);
+  const projectLabel =
+    tab === 'portrait'
+      ? portraitSub === 'cadastre' ? 'Cadastre' : 'Galerie'
+      : tab === 'synthesize'
+        ? 'Je synthétise'
+        : tab === 'palette'
+          ? 'Palette végétale'
+          : '';
+
   return (
     <div className="space-y-5">
       <NudgeMarcheBanner
@@ -379,16 +411,42 @@ const PropTabs: React.FC<{
             style={{ paddingTop: 'env(safe-area-inset-top)' }}
           >
           <div className="mx-auto max-w-5xl w-full flex items-center gap-2 pr-2">
-          <TabsList className="flex-1 flex overflow-x-auto justify-start md:justify-center bg-transparent rounded-none h-auto py-1.5">
-            <TabsTrigger value="portrait">Portrait</TabsTrigger>
-            <span aria-hidden className="mx-2 self-center h-4 w-px shrink-0 rounded-full bg-gradient-to-b from-transparent via-primary/35 to-transparent" />
+          <div className="flex-1 flex items-center overflow-x-auto justify-start md:justify-center py-1.5">
+          <TabsList className="flex bg-transparent rounded-none h-auto p-0">
             <TabsTrigger value="observe">J'observe</TabsTrigger>
             <TabsTrigger value="analyze">J'analyse</TabsTrigger>
             <TabsTrigger value="identify">J'identifie</TabsTrigger>
-            <TabsTrigger value="synthesize">Je synthétise</TabsTrigger>
-            <span aria-hidden className="mx-2 self-center h-4 w-px shrink-0 rounded-full bg-gradient-to-b from-transparent via-primary/35 to-transparent" />
-            <TabsTrigger value="palette">Palette végétale</TabsTrigger>
           </TabsList>
+            <span aria-hidden className="mx-2 self-center h-4 w-px shrink-0 rounded-full bg-gradient-to-b from-transparent via-primary/35 to-transparent" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className={`shrink-0 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition ${
+                    projectActive
+                      ? 'bg-primary/10 text-primary font-medium'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Mon projet
+                  {projectActive && projectLabel && (
+                    <span className="hidden sm:inline text-xs opacity-70">· {projectLabel}</span>
+                  )}
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="z-[80] w-56 bg-popover">
+                <DropdownMenuItem onSelect={() => goPortrait('galerie')}>Portrait · Galerie</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => goPortrait('cadastre')}>Portrait · Cadastre</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => handleTabChange('synthesize')}>Je synthétise</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleTabChange('palette')}>Palette végétale</DropdownMenuItem>
+                <DropdownMenuItem onSelect={openAtelier}>Atelier du jardin</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+
           <button
             type="button"
             onClick={() => window.dispatchEvent(new Event('frequence:open-chatbot'))}
@@ -413,6 +471,8 @@ const PropTabs: React.FC<{
             proprieteAdresse={proprieteAdresse}
             proprieteCodePostal={proprieteCodePostal}
             proprieteCenter={proprieteCenter}
+            subTab={portraitSub}
+            onSubTabChange={setPortraitSub}
           />
         </TabsContent>
         <TabsContent value="observe" className="pt-5 min-h-[calc(100vh-8rem)]">
