@@ -343,7 +343,6 @@ export const TabAnalyze: React.FC<{
             </>
           }
         />
-        <SoilHistoryPanel proprieteId={proprieteId} />
         <AnalyzeSummary
 
           proprieteId={proprieteId}
@@ -359,6 +358,7 @@ export const TabAnalyze: React.FC<{
           onReopenAll={() => setMode('edit')}
           onPrint={() => setPrintOpen(true)}
         />
+        <SoilHistoryPanel proprieteId={proprieteId} />
         {printDialogAndPortal}
       </div>
     );
@@ -412,7 +412,6 @@ export const TabAnalyze: React.FC<{
         </div>
       )}
 
-      <SoilHistoryPanel proprieteId={proprieteId} />
 
 
 
@@ -599,6 +598,9 @@ export const TabAnalyze: React.FC<{
           </Button>
         </div>
       </div>
+
+      <SoilHistoryPanel proprieteId={proprieteId} />
+
       {printDialogAndPortal}
       {exitRecapDialog}
     </div>
