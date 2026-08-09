@@ -146,7 +146,14 @@ export const TabAnalyze: React.FC<{
 
   const confirmExit = () => {
     setExitRecap(null);
-    setMode('summary');
+    if (completedAt) {
+      setMode('summary');
+    } else {
+      toast.success('Vos saisies sont enregistrées', {
+        description: 'Vous pourrez reprendre cette étape à tout moment.',
+      });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const isDone = !!completedAt;
