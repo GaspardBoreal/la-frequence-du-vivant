@@ -1,4 +1,5 @@
 import React from 'react';
+import { speciesLatinBase } from '@/lib/speciesLatinBase';
 import { motion } from 'framer-motion';
 import { ExternalLink, AlertTriangle } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';

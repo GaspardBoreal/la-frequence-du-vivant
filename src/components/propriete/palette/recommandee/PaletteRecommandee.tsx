@@ -1,4 +1,5 @@
 import React from 'react';
+import { speciesLatinBase } from '@/lib/speciesLatinBase';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';

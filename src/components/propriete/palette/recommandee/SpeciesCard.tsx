@@ -1,4 +1,5 @@
 import React from 'react';
+import { speciesLatinBase } from '@/lib/speciesLatinBase';
 import { motion } from 'framer-motion';
 import { Leaf, Sparkles } from 'lucide-react';
 import { SpeciesName } from '@/components/species/SpeciesName';
