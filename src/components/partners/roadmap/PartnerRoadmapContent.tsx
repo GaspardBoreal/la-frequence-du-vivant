@@ -264,16 +264,17 @@ export const PartnerRoadmapContent: React.FC<{ roadmap: PartnerRoadmap }> = ({ r
       </section>
 
       {/* 3 — Les chantiers */}
-      <section id="roadmap-03" className="scroll-mt-32">
+      <section id="roadmap-03" className="scroll-mt-40">
         <SectionTitle
           index="03"
           title="Les chantiers, par ordre de priorité"
           lead="Pour chaque chantier : ce que l'on construit, ce que cela produit, la charge estimée et l'état d'avancement."
         />
 
-        {/* Filtre d'avancement, collant sous le sommaire */}
-        <div className="sticky top-[96px] z-10 -mx-2 mb-6 rounded-full border border-border/50 bg-background/90 px-2 py-1.5 backdrop-blur print:hidden">
+        {/* Filtre d'avancement, collé sous le sommaire (bandeau plein, opaque) */}
+        <div className="sticky top-[93px] z-20 -mx-6 mb-6 border-b border-border/50 bg-background px-6 py-2 shadow-sm print:hidden">
           <div className="flex flex-wrap items-center justify-center gap-1.5">
+
             {FILTERS.map((f) => (
               <button
                 key={f.id}

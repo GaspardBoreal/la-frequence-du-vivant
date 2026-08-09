@@ -54,7 +54,7 @@ export const RoadmapTocNav: React.FC<{
   return (
     <nav
       aria-label="Sommaire de la feuille de route"
-      className={`${embedded ? '' : 'sticky top-[52px]'} z-20 border-b border-border/50 bg-background/85 backdrop-blur print:hidden ${className ?? ''}`}
+      className={`${embedded ? 'sticky top-0' : 'sticky top-[52px]'} z-30 border-b border-border/50 bg-background print:hidden ${className ?? ''}`}
     >
       <div
         className={`mx-auto flex w-full ${embedded ? '' : 'max-w-5xl px-6'} items-center justify-center gap-1 overflow-x-auto py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
