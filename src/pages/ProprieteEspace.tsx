@@ -390,7 +390,7 @@ const PropTabs: React.FC<{
 
   const closeAtelier = React.useCallback(() => setAtelierOpen(false), []);
 
-  const projectActive = ['portrait', 'synthesize', 'palette'].includes(tab);
+  const projectActive = ['portrait', 'synthesize', 'palette', 'clinique'].includes(tab);
   const projectLabel =
     tab === 'portrait'
       ? portraitSub === 'cadastre' ? 'Cadastre' : 'Galerie'
@@ -398,7 +398,9 @@ const PropTabs: React.FC<{
         ? 'Je synthétise'
         : tab === 'palette'
           ? 'Palette végétale'
-          : '';
+          : tab === 'clinique'
+            ? 'Clinique du jardin'
+            : '';
 
   return (
     <div className="space-y-5">
