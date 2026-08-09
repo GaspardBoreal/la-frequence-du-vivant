@@ -35,6 +35,7 @@ import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import ZonesMapBlock from '@/components/propriete/palette/ZonesMapBlock';
 import OuvragesRegister from '@/components/propriete/palette/OuvragesRegister';
+import PaletteRecommandee from '@/components/propriete/palette/recommandee/PaletteRecommandee';
 
 import { geometryAreaM2 } from '@/components/propriete/palette/studio/geoMetrics';
 import ExcludedSpeciesMap from '@/components/propriete/palette/ExcludedSpeciesMap';
@@ -49,7 +50,7 @@ import {
 
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
 import { computePoleScores } from '@/lib/plantIndicatorKb';
-import { PALETTE_SOURCES } from '@/lib/plantPaletteKb';
+import { PALETTE_SOURCES, PALETTE_KB } from '@/lib/plantPaletteKb';
 import {
   buildExclusions,
   buildImplementation,
@@ -284,6 +285,14 @@ export const TabPalette: React.FC<Props> = ({
   const implementation = palette.state.implementation.length
     ? palette.state.implementation
     : autoImplementation;
+
+  /** Refus de l'étape précédente traduits en identifiants de la base palette. */
+  const excludedPaletteIds = React.useMemo(() => {
+    const latins = new Set(exclusions.map((e) => e.latin.trim().toLowerCase()));
+    return PALETTE_KB.filter((s) => latins.has(s.latin.trim().toLowerCase())).map((s) => s.id);
+  }, [exclusions]);
+
+
 
   /** Refus réellement observés sur la propriété (étape 3 → étape 5). */
   const {
@@ -592,55 +601,22 @@ export const TabPalette: React.FC<Props> = ({
     />
   );
 
-  /* --------- Widget 2 : Emplacements & ouvrages (partagé édition / vue scellée) --------- */
+  /* --------- Widget 2 : Palette végétale recommandée (édition / vue scellée) --------- */
   const emplacementsWidget = (
     <div id="palette-block-zones" className="scroll-mt-24">
       <AnalyzeCard
         number={2}
-        category="Emplacements & ouvrages"
-        title="Les lieux que vous découpez, les ouvrages que vous dessinez"
-        subtitle="Le tracé se fait dans l’Atelier. Chaque emplacement reçoit sa propre palette, répartie en strates ; chaque ouvrage — mare, potager, pas japonais… — hérite des prélèvements de sol qui lui sont rattachés et de ses recommandations de mise en œuvre."
+        category="Palette végétale recommandée"
+        title="Quatre strates, trois manières de lire le même vivant"
+        subtitle="Herbacées, arbustes, lianes, arbres. La même liste d’espèces, relue selon ce que vous cherchez : l’accord avec le sol, la table nourricière, ou la tenue dans les étés à venir. Le tracé des emplacements et des ouvrages se fait désormais dans l’Atelier du jardin."
         index={1}
       >
-        <ZonesMapBlock
-          center={derivedCenter}
-          parcelles={parcelles}
-          zones={zones}
-          activeZoneId={activeZoneId}
-          onSelectZone={setActiveZoneId}
-          onCreateZone={handleCreateZone}
-          onDeleteZone={handleDeleteZone}
-          zoneSpeciesCount={Object.fromEntries(
-            palette.state.zones.map((z) => [z.zone_id, (z.selected ?? []).length]),
-          )}
-          proprieteId={proprieteId}
-          onPatchZone={(z, patch) =>
-            upsertZone({
-              id: z.id,
-              nom: patch.nom ?? z.nom,
-              geometry: patch.geometry ?? z.geometry,
-              couleur: patch.couleur ?? z.couleur,
-              note: patch.note ?? z.note,
-              ordre: patch.ordre ?? z.ordre,
-              visible: patch.visible ?? z.visible,
-              verrouille: patch.verrouille ?? z.verrouille,
-              opacite: patch.opacite ?? z.opacite,
-              surface_m2: patch.surface_m2 ?? z.surface_m2,
-            }).catch(() => {})
-          }
-          onFocusObjet={setFocusObjetId}
-        />
+        <PaletteRecommandee profile={siteProfile} exclude={excludedPaletteIds} />
 
-        <OuvragesRegister
-          proprieteId={proprieteId}
-          zones={zones}
-          onSelectZone={setActiveZoneId}
-          focusObjetId={focusObjetId}
-          zoneSelectedSpecies={zoneSelectedSpecies}
-        />
       </AnalyzeCard>
     </div>
   );
+
 
   /* ---------------- Vue scellée ---------------- */
   if (palette.completedAt && mode === 'summary') {
@@ -757,7 +733,7 @@ export const TabPalette: React.FC<Props> = ({
       </div>
 
 
-      {/* 02 — Emplacements & ouvrages */}
+      {/* 02 — Palette végétale recommandée */}
       {emplacementsWidget}
 
       {/* Palettes par zone — repliées par défaut, signature lisible dans le bandeau */}
