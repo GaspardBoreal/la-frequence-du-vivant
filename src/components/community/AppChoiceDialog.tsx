@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Leaf, MapPin, Star, ArrowRight } from 'lucide-react';
@@ -11,12 +12,21 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   prenom?: string;
   proprietes: ProprieteAccess[];
+  /** Appelé si le dialogue est fermé sans qu'aucun espace n'ait été choisi. */
+  onDismiss?: () => void;
 }
 
-export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes }: Props) {
+export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, onDismiss }: Props) {
   const navigate = useNavigate();
+  const chosenRef = useRef(false);
+
+  const handleOpenChange = (v: boolean) => {
+    onOpenChange(v);
+    if (!v && !chosenRef.current) onDismiss?.();
+  };
 
   const go = (target: string, remember?: boolean) => {
+    chosenRef.current = true;
     if (remember) {
       try { localStorage.setItem(DEFAULT_KEY, target); } catch {}
     }
