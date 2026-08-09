@@ -84,6 +84,8 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
 
 
   const node = (
+    <RoadmapFilterProvider>
+
     <div
       className="fixed inset-0 z-[4000] flex flex-col bg-background print:hidden"
       style={{ pointerEvents: 'auto' }}
