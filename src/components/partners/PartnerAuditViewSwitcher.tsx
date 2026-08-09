@@ -1,18 +1,25 @@
 import React from 'react';
-import { FileText, Sparkles } from 'lucide-react';
+import { FileText, Sparkles, Route } from 'lucide-react';
 
-export type PartnerAuditView = 'synthese' | 'detail';
+export type PartnerAuditView = 'synthese' | 'detail' | 'roadmap';
 
-/** Sélecteur segmenté entre la lecture synthétique et la version détaillée. */
+const ALL_OPTIONS: { value: PartnerAuditView; label: string; icon: React.ComponentType<any> }[] = [
+  { value: 'synthese', label: 'Version synthétique', icon: Sparkles },
+  { value: 'detail', label: 'Version détaillée', icon: FileText },
+  { value: 'roadmap', label: 'Feuille de route', icon: Route },
+];
+
+/** Sélecteur segmenté entre lecture synthétique, version détaillée et feuille de route. */
 export const PartnerAuditViewSwitcher: React.FC<{
   value: PartnerAuditView;
   onChange: (v: PartnerAuditView) => void;
   className?: string;
-}> = ({ value, onChange, className }) => {
-  const options: { value: PartnerAuditView; label: string; icon: React.ComponentType<any> }[] = [
-    { value: 'synthese', label: 'Version synthétique', icon: Sparkles },
-    { value: 'detail', label: 'Version détaillée', icon: FileText },
-  ];
+  /** Onglets à proposer ; par défaut synthèse + détail */
+  available?: PartnerAuditView[];
+}> = ({ value, onChange, className, available }) => {
+  const allowed = available ?? (['synthese', 'detail'] as PartnerAuditView[]);
+  const options = ALL_OPTIONS.filter((o) => allowed.includes(o.value));
+
 
   return (
     <div

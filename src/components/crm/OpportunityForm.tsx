@@ -43,6 +43,7 @@ import { toast } from 'sonner';
 import { OpportunityDocumentsSection } from '@/components/crm/opportunities/OpportunityDocumentsSection';
 import { PartnerAuditDrawer } from '@/components/crm/opportunities/PartnerAuditDrawer';
 import { resolvePartnerAudit } from '@/lib/partnerAudits';
+import { resolvePartnerRoadmap } from '@/lib/partnerRoadmaps';
 
 
 const opportunitySchema = z.object({
@@ -125,6 +126,11 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
     () => resolvePartnerAudit(auditCandidates),
     [auditCandidates],
   );
+  const resolvedRoadmap = React.useMemo(
+    () => resolvePartnerRoadmap(auditCandidates),
+    [auditCandidates],
+  );
+
 
 
   React.useEffect(() => {
@@ -276,14 +282,17 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({
               value={actionsRealisees}
               onChange={setActionsRealisees}
               onOpenAudit={() => setAuditOpen(true)}
+              openLabel={!resolvedAudit && resolvedRoadmap ? 'Ouvrir la feuille de route' : "Ouvrir l'audit"}
             />
 
             <PartnerAuditDrawer
               open={auditOpen}
               onClose={() => setAuditOpen(false)}
               audit={resolvedAudit}
+              roadmap={resolvedRoadmap}
               fallbackName={auditCandidates.find(Boolean) ?? null}
             />
+
 
 
 

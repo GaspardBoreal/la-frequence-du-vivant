@@ -6,6 +6,13 @@ export const vdtpRoadmap: PartnerRoadmap = {
   partnerName: 'Verre de Terre Production',
   partnerContact: 'Vincent Levavasseur',
   partnerSite: 'https://www.verredeterre.fr',
+  matchers: [
+    'VDTP',
+    'Ver de Terre Production',
+    'Verre de Terre Production',
+    'Levavasseur',
+    'Jardin nourricier',
+  ],
   subtitle:
     "Feuille de route des travaux issue de l'entretien de test de l'application — priorisation, planning et chantiers détaillés.",
   interviewLabel: 'Entretien du 7 août 2026 · 35 min · revue du 12 août 2026',

@@ -7,21 +7,28 @@ import { PartnerAuditContent } from '@/components/partners/PartnerAuditContent';
 import { PartnerAuditPrintLayout } from '@/components/partners/PartnerAuditPrintLayout';
 import PartnerAuditViewSwitcher, { type PartnerAuditView } from '@/components/partners/PartnerAuditViewSwitcher';
 import PartnerAuditSynthesis from '@/components/partners/synthese/PartnerAuditSynthesis';
+import PartnerRoadmapContent from '@/components/partners/roadmap/PartnerRoadmapContent';
+import RoadmapPrintLayout from '@/components/partners/roadmap/RoadmapPrintLayout';
 import { usePartnerAuditPrint } from '@/hooks/usePartnerAuditPrint';
+import { usePartnerRoadmapPrint } from '@/hooks/usePartnerRoadmapPrint';
 import { PARTNER_AUDIT_PASSWORD, type PartnerAudit } from '@/lib/partnerAudits';
 import { getPartnerOfferBySlug } from '@/lib/partnerOffers';
+import type { PartnerRoadmap } from '@/lib/partnerRoadmaps';
 
 
 interface PartnerAuditDrawerProps {
   open: boolean;
   onClose: () => void;
   audit: PartnerAudit | null;
+  /** Feuille de route partenaire rattachée à l'opportunité, si elle existe */
+  roadmap?: PartnerRoadmap | null;
   /** Nom affiché quand aucun audit n'existe encore */
   fallbackName?: string | null;
 }
 
 /**
- * Panneau plein écran affichant l'audit partenariat rattaché à l'opportunité.
+ * Panneau plein écran affichant le dossier partenaire rattaché à l'opportunité
+ * (audit et/ou feuille de route).
  * Rendu via un portail sur <body> pour échapper au contexte d'empilement
  * de la modale « Modifier l'opportunité ».
  */
@@ -29,12 +36,26 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
   open,
   onClose,
   audit,
+  roadmap = null,
   fallbackName,
 }) => {
   const print = usePartnerAuditPrint();
+  const printRoadmap = usePartnerRoadmapPrint();
   const hasSynthesis = Boolean(audit?.synthesis);
+
+  const availableViews = React.useMemo<PartnerAuditView[]>(() => {
+    const v: PartnerAuditView[] = [];
+    if (hasSynthesis) v.push('synthese');
+    if (audit) v.push('detail');
+    if (roadmap) v.push('roadmap');
+    return v;
+  }, [hasSynthesis, audit, roadmap]);
+
   const [view, setView] = React.useState<PartnerAuditView>('synthese');
-  const effectiveView: PartnerAuditView = hasSynthesis ? view : 'detail';
+  const effectiveView: PartnerAuditView = availableViews.includes(view)
+    ? view
+    : (availableViews[0] ?? 'detail');
+  const isRoadmapView = effectiveView === 'roadmap' && Boolean(roadmap);
 
 
   React.useEffect(() => {
@@ -54,7 +75,11 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
   if (!open || typeof document === 'undefined') return null;
 
   const webUrl = audit ? `${window.location.origin}/partenaires/${audit.slug}` : null;
+  const roadmapUrl = roadmap
+    ? `${window.location.origin}/partenaires/${roadmap.slug}/${roadmap.date}`
+    : null;
   const offer = audit ? getPartnerOfferBySlug(audit.slug) : null;
+
 
   const node = (
     <div
@@ -69,9 +94,27 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-6 py-4">
           <div className="flex items-start gap-3">
             <p className="mt-0.5 flex-1 text-[11px] uppercase tracking-[0.2em] text-primary/80">
-              Jalon 2 · Audit partenariat
+              {isRoadmapView ? 'Jalon 3 · Feuille de route' : 'Jalon 2 · Audit partenariat'}
             </p>
-            {audit && (
+            {isRoadmapView && roadmap ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={printRoadmap}>
+                  <Printer className="mr-1.5 h-4 w-4" /> Imprimer
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    window.open(
+                      `/partenaires/${roadmap.slug}/${roadmap.date}`,
+                      '_blank',
+                      'noopener',
+                    )
+                  }
+                >
+                  <ExternalLink className="mr-1.5 h-4 w-4" /> Voir la version web
+                </Button>
+              </div>
+            ) : audit ? (
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
@@ -104,7 +147,7 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
                   <ExternalLink className="mr-1.5 h-4 w-4" /> Voir la version web
                 </Button>
               </div>
-            )}
+            ) : null}
             <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fermer">
               <X className="h-5 w-5" />
             </Button>
@@ -112,26 +155,64 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
 
           <div className="min-w-0">
             <h2 className="text-xl font-semibold leading-tight text-foreground md:text-2xl">
-              {audit
-                ? `La Fréquence du Vivant × ${audit.partnerName}`
-                : fallbackName || 'Audit partenariat'}
+              {isRoadmapView && roadmap
+                ? `La Fréquence du Vivant × ${roadmap.partnerName}`
+                : audit
+                  ? `La Fréquence du Vivant × ${audit.partnerName}`
+                  : fallbackName || 'Audit partenariat'}
             </h2>
-            {audit && (
+            {isRoadmapView && roadmap ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {roadmap.subtitle} · {roadmap.interviewLabel}
+              </p>
+            ) : audit ? (
               <p className="mt-1 text-sm text-muted-foreground">
                 {audit.subtitle} · {audit.dateLabel}
               </p>
-            )}
+            ) : null}
           </div>
 
-          {hasSynthesis && (
-            <PartnerAuditViewSwitcher value={effectiveView} onChange={setView} />
+
+          {availableViews.length > 1 && (
+            <PartnerAuditViewSwitcher
+              value={effectiveView}
+              onChange={setView}
+              available={availableViews}
+            />
           )}
         </div>
       </header>
 
       {/* Corps */}
       <div className="flex-1 overflow-y-auto">
-        {audit ? (
+        {effectiveView === 'roadmap' && roadmap ? (
+          <div className="mx-auto w-full max-w-5xl px-6 py-8">
+            {roadmapUrl && (
+              <div className="mb-8 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground">
+                <span className="truncate font-mono text-foreground/80">{roadmapUrl}</span>
+                <span>— mot de passe</span>
+                <span className="rounded bg-background px-1.5 py-0.5 font-mono font-semibold text-foreground">
+                  {PARTNER_AUDIT_PASSWORD}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      `${roadmapUrl} — mot de passe ${PARTNER_AUDIT_PASSWORD}`,
+                    );
+                    toast.success('Lien et mot de passe copiés');
+                  }}
+                >
+                  <Link2 className="mr-1.5 h-3.5 w-3.5" /> Copier le lien
+                </Button>
+              </div>
+            )}
+            <PartnerRoadmapContent roadmap={roadmap} />
+            <div className="h-16" />
+          </div>
+        ) : audit ? (
           effectiveView === 'synthese' && audit.synthesis ? (
             <PartnerAuditSynthesis audit={audit} />
           ) : (
@@ -182,6 +263,7 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
             </Button>
           </div>
         )}
+
       </div>
     </div>
   );
@@ -190,8 +272,10 @@ export const PartnerAuditDrawer: React.FC<PartnerAuditDrawerProps> = ({
     <>
       {createPortal(node, document.body)}
       {audit && <PartnerAuditPrintLayout audit={audit} />}
+      {roadmap && <RoadmapPrintLayout roadmap={roadmap} />}
     </>
   );
+
 };
 
 export default PartnerAuditDrawer;
