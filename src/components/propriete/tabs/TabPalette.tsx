@@ -36,6 +36,7 @@ import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import ZonesMapBlock from '@/components/propriete/palette/ZonesMapBlock';
 import OuvragesRegister from '@/components/propriete/palette/OuvragesRegister';
 import PaletteRecommandee from '@/components/propriete/palette/recommandee/PaletteRecommandee';
+import PaletteStudio from '@/components/propriete/palette/studio/PaletteStudio';
 
 import { geometryAreaM2 } from '@/components/propriete/palette/studio/geoMetrics';
 import ExcludedSpeciesMap from '@/components/propriete/palette/ExcludedSpeciesMap';
