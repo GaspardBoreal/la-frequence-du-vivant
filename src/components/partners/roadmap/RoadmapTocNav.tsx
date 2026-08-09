@@ -89,8 +89,50 @@ export const RoadmapTocNav: React.FC<{
           );
         })}
       </div>
+
+      {filterCtx && (
+        <div className="border-t border-border/40 bg-background">
+          <div
+            className={`mx-auto flex w-full ${embedded ? '' : 'max-w-5xl px-6'} items-center justify-center gap-1 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
+          >
+            {(
+              [
+                { id: 'all', label: 'Tous', n: filterCtx.counts.total },
+                { id: 'done', label: 'Faits', n: filterCtx.counts.done },
+                { id: 'doing', label: 'En cours', n: filterCtx.counts.doing },
+                { id: 'todo', label: 'À faire', n: filterCtx.counts.todo },
+              ] as const
+            ).map((f) => {
+              const isActive = filterCtx.filter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => filterCtx.applyFilter(f.id)}
+                  aria-pressed={isActive}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary/15 text-primary'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  {f.label}
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                      isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {f.n}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </nav>
   );
+
 };
 
 export default RoadmapTocNav;
