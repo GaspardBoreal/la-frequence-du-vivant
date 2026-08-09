@@ -21,6 +21,31 @@ export function getPartnerRoadmap(
   return PARTNER_ROADMAPS.find((r) => r.slug === slug && r.date === date) ?? null;
 }
 
+const normalize = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+/** Rattache une feuille de route à une opportunité à partir de textes libres. */
+export function resolvePartnerRoadmap(
+  candidates: (string | null | undefined)[],
+): PartnerRoadmap | null {
+  const haystack = candidates.filter(Boolean).map((c) => normalize(String(c)));
+  if (haystack.length === 0) return null;
+  return (
+    PARTNER_ROADMAPS.find((r) =>
+      (r.matchers ?? []).some((m) => {
+        const nm = normalize(m);
+        return haystack.some((h) => h.includes(nm));
+      }),
+    ) ?? null
+  );
+}
+
+
 export const STATUS_LABEL: Record<string, string> = {
   todo: 'À faire',
   doing: 'En cours',
