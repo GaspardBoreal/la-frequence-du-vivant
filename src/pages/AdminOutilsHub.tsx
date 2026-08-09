@@ -34,12 +34,20 @@ const OUTILS = [
     active: true,
   },
   {
+    titre: 'Coffre-fort du registre de sol',
+    description: 'Vérifie en direct les verrous qui empêchent l\'effacement des prélèvements : garde-fou serveur, journal des versions, points d\'entrée applicatifs, test à blanc.',
+    icon: ShieldCheck,
+    to: '/admin/outils/registre-sol',
+    active: true,
+  },
+  {
     titre: 'Curation taxonomique',
     description: 'Fusionne durablement les espèces dupliquées (Lantana / Lantana camara…), par marche ou globalement. Persistant face aux synchros iNat / Pl@ntNet.',
     icon: GitMerge,
     to: '/admin/outils/taxonomie',
     active: true,
   },
+
   {
     titre: 'Zones',
     description: 'Cartographie des zones de marches.',
