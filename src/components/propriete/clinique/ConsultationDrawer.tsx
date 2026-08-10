@@ -87,7 +87,18 @@ export const ConsultationDrawer: React.FC<{
   const toggle = useToggleAction(proprieteId);
   const addMedia = useAddConsultationMedia(proprieteId);
   const update = useUpdateConsultation(proprieteId);
+  const remove = useDeleteConsultation(proprieteId);
   const [uploading, setUploading] = React.useState(false);
+  const [renaming, setRenaming] = React.useState(false);
+  const [draftLabel, setDraftLabel] = React.useState('');
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+
+  React.useEffect(() => {
+    setRenaming(false);
+    setConfirmDelete(false);
+    setDraftLabel(consultation?.subject_label ?? '');
+  }, [consultation?.id, consultation?.subject_label]);
+
 
   const actions = data?.actions ?? [];
   const doneCount = actions.filter((a) => a.done).length;
