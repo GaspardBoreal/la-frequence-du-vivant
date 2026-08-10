@@ -95,17 +95,35 @@ export const ConsultationDrawer: React.FC<{
   const [renaming, setRenaming] = React.useState(false);
   const [draftLabel, setDraftLabel] = React.useState('');
   const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const [viewerIndex, setViewerIndex] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     setRenaming(false);
     setConfirmDelete(false);
+    setViewerIndex(null);
     setDraftLabel(consultation?.subject_label ?? '');
   }, [consultation?.id, consultation?.subject_label]);
 
 
   const actions = data?.actions ?? [];
+  const medias = React.useMemo<ConsultationMedia[]>(() => data?.medias ?? [], [data?.medias]);
   const doneCount = actions.filter((a) => a.done).length;
   const progress = actions.length ? Math.round((doneCount / actions.length) * 100) : 0;
+
+  const onPinNote = React.useCallback(
+    (m: ConsultationMedia) => {
+      if (!consultation) return;
+      const when = new Date(m.taken_at ?? m.created_at).toLocaleString('fr-FR', {
+        dateStyle: 'long',
+        timeStyle: 'short',
+      });
+      const line = `Repère du ${when}${m.severity_at_capture ? ` · étendue ${m.severity_at_capture}/5` : ''}`;
+      const notes = consultation.notes ? `${consultation.notes}\n${line}` : line;
+      update.mutate({ id: consultation.id, patch: { notes } });
+    },
+    [consultation, update],
+  );
+
 
   const onJournalPick = async (list: FileList | null) => {
     if (!list?.length || !consultation) return;
