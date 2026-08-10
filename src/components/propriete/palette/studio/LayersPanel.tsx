@@ -29,7 +29,16 @@ export interface SystemLayerState {
   vivant: boolean;
   /** Carottes de sol · prélèvements de l'étape « J'analyse ». */
   sol: boolean;
+  /** Foyers de la Clinique du jardin · maladies observées et soignées. */
+  sante: boolean;
+  /** Halos de propagation et chaînes de contagion. */
+  santeHalos: boolean;
+  /** Tournée de soin : itinéraire des gestes restants. */
+  santeTournee: boolean;
+  /** Afficher aussi les foyers rétablis (mémoire du jardin). */
+  santeGueris: boolean;
 }
+
 
 
 interface Props {
@@ -55,6 +64,8 @@ interface Props {
   scopeCounts?: { cadastre: number | null; all: number };
   /** Nombre de prélèvements de sol posés sur la carte. */
   soilCount?: number;
+  /** Foyers de la Clinique : posés sur le plan / restant à localiser. */
+  santeCounts?: { placed: number; toPlace: number; actifs: number };
   /** Ouvre « L'herbier du moment » : la liste des espèces réellement visibles. */
   onOpenHerbier?: () => void;
 
@@ -108,6 +119,7 @@ export const LayersPanel: React.FC<Props> = ({
   system,
   onSystem,
   soilCount,
+  santeCounts,
   onOpenHerbier,
 
 
@@ -313,6 +325,54 @@ export const LayersPanel: React.FC<Props> = ({
               Carottes A, B, C… de l’étape « J’analyse ». Glissez-les pour corriger leur
               position, reliez-les à un ouvrage depuis son éditeur.
             </p>
+          )}
+
+          {/* État sanitaire · foyers de la Clinique du jardin */}
+          <div className={`${rowBase} hover:bg-[hsl(var(--ds-forest))]/5`}>
+            <IconBtn
+              title={system.sante ? 'Masquer' : 'Afficher'}
+              onClick={() => onSystem({ sante: !system.sante })}
+            >
+              {system.sante ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            </IconBtn>
+            <span className={system.sante ? '' : 'opacity-45'}>
+              État sanitaire
+              {santeCounts && (
+                <span className="ml-1 opacity-55">
+                  · {santeCounts.placed}
+                  {santeCounts.toPlace > 0 && ` · ${santeCounts.toPlace} à situer`}
+                </span>
+              )}
+            </span>
+          </div>
+          {system.sante && (
+            <div className="space-y-1 pl-8 pb-1">
+              {(
+                [
+                  ['santeHalos', 'Halos de propagation et chaînes'],
+                  ['santeTournee', 'Tournée de soin'],
+                  ['santeGueris', 'Mémoire : foyers rétablis'],
+                ] as Array<[keyof SystemLayerState, string]>
+              ).map(([k, label]) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => onSystem({ [k]: !system[k] } as any)}
+                  className={`flex w-full items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] transition-colors ${
+                    system[k]
+                      ? 'border-[hsl(var(--ds-forest))]/45 bg-[hsl(var(--ds-forest))]/12 text-[hsl(var(--ds-forest-deep))]'
+                      : 'border-[hsl(var(--ds-forest))]/20 text-[hsl(var(--ds-forest-deep))]/55'
+                  }`}
+                >
+                  {system[k] ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                  {label}
+                </button>
+              ))}
+              <p className="text-[9.5px] italic leading-snug opacity-55">
+                Foyers de la Clinique du jardin. Glissez une pastille pour corriger sa position,
+                posez celles qui restent à situer depuis le bandeau de la carte.
+              </p>
+            </div>
           )}
 
         </div>

@@ -245,6 +245,8 @@ const invalidate = (qc: ReturnType<typeof useQueryClient>, proprieteId?: string,
   // Le bandeau « État sanitaire du jardin » agrège gestes, hypothèses et médias :
   // il doit se recalculer à chaque écriture (ajout / suppression / réalisation).
   qc.invalidateQueries({ queryKey: ['clinique-overview'] });
+  // La carte des foyers (Atelier du jardin) lit les mêmes gestes et preuves.
+  qc.invalidateQueries({ queryKey: ['clinique-map'] });
 };
 
 
@@ -442,5 +444,168 @@ export function useDiagnoseDisease() {
       };
     },
     onError: (e: any) => toast.error(e.message || 'Diagnostic indisponible'),
+  });
+}
+
+/* ───────────────── Lecture cartographique (Atelier du jardin) ───────────────── */
+
+export interface CliniqueMapRow {
+  consultationId: string;
+  /** Hypothèse retenue, sinon la mieux classée. */
+  pathogen: string | null;
+  kind: string | null;
+  actionsTotal: number;
+  actionsDone: number;
+  /** Prochain geste à faire, du plus doux au plus intense. */
+  nextAction: { id: string; label: string; volet: ActionVolet; window: string | null } | null;
+  lastPhotoUrl: string | null;
+  lastPhotoAt: string | null;
+}
+
+/**
+ * Agrégat spatial : ce qu'il faut savoir d'un foyer sans ouvrir sa fiche —
+ * le mal nommé, les gestes restants, la dernière preuve photo.
+ */
+export function useCliniqueMapData(proprieteId?: string, consultations: Consultation[] = []) {
+  const ids = consultations.map((c) => c.id);
+  const key = ids.slice().sort().join(',');
+  const retained = consultations
+    .map((c) => c.retained_hypothesis_id)
+    .filter(Boolean)
+    .join(',');
+
+  return useQuery({
+    queryKey: ['clinique-map', proprieteId, key, retained],
+    enabled: !!proprieteId && ids.length > 0,
+    queryFn: async (): Promise<Record<string, CliniqueMapRow>> => {
+      const [h, a, m] = await Promise.all([
+        supabase
+          .from('propriete_consultation_hypotheses' as any)
+          .select('id, consultation_id, common_name, kind, rank')
+          .in('consultation_id', ids)
+          .order('rank', { ascending: true }),
+        supabase
+          .from('propriete_consultation_actions' as any)
+          .select('id, consultation_id, label, volet, done, intensity, window_start, window_end, frequency')
+          .in('consultation_id', ids)
+          .order('intensity', { ascending: true }),
+        supabase
+          .from('propriete_consultation_medias' as any)
+          .select('consultation_id, url, media_type, taken_at, created_at')
+          .in('consultation_id', ids)
+          .order('created_at', { ascending: true }),
+      ]);
+      if (h.error) throw h.error;
+      if (a.error) throw a.error;
+      if (m.error) throw m.error;
+
+      const out: Record<string, CliniqueMapRow> = {};
+      consultations.forEach((c) => {
+        out[c.id] = {
+          consultationId: c.id,
+          pathogen: null,
+          kind: null,
+          actionsTotal: 0,
+          actionsDone: 0,
+          nextAction: null,
+          lastPhotoUrl: null,
+          lastPhotoAt: null,
+        };
+      });
+
+      ((h.data as any[]) || []).forEach((row) => {
+        const r = out[row.consultation_id];
+        if (!r) return;
+        const c = consultations.find((x) => x.id === row.consultation_id);
+        const isRetained = c?.retained_hypothesis_id === row.id;
+        if (isRetained || !r.pathogen) {
+          if (isRetained || !c?.retained_hypothesis_id) {
+            r.pathogen = row.common_name ?? null;
+            r.kind = row.kind ?? null;
+          }
+        }
+      });
+
+      ((a.data as any[]) || []).forEach((row) => {
+        const r = out[row.consultation_id];
+        if (!r) return;
+        r.actionsTotal += 1;
+        if (row.done) r.actionsDone += 1;
+        else if (!r.nextAction) {
+          r.nextAction = {
+            id: row.id,
+            label: row.label,
+            volet: row.volet,
+            window: row.frequency || row.window_start || null,
+          };
+        }
+      });
+
+      ((m.data as any[]) || []).forEach((row) => {
+        const r = out[row.consultation_id];
+        if (!r || row.media_type !== 'photo') return;
+        r.lastPhotoUrl = row.url;
+        r.lastPhotoAt = row.taken_at || row.created_at || null;
+      });
+
+      return out;
+    },
+  });
+}
+
+/**
+ * Écriture chirurgicale de la position d'une consultation : seules `lat`/`lng`
+ * partent en base, le reste du dossier clinique n'est jamais réécrit.
+ */
+export function useMoveConsultation(proprieteId?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; lat: number | null; lng: number | null }) => {
+      const { error } = await supabase
+        .from('propriete_consultations' as any)
+        .update({ lat: input.lat, lng: input.lng } as any)
+        .eq('id', input.id);
+      if (error) throw error;
+      return input;
+    },
+    onMutate: async (input) => {
+      const key = ['clinique-consultations', proprieteId];
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<Consultation[]>(key);
+      if (prev) {
+        qc.setQueryData<Consultation[]>(
+          key,
+          prev.map((c) => (c.id === input.id ? { ...c, lat: input.lat, lng: input.lng } : c)),
+        );
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['clinique-consultations', proprieteId], ctx.prev);
+      toast.error('Position non enregistrée');
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['clinique-consultations', proprieteId] });
+    },
+  });
+}
+
+/** Marque un geste comme réalisé depuis la carte, sans ouvrir la fiche. */
+export function useMarkActionDone(proprieteId?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { actionId: string; consultationId: string }) => {
+      const { error } = await supabase
+        .from('propriete_consultation_actions' as any)
+        .update({ done: true, done_at: new Date().toISOString() } as any)
+        .eq('id', input.actionId);
+      if (error) throw error;
+      return input.consultationId;
+    },
+    onSuccess: (id) => {
+      invalidate(qc, proprieteId, id);
+      toast.success('Geste noté comme réalisé');
+    },
+    onError: (e: any) => toast.error(e.message || 'Geste non enregistré'),
   });
 }
