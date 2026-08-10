@@ -49,6 +49,25 @@ import ScenariosLibraryPanel from './ScenariosLibraryPanel';
 import ChantierOverlay from '@/components/propriete/chantier/ChantierOverlay';
 
 import SoilSamplesLayer from './SoilSamplesLayer';
+import CliniqueLayer from '@/components/propriete/clinique/map/CliniqueLayer';
+import CareRoundLayer from '@/components/propriete/clinique/map/CareRoundLayer';
+import CliniqueDock from '@/components/propriete/clinique/map/CliniqueDock';
+import ConsultationDrawer from '@/components/propriete/clinique/ConsultationDrawer';
+import {
+  useConsultations,
+  useCliniqueMapData,
+  useMoveConsultation,
+  useMarkActionDone,
+  type Consultation,
+} from '@/hooks/propriete/useGardenClinique';
+import {
+  buildContagionChains,
+  buildCareRound,
+  normalizeKind,
+  spreadRadiusM,
+  isActive as isFocusActive,
+  type FocusPoint,
+} from '@/lib/gardenSpread';
 import { useSoilSamples } from '@/hooks/propriete/useSoilSamples';
 import { linkedSampleIds } from '@/lib/soilLinkEngine';
 import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
@@ -277,7 +296,64 @@ export const PaletteStudio: React.FC<Props> = ({
     zones: true,
     vivant: true,
     sol: true,
+    sante: true,
+    santeHalos: true,
+    santeTournee: false,
+    santeGueris: false,
   });
+
+  /* ── Clinique du jardin : les foyers posés sur le plan ────────────────── */
+  const { data: consultations = [] } = useConsultations(open ? proprieteId : undefined);
+  const { data: cliniqueMap } = useCliniqueMapData(
+    open ? proprieteId : undefined,
+    consultations,
+  );
+  const moveConsultation = useMoveConsultation(proprieteId);
+  const markActionDone = useMarkActionDone(proprieteId);
+  const [placingConsultationId, setPlacingConsultationId] = React.useState<string | null>(null);
+  const [openConsultation, setOpenConsultation] = React.useState<Consultation | null>(null);
+
+  const focusPoints = React.useMemo<FocusPoint[]>(
+    () =>
+      consultations
+        .filter((c) => typeof c.lat === 'number' && typeof c.lng === 'number')
+        .map((c) => {
+          const row = cliniqueMap?.[c.id];
+          const kind = normalizeKind(row?.kind);
+          return {
+            consultation: c,
+            lat: c.lat as number,
+            lng: c.lng as number,
+            pathogen: row?.pathogen ?? null,
+            kind,
+            radiusM: spreadRadiusM(kind, c.severity ?? 0),
+            actionsTotal: row?.actionsTotal ?? 0,
+            actionsDone: row?.actionsDone ?? 0,
+            nextAction: row?.nextAction ?? null,
+            lastPhotoUrl: row?.lastPhotoUrl ?? null,
+          };
+        }),
+    [consultations, cliniqueMap],
+  );
+  const chains = React.useMemo(() => buildContagionChains(focusPoints), [focusPoints]);
+  const careRound = React.useMemo(() => buildCareRound(focusPoints), [focusPoints]);
+  const consultationsToPlace = React.useMemo(
+    () =>
+      consultations.filter(
+        (c) =>
+          isFocusActive(c) &&
+          (typeof c.lat !== 'number' || typeof c.lng !== 'number'),
+      ),
+    [consultations],
+  );
+  const santeCounts = React.useMemo(
+    () => ({
+      placed: focusPoints.length,
+      toPlace: consultationsToPlace.length,
+      actifs: focusPoints.filter((p) => isFocusActive(p.consultation)).length,
+    }),
+    [focusPoints, consultationsToPlace],
+  );
 
   const [vivantFilter, setVivantFilter] = React.useState<VivantFilterState>(
     () => VIVANT_FILTER_MEMORY.get(proprieteId) ?? DEFAULT_VIVANT_FILTER,
@@ -764,6 +840,7 @@ export const PaletteStudio: React.FC<Props> = ({
                   scopeCounts={scopeCounts}
                   onOpenHerbier={() => setHerbierOpen(true)}
                   soilCount={soil.placed.length}
+                  santeCounts={santeCounts}
                   objetCountByCalque={objetCountByCalque}
                   readOnly={readOnly}
                 />
@@ -989,7 +1066,48 @@ export const PaletteStudio: React.FC<Props> = ({
                 onFinish={handleDrawFinish}
               />
             )}
+            {system.sante && (
+              <CliniqueLayer
+                points={focusPoints}
+                chains={chains}
+                neighbors={cliniqueNeighbors}
+                showHalos={system.santeHalos}
+                showHealed={system.santeGueris}
+                draggable={!readOnly}
+                placingId={placingConsultationId}
+                onPlace={(id, lat, lng) => {
+                  moveConsultation.mutate({ id, lat, lng });
+                  setPlacingConsultationId(null);
+                }}
+                onMove={(id, lat, lng) => moveConsultation.mutate({ id, lat, lng })}
+                onOpen={(c) => setOpenConsultation(c)}
+                onDoneAction={(p) =>
+                  p.nextAction &&
+                  markActionDone.mutate({
+                    actionId: p.nextAction.id,
+                    consultationId: p.consultation.id,
+                  })
+                }
+              />
+            )}
+
+            {system.sante && system.santeTournee && <CareRoundLayer round={careRound} />}
+
           </RichMap>
+
+          {system.sante && (focusPoints.length > 0 || consultationsToPlace.length > 0) && (
+            <CliniqueDock
+              toPlace={consultationsToPlace}
+              placingId={placingConsultationId}
+              onPlacing={setPlacingConsultationId}
+              round={careRound}
+              showRound={system.santeTournee}
+              onToggleRound={() => setSystem((st) => ({ ...st, santeTournee: !st.santeTournee }))}
+              chains={chains}
+              points={focusPoints}
+              onOpen={(c) => setOpenConsultation(c)}
+            />
+          )}
 
           <InlineGpsBar curation={inlineGps} />
 
@@ -1247,6 +1365,13 @@ export const PaletteStudio: React.FC<Props> = ({
             displayNameFor={displayNameFor}
           />
         )}
+
+        {/* Clinique du jardin — fiche du foyer ouverte depuis le plan */}
+        <ConsultationDrawer
+          consultation={openConsultation}
+          proprieteId={proprieteId}
+          onClose={() => setOpenConsultation(null)}
+        />
 
         {/* Le Chantier — démonstration avant / après d'un lot d'ouvrages */}
         {chantierOpen && (
