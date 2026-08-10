@@ -245,6 +245,8 @@ const invalidate = (qc: ReturnType<typeof useQueryClient>, proprieteId?: string,
   // Le bandeau « État sanitaire du jardin » agrège gestes, hypothèses et médias :
   // il doit se recalculer à chaque écriture (ajout / suppression / réalisation).
   qc.invalidateQueries({ queryKey: ['clinique-overview'] });
+  // La carte des foyers (Atelier du jardin) lit les mêmes gestes et preuves.
+  qc.invalidateQueries({ queryKey: ['clinique-map'] });
 };
 
 
@@ -585,5 +587,25 @@ export function useMoveConsultation(proprieteId?: string) {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['clinique-consultations', proprieteId] });
     },
+  });
+}
+
+/** Marque un geste comme réalisé depuis la carte, sans ouvrir la fiche. */
+export function useMarkActionDone(proprieteId?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { actionId: string; consultationId: string }) => {
+      const { error } = await supabase
+        .from('propriete_consultation_actions' as any)
+        .update({ done: true, done_at: new Date().toISOString() } as any)
+        .eq('id', input.actionId);
+      if (error) throw error;
+      return input.consultationId;
+    },
+    onSuccess: (id) => {
+      invalidate(qc, proprieteId, id);
+      toast.success('Geste noté comme réalisé');
+    },
+    onError: (e: any) => toast.error(e.message || 'Geste non enregistré'),
   });
 }
