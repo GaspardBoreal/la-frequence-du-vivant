@@ -115,7 +115,14 @@ export const TabClinique: React.FC<{
         }
       />
 
-      <RiskBarometer risk={risk} weather={weather} />
+      <HealthBanner
+        health={health}
+        risk={risk}
+        weather={weather}
+        statusFilter={statusFilter}
+        onStatusFilter={setStatusFilter}
+      />
+
 
       {/* Consultations */}
       <section>
