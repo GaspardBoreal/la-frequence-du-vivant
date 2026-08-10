@@ -335,6 +335,17 @@ export const PaletteStudio: React.FC<Props> = ({
         }),
     [consultations, cliniqueMap],
   );
+  /** Voisins exposés : les observations du vivant situées dans le halo. */
+  const cliniqueNeighbors = React.useMemo(
+    () =>
+      waypoints.slice(0, 400).map((w) => ({
+        id: w.id,
+        label: displayNameFor(w) || w.scientificName || 'Observation',
+        lat: w.lat,
+        lng: w.lng,
+      })),
+    [waypoints, displayNameFor],
+  );
   const chains = React.useMemo(() => buildContagionChains(focusPoints), [focusPoints]);
   const careRound = React.useMemo(() => buildCareRound(focusPoints), [focusPoints]);
   const consultationsToPlace = React.useMemo(
