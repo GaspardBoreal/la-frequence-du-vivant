@@ -278,6 +278,27 @@ export function useUpdateConsultation(proprieteId?: string) {
   });
 }
 
+export function useDeleteConsultation(proprieteId?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('propriete_consultations' as any)
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: (id) => {
+      invalidate(qc, proprieteId, id);
+      toast.success('Consultation refermée et effacée du registre');
+    },
+    onError: (e: any) => toast.error(e.message || 'Suppression impossible'),
+  });
+}
+
+
+
 export function useSaveDiagnostic(proprieteId?: string) {
   const qc = useQueryClient();
   return useMutation({
