@@ -8,6 +8,14 @@ import { useSpeciesThumb } from '@/hooks/useSpeciesThumb';
 import { DISPLAY_STRATE_LABEL, foodTraits, climateTraits, MONTH_FULL, type ProjectedSpecies, type ProjectionId } from '@/lib/paletteProjections';
 import type { SiteProfile } from '@/lib/paletteEngine';
 import { gbifUrl, inaturalistUrl, telaBotanicaUrl } from '@/lib/paletteSources';
+import { VERDICT_TOKEN, iconFor } from '@/components/propriete/identify/ConcordanceParts';
+import type { AxisMatch } from '@/lib/plantIndicatorKb';
+import {
+  ECO_AXES,
+  buildEcoAxisReading,
+  buildEcoGlobalReading,
+  GAP_LABEL,
+} from '@/lib/paletteEcologyReading';
 import { cn } from '@/lib/utils';
 
 interface Props {
