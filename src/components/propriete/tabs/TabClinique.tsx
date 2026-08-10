@@ -128,7 +128,17 @@ export const TabClinique: React.FC<{
       <section>
         <h3 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.3em] text-[hsl(var(--ds-forest))]">
           <HeartPulse className="h-3 w-3" /> Consultations en cours
+          {statusFilter && (
+            <button
+              type="button"
+              onClick={() => setStatusFilter(null)}
+              className="ml-1 rounded-full border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-0.5 text-[9px] normal-case tracking-normal text-[hsl(var(--ds-forest-deep))] hover:bg-white"
+            >
+              Filtre : {STATUS_LABEL[statusFilter]} — tout voir
+            </button>
+          )}
         </h3>
+
 
         {active.length === 0 ? (
           <div className="mt-2 rounded-3xl border border-dashed border-[hsl(var(--ds-forest))]/35 bg-[hsl(var(--ds-cream))] p-8 text-center">
