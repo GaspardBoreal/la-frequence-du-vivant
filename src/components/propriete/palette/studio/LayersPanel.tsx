@@ -29,7 +29,16 @@ export interface SystemLayerState {
   vivant: boolean;
   /** Carottes de sol · prélèvements de l'étape « J'analyse ». */
   sol: boolean;
+  /** Foyers de la Clinique du jardin · maladies observées et soignées. */
+  sante: boolean;
+  /** Halos de propagation et chaînes de contagion. */
+  santeHalos: boolean;
+  /** Tournée de soin : itinéraire des gestes restants. */
+  santeTournee: boolean;
+  /** Afficher aussi les foyers rétablis (mémoire du jardin). */
+  santeGueris: boolean;
 }
+
 
 
 interface Props {
