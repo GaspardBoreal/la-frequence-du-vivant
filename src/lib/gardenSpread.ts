@@ -58,6 +58,10 @@ export interface FocusPoint {
   radiusM: number;
   actionsTotal: number;
   actionsDone: number;
+  /** Prochain geste prescrit non réalisé. */
+  nextAction: { id: string; label: string; volet: string; window: string | null } | null;
+  /** Dernière preuve photo du journal. */
+  lastPhotoUrl?: string | null;
 }
 
 export const spreadRadiusM = (kind: PathogenKind, severity: number): number => {
