@@ -157,7 +157,55 @@ export function useConsultationDetail(consultationId?: string) {
   });
 }
 
+/**
+ * Agrégat clinique de toute la propriété : hypothèses, gestes de soin et
+ * dernière photo de suivi, en trois requêtes seulement.
+ */
+export function useCliniqueOverview(proprieteId?: string, consultationIds: string[] = []) {
+  const key = consultationIds.slice().sort().join(',');
+  return useQuery({
+    queryKey: ['clinique-overview', proprieteId, key],
+    enabled: !!proprieteId && consultationIds.length > 0,
+    queryFn: async () => {
+      const [h, a, m] = await Promise.all([
+        supabase
+          .from('propriete_consultation_hypotheses' as any)
+          .select('consultation_id, common_name')
+          .in('consultation_id', consultationIds),
+        supabase
+          .from('propriete_consultation_actions' as any)
+          .select('consultation_id, done')
+          .in('consultation_id', consultationIds),
+        supabase
+          .from('propriete_consultation_medias' as any)
+          .select('taken_at, created_at')
+          .in('consultation_id', consultationIds)
+          .order('created_at', { ascending: false })
+          .limit(1),
+      ]);
+      if (h.error) throw h.error;
+      if (a.error) throw a.error;
+      if (m.error) throw m.error;
+
+      const hypothesesByConsultation: Record<string, string[]> = {};
+      ((h.data as any[]) || []).forEach((row) => {
+        (hypothesesByConsultation[row.consultation_id] ||= []).push(row.common_name);
+      });
+      const actions = ((a.data as any[]) || []);
+      const lastRow = ((m.data as any[]) || [])[0];
+
+      return {
+        hypothesesByConsultation,
+        actionsTotal: actions.length,
+        actionsDone: actions.filter((x) => x.done).length,
+        lastMediaAt: (lastRow?.taken_at || lastRow?.created_at || null) as string | null,
+      };
+    },
+  });
+}
+
 export function usePathogenKb() {
+
   return useQuery({
     queryKey: ['garden-pathogens-kb'],
     staleTime: 30 * 60 * 1000,

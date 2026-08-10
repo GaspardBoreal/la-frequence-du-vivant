@@ -8,12 +8,15 @@ import { soilLiteFromState } from '@/lib/soilLiteFromState';
 import { useParcelWeather, summarizeWeather } from '@/components/cadastre/useParcelWeather';
 import { computeGardenRisk } from '@/lib/gardenRisk';
 import {
-  useConsultations, usePathogenKb, type Consultation,
+  useConsultations, usePathogenKb, useCliniqueOverview,
+  type Consultation, type ConsultationStatus,
 } from '@/hooks/propriete/useGardenClinique';
-import RiskBarometer from '@/components/propriete/clinique/RiskBarometer';
+import { computeGardenHealth } from '@/lib/gardenHealth';
+import HealthBanner from '@/components/propriete/clinique/HealthBanner';
 import SensorPanel from '@/components/propriete/clinique/SensorPanel';
 import NewConsultationDialog from '@/components/propriete/clinique/NewConsultationDialog';
 import ConsultationDrawer from '@/components/propriete/clinique/ConsultationDrawer';
+
 
 const STATUS_TONE: Record<string, string> = {
   observation: 'bg-[hsl(var(--ds-gold))]/25 text-[hsl(var(--ds-forest-deep))]',
@@ -61,10 +64,24 @@ export const TabClinique: React.FC<{
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [openConsultation, setOpenConsultation] = React.useState<Consultation | null>(null);
+  const [statusFilter, setStatusFilter] = React.useState<ConsultationStatus | null>(null);
 
   const list = consultations ?? [];
-  const active = list.filter((c) => c.status === 'observation' || c.status === 'traitement');
-  const healed = list.filter((c) => c.status === 'gueri');
+  const consultationIds = React.useMemo(() => list.map((c) => c.id), [list]);
+  const { data: overview } = useCliniqueOverview(proprieteId, consultationIds);
+  const health = React.useMemo(
+    () => computeGardenHealth(list, overview ?? undefined),
+    [list, overview],
+  );
+
+  const activeAll = list.filter((c) => c.status === 'observation' || c.status === 'traitement');
+  const active = statusFilter
+    ? activeAll.filter((c) => c.status === statusFilter)
+    : activeAll;
+  const healedAll = list.filter((c) => c.status === 'gueri');
+  const healed = statusFilter && statusFilter !== 'gueri' ? [] : healedAll;
+  const lost = statusFilter === 'perdu' ? list.filter((c) => c.status === 'perdu') : [];
+
 
   const speciesOptions = React.useMemo(
     () => (species || []).map((s: any) => ({
@@ -98,13 +115,30 @@ export const TabClinique: React.FC<{
         }
       />
 
-      <RiskBarometer risk={risk} weather={weather} />
+      <HealthBanner
+        health={health}
+        risk={risk}
+        weather={weather}
+        statusFilter={statusFilter}
+        onStatusFilter={setStatusFilter}
+      />
+
 
       {/* Consultations */}
       <section>
         <h3 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.3em] text-[hsl(var(--ds-forest))]">
           <HeartPulse className="h-3 w-3" /> Consultations en cours
+          {statusFilter && (
+            <button
+              type="button"
+              onClick={() => setStatusFilter(null)}
+              className="ml-1 rounded-full border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-0.5 text-[9px] normal-case tracking-normal text-[hsl(var(--ds-forest-deep))] hover:bg-white"
+            >
+              Filtre : {STATUS_LABEL[statusFilter]} — tout voir
+            </button>
+          )}
         </h3>
+
 
         {active.length === 0 ? (
           <div className="mt-2 rounded-3xl border border-dashed border-[hsl(var(--ds-forest))]/35 bg-[hsl(var(--ds-cream))] p-8 text-center">
@@ -190,6 +224,27 @@ export const TabClinique: React.FC<{
           </div>
         </section>
       )}
+
+      {lost.length > 0 && (
+        <section>
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-[hsl(var(--ds-forest))]">
+            Sujets perdus
+          </h3>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {lost.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setOpenConsultation(c)}
+                className="rounded-full border border-[hsl(var(--ds-line))] bg-white/60 px-3 py-1 text-[11px] text-[hsl(var(--ds-forest-deep))] hover:bg-white"
+              >
+                {c.subject_label}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
 
       <SensorPanel proprieteId={proprieteId} />
 
