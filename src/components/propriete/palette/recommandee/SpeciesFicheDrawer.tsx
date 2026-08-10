@@ -18,19 +18,35 @@ interface Props {
   onClose: () => void;
 }
 
-type AxisKey = 'eau' | 'texture' | 'nutrition' | 'ph';
+/** Pastille de verdict : couleur + icône, même grammaire que « J'identifie ». */
+const EcoVerdictChip: React.FC<{ match: AxisMatch; label: string }> = ({ match, label }) => {
+  const token = VERDICT_TOKEN[match];
+  if (match === 'na') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[hsl(var(--ds-verdict-na))]/60 px-2 py-[3px] text-[9.5px] font-bold uppercase tracking-[0.12em] text-[hsl(var(--ds-verdict-na))]">
+        {iconFor(match, 'w-3 h-3')} {label}
+      </span>
+    );
+  }
+  const solid = match === 'oui';
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[9.5px] font-bold uppercase tracking-[0.12em]"
+      style={
+        solid
+          ? { background: `hsl(var(${token}))`, color: 'hsl(var(--ds-cream))' }
+          : {
+              background: `hsl(var(${token}) / 0.14)`,
+              color: `hsl(var(${token}))`,
+              boxShadow: `inset 0 0 0 1px hsl(var(${token}) / 0.45)`,
+            }
+      }
+    >
+      {iconFor(match, 'w-3 h-3')} {label}
+    </span>
+  );
+};
 
-const AXES: Array<{ key: AxisKey; label: string; low: string; high: string }> = [
-  { key: 'eau', label: 'Eau', low: 'Sec', high: 'Humide' },
-  { key: 'texture', label: 'Texture', low: 'Sableux', high: 'Argileux' },
-  { key: 'nutrition', label: 'Nutrition', low: 'Pauvre', high: 'Riche' },
-  { key: 'ph', label: 'pH', low: 'Acide', high: 'Calcaire' },
-];
-
-/** -3 → +3 ramené sur 5 crans. */
-const toCran = (v: number) => Math.max(1, Math.min(5, Math.round((v + 3) / 1.5) + 1));
-
-const gapWord = (d: number) => (d <= 1 ? 'Accord' : d === 2 ? 'Nuance' : 'Écart');
 
 /** Fiche espèce : identité, écologie confrontée au site, services, sources. */
 const SpeciesFicheDrawer: React.FC<Props> = ({ sp, profile, projection, horizon, onClose }) => {
