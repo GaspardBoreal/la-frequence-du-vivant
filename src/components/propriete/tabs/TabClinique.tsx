@@ -64,10 +64,24 @@ export const TabClinique: React.FC<{
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [openConsultation, setOpenConsultation] = React.useState<Consultation | null>(null);
+  const [statusFilter, setStatusFilter] = React.useState<ConsultationStatus | null>(null);
 
   const list = consultations ?? [];
-  const active = list.filter((c) => c.status === 'observation' || c.status === 'traitement');
-  const healed = list.filter((c) => c.status === 'gueri');
+  const consultationIds = React.useMemo(() => list.map((c) => c.id), [list]);
+  const { data: overview } = useCliniqueOverview(proprieteId, consultationIds);
+  const health = React.useMemo(
+    () => computeGardenHealth(list, overview ?? undefined),
+    [list, overview],
+  );
+
+  const activeAll = list.filter((c) => c.status === 'observation' || c.status === 'traitement');
+  const active = statusFilter
+    ? activeAll.filter((c) => c.status === statusFilter)
+    : activeAll;
+  const healedAll = list.filter((c) => c.status === 'gueri');
+  const healed = statusFilter && statusFilter !== 'gueri' ? [] : healedAll;
+  const lost = statusFilter === 'perdu' ? list.filter((c) => c.status === 'perdu') : [];
+
 
   const speciesOptions = React.useMemo(
     () => (species || []).map((s: any) => ({
