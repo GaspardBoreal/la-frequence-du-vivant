@@ -242,7 +242,11 @@ export function useSensorReadings(proprieteId?: string) {
 const invalidate = (qc: ReturnType<typeof useQueryClient>, proprieteId?: string, consultationId?: string) => {
   qc.invalidateQueries({ queryKey: ['clinique-consultations', proprieteId] });
   if (consultationId) qc.invalidateQueries({ queryKey: ['clinique-consultation-detail', consultationId] });
+  // Le bandeau « État sanitaire du jardin » agrège gestes, hypothèses et médias :
+  // il doit se recalculer à chaque écriture (ajout / suppression / réalisation).
+  qc.invalidateQueries({ queryKey: ['clinique-overview'] });
 };
+
 
 export function useCreateConsultation(proprieteId?: string) {
   const qc = useQueryClient();
