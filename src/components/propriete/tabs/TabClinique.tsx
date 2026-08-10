@@ -8,12 +8,15 @@ import { soilLiteFromState } from '@/lib/soilLiteFromState';
 import { useParcelWeather, summarizeWeather } from '@/components/cadastre/useParcelWeather';
 import { computeGardenRisk } from '@/lib/gardenRisk';
 import {
-  useConsultations, usePathogenKb, type Consultation,
+  useConsultations, usePathogenKb, useCliniqueOverview,
+  type Consultation, type ConsultationStatus,
 } from '@/hooks/propriete/useGardenClinique';
-import RiskBarometer from '@/components/propriete/clinique/RiskBarometer';
+import { computeGardenHealth } from '@/lib/gardenHealth';
+import HealthBanner from '@/components/propriete/clinique/HealthBanner';
 import SensorPanel from '@/components/propriete/clinique/SensorPanel';
 import NewConsultationDialog from '@/components/propriete/clinique/NewConsultationDialog';
 import ConsultationDrawer from '@/components/propriete/clinique/ConsultationDrawer';
+
 
 const STATUS_TONE: Record<string, string> = {
   observation: 'bg-[hsl(var(--ds-gold))]/25 text-[hsl(var(--ds-forest-deep))]',
