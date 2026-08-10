@@ -86,7 +86,7 @@ const SpeciesFicheDrawer: React.FC<Props> = ({ sp, profile, projection, horizon,
             <div className="mt-4 overflow-hidden rounded-2xl border border-[hsl(var(--ds-line))]">
               <div className="aspect-[16/10] w-full">
                 <SpeciesThumb
-                  scientificName={latin}
+                  scientificName={thumbLatin || latin}
                   commonName={sp.species.fr}
                   kingdom="Plantae"
                   size="lg"
