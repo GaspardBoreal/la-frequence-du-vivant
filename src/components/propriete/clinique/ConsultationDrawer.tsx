@@ -5,13 +5,16 @@ import {
 } from '@/components/ui/sheet';
 import {
   Camera, CheckCircle2, Circle, Sprout, ShieldCheck, Microscope,
-  CalendarClock, CloudRain, Clock, Award, Pencil, Trash2, Check, X,
+  CalendarClock, CloudRain, Clock, Award, Pencil, Trash2, Check, X, Maximize2,
 } from 'lucide-react';
 import {
   useConsultationDetail, useToggleAction, useAddConsultationMedia, useUpdateConsultation,
   useDeleteConsultation,
-  type Consultation, type CareAction,
+  type Consultation, type CareAction, type ConsultationMedia,
 } from '@/hooks/propriete/useGardenClinique';
+import JournalViewer from '@/components/propriete/clinique/JournalViewer';
+import { JournalTimeline, BeforeAfterCurtain } from '@/components/propriete/clinique/JournalTimeline';
+
 
 
 const STATUS_LABEL: Record<string, string> = {
