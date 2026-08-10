@@ -5,12 +5,14 @@ import {
 } from '@/components/ui/sheet';
 import {
   Camera, CheckCircle2, Circle, Sprout, ShieldCheck, Microscope,
-  CalendarClock, CloudRain, Clock, Award,
+  CalendarClock, CloudRain, Clock, Award, Pencil, Trash2, Check, X,
 } from 'lucide-react';
 import {
   useConsultationDetail, useToggleAction, useAddConsultationMedia, useUpdateConsultation,
+  useDeleteConsultation,
   type Consultation, type CareAction,
 } from '@/hooks/propriete/useGardenClinique';
+
 
 const STATUS_LABEL: Record<string, string> = {
   observation: 'En observation',
@@ -85,7 +87,18 @@ export const ConsultationDrawer: React.FC<{
   const toggle = useToggleAction(proprieteId);
   const addMedia = useAddConsultationMedia(proprieteId);
   const update = useUpdateConsultation(proprieteId);
+  const remove = useDeleteConsultation(proprieteId);
   const [uploading, setUploading] = React.useState(false);
+  const [renaming, setRenaming] = React.useState(false);
+  const [draftLabel, setDraftLabel] = React.useState('');
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+
+  React.useEffect(() => {
+    setRenaming(false);
+    setConfirmDelete(false);
+    setDraftLabel(consultation?.subject_label ?? '');
+  }, [consultation?.id, consultation?.subject_label]);
+
 
   const actions = data?.actions ?? [];
   const doneCount = actions.filter((a) => a.done).length;
@@ -118,15 +131,107 @@ export const ConsultationDrawer: React.FC<{
         {consultation && (
           <>
             <SheetHeader className="text-left">
-              <SheetTitle className="font-serif italic text-2xl text-[hsl(var(--ds-forest-deep))]">
-                {consultation.subject_label}
-              </SheetTitle>
+              <div className="flex items-start gap-2">
+                {renaming ? (
+                  <form
+                    className="flex flex-1 flex-wrap items-center gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const label = draftLabel.trim();
+                      if (!label || label === consultation.subject_label) { setRenaming(false); return; }
+                      update.mutate(
+                        { id: consultation.id, patch: { subject_label: label } },
+                        { onSuccess: () => setRenaming(false) },
+                      );
+                    }}
+                  >
+                    <input
+                      autoFocus
+                      value={draftLabel}
+                      onChange={(e) => setDraftLabel(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Escape') setRenaming(false); }}
+                      className="min-w-0 flex-1 rounded-xl border border-[hsl(var(--ds-forest))]/40 bg-white/80 px-3 py-1.5 font-serif italic text-xl text-[hsl(var(--ds-forest-deep))] outline-none placeholder:text-[hsl(var(--ds-forest-deep))]/40 focus:border-[hsl(var(--ds-forest))]"
+                      placeholder="Le sujet observé"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-full bg-[hsl(var(--ds-forest))] px-3 py-1.5 text-[11px] text-[hsl(var(--ds-cream))] hover:bg-[hsl(var(--ds-forest-deep))]"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRenaming(false)}
+                      className="rounded-full border border-[hsl(var(--ds-line))] bg-white/70 px-3 py-1.5 text-[11px] text-[hsl(var(--ds-forest-deep))] hover:bg-white"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <SheetTitle className="flex-1 font-serif italic text-2xl text-[hsl(var(--ds-forest-deep))]">
+                      {consultation.subject_label}
+                    </SheetTitle>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        title="Renommer le sujet"
+                        aria-label="Renommer le sujet"
+                        onClick={() => { setDraftLabel(consultation.subject_label); setRenaming(true); }}
+                        className="rounded-full border border-[hsl(var(--ds-line))] bg-white/70 p-2 text-[hsl(var(--ds-forest-deep))] transition hover:border-[hsl(var(--ds-forest))]/50 hover:bg-white"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Supprimer la consultation"
+                        aria-label="Supprimer la consultation"
+                        onClick={() => setConfirmDelete(true)}
+                        className="rounded-full border border-[hsl(var(--ds-line))] bg-white/70 p-2 text-[hsl(4_68%_42%)] transition hover:border-[hsl(4_68%_48%)]/60 hover:bg-[hsl(4_68%_48%)]/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
               <SheetDescription className="text-[hsl(var(--ds-forest-deep))]/80">
                 {consultation.organ ? `${consultation.organ} · ` : ''}
                 {STATUS_LABEL[consultation.status]} · ouverte le{' '}
                 {new Date(consultation.opened_at).toLocaleDateString('fr-FR')}
               </SheetDescription>
             </SheetHeader>
+
+            {confirmDelete && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 rounded-2xl border border-[hsl(4_68%_48%)]/40 bg-[hsl(4_68%_48%)]/[0.07] p-3"
+              >
+                <p className="text-sm text-[hsl(var(--ds-forest-deep))]">
+                  Effacer définitivement cette consultation ? Les hypothèses, les gestes et les
+                  photos du journal partiront avec elle.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={remove.isPending}
+                    onClick={() => remove.mutate(consultation.id, { onSuccess: onClose })}
+                    className="rounded-full bg-[hsl(4_68%_44%)] px-3 py-1.5 text-[11px] text-[hsl(var(--ds-cream))] transition hover:bg-[hsl(4_68%_38%)] disabled:opacity-60"
+                  >
+                    {remove.isPending ? 'Effacement…' : 'Oui, effacer'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    className="rounded-full border border-[hsl(var(--ds-line))] bg-white/70 px-3 py-1.5 text-[11px] text-[hsl(var(--ds-forest-deep))] hover:bg-white"
+                  >
+                    Garder au registre
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
 
             {/* Statut */}
             <div className="mt-4 flex flex-wrap gap-1.5">
