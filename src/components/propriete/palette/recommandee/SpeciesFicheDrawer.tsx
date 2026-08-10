@@ -117,67 +117,157 @@ const SpeciesFicheDrawer: React.FC<Props> = ({ sp, profile, projection, horizon,
             </div>
 
             {/* Écologie confrontée au site */}
-            <section className="mt-5">
-              <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--ds-forest))]/80">
-                Écologie face à votre sol
-              </h4>
-              <div className="mt-2 space-y-2.5">
-                {AXES.map(({ key, label, low, high }) => {
-                  const plant = toCran(sp.species.optima[key]);
-                  const site = toCran(profile[key]);
-                  const d = Math.abs(plant - site);
-                  return (
-                    <div key={key}>
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--ds-forest-deep))]/70">
-                          {label}
-                        </span>
-                        <span
-                          className={cn(
-                            'text-[10px] font-bold uppercase tracking-[0.12em]',
-                            d <= 1
-                              ? 'text-[hsl(var(--ds-forest))]'
-                              : d === 2
-                                ? 'text-[hsl(var(--ds-gold))]'
-                                : 'text-[hsl(var(--ds-forest-deep))]/50',
-                          )}
-                        >
-                          {profile.known[key] ? gapWord(d) : 'Sol non documenté'}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((c) => (
-                          <div
-                            key={c}
-                            className={cn(
-                              'relative h-2.5 flex-1 rounded-full',
-                              c === plant
-                                ? 'bg-[hsl(var(--ds-forest))]'
-                                : 'bg-[hsl(var(--ds-forest))]/12',
-                            )}
-                          >
-                            {c === site && (
-                              <motion.span
-                                layout
-                                className="absolute -top-1 left-1/2 h-4.5 w-[2px] -translate-x-1/2 rounded-full bg-[hsl(var(--ds-gold))]"
-                                style={{ height: '18px' }}
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-0.5 flex justify-between text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--ds-forest-deep))]/40">
-                        <span>{low}</span>
-                        <span>{high}</span>
-                      </div>
+            {(() => {
+              const readings = ECO_AXES.map((axis) =>
+                buildEcoAxisReading(
+                  axis,
+                  sp.species.optima[axis.key],
+                  profile[axis.key],
+                  !!profile.known[axis.key],
+                ),
+              );
+              const global = buildEcoGlobalReading(readings);
+              const gToken = VERDICT_TOKEN[global.match];
+
+              return (
+                <section className="mt-5">
+                  <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--ds-forest))]/80">
+                    Écologie face à votre sol
+                  </h4>
+
+                  {/* Légende, avant la lecture */}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[9.5px] uppercase tracking-[0.12em] text-[hsl(var(--ds-forest-deep))]/55">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="inline-block h-[7px] w-5 rounded-full bg-[hsl(var(--ds-forest))]" />
+                      Ce que l’espèce recherche
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="inline-block h-[13px] w-[2px] rounded-full bg-[hsl(var(--ds-gold))]" />
+                      Votre sol
+                    </span>
+                  </div>
+
+                  {/* Verdict global */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35 }}
+                    className="mt-3 rounded-2xl border p-3"
+                    style={{
+                      borderColor: `hsl(var(${gToken}) / 0.45)`,
+                      background: `hsl(var(${gToken}) / 0.09)`,
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <EcoVerdictChip match={global.match} label={global.title} />
+                      <span className="ml-auto flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-[0.1em]">
+                        <span className="text-[hsl(var(--ds-verdict-oui))]">{global.accords} accord{global.accords > 1 ? 's' : ''}</span>
+                        <span className="text-[hsl(var(--ds-verdict-partiel))]">{global.nuances} nuance{global.nuances > 1 ? 's' : ''}</span>
+                        <span className="text-[hsl(var(--ds-verdict-non))]">{global.ecarts} écart{global.ecarts > 1 ? 's' : ''}</span>
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-              <p className="mt-2 text-[10px] text-[hsl(var(--ds-forest-deep))]/55">
-                Barre pleine : optimum de l’espèce. Trait doré : lecture de votre sol.
-              </p>
-            </section>
+                    <p className="mt-1.5 text-[12.5px] leading-relaxed text-[hsl(var(--ds-forest-deep))]">
+                      {global.sentence}
+                    </p>
+                  </motion.div>
+
+                  {/* Facteur par facteur */}
+                  <div className="mt-3 space-y-3">
+                    {readings.map((r, i) => {
+                      const token = VERDICT_TOKEN[r.match];
+                      const na = r.match === 'na';
+                      return (
+                        <motion.div
+                          key={r.axis.key}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: 0.05 * i }}
+                          className="rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-3"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[hsl(var(--ds-forest-deep))]">
+                              {r.axis.label}
+                            </span>
+                            <EcoVerdictChip match={r.match} label={r.verdict} />
+                          </div>
+
+                          {/* Règle à 5 crans */}
+                          <div className="mt-2 flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((c) => {
+                              const inGap =
+                                !na &&
+                                r.site != null &&
+                                c > Math.min(r.plant, r.site) &&
+                                c < Math.max(r.plant, r.site);
+                              return (
+                                <div
+                                  key={c}
+                                  className={cn(
+                                    'relative h-2.5 flex-1 rounded-full',
+                                    c === r.plant
+                                      ? 'bg-[hsl(var(--ds-forest))]'
+                                      : 'bg-[hsl(var(--ds-forest))]/12',
+                                  )}
+                                  style={
+                                    inGap
+                                      ? {
+                                          backgroundImage: `repeating-linear-gradient(45deg, hsl(var(${token}) / 0.35) 0 3px, transparent 3px 6px)`,
+                                        }
+                                      : undefined
+                                  }
+                                >
+                                  {r.site === c && (
+                                    <motion.span
+                                      layout
+                                      className="absolute -top-1 left-1/2 w-[2px] -translate-x-1/2 rounded-full bg-[hsl(var(--ds-gold))]"
+                                      style={{ height: '18px' }}
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="mt-1 flex items-center justify-between text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--ds-forest-deep))]/45">
+                            <span>{r.axis.low}</span>
+                            {!na && (
+                              <span
+                                className="font-bold"
+                                style={{ color: `hsl(var(${token}))` }}
+                              >
+                                {GAP_LABEL(r.gap)}
+                              </span>
+                            )}
+                            <span>{r.axis.high}</span>
+                          </div>
+
+                          <p className="mt-2 text-[12px] leading-relaxed text-[hsl(var(--ds-forest-deep))]/85">
+                            {r.sentence}
+                          </p>
+                          {na && (
+                            <p className="mt-1 text-[11px] italic text-[hsl(var(--ds-forest-deep))]/60">
+                              Complétez l’Étape 2 « J’analyse le sol » pour trancher ce facteur.
+                            </p>
+                          )}
+                          {r.suggestion && (
+                            <p
+                              className="mt-2 rounded-xl px-2.5 py-2 text-[11.5px] leading-relaxed text-[hsl(var(--ds-forest-deep))]"
+                              style={{ background: `hsl(var(${token}) / 0.10)` }}
+                            >
+                              <span className="font-bold uppercase tracking-[0.12em] text-[10px]">
+                                Le geste ·{' '}
+                              </span>
+                              {r.suggestion}
+                            </p>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })()}
+
 
             {/* Lecture de la projection courante */}
             {projection === 'garde_manger' && food && (
