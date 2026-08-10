@@ -5,12 +5,14 @@ import {
 } from '@/components/ui/sheet';
 import {
   Camera, CheckCircle2, Circle, Sprout, ShieldCheck, Microscope,
-  CalendarClock, CloudRain, Clock, Award,
+  CalendarClock, CloudRain, Clock, Award, Pencil, Trash2, Check, X,
 } from 'lucide-react';
 import {
   useConsultationDetail, useToggleAction, useAddConsultationMedia, useUpdateConsultation,
+  useDeleteConsultation,
   type Consultation, type CareAction,
 } from '@/hooks/propriete/useGardenClinique';
+
 
 const STATUS_LABEL: Record<string, string> = {
   observation: 'En observation',
