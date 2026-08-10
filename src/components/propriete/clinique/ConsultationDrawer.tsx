@@ -367,27 +367,62 @@ export const ConsultationDrawer: React.FC<{
                 />
               </label>
 
-              {!!data?.medias.length && (
-                <ol className="mt-3 space-y-3 border-l border-[hsl(var(--ds-line))] pl-4">
-                  {data.medias.map((m) => (
-                    <li key={m.id} className="relative">
-                      <span aria-hidden className="absolute -left-[21px] top-2 h-2 w-2 rounded-full bg-[hsl(var(--ds-gold))]" />
-                      <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--ds-forest))]/65">
-                        {m.taken_at ? new Date(m.taken_at).toLocaleString('fr-FR') : '—'}
-                        {m.severity_at_capture ? ` · étendue ${m.severity_at_capture}/5` : ''}
-                      </p>
-                      {m.media_type === 'photo' ? (
-                        <img src={m.url} alt={m.caption ?? ''} loading="lazy" className="mt-1 max-h-56 rounded-xl border border-[hsl(var(--ds-line))] object-cover" />
-                      ) : m.media_type === 'video' ? (
-                        <video src={m.url} controls className="mt-1 w-full rounded-xl border border-[hsl(var(--ds-line))]" />
-                      ) : (
-                        <audio src={m.url} controls className="mt-1 w-full" />
-                      )}
-                    </li>
-                  ))}
-                </ol>
+              {!!medias.length && (
+                <>
+                  <BeforeAfterCurtain medias={medias} />
+                  <JournalTimeline
+                    medias={medias}
+                    actions={actions}
+                    activeIndex={viewerIndex}
+                    onPick={setViewerIndex}
+                  />
+
+                  <ol className="mt-3 space-y-3 border-l border-[hsl(var(--ds-line))] pl-4">
+                    {medias.map((m, i) => (
+                      <li key={m.id} className="relative">
+                        <span aria-hidden className="absolute -left-[21px] top-2 h-2 w-2 rounded-full bg-[hsl(var(--ds-gold))]" />
+                        <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--ds-forest))]/65">
+                          {m.taken_at ? new Date(m.taken_at).toLocaleString('fr-FR') : '—'}
+                          {m.severity_at_capture ? ` · étendue ${m.severity_at_capture}/5` : ''}
+                        </p>
+                        {m.media_type === 'photo' ? (
+                          <button
+                            type="button"
+                            onClick={() => setViewerIndex(i)}
+                            className="group relative mt-1 block overflow-hidden rounded-xl border border-[hsl(var(--ds-line))]"
+                            aria-label="Ouvrir en grand"
+                          >
+                            <img src={m.url} alt={m.caption ?? ''} loading="lazy" className="max-h-56 object-cover transition duration-500 group-hover:scale-[1.03]" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/25 group-hover:opacity-100">
+                              <Maximize2 className="h-5 w-5 text-white" />
+                            </span>
+                          </button>
+                        ) : m.media_type === 'video' ? (
+                          <button
+                            type="button"
+                            onClick={() => setViewerIndex(i)}
+                            className="mt-1 inline-flex items-center gap-2 rounded-xl border border-[hsl(var(--ds-line))] bg-white/60 px-3 py-2 text-xs font-medium text-[hsl(var(--ds-forest-deep))] transition hover:bg-white"
+                          >
+                            <Maximize2 className="h-4 w-4" /> Lire la vidéo en grand
+                          </button>
+                        ) : (
+                          <audio src={m.url} controls className="mt-1 w-full" />
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </>
               )}
             </section>
+
+            <JournalViewer
+              medias={medias}
+              index={viewerIndex}
+              onNavigate={setViewerIndex}
+              onClose={() => setViewerIndex(null)}
+              onPinNote={onPinNote}
+            />
+
           </>
         )}
       </SheetContent>
