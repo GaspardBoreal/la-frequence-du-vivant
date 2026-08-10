@@ -225,6 +225,27 @@ export const TabClinique: React.FC<{
         </section>
       )}
 
+      {lost.length > 0 && (
+        <section>
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-[hsl(var(--ds-forest))]">
+            Sujets perdus
+          </h3>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {lost.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setOpenConsultation(c)}
+                className="rounded-full border border-[hsl(var(--ds-line))] bg-white/60 px-3 py-1 text-[11px] text-[hsl(var(--ds-forest-deep))] hover:bg-white"
+              >
+                {c.subject_label}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+
       <SensorPanel proprieteId={proprieteId} />
 
       {/* Base de connaissance */}
