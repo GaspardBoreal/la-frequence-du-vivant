@@ -2,6 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { PipelineActionsFilter } from '@/components/crm/opportunities/PipelineActionsFilter';
 import { PipelineStagesFilter } from './PipelineStagesFilter';
+import { PipelineCampaignsFilter } from './PipelineCampaignsFilter';
 import type { OpportunityActionCode } from '@/lib/crmOpportunityActions';
 import type { OpportunityStatus } from '@/types/crm';
 
@@ -14,6 +15,10 @@ interface Props {
   stagesFilter: OpportunityStatus[];
   setStagesFilter: (next: OpportunityStatus[]) => void;
 
+  campaignsFilter?: string[];
+  setCampaignsFilter?: (next: string[]) => void;
+  campaignCounts?: Map<string, number>;
+
   matchedCount: number;
   totalCount: number;
   className?: string;
@@ -21,7 +26,7 @@ interface Props {
 
 /**
  * Barre de filtres unique du Pipeline CRM, partagée par les vues
- * Kanban / Liste / Carte. Compose les filtres Jalons + Étapes.
+ * Kanban / Liste / Carte. Compose les filtres Jalons + Étapes + Campagnes.
  */
 export const PipelineFiltersBar: React.FC<Props> = ({
   actionsFilter,
@@ -30,6 +35,9 @@ export const PipelineFiltersBar: React.FC<Props> = ({
   setActionsMode,
   stagesFilter,
   setStagesFilter,
+  campaignsFilter,
+  setCampaignsFilter,
+  campaignCounts,
   matchedCount,
   totalCount,
   className,
@@ -45,6 +53,13 @@ export const PipelineFiltersBar: React.FC<Props> = ({
         totalCount={totalCount}
       />
       <PipelineStagesFilter value={stagesFilter} onChange={setStagesFilter} />
+      {campaignsFilter && setCampaignsFilter && (
+        <PipelineCampaignsFilter
+          value={campaignsFilter}
+          onChange={setCampaignsFilter}
+          counts={campaignCounts}
+        />
+      )}
     </div>
   );
 };
