@@ -82,6 +82,8 @@ const CarnetsDeTerrainGalerie = lazyWithRetry(() => import('./pages/CarnetsDeTer
 const CarnetDeTerrain = lazyWithRetry(() => import('./pages/CarnetDeTerrain'));
 const CrmPipeline = lazyWithRetry(() => import('./pages/CrmPipeline'));
 const CrmAnnuaire = lazyWithRetry(() => import('./pages/CrmAnnuaire'));
+const CrmCampagnes = lazyWithRetry(() => import('./pages/CrmCampagnes'));
+const CrmCampagneDetail = lazyWithRetry(() => import('./pages/CrmCampagneDetail'));
 const TeamManagement = lazyWithRetry(() => import('./pages/TeamManagement'));
 const CrmHome = lazyWithRetry(() => import('./pages/CrmHome'));
 const CrmMarches = lazyWithRetry(() => import('./pages/CrmMarches'));
@@ -301,6 +303,8 @@ function App() {
             <Route path="/admin/crm" element={<AdminAuth><CrmShell /></AdminAuth>}>
               <Route index element={<CrmHome />} />
               <Route path="annuaire" element={<CrmAnnuaire />} />
+              <Route path="campagnes" element={<CrmCampagnes />} />
+              <Route path="campagnes/:id" element={<CrmCampagneDetail />} />
               <Route path="pipeline" element={<CrmPipeline />} />
               <Route path="missions" element={<CrmMissions />} />
               <Route path="marches" element={<CrmMarches />} />

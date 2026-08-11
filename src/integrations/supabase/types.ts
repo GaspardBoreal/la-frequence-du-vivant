@@ -920,6 +920,154 @@ export type Database = {
           },
         ]
       }
+      crm_campaign_members: {
+        Row: {
+          added_by: string | null
+          attempts: number
+          call_status: string
+          campaign_id: string
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          id: string
+          last_call_at: string | null
+          next_call_at: string | null
+          notes: string | null
+          opportunity_id: string | null
+          priorite: number
+          refus_motif: string | null
+          updated_at: string
+        }
+        Insert: {
+          added_by?: string | null
+          attempts?: number
+          call_status?: string
+          campaign_id: string
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          last_call_at?: string | null
+          next_call_at?: string | null
+          notes?: string | null
+          opportunity_id?: string | null
+          priorite?: number
+          refus_motif?: string | null
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string | null
+          attempts?: number
+          call_status?: string
+          campaign_id?: string
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          last_call_at?: string | null
+          next_call_at?: string | null
+          notes?: string | null
+          opportunity_id?: string | null
+          priorite?: number
+          refus_motif?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_campaign_members_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_campaign_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "crm_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_campaign_members_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_campaign_members_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "crm_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_campaigns: {
+        Row: {
+          ciblage: Json
+          couleur: string | null
+          created_at: string
+          created_by: string | null
+          date_debut: string | null
+          date_fin: string | null
+          description: string | null
+          id: string
+          nom: string
+          objectif: string
+          objectif_contacts: number | null
+          objectif_taux: number | null
+          pilote_id: string | null
+          script: Json
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          ciblage?: Json
+          couleur?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_debut?: string | null
+          date_fin?: string | null
+          description?: string | null
+          id?: string
+          nom: string
+          objectif?: string
+          objectif_contacts?: number | null
+          objectif_taux?: number | null
+          pilote_id?: string | null
+          script?: Json
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          ciblage?: Json
+          couleur?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_debut?: string | null
+          date_fin?: string | null
+          description?: string | null
+          id?: string
+          nom?: string
+          objectif?: string
+          objectif_contacts?: number | null
+          objectif_taux?: number | null
+          pilote_id?: string | null
+          script?: Json
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_campaigns_pilote_id_fkey"
+            columns: ["pilote_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_companies: {
         Row: {
           adresse: string | null
@@ -1610,6 +1758,7 @@ export type Database = {
           actions_realisees: string[]
           assigned_to: string | null
           budget_estime: number | null
+          campaign_id: string | null
           closed_at: string | null
           company_id: string | null
           created_at: string | null
@@ -1642,6 +1791,7 @@ export type Database = {
           actions_realisees?: string[]
           assigned_to?: string | null
           budget_estime?: number | null
+          campaign_id?: string | null
           closed_at?: string | null
           company_id?: string | null
           created_at?: string | null
@@ -1674,6 +1824,7 @@ export type Database = {
           actions_realisees?: string[]
           assigned_to?: string | null
           budget_estime?: number | null
+          campaign_id?: string | null
           closed_at?: string | null
           company_id?: string | null
           created_at?: string | null
@@ -1708,6 +1859,13 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_opportunities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaigns"
             referencedColumns: ["id"]
           },
           {
@@ -8772,6 +8930,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_campaign_daily: {
+        Args: { _campaign_id: string }
+        Returns: {
+          appels: number
+          interesses: number
+          jour: string
+        }[]
+      }
+      get_campaign_stats: { Args: { _campaign_id: string }; Returns: Json }
       get_carte_mdv_hero_stats: { Args: never; Returns: Json }
       get_community_affiliate_admin_stats: {
         Args: never

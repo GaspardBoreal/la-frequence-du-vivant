@@ -63,6 +63,8 @@ const CrmPipeline: React.FC = () => {
     stagesFilter,
     setStagesFilter,
     allStagesActive,
+    campaignsFilter,
+    setCampaignsFilter,
     matchesAll,
   } = usePipelineFilters();
 
@@ -75,6 +77,15 @@ const CrmPipeline: React.FC = () => {
     deleteOpportunity 
   } = useCrmOpportunities();
   const { canAccessCrm } = useCrmRole();
+
+  // Nombre d'opportunités par campagne (pour les compteurs du filtre)
+  const campaignCounts = React.useMemo(() => {
+    const m = new Map<string, number>();
+    (opportunities ?? []).forEach((o: CrmOpportunity) => {
+      if (o.campaign_id) m.set(o.campaign_id, (m.get(o.campaign_id) ?? 0) + 1);
+    });
+    return m;
+  }, [opportunities]);
 
   // Deep-link: ?opportunity=<id> opens the edit form
   React.useEffect(() => {
@@ -249,6 +260,9 @@ const CrmPipeline: React.FC = () => {
                 setActionsMode={setActionsMode}
                 stagesFilter={stagesFilter}
                 setStagesFilter={setStagesFilter}
+                campaignsFilter={campaignsFilter}
+                setCampaignsFilter={setCampaignsFilter}
+                campaignCounts={campaignCounts}
                 matchedCount={filtered.length}
                 totalCount={opportunities.length}
               />
