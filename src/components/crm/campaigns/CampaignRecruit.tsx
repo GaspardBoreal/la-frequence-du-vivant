@@ -22,6 +22,8 @@ interface Props {
 export const CampaignRecruit: React.FC<Props> = ({ campaign, enrolledCompanyIds }) => {
   const [search, setSearch] = React.useState('');
   const [picked, setPicked] = React.useState<Set<string>>(new Set());
+  const [pasteOpen, setPasteOpen] = React.useState(false);
+
 
   const filters = React.useMemo(
     () => ({
