@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useImportCompanies } from '@/hooks/useCrmCompanies';
 import { useCrmCampaigns } from '@/hooks/useCrmCampaigns';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { KANBAN_COLUMNS } from '@/types/crm';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
