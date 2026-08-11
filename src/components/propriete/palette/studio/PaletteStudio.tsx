@@ -127,6 +127,10 @@ const TIME_STEPS = [
 const VIVANT_FILTER_MEMORY = new Map<string, VivantFilterState>();
 
 
+export interface AtelierIntent {
+  focus?: 'capteurs';
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -140,6 +144,8 @@ interface Props {
   onPatchZone: (z: ProprieteZone, patch: Partial<ProprieteZone>) => void;
   onDeleteZone: (id: string) => void;
   readOnly?: boolean;
+  /** Intention d'ouverture (ex. pose GPS d'un capteur depuis « Capteurs et sondes »). */
+  intent?: AtelierIntent | null;
 }
 
 export const PaletteStudio: React.FC<Props> = ({
@@ -148,6 +154,7 @@ export const PaletteStudio: React.FC<Props> = ({
   proprieteId,
   center,
   parcelles,
+
   zones,
   activeZoneId,
   onSelectZone,
