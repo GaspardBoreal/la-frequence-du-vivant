@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Sparkles, Euro, Users, Calendar, MoreVertical, Pencil, Trash2, Unlink2, Megaphone, ArrowUpRight, GitBranch } from 'lucide-react';
+import { Plus, Sparkles, Euro, Users, Calendar, MoreVertical, Pencil, Trash2, Unlink2, Megaphone, ArrowUpRight, GitBranch, Repeat } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { CAMPAIGN_STATUT_OPTIONS } from '@/types/crmCampaign';
+import { TransferCampaignDialog } from '@/components/crm/campaigns/TransferCampaignDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -139,6 +140,7 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
             <OpportunityMiniCard
               key={opp.id}
               opp={opp}
+              companyId={companyId}
               onEdit={() => { setEditing(opp); setFormOpen(true); }}
               onUnlink={() => setPending({ opp, action: 'unlink' })}
               onDelete={() => setPending({ opp, action: 'delete' })}
@@ -198,11 +200,13 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
 
 const OpportunityMiniCard: React.FC<{
   opp: CompanyOpportunityRow;
+  companyId: string;
   onEdit: () => void;
   onUnlink: () => void;
   onDelete: () => void;
-}> = ({ opp, onEdit, onUnlink, onDelete }) => {
+}> = ({ opp, companyId, onEdit, onUnlink, onDelete }) => {
   const navigate = useNavigate();
+  const [transferOpen, setTransferOpen] = React.useState(false);
   const column = KANBAN_COLUMNS.find((c) => c.id === opp.statut);
   const campaign = opp.campaign ?? null;
   const campaignStatut = campaign
@@ -262,6 +266,9 @@ const OpportunityMiniCard: React.FC<{
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                 <DropdownMenuItem onClick={onEdit}><Pencil className="h-3.5 w-3.5 mr-2" /> Modifier</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTransferOpen(true)}>
+                  <Repeat className="h-3.5 w-3.5 mr-2" /> {campaign ? 'Changer de campagne' : 'Rattacher à une campagne'}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={onUnlink}><Unlink2 className="h-3.5 w-3.5 mr-2" /> Délier de l'entreprise</DropdownMenuItem>
                 <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
                   <Trash2 className="h-3.5 w-3.5 mr-2" /> Supprimer
@@ -294,27 +301,43 @@ const OpportunityMiniCard: React.FC<{
 
         {/* Ruban campagne */}
         {campaign ? (
-          <motion.button
-            whileHover={{ x: 2 }}
-            onClick={(e) => { e.stopPropagation(); navigate(`/admin/crm/campagnes/${campaign.id}`); }}
-            className="group/camp w-full flex items-center gap-2 rounded-xl border px-2.5 py-1.5 text-left transition-colors"
+          <div
+            className="group/camp flex w-full items-center gap-1 rounded-xl border pl-2.5 pr-1 py-1 transition-colors"
             style={{
               borderColor: `hsl(${campaignHue} / 0.35)`,
               backgroundColor: `hsl(${campaignHue} / 0.08)`,
             }}
-            title={`Campagne « ${campaign.nom} » — ${campaignStatut?.label ?? campaign.statut}`}
           >
-            <Megaphone className="h-3.5 w-3.5 shrink-0" style={{ color: `hsl(${campaignHue})` }} />
-            <span className="min-w-0 flex-1 truncate text-[11px] font-medium" style={{ color: `hsl(${campaignHue})` }}>
-              {campaign.nom}
-            </span>
-            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 opacity-0 group-hover/camp:opacity-100 transition-opacity" style={{ color: `hsl(${campaignHue})` }} />
-          </motion.button>
-        ) : (
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
-            <Megaphone className="h-3 w-3" />
-            Hors campagne
+            <motion.button
+              whileHover={{ x: 2 }}
+              onClick={(e) => { e.stopPropagation(); navigate(`/admin/crm/campagnes/${campaign.id}`); }}
+              className="flex min-w-0 flex-1 items-center gap-2 py-0.5 text-left"
+              title={`Campagne « ${campaign.nom} » — ${campaignStatut?.label ?? campaign.statut}`}
+            >
+              <Megaphone className="h-3.5 w-3.5 shrink-0" style={{ color: `hsl(${campaignHue})` }} />
+              <span className="min-w-0 flex-1 truncate text-[11px] font-medium" style={{ color: `hsl(${campaignHue})` }}>
+                {campaign.nom}
+              </span>
+              <ArrowUpRight className="h-3.5 w-3.5 shrink-0 opacity-0 group-hover/camp:opacity-100 transition-opacity" style={{ color: `hsl(${campaignHue})` }} />
+            </motion.button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setTransferOpen(true); }}
+              title="Changer de campagne"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-1 text-[10px] font-medium transition-colors hover:bg-background/70"
+              style={{ color: `hsl(${campaignHue})` }}
+            >
+              <Repeat className="h-3 w-3" />
+              Changer
+            </button>
           </div>
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); setTransferOpen(true); }}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border/70 px-2 py-1 text-[10px] text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+          >
+            <Megaphone className="h-3 w-3" />
+            Hors campagne — rattacher
+          </button>
         )}
 
         {/* Raccourcis de navigation */}
@@ -336,6 +359,17 @@ const OpportunityMiniCard: React.FC<{
             </button>
           )}
         </div>
+      </div>
+
+      <div onClick={(e) => e.stopPropagation()}>
+        <TransferCampaignDialog
+          open={transferOpen}
+          onOpenChange={setTransferOpen}
+          targets={[{ opportunityId: opp.id, companyId }]}
+          currentCampaignId={campaign?.id ?? null}
+          currentCampaignName={campaign?.nom ?? null}
+          subjectLabel={opp.titre || opp.entreprise || 'Cette opportunité'}
+        />
       </div>
     </motion.div>
   );

@@ -10,8 +10,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Trash2, ExternalLink, Search, Phone } from 'lucide-react';
+import { Trash2, ExternalLink, Search, Phone, Megaphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   CALL_STATUS_META,
   type CallStatus,
@@ -19,19 +20,25 @@ import {
 } from '@/types/crmCampaign';
 import { KANBAN_COLUMNS } from '@/types/crm';
 import { useCampaignMemberMutations } from '@/hooks/useCrmCampaigns';
+import { TransferCampaignDialog } from './TransferCampaignDialog';
+import type { TransferTarget } from '@/hooks/useCrmCampaigns';
 
 interface Props {
   campaignId: string;
+  campaignName?: string;
   members: CrmCampaignMember[];
   onCall: (memberId: string) => void;
 }
 
 const STATUSES = Object.keys(CALL_STATUS_META) as CallStatus[];
 
-export const CampaignMembersTable: React.FC<Props> = ({ campaignId, members, onCall }) => {
+export const CampaignMembersTable: React.FC<Props> = ({ campaignId, campaignName, members, onCall }) => {
   const [q, setQ] = React.useState('');
   const [status, setStatus] = React.useState<CallStatus | 'all'>('all');
   const { removeMember } = useCampaignMemberMutations(campaignId);
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+  const [transferTargets, setTransferTargets] = React.useState<TransferTarget[] | null>(null);
+  const [transferLabel, setTransferLabel] = React.useState<string | undefined>();
 
   const filtered = members.filter((m) => {
     if (status !== 'all' && m.call_status !== status) return false;
@@ -39,6 +46,18 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, members, onC
     const name = `${m.company?.nom_complet ?? ''} ${m.company?.denomination ?? ''} ${m.company?.ville ?? ''}`;
     return name.toLowerCase().includes(q.toLowerCase());
   });
+
+  const allChecked = filtered.length > 0 && filtered.every((m) => selectedIds.includes(m.id));
+  const toggleAll = () =>
+    setSelectedIds(allChecked ? [] : filtered.map((m) => m.id));
+  const toggleOne = (id: string) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const openTransfer = (ids: string[], label?: string) => {
+    setTransferTargets(ids.map((id) => ({ memberId: id })));
+    setTransferLabel(label);
+  };
+
 
   return (
     <div className="space-y-3">
@@ -79,10 +98,37 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, members, onC
         </div>
       </div>
 
+      {selectedIds.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2"
+        >
+          <span className="text-xs font-medium text-primary">
+            {selectedIds.length} sélectionné{selectedIds.length > 1 ? 's' : ''}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={() => openTransfer(selectedIds, `${selectedIds.length} prospects`)}
+          >
+            <Megaphone className="mr-1.5 h-3.5 w-3.5" />
+            Transférer vers une campagne
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelectedIds([])}>
+            Annuler la sélection
+          </Button>
+        </motion.div>
+      )}
+
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox checked={allChecked} onCheckedChange={toggleAll} aria-label="Tout sélectionner" />
+              </TableHead>
               <TableHead>Prospect</TableHead>
               <TableHead>Statut d'appel</TableHead>
               <TableHead>Tentatives</TableHead>
@@ -94,13 +140,14 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, members, onC
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                   Aucun prospect dans cette vue.
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((m) => {
                 const meta = CALL_STATUS_META[m.call_status as CallStatus];
+                const label = m.company?.nom_complet ?? m.company?.denomination ?? 'Ce prospect';
                 return (
                   <motion.tr
                     key={m.id}
@@ -109,6 +156,13 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, members, onC
                     animate={{ opacity: 1 }}
                     className="border-b last:border-0"
                   >
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.includes(m.id)}
+                        onCheckedChange={() => toggleOne(m.id)}
+                        aria-label={`Sélectionner ${label}`}
+                      />
+                    </TableCell>
                     <TableCell className="max-w-[280px]">
                       <div className="truncate font-medium">
                         {m.company?.nom_complet ?? m.company?.denomination ?? '—'}
@@ -147,6 +201,15 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, members, onC
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onCall(m.id)}>
                           <Phone className="h-3.5 w-3.5" />
                         </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          title="Transférer vers une autre campagne"
+                          onClick={() => openTransfer([m.id], label)}
+                        >
+                          <Megaphone className="h-3.5 w-3.5" />
+                        </Button>
                         {m.opportunity_id && (
                           <Button asChild size="icon" variant="ghost" className="h-7 w-7">
                             <Link to={`/admin/crm/pipeline?opportunity=${m.opportunity_id}`}>
@@ -171,6 +234,16 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, members, onC
           </TableBody>
         </Table>
       </div>
+
+      <TransferCampaignDialog
+        open={!!transferTargets}
+        onOpenChange={(o) => { if (!o) setTransferTargets(null); }}
+        targets={transferTargets ?? []}
+        currentCampaignId={campaignId}
+        currentCampaignName={campaignName}
+        subjectLabel={transferLabel}
+        onDone={() => setSelectedIds([])}
+      />
     </div>
   );
 };
