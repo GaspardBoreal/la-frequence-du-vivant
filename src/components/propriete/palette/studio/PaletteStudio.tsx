@@ -914,6 +914,8 @@ export const PaletteStudio: React.FC<Props> = ({
                   santeCounts={santeCounts}
                   objetCountByCalque={objetCountByCalque}
                   readOnly={readOnly}
+                  scrollToSystem={intent?.focus === 'capteurs'}
+
                 />
               )}
               {tab === 'vivant' && (
