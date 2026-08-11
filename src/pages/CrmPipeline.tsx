@@ -63,6 +63,8 @@ const CrmPipeline: React.FC = () => {
     stagesFilter,
     setStagesFilter,
     allStagesActive,
+    campaignsFilter,
+    setCampaignsFilter,
     matchesAll,
   } = usePipelineFilters();
 
