@@ -117,7 +117,11 @@ export const CampaignCard: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="text-right shrink-0">
+          <Link
+            to={`/admin/crm/campagnes/${campaign.id}?tab=pilotage&interet=1`}
+            className="shrink-0 text-right transition-opacity hover:opacity-80"
+            title="Voir les intérêts détectés"
+          >
             <motion.div
               key={taux.toFixed(1)}
               initial={{ scale: 0.85, opacity: 0 }}
@@ -130,8 +134,7 @@ export const CampaignCard: React.FC<Props> = ({
             <div className="mt-1 text-[10px] uppercase tracking-wide crm-muted">
               {canal === 'email' ? 'réponses' : 'détection'} · cible {cible}%
             </div>
-
-          </div>
+          </Link>
         </div>
 
         <div className="mt-3">
