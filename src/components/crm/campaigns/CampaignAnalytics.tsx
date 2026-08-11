@@ -49,31 +49,28 @@ const Tile: React.FC<{ label: string; value: React.ReactNode; hint?: string; hue
 export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = [], members = [] }) => {
   const s = stats ?? ({} as CampaignStats);
   const joints = s.joints ?? 0;
-  const taux = joints ? ((s.interesses ?? 0) / joints) * 100 : 0;
   const cible = campaign.objectif_taux ?? 10;
   const canal = canalOf(campaign);
   const showEmail = canalUsesEmail(campaign);
   const mail = emailStatsOf(members);
   const declencheur = canalDeclencheur(members);
+  /* Indicateur roi commun à tous les canaux. */
+  const interet = interestRateOf(
+    { joints, interesses: s.interesses, emails_envoyes: mail.envoyes, reponses: mail.repondus },
+    members,
+  );
+  const taux = interet.taux;
 
+  const funnel = [
+    { etape: 'Enrôlés', n: s.enroles ?? 0 },
+    ...(showEmail ? [{ etape: 'Écrits', n: mail.envoyes }] : []),
+    ...(showEmail && mail.ouverts > 0 ? [{ etape: 'Ouverts', n: mail.ouverts }] : []),
+    ...(canal !== 'email' || (s.appels ?? 0) > 0 ? [{ etape: 'Appelés', n: s.appels ?? 0 }] : []),
+    { etape: 'Touchés', n: interet.touches },
+    { etape: 'Intéressés', n: interet.succes },
+    { etape: 'Gagnées', n: s.opp_gagnees ?? 0 },
+  ];
 
-  const funnel =
-    canal === 'email'
-      ? [
-          { etape: 'Enrôlés', n: s.enroles ?? 0 },
-          { etape: 'Écrits', n: mail.envoyes },
-          { etape: 'Ouverts', n: mail.ouverts },
-          { etape: 'Réponses', n: mail.repondus },
-          { etape: 'Gagnées', n: s.opp_gagnees ?? 0 },
-        ]
-      : [
-          { etape: 'Enrôlés', n: s.enroles ?? 0 },
-          ...(showEmail ? [{ etape: 'Écrits', n: mail.envoyes }] : []),
-          { etape: 'Appelés', n: s.appels ?? 0 },
-          { etape: 'Joints', n: joints },
-          { etape: 'Intéressés', n: (s.interesses ?? 0) + (showEmail ? mail.repondus : 0) },
-          { etape: 'Gagnées', n: s.opp_gagnees ?? 0 },
-        ];
 
 
   const chartData = daily.map((d) => ({
