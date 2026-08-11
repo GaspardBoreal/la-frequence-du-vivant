@@ -221,6 +221,13 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
           </div>
         )}
       </Card>
+
+      <InterestDrawer
+        open={interetOpen}
+        onOpenChange={setInteretOpen}
+        campaign={campaign}
+        members={members}
+      />
     </div>
   );
 };
