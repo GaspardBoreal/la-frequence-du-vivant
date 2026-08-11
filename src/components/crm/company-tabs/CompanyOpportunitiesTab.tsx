@@ -142,6 +142,44 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
         onSubmit={handleSubmit}
         defaultLinkedCompany={editing ? null : { company_id: companyId, role: 'primary', denomination: companyName }}
       />
+
+      <AlertDialog open={!!pending} onOpenChange={(o) => { if (!o) setPending(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pending?.action === 'unlink'
+                ? 'Délier cette opportunité ?'
+                : 'Supprimer définitivement cette opportunité ?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pending?.action === 'unlink' ? (
+                <>
+                  « {pending?.opp.titre || pending?.opp.entreprise || 'Opportunité'} » ne sera plus
+                  rattachée à {companyName} et disparaîtra de cette fiche. L'opportunité elle-même
+                  n'est pas supprimée : elle reste dans le pipeline.
+                </>
+              ) : (
+                <>
+                  « {pending?.opp.titre || pending?.opp.entreprise || 'Opportunité'} » sera
+                  définitivement supprimée du pipeline, avec son historique. Cette action est
+                  irréversible.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmPending}
+              className={pending?.action === 'delete'
+                ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                : undefined}
+            >
+              {pending?.action === 'unlink' ? 'Délier' : 'Supprimer'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
