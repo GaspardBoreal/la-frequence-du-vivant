@@ -17,6 +17,7 @@ import {
   type CallStatus,
   type CrmCampaignMember,
 } from '@/types/crmCampaign';
+import { KANBAN_COLUMNS } from '@/types/crm';
 import { useCampaignMemberMutations } from '@/hooks/useCrmCampaigns';
 
 interface Props {
