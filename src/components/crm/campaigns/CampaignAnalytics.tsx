@@ -45,11 +45,16 @@ const Tile: React.FC<{ label: string; value: React.ReactNode; hint?: string; hue
   </motion.div>
 );
 
-export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = [] }) => {
+export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = [], members = [] }) => {
   const s = stats ?? ({} as CampaignStats);
   const joints = s.joints ?? 0;
   const taux = joints ? ((s.interesses ?? 0) / joints) * 100 : 0;
   const cible = campaign.objectif_taux ?? 10;
+  const canal = canalOf(campaign);
+  const showEmail = canalUsesEmail(campaign);
+  const mail = emailStatsOf(members);
+  const declencheur = canalDeclencheur(members);
+
 
   const funnel = [
     { etape: 'Enrôlés', n: s.enroles ?? 0 },
