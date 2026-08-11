@@ -247,6 +247,8 @@ const AdminIot: React.FC = () => {
             puis stockées en unités normalisées (°C, %, Pa, lx, mm, V).
           </p>
         </section>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
