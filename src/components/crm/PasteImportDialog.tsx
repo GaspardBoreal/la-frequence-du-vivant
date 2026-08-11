@@ -262,6 +262,7 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
 
           if (createOpportunities && members && members.length > 0) {
             for (const m of members as any[]) {
+              if (m.opportunity_id) continue;
               const row = selectedRows.find(r => idBySiren.get(r.siren) === m.company_id);
               const label = row?.nom ?? 'Prospect';
               const { data: opp, error: oppErr } = await supabase
