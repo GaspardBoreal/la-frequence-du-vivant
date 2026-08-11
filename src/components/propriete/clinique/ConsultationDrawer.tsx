@@ -148,7 +148,7 @@ export const ConsultationDrawer: React.FC<{
       <SheetContent
         side="right"
         overlayClassName={elevated ? 'z-[3200]' : undefined}
-        className={`w-full sm:max-w-xl overflow-y-auto bg-[hsl(var(--ds-cream))] border-l border-[hsl(var(--ds-line))] ${elevated ? 'z-[3210]' : ''}`
+        className={`w-full sm:max-w-xl overflow-y-auto bg-[hsl(var(--ds-cream))] border-l border-[hsl(var(--ds-line))] ${elevated ? 'z-[3210]' : ''}`}
       >
         {consultation && (
           <>
