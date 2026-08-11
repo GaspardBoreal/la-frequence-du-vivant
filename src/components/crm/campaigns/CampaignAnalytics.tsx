@@ -12,13 +12,21 @@ import {
   Line,
   ComposedChart,
 } from 'recharts';
-import type { CampaignStats, CrmCampaign } from '@/types/crmCampaign';
+import type { CampaignStats, CrmCampaign, CrmCampaignMember } from '@/types/crmCampaign';
+import {
+  canalOf,
+  canalDeclencheur,
+  emailStatsOf,
+  usesEmail as canalUsesEmail,
+} from '@/lib/crm/campaignChannel';
 
 interface Props {
   campaign: CrmCampaign;
   stats?: CampaignStats | null;
   daily?: Array<{ jour: string; appels: number; interesses: number }>;
+  members?: CrmCampaignMember[];
 }
+
 
 const Tile: React.FC<{ label: string; value: React.ReactNode; hint?: string; hue?: string }> = ({
   label,
