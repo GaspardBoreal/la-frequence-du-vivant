@@ -385,9 +385,15 @@ const PropTabs: React.FC<{
   }, [handleTabChange]);
 
   const [atelierIntent, setAtelierIntent] = React.useState<{ focus?: 'capteurs' } | null>(null);
+  const atelierReturnTabRef = React.useRef<string | null>(null);
 
-  const openAtelier = React.useCallback((intent?: { focus?: 'capteurs' } | null) => {
+  // Ref pour que le listener global lise toujours l'onglet courant.
+  const tabRef = React.useRef(tab);
+  React.useEffect(() => { tabRef.current = tab; }, [tab]);
+
+  const openAtelier = React.useCallback((intent?: { focus?: 'capteurs' } | null, returnTab?: string | null) => {
     setAtelierIntent(intent ?? null);
+    atelierReturnTabRef.current = returnTab ?? tabRef.current ?? 'palette';
     handleTabChange('palette');
     setAtelierOpen(true);
   }, [handleTabChange]);
@@ -395,8 +401,11 @@ const PropTabs: React.FC<{
   // Ouverture de l'atelier depuis « Capteurs et sondes » (pose GPS d'un capteur).
   React.useEffect(() => {
     const onOpenAtelier = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { focus?: 'capteurs'; layer?: string } | undefined;
-      openAtelier(detail?.focus || detail?.layer === 'capteurs' ? { focus: 'capteurs' } : null);
+      const detail = (e as CustomEvent).detail as { focus?: 'capteurs'; layer?: string; returnTab?: string } | undefined;
+      openAtelier(
+        detail?.focus || detail?.layer === 'capteurs' ? { focus: 'capteurs' } : null,
+        detail?.returnTab ?? null,
+      );
     };
     window.addEventListener('propriete:open-atelier', onOpenAtelier);
     return () => window.removeEventListener('propriete:open-atelier', onOpenAtelier);
@@ -406,7 +415,11 @@ const PropTabs: React.FC<{
   const closeAtelier = React.useCallback(() => {
     setAtelierOpen(false);
     setAtelierIntent(null);
-  }, []);
+    const back = atelierReturnTabRef.current;
+    atelierReturnTabRef.current = null;
+    if (back && back !== 'palette') handleTabChange(back);
+  }, [handleTabChange]);
+
 
 
   const projectActive = ['portrait', 'synthesize', 'palette', 'clinique', 'capteurs'].includes(tab);
