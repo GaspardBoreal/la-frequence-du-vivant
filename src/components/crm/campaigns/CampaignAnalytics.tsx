@@ -84,7 +84,13 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
         <Tile label="Enrôlés" value={s.enroles ?? 0} />
-        {canal !== 'email' && (
+        <Tile
+          label="Détection d'intérêt"
+          value={`${taux.toFixed(0)}%`}
+          hint={`${interet.succes} / ${interet.touches} touchés · cible ${cible}%`}
+          hue={taux >= cible ? '150 65% 45%' : taux >= cible * 0.6 ? '38 92% 55%' : '0 75% 58%'}
+        />
+        {(canal !== 'email' || (s.appels ?? 0) > 0) && (
           <Tile label="Appels passés" value={s.appels ?? 0} hint={`${s.a_appeler ?? 0} restants`} />
         )}
         {showEmail && (
@@ -103,17 +109,10 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
             hue="270 65% 60%"
           />
         )}
-        {canal !== 'email' && (
-          <Tile
-            label="Détection d'intérêt"
-            value={`${taux.toFixed(0)}%`}
-            hint={`cible ${cible}%`}
-            hue={taux >= cible ? '150 65% 45%' : taux >= cible * 0.6 ? '38 92% 55%' : '0 75% 58%'}
-          />
-        )}
-        {canal !== 'email' && (
+        {(canal !== 'email' || (s.rappels_du_jour ?? 0) > 0) && (
           <Tile label="Rappels du jour" value={s.rappels_du_jour ?? 0} hue="38 92% 55%" />
         )}
+
         <Tile label="Opportunités" value={s.opportunites ?? 0} hint={`${s.opp_actives ?? 0} actives`} />
         <Tile
           label="CA potentiel"
