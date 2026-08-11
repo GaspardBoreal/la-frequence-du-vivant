@@ -249,6 +249,9 @@ const CrmPipeline: React.FC = () => {
                 setActionsMode={setActionsMode}
                 stagesFilter={stagesFilter}
                 setStagesFilter={setStagesFilter}
+                campaignsFilter={campaignsFilter}
+                setCampaignsFilter={setCampaignsFilter}
+                campaignCounts={campaignCounts}
                 matchedCount={filtered.length}
                 totalCount={opportunities.length}
               />
