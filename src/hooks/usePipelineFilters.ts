@@ -18,6 +18,10 @@ export interface UsePipelineFiltersResult {
   /** true tant que toutes les étapes sont actives (état par défaut, pas de filtre) */
   allStagesActive: boolean;
 
+  // Campagnes (vide = toutes)
+  campaignsFilter: string[];
+  setCampaignsFilter: (next: string[]) => void;
+
   /** Prédicat unique combinant tous les filtres. À utiliser dans toutes les vues. */
   matchesAll: (opp: CrmOpportunity) => boolean;
 }
