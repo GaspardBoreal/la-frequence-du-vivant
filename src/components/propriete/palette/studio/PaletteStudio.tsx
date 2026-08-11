@@ -1105,6 +1105,22 @@ export const PaletteStudio: React.FC<Props> = ({
 
             {system.sante && system.santeTournee && <CareRoundLayer round={careRound} />}
 
+            {system.capteurs && (
+              <IotLayer
+                capteurs={iotCapteurs}
+                latest={iotLatest}
+                draggable={!readOnly}
+                placingId={placingCapteurId}
+                onPlace={(id, lat, lng) => {
+                  moveCapteur.mutate({ id, lat, lng });
+                  setPlacingCapteurId(null);
+                }}
+                onMove={(id, lat, lng) => moveCapteur.mutate({ id, lat, lng })}
+                onOpen={(c) => setOpenCapteur(c)}
+              />
+            )}
+
+
           </RichMap>
 
           {system.sante && (focusPoints.length > 0 || consultationsToPlace.length > 0) && (
