@@ -340,6 +340,8 @@ const OpportunityMiniCard: React.FC<{
           </button>
         )}
 
+        {/* Raccourcis de navigation */}
+        <div className="flex items-center gap-2 pt-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
           <button
             onClick={(e) => { e.stopPropagation(); navigate(`/admin/crm/pipeline?opportunity=${opp.id}`); }}
             className="inline-flex items-center gap-1 rounded-lg border border-border/60 bg-background/60 px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors"
@@ -357,6 +359,17 @@ const OpportunityMiniCard: React.FC<{
             </button>
           )}
         </div>
+      </div>
+
+      <div onClick={(e) => e.stopPropagation()}>
+        <TransferCampaignDialog
+          open={transferOpen}
+          onOpenChange={setTransferOpen}
+          targets={[{ opportunityId: opp.id, companyId }]}
+          currentCampaignId={campaign?.id ?? null}
+          currentCampaignName={campaign?.nom ?? null}
+          subjectLabel={opp.titre || opp.entreprise || 'Cette opportunité'}
+        />
       </div>
     </motion.div>
   );
