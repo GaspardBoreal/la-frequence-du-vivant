@@ -45,7 +45,6 @@ const AdminIot: React.FC = () => {
       </div>
 
       <div className="mx-auto max-w-5xl space-y-8 px-6 py-8">
-        {/* Fournisseurs */}
         <Tabs defaultValue="telemetrie">
           <TabsList className="mb-4">
             <TabsTrigger value="telemetrie">Poste de contrôle</TabsTrigger>
