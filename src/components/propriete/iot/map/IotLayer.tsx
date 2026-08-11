@@ -35,6 +35,8 @@ const PlaceCatcher: React.FC<{ onPick: (lat: number, lng: number) => void }> = (
 interface Props {
   capteurs: IotCapteur[];
   latest: Record<string, IotMesure[]>;
+  /** Photo de couverture par capteur — le capteur en situation. */
+  covers?: Record<string, { url?: string; count: number }>;
   draggable?: boolean;
   placingId?: string | null;
   onPlace?: (id: string, lat: number, lng: number) => void;
@@ -43,7 +45,7 @@ interface Props {
 }
 
 /** Les capteurs posés sur le plan du jardin : pastille vivante + dernières mesures. */
-export const IotLayer: React.FC<Props> = ({ capteurs, latest, draggable, placingId, onPlace, onMove, onOpen }) => {
+export const IotLayer: React.FC<Props> = ({ capteurs, latest, covers = {}, draggable, placingId, onPlace, onMove, onOpen }) => {
   const placed = capteurs.filter((c) => c.lat != null && c.lng != null);
 
   return (
@@ -70,6 +72,21 @@ export const IotLayer: React.FC<Props> = ({ capteurs, latest, draggable, placing
             </Tooltip>
             <Popup>
               <div style={{ minWidth: 190 }}>
+                {covers[c.id]?.url && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <img
+                      src={covers[c.id]!.url}
+                      alt={`${c.nom} en situation`}
+                      style={{
+                        width: 46, height: 46, borderRadius: 999, objectFit: 'cover',
+                        border: `2px solid ${HEALTH_COLOR[h.status]}`,
+                      }}
+                    />
+                    {(covers[c.id]!.count ?? 0) > 1 && (
+                      <span style={{ fontSize: 10, opacity: 0.7 }}>{covers[c.id]!.count} photos</span>
+                    )}
+                  </div>
+                )}
                 <div style={{ fontWeight: 700, fontSize: 12 }}>{c.nom}</div>
                 <div style={{ fontSize: 10, opacity: 0.7 }}>
                   {c.type?.modele} · {h.label}

@@ -53,6 +53,7 @@ import CliniqueLayer from '@/components/propriete/clinique/map/CliniqueLayer';
 import CareRoundLayer from '@/components/propriete/clinique/map/CareRoundLayer';
 import CliniqueDock from '@/components/propriete/clinique/map/CliniqueDock';
 import IotLayer from '@/components/propriete/iot/map/IotLayer';
+import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
 import IotDock from '@/components/propriete/iot/map/IotDock';
 import SensorDrawer from '@/components/propriete/iot/SensorDrawer';
 import { useIotCapteurs, useLatestMesures, useMoveCapteur, type IotCapteur } from '@/hooks/iot/useIot';
@@ -332,6 +333,7 @@ export const PaletteStudio: React.FC<Props> = ({
   const iotIds = React.useMemo(() => iotCapteurs.map((c) => c.id), [iotCapteurs]);
   const { data: iotLatest = {} } = useLatestMesures(iotIds);
   const moveCapteur = useMoveCapteur(proprieteId);
+  const { data: iotCovers = {} } = useCapteurCovers(iotIds);
   const [placingCapteurId, setPlacingCapteurId] = React.useState<string | null>(null);
   const [openCapteur, setOpenCapteur] = React.useState<IotCapteur | null>(null);
 
@@ -1170,6 +1172,7 @@ export const PaletteStudio: React.FC<Props> = ({
               <IotLayer
                 capteurs={iotCapteurs}
                 latest={iotLatest}
+                covers={iotCovers}
                 draggable={!readOnly}
                 placingId={placingCapteurId}
                 onPlace={(id, lat, lng) => {
@@ -1212,6 +1215,7 @@ export const PaletteStudio: React.FC<Props> = ({
             latest={openCapteur ? (iotLatest[openCapteur.id] ?? []) : []}
             onClose={() => setOpenCapteur(null)}
             proprieteId={proprieteId}
+            elevated
           />
 
 
@@ -1478,6 +1482,7 @@ export const PaletteStudio: React.FC<Props> = ({
           consultation={openConsultation}
           proprieteId={proprieteId}
           onClose={() => setOpenConsultation(null)}
+          elevated
         />
 
         {/* Le Chantier — démonstration avant / après d'un lot d'ouvrages */}
