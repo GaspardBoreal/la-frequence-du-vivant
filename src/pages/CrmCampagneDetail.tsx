@@ -120,6 +120,7 @@ const CrmCampagneDetail: React.FC = () => {
         <TabsContent value="prospects" className="pt-4">
           <CampaignMembersTable
             campaignId={campaign.id}
+            campaignName={campaign.nom}
             members={members}
             onCall={(memberId) => { setStartAt(memberId); setCallOpen(true); }}
           />
