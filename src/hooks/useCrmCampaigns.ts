@@ -332,6 +332,175 @@ export function useCampaignMemberMutations(campaignId?: string) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Transfert de campagne                                               */
+/* ------------------------------------------------------------------ */
+
+export interface TransferTarget {
+  /** Membre de campagne à déplacer (si connu). */
+  memberId?: string | null;
+  /** Opportunité concernée (si connue). */
+  opportunityId?: string | null;
+  /** Entreprise concernée (nécessaire si aucun membre n'existe encore). */
+  companyId?: string | null;
+}
+
+/** Déplace un prospect (et son opportunité) d'une campagne à une autre — ou l'en détache. */
+export function useCampaignTransfer() {
+  const qc = useQueryClient();
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['crm-campaign-members'] });
+    qc.invalidateQueries({ queryKey: ['crm-campaign-memberships'] });
+    qc.invalidateQueries({ queryKey: ['crm-campaigns-overview'] });
+    qc.invalidateQueries({ queryKey: ['campaign-stats'] });
+    qc.invalidateQueries({ queryKey: ['campaign-daily'] });
+    qc.invalidateQueries({ queryKey: ['crm-opportunities'] });
+    qc.invalidateQueries({ queryKey: ['crm-company-opportunities'] });
+  };
+
+  const transferOne = async (t: TransferTarget, targetCampaignId: string | null) => {
+    const { data: userData } = await supabase.auth.getUser();
+
+    // 1. Retrouver le membre concerné
+    let member: any = null;
+    if (t.memberId) {
+      const { data } = await supabase
+        .from('crm_campaign_members')
+        .select('*')
+        .eq('id', t.memberId)
+        .maybeSingle();
+      member = data;
+    } else if (t.opportunityId) {
+      const { data } = await supabase
+        .from('crm_campaign_members')
+        .select('*')
+        .eq('opportunity_id', t.opportunityId)
+        .limit(1)
+        .maybeSingle();
+      member = data;
+    }
+
+    const companyId = member?.company_id ?? t.companyId ?? null;
+    const opportunityId = t.opportunityId ?? member?.opportunity_id ?? null;
+
+    // 2. Détachement pur
+    if (!targetCampaignId) {
+      if (member) {
+        const { error } = await supabase.from('crm_campaign_members').delete().eq('id', member.id);
+        if (error) throw error;
+      }
+      if (opportunityId) {
+        const { error } = await supabase
+          .from('crm_opportunities')
+          .update({ campaign_id: null } as any)
+          .eq('id', opportunityId);
+        if (error) throw error;
+      }
+      return;
+    }
+
+    // 3. Déplacement / création du membre
+    if (member) {
+      let existing: any = null;
+      if (companyId) {
+        const { data } = await supabase
+          .from('crm_campaign_members')
+          .select('*')
+          .eq('campaign_id', targetCampaignId)
+          .eq('company_id', companyId)
+          .maybeSingle();
+        existing = data;
+      }
+
+      if (existing && existing.id !== member.id) {
+        // Fusion : on garde la ligne cible en y reportant l'historique le plus riche
+        const srcCall = member.last_call_at ? new Date(member.last_call_at).getTime() : 0;
+        const dstCall = existing.last_call_at ? new Date(existing.last_call_at).getTime() : 0;
+        const keepSource = srcCall >= dstCall;
+        const merged: any = {
+          opportunity_id: existing.opportunity_id ?? member.opportunity_id ?? null,
+          attempts: Math.max(existing.attempts ?? 0, member.attempts ?? 0),
+          priorite: Math.max(existing.priorite ?? 0, member.priorite ?? 0),
+          last_call_at: keepSource ? member.last_call_at : existing.last_call_at,
+          next_call_at: existing.next_call_at ?? member.next_call_at,
+          call_status: keepSource ? member.call_status : existing.call_status,
+          refus_motif: keepSource ? member.refus_motif ?? existing.refus_motif : existing.refus_motif,
+          notes: [existing.notes, member.notes].filter(Boolean).join('\n') || null,
+        };
+        const { error: upErr } = await supabase
+          .from('crm_campaign_members')
+          .update(merged)
+          .eq('id', existing.id);
+        if (upErr) throw upErr;
+        const { error: delErr } = await supabase
+          .from('crm_campaign_members')
+          .delete()
+          .eq('id', member.id);
+        if (delErr) throw delErr;
+      } else if (member.campaign_id !== targetCampaignId) {
+        const { error } = await supabase
+          .from('crm_campaign_members')
+          .update({ campaign_id: targetCampaignId } as any)
+          .eq('id', member.id);
+        if (error) throw error;
+      }
+    } else if (companyId) {
+      const { error } = await supabase
+        .from('crm_campaign_members')
+        .upsert(
+          {
+            campaign_id: targetCampaignId,
+            company_id: companyId,
+            opportunity_id: opportunityId,
+            added_by: userData.user?.id ?? null,
+          } as any,
+          { onConflict: 'campaign_id,company_id', ignoreDuplicates: false },
+        );
+      if (error) throw error;
+      if (opportunityId) {
+        await supabase
+          .from('crm_campaign_members')
+          .update({ opportunity_id: opportunityId } as any)
+          .eq('campaign_id', targetCampaignId)
+          .eq('company_id', companyId);
+      }
+    }
+
+    // 4. L'opportunité suit toujours
+    if (opportunityId) {
+      const { error } = await supabase
+        .from('crm_opportunities')
+        .update({ campaign_id: targetCampaignId } as any)
+        .eq('id', opportunityId);
+      if (error) throw error;
+    }
+  };
+
+  return useMutation({
+    mutationFn: async ({
+      targets,
+      targetCampaignId,
+    }: {
+      targets: TransferTarget[];
+      targetCampaignId: string | null;
+    }) => {
+      for (const t of targets) {
+        await transferOne(t, targetCampaignId);
+      }
+      return targets.length;
+    },
+    onSuccess: (n, vars) => {
+      invalidate();
+      toast.success(
+        vars.targetCampaignId
+          ? `${n} élément${n > 1 ? 's' : ''} transféré${n > 1 ? 's' : ''} de campagne`
+          : 'Retiré de la campagne',
+      );
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Erreur au transfert'),
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* Stats                                                               */
 /* ------------------------------------------------------------------ */
 
