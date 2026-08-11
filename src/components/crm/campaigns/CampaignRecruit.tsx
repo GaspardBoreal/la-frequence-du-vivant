@@ -3,7 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Loader2, UserPlus, Search, CheckCircle2, Building2 } from 'lucide-react';
+import { Loader2, UserPlus, Search, CheckCircle2, Building2, ClipboardPaste } from 'lucide-react';
+import { PasteImportDialog } from '@/components/crm/PasteImportDialog';
+
 import { useCrmCompanies } from '@/hooks/useCrmCompanies';
 import {
   useAllCampaignMemberships,
