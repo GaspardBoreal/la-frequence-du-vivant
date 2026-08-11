@@ -318,6 +318,16 @@ export const PaletteStudio: React.FC<Props> = ({
   const [placingConsultationId, setPlacingConsultationId] = React.useState<string | null>(null);
   const [openConsultation, setOpenConsultation] = React.useState<Consultation | null>(null);
 
+  // Capteurs et sondes : pose GPS et lecture des dernières mesures sur le plan.
+  const { data: iotCapteurs = [] } = useIotCapteurs(proprieteId);
+  const iotIds = React.useMemo(() => iotCapteurs.map((c) => c.id), [iotCapteurs]);
+  const { data: iotLatest = {} } = useLatestMesures(iotIds);
+  const moveCapteur = useMoveCapteur(proprieteId);
+  const [placingCapteurId, setPlacingCapteurId] = React.useState<string | null>(null);
+  const [openCapteur, setOpenCapteur] = React.useState<IotCapteur | null>(null);
+
+
+
   const focusPoints = React.useMemo<FocusPoint[]>(
     () =>
       consultations
