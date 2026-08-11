@@ -4,6 +4,7 @@ import type { CrmOpportunity } from '@/types/crm';
 
 export interface CompanyOpportunityRow extends CrmOpportunity {
   link_role: string;
+  campaign?: { id: string; nom: string; statut: string } | null;
 }
 
 export function useCompanyOpportunities(companyId: string | null) {
@@ -13,7 +14,7 @@ export function useCompanyOpportunities(companyId: string | null) {
       if (!companyId) return [];
       const { data, error } = await supabase
         .from('crm_opportunity_companies')
-        .select('role, opportunity:crm_opportunities(*, assigned_member:team_members(*))')
+        .select('role, opportunity:crm_opportunities(*, assigned_member:team_members(*), campaign:crm_campaigns(id, nom, statut))')
         .eq('company_id', companyId);
       if (error) throw error;
       return (data ?? [])
