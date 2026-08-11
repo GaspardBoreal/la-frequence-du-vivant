@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Settings, Map, Sparkles, ArrowLeft, FileDown, Zap, Users, Briefcase, BarChart3, Kanban, Building2, Wrench, Heart } from 'lucide-react';
+import { Settings, Map, Sparkles, ArrowLeft, FileDown, Zap, Users, Briefcase, BarChart3, Kanban, Building2, Wrench, Heart, Radio } from 'lucide-react';
 import ApiHealthBanner from '@/components/api-mcp/ApiHealthBanner';
 import Footer from '@/components/Footer';
 
