@@ -23,10 +23,15 @@ import {
   CAMPAIGN_OBJECTIF_OPTIONS,
   CAMPAIGN_STATUT_OPTIONS,
   type CrmCampaign,
+  type CampaignCanal,
   type CampaignCiblage,
+  type CampaignEmailTemplate,
   type CampaignScript,
 } from '@/types/crmCampaign';
+import { CANAL_OPTIONS, canalOf, DEFAULT_EMAIL_TEMPLATE } from '@/lib/crm/campaignChannel';
+import { Phone, Mail, Zap, Plus, Trash2 } from 'lucide-react';
 import { FRENCH_DEPARTMENTS_WITH_CODES, FRENCH_REGIONS_WITH_CODES } from '@/utils/frenchAdministrativeCodes';
+
 
 interface Props {
   open: boolean;
@@ -57,6 +62,10 @@ export const CampaignFormDialog: React.FC<Props> = ({
   const [objectifTaux, setObjectifTaux] = React.useState('10');
   const [ciblage, setCiblage] = React.useState<CampaignCiblage>({});
   const [script, setScript] = React.useState<CampaignScript>({});
+  const [canal, setCanal] = React.useState<CampaignCanal>('telephone');
+  const [templates, setTemplates] = React.useState<CampaignEmailTemplate[]>([
+    DEFAULT_EMAIL_TEMPLATE,
+  ]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -71,13 +80,19 @@ export const CampaignFormDialog: React.FC<Props> = ({
     setObjectifTaux(String(campaign?.objectif_taux ?? 10));
     setCiblage((campaign?.ciblage as CampaignCiblage) ?? {});
     setScript((campaign?.script as CampaignScript) ?? {});
+    setCanal(canalOf(campaign));
+    const tpl = (campaign?.script as CampaignScript)?.email_templates;
+    setTemplates(Array.isArray(tpl) && tpl.length > 0 ? tpl : [DEFAULT_EMAIL_TEMPLATE]);
   }, [open, campaign]);
+
+  const usesEmail = canal !== 'telephone';
 
   const submit = () => {
     onSubmit({
       nom: nom.trim(),
       objectif,
       statut,
+      canal,
       description: description.trim() || null,
       date_debut: dateDebut || null,
       date_fin: dateFin || null,
@@ -85,9 +100,13 @@ export const CampaignFormDialog: React.FC<Props> = ({
       objectif_contacts: Number(objectifContacts) || 0,
       objectif_taux: Number(objectifTaux) || 0,
       ciblage,
-      script,
-    });
+      script: { ...script, email_templates: usesEmail ? templates : script.email_templates },
+    } as Partial<CrmCampaign>);
   };
+
+  const setTpl = (i: number, patch: Partial<CampaignEmailTemplate>) =>
+    setTemplates((list) => list.map((t, k) => (k === i ? { ...t, ...patch } : t)));
+
 
   const setCib = (k: keyof CampaignCiblage, v: string) =>
     setCiblage((c) => ({ ...c, [k]: v === NONE || v === '' ? undefined : v }));
@@ -103,13 +122,49 @@ export const CampaignFormDialog: React.FC<Props> = ({
         </DialogHeader>
 
         <Tabs defaultValue="identite">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={`grid w-full ${usesEmail ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <TabsTrigger value="identite">Identité</TabsTrigger>
             <TabsTrigger value="ciblage">Ciblage</TabsTrigger>
             <TabsTrigger value="script">Script</TabsTrigger>
+            {usesEmail && <TabsTrigger value="emails">Modèles email</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="identite" className="space-y-4 pt-4">
+            <div>
+              <Label>Canal de la campagne</Label>
+              <div className="mt-1.5 grid grid-cols-3 gap-2">
+                {CANAL_OPTIONS.map((c) => {
+                  const Icon = c.value === 'telephone' ? Phone : c.value === 'email' ? Mail : Zap;
+                  const active = canal === c.value;
+                  return (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => setCanal(c.value)}
+                      className={`rounded-xl border p-3 text-left transition-all ${
+                        active ? 'border-transparent ring-2 shadow-sm' : 'border-border hover:bg-muted/50'
+                      }`}
+                      style={
+                        active
+                          ? ({
+                              background: `hsl(${c.hue} / 0.12)`,
+                              ['--tw-ring-color' as any]: `hsl(${c.hue})`,
+                            } as React.CSSProperties)
+                          : undefined
+                      }
+                    >
+                      <span className="flex items-center gap-1.5 text-sm font-medium">
+                        <Icon className="h-4 w-4" style={{ color: `hsl(${c.hue})` }} />
+                        {c.label}
+                      </span>
+                      <span className="mt-1 block text-[11px] leading-snug text-muted-foreground">
+                        {c.description}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div>
               <Label>Nom de la campagne</Label>
               <Input
@@ -119,6 +174,7 @@ export const CampaignFormDialog: React.FC<Props> = ({
                 maxLength={200}
               />
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Objectif</Label>
@@ -301,6 +357,68 @@ export const CampaignFormDialog: React.FC<Props> = ({
               />
             </div>
           </TabsContent>
+
+          {usesEmail && (
+            <TabsContent value="emails" className="space-y-4 pt-4">
+              <p className="text-xs text-muted-foreground">
+                Variables disponibles : <code>{'{{société}}'}</code>, <code>{'{{contact}}'}</code>,{' '}
+                <code>{'{{pilote}}'}</code>. Elles sont remplacées à l'ouverture de la table d'envoi.
+              </p>
+              {templates.map((t, i) => (
+                <div key={t.id ?? i} className="space-y-2 rounded-xl border p-3">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={t.nom}
+                      onChange={(e) => setTpl(i, { nom: e.target.value })}
+                      placeholder="Accroche"
+                      className="h-8 max-w-[220px] text-sm font-medium"
+                      maxLength={80}
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="ml-auto h-8 w-8"
+                      disabled={templates.length <= 1}
+                      onClick={() => setTemplates((l) => l.filter((_, k) => k !== i))}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Input
+                    value={t.objet}
+                    onChange={(e) => setTpl(i, { objet: e.target.value })}
+                    placeholder="Objet de l'email"
+                    maxLength={300}
+                  />
+                  <Textarea
+                    rows={6}
+                    maxLength={6000}
+                    value={t.corps}
+                    onChange={(e) => setTpl(i, { corps: e.target.value })}
+                    placeholder="Bonjour {{contact}}, …"
+                  />
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setTemplates((l) => [
+                    ...l,
+                    {
+                      id: `tpl_${Date.now()}`,
+                      nom: `Modèle ${l.length + 1}`,
+                      objet: '',
+                      corps: '',
+                    },
+                  ])
+                }
+              >
+                <Plus className="mr-1.5 h-4 w-4" /> Ajouter un modèle
+              </Button>
+            </TabsContent>
+          )}
+
         </Tabs>
 
         <div className="flex justify-end gap-2 pt-2">

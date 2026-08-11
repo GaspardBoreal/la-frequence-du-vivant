@@ -9,13 +9,32 @@ export type CallStatus =
   | 'refus'
   | 'injoignable';
 
+export type CampaignCanal = 'telephone' | 'email' | 'mixte';
+
+export type EmailStatus =
+  | 'non_contacte'
+  | 'envoye'
+  | 'ouvert'
+  | 'repondu'
+  | 'desabonne'
+  | 'bounce';
+
+export interface CampaignEmailTemplate {
+  id: string;
+  nom: string;
+  objet: string;
+  corps: string;
+}
+
 export interface CampaignScript {
   accroche?: string;
   preuve?: string;
   demande?: string;
   objections?: Array<{ objection: string; reponse: string }>;
   lien?: string;
+  email_templates?: CampaignEmailTemplate[];
 }
+
 
 export interface CampaignCiblage {
   stage?: string;
@@ -32,6 +51,7 @@ export interface CrmCampaign {
   nom: string;
   objectif: CampaignObjectif | string;
   statut: CampaignStatut | string;
+  canal: CampaignCanal | string;
   description: string | null;
   date_debut: string | null;
   date_fin: string | null;
@@ -67,6 +87,11 @@ export interface CrmCampaignMember {
   contact_id: string | null;
   opportunity_id: string | null;
   call_status: CallStatus | string;
+  email_status: EmailStatus | string;
+  emails_sent: number;
+  last_email_at: string | null;
+  next_action_at: string | null;
+  next_action_canal: 'telephone' | 'email' | null;
   priorite: number;
   attempts: number;
   last_call_at: string | null;
@@ -77,6 +102,7 @@ export interface CrmCampaignMember {
   updated_at: string;
   company?: CampaignMemberCompany | null;
 }
+
 
 export interface CampaignStats {
   enroles: number;
@@ -121,6 +147,19 @@ export const CALL_STATUS_META: Record<
   refus: { label: 'Refus', hue: '0 75% 58%', short: 'Refus' },
   injoignable: { label: 'Injoignable', hue: '220 10% 50%', short: 'Injoignable' },
 };
+
+export const EMAIL_STATUS_META: Record<
+  EmailStatus,
+  { label: string; hue: string; short: string }
+> = {
+  non_contacte: { label: 'À écrire', hue: '210 90% 56%', short: 'À écrire' },
+  envoye: { label: 'Envoyé', hue: '190 70% 45%', short: 'Envoyé' },
+  ouvert: { label: 'Ouvert', hue: '38 92% 55%', short: 'Ouvert' },
+  repondu: { label: 'A répondu', hue: '150 65% 45%', short: 'Réponse' },
+  desabonne: { label: 'Désabonné', hue: '220 10% 50%', short: 'Stop' },
+  bounce: { label: 'Adresse invalide', hue: '0 75% 58%', short: 'Bounce' },
+};
+
 
 export const REFUS_MOTIFS = [
   'Budget déjà engagé',

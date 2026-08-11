@@ -53,20 +53,39 @@ export function useCampaignsOverview() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('crm_campaign_members')
-        .select('campaign_id, call_status')
+        .select('campaign_id, call_status, email_status, emails_sent')
         .limit(20000);
       if (error) throw error;
       const map = new Map<
         string,
-        { enroles: number; joints: number; interesses: number; a_appeler: number }
+        {
+          enroles: number;
+          joints: number;
+          interesses: number;
+          a_appeler: number;
+          emails_envoyes: number;
+          reponses: number;
+          a_ecrire: number;
+        }
       >();
       (data ?? []).forEach((r: any) => {
         const e =
-          map.get(r.campaign_id) ?? { enroles: 0, joints: 0, interesses: 0, a_appeler: 0 };
+          map.get(r.campaign_id) ?? {
+            enroles: 0,
+            joints: 0,
+            interesses: 0,
+            a_appeler: 0,
+            emails_envoyes: 0,
+            reponses: 0,
+            a_ecrire: 0,
+          };
         e.enroles += 1;
         if (['joint', 'interesse', 'refus'].includes(r.call_status)) e.joints += 1;
         if (r.call_status === 'interesse') e.interesses += 1;
         if (r.call_status === 'a_appeler') e.a_appeler += 1;
+        if ((r.emails_sent ?? 0) > 0) e.emails_envoyes += 1;
+        else if (!['desabonne', 'bounce'].includes(r.email_status)) e.a_ecrire += 1;
+        if (r.email_status === 'repondu') e.reponses += 1;
         map.set(r.campaign_id, e);
       });
       return map;
@@ -74,6 +93,7 @@ export function useCampaignsOverview() {
     staleTime: 20_000,
   });
 }
+
 
 export function useCampaignMutations() {
   const qc = useQueryClient();
@@ -139,6 +159,8 @@ export function useCampaignMutations() {
         .insert({
           nom: `${c.nom} (copie)`,
           objectif: c.objectif,
+          canal: (c as any).canal ?? 'telephone',
+
           statut: 'brouillon',
           description: c.description,
           pilote_id: c.pilote_id,
@@ -282,11 +304,14 @@ export function useCampaignMemberMutations(campaignId?: string) {
       member,
       campaign,
       note,
+      via,
     }: {
       member: CrmCampaignMember;
       campaign: CrmCampaign;
       note?: string;
+      via?: 'telephone' | 'email';
     }) => {
+
       const { data: userData } = await supabase.auth.getUser();
       const company = member.company;
       const dirigeant = Array.isArray(company?.dirigeants) ? company?.dirigeants?.[0] : null;
@@ -316,7 +341,14 @@ export function useCampaignMemberMutations(campaignId?: string) {
 
       await supabase
         .from('crm_campaign_members')
-        .update({ opportunity_id: (opp as any).id, call_status: 'interesse' } as any)
+        .update({
+          opportunity_id: (opp as any).id,
+          ...(via === 'email'
+            ? { email_status: 'repondu' }
+            : { call_status: 'interesse' }),
+          next_action_at: null,
+          next_action_canal: null,
+        } as any)
         .eq('id', member.id);
 
       return opp;
@@ -328,8 +360,66 @@ export function useCampaignMemberMutations(campaignId?: string) {
     onError: (e: any) => toast.error(e.message ?? 'Erreur à la conversion'),
   });
 
-  return { enrollCompanies, updateMember, removeMember, convertToOpportunity, campaignId };
+  /** Journalise un email envoyé depuis l'atelier et fait avancer la cadence. */
+  const recordEmail = useMutation({
+    mutationFn: async ({
+      member,
+      campaign,
+      subject,
+      body,
+      recipient,
+      nextActionCanal,
+      nextActionAt,
+    }: {
+      member: CrmCampaignMember;
+      campaign: CrmCampaign;
+      subject: string;
+      body: string;
+      recipient?: string | null;
+      nextActionCanal?: 'telephone' | 'email' | null;
+      nextActionAt?: string | null;
+    }) => {
+      const { data: userData } = await supabase.auth.getUser();
+
+      await supabase.from('crm_email_logs').insert({
+        campaign_id: campaign.id,
+        opportunity_id: member.opportunity_id,
+        contact_id: member.contact_id,
+        recipient_email: recipient ?? 'inconnu@—',
+        subject,
+        body_preview: body.slice(0, 500),
+        email_type: 'campagne',
+        status: 'envoye_manuel',
+        sent_by: userData.user?.id ?? null,
+        sent_at: new Date().toISOString(),
+      } as any);
+
+      const { error } = await supabase
+        .from('crm_campaign_members')
+        .update({
+          email_status: member.email_status === 'repondu' ? 'repondu' : 'envoye',
+          emails_sent: (member.emails_sent ?? 0) + 1,
+          last_email_at: new Date().toISOString(),
+          next_action_canal: nextActionCanal ?? null,
+          next_action_at: nextActionAt ?? null,
+        } as any)
+        .eq('id', member.id);
+      if (error) throw error;
+    },
+    onSuccess: () => invalidate(),
+    onError: (e: any) => toast.error(e.message ?? "Erreur à l'enregistrement de l'email"),
+  });
+
+  return {
+    enrollCompanies,
+    updateMember,
+    removeMember,
+    convertToOpportunity,
+    recordEmail,
+    campaignId,
+  };
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Transfert de campagne                                               */

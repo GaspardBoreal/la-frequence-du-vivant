@@ -10,38 +10,63 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Trash2, ExternalLink, Search, Phone, Megaphone } from 'lucide-react';
+import { Trash2, ExternalLink, Search, Phone, Megaphone, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   CALL_STATUS_META,
   type CallStatus,
+  type CampaignCanal,
   type CrmCampaignMember,
 } from '@/types/crmCampaign';
 import { KANBAN_COLUMNS } from '@/types/crm';
 import { useCampaignMemberMutations } from '@/hooks/useCrmCampaigns';
 import { TransferCampaignDialog } from './TransferCampaignDialog';
 import type { TransferTarget } from '@/hooks/useCrmCampaigns';
+import {
+  ENGAGEMENT_META,
+  engagementOf,
+  nextActionOf,
+  type EngagementStatus,
+} from '@/lib/crm/campaignChannel';
 
 interface Props {
   campaignId: string;
   campaignName?: string;
   members: CrmCampaignMember[];
   onCall: (memberId: string) => void;
+  canal?: CampaignCanal;
 }
 
 const STATUSES = Object.keys(CALL_STATUS_META) as CallStatus[];
+const ENGAGEMENTS = Object.keys(ENGAGEMENT_META) as EngagementStatus[];
 
-export const CampaignMembersTable: React.FC<Props> = ({ campaignId, campaignName, members, onCall }) => {
+const fmtDay = (d?: string | null) =>
+  d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : '—';
+
+export const CampaignMembersTable: React.FC<Props> = ({
+  campaignId,
+  campaignName,
+  members,
+  onCall,
+  canal = 'telephone',
+}) => {
   const [q, setQ] = React.useState('');
-  const [status, setStatus] = React.useState<CallStatus | 'all'>('all');
+  const [status, setStatus] = React.useState<string>('all');
   const { removeMember } = useCampaignMemberMutations(campaignId);
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const [transferTargets, setTransferTargets] = React.useState<TransferTarget[] | null>(null);
   const [transferLabel, setTransferLabel] = React.useState<string | undefined>();
 
+  /* Au téléphone on filtre par issue d'appel ; dès qu'il y a de l'email,
+     on filtre par statut d'engagement consolidé. */
+  const useEngagement = canal !== 'telephone';
+
   const filtered = members.filter((m) => {
-    if (status !== 'all' && m.call_status !== status) return false;
+    if (status !== 'all') {
+      const key = useEngagement ? engagementOf(m) : (m.call_status as string);
+      if (key !== status) return false;
+    }
     if (!q.trim()) return true;
     const name = `${m.company?.nom_complet ?? ''} ${m.company?.denomination ?? ''} ${m.company?.ville ?? ''}`;
     return name.toLowerCase().includes(q.toLowerCase());
@@ -57,6 +82,7 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, campaignName
     setTransferTargets(ids.map((id) => ({ memberId: id })));
     setTransferLabel(label);
   };
+
 
 
   return (
@@ -76,25 +102,50 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, campaignName
           >
             Tous ({members.length})
           </button>
-          {STATUSES.map((s) => {
-            const n = members.filter((m) => m.call_status === s).length;
-            const active = status === s;
-            return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setStatus(s)}
-                className="rounded-full border px-3 py-1 text-xs transition-all"
-                style={
-                  active
-                    ? { background: `hsl(${CALL_STATUS_META[s].hue})`, color: 'white', borderColor: 'transparent' }
-                    : undefined
-                }
-              >
-                {CALL_STATUS_META[s].label} ({n})
-              </button>
-            );
-          })}
+          {useEngagement
+            ? ENGAGEMENTS.map((s) => {
+                const n = members.filter((m) => engagementOf(m) === s).length;
+                const active = status === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStatus(s)}
+                    className="rounded-full border px-3 py-1 text-xs transition-all"
+                    style={
+                      active
+                        ? {
+                            background: `hsl(${ENGAGEMENT_META[s].hue})`,
+                            color: 'white',
+                            borderColor: 'transparent',
+                          }
+                        : undefined
+                    }
+                  >
+                    {ENGAGEMENT_META[s].label} ({n})
+                  </button>
+                );
+              })
+            : STATUSES.map((s) => {
+                const n = members.filter((m) => m.call_status === s).length;
+                const active = status === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStatus(s)}
+                    className="rounded-full border px-3 py-1 text-xs transition-all"
+                    style={
+                      active
+                        ? { background: `hsl(${CALL_STATUS_META[s].hue})`, color: 'white', borderColor: 'transparent' }
+                        : undefined
+                    }
+                  >
+                    {CALL_STATUS_META[s].label} ({n})
+                  </button>
+                );
+              })}
+
         </div>
       </div>
 
@@ -130,11 +181,12 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, campaignName
                 <Checkbox checked={allChecked} onCheckedChange={toggleAll} aria-label="Tout sélectionner" />
               </TableHead>
               <TableHead>Prospect</TableHead>
-              <TableHead>Statut d'appel</TableHead>
-              <TableHead>Tentatives</TableHead>
-              <TableHead>Dernier appel</TableHead>
-              <TableHead>Rappel</TableHead>
+              <TableHead>{useEngagement ? 'Engagement' : "Statut d'appel"}</TableHead>
+              <TableHead>{useEngagement ? 'Touches' : 'Tentatives'}</TableHead>
+              <TableHead>Dernier contact</TableHead>
+              <TableHead>{useEngagement ? 'Prochaine action' : 'Rappel'}</TableHead>
               <TableHead className="text-right">Actions</TableHead>
+
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -147,7 +199,10 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, campaignName
             ) : (
               filtered.map((m) => {
                 const meta = CALL_STATUS_META[m.call_status as CallStatus];
+                const eng = ENGAGEMENT_META[engagementOf(m)];
+                const next = nextActionOf(m, canal);
                 const label = m.company?.nom_complet ?? m.company?.denomination ?? 'Ce prospect';
+
                 return (
                   <motion.tr
                     key={m.id}
@@ -174,9 +229,11 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, campaignName
                     <TableCell>
                       <span
                         className="rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-                        style={{ background: `hsl(${meta?.hue ?? '220 10% 50%'})` }}
+                        style={{
+                          background: `hsl(${useEngagement ? eng.hue : meta?.hue ?? '220 10% 50%'})`,
+                        }}
                       >
-                        {meta?.label ?? m.call_status}
+                        {useEngagement ? eng.label : meta?.label ?? m.call_status}
                       </span>
                       {m.refus_motif && (
                         <div className="mt-1 text-[11px] text-muted-foreground">{m.refus_motif}</div>
@@ -189,18 +246,63 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, campaignName
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm">{m.attempts}</TableCell>
                     <TableCell className="text-sm">
-                      {m.last_call_at ? new Date(m.last_call_at).toLocaleDateString('fr-FR') : '—'}
+                      {useEngagement ? (
+                        <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="inline-flex items-center gap-1">
+                            <Phone className="h-3 w-3" /> {m.attempts ?? 0}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <Mail className="h-3 w-3" /> {m.emails_sent ?? 0}
+                          </span>
+                        </span>
+                      ) : (
+                        m.attempts
+                      )}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {m.next_call_at ? new Date(m.next_call_at).toLocaleDateString('fr-FR') : '—'}
+                      {useEngagement
+                        ? fmtDay(
+                            [m.last_call_at, m.last_email_at]
+                              .filter(Boolean)
+                              .sort()
+                              .slice(-1)[0] as string | undefined,
+                          )
+                        : fmtDay(m.last_call_at)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {useEngagement ? (
+                        next ? (
+                          <span
+                            className={`inline-flex items-center gap-1 text-xs ${
+                              next.due ? 'font-medium text-primary' : 'text-muted-foreground'
+                            }`}
+                          >
+                            {next.canal === 'email' ? (
+                              <Mail className="h-3 w-3" />
+                            ) : (
+                              <Phone className="h-3 w-3" />
+                            )}
+                            {next.label}
+                            {next.at && !next.due ? ` · ${fmtDay(next.at)}` : ''}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Clos</span>
+                        )
+                      ) : (
+                        fmtDay(m.next_call_at)
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onCall(m.id)}>
-                          <Phone className="h-3.5 w-3.5" />
+                          {useEngagement && next?.canal === 'email' ? (
+                            <Mail className="h-3.5 w-3.5" />
+                          ) : (
+                            <Phone className="h-3.5 w-3.5" />
+                          )}
                         </Button>
+
                         <Button
                           size="icon"
                           variant="ghost"

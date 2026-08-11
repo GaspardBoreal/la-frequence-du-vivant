@@ -12,13 +12,21 @@ import {
   Line,
   ComposedChart,
 } from 'recharts';
-import type { CampaignStats, CrmCampaign } from '@/types/crmCampaign';
+import type { CampaignStats, CrmCampaign, CrmCampaignMember } from '@/types/crmCampaign';
+import {
+  canalOf,
+  canalDeclencheur,
+  emailStatsOf,
+  usesEmail as canalUsesEmail,
+} from '@/lib/crm/campaignChannel';
 
 interface Props {
   campaign: CrmCampaign;
   stats?: CampaignStats | null;
   daily?: Array<{ jour: string; appels: number; interesses: number }>;
+  members?: CrmCampaignMember[];
 }
+
 
 const Tile: React.FC<{ label: string; value: React.ReactNode; hint?: string; hue?: string }> = ({
   label,
@@ -37,19 +45,35 @@ const Tile: React.FC<{ label: string; value: React.ReactNode; hint?: string; hue
   </motion.div>
 );
 
-export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = [] }) => {
+export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = [], members = [] }) => {
   const s = stats ?? ({} as CampaignStats);
   const joints = s.joints ?? 0;
   const taux = joints ? ((s.interesses ?? 0) / joints) * 100 : 0;
   const cible = campaign.objectif_taux ?? 10;
+  const canal = canalOf(campaign);
+  const showEmail = canalUsesEmail(campaign);
+  const mail = emailStatsOf(members);
+  const declencheur = canalDeclencheur(members);
 
-  const funnel = [
-    { etape: 'Enrôlés', n: s.enroles ?? 0 },
-    { etape: 'Appelés', n: s.appels ?? 0 },
-    { etape: 'Joints', n: joints },
-    { etape: 'Intéressés', n: s.interesses ?? 0 },
-    { etape: 'Gagnées', n: s.opp_gagnees ?? 0 },
-  ];
+
+  const funnel =
+    canal === 'email'
+      ? [
+          { etape: 'Enrôlés', n: s.enroles ?? 0 },
+          { etape: 'Écrits', n: mail.envoyes },
+          { etape: 'Ouverts', n: mail.ouverts },
+          { etape: 'Réponses', n: mail.repondus },
+          { etape: 'Gagnées', n: s.opp_gagnees ?? 0 },
+        ]
+      : [
+          { etape: 'Enrôlés', n: s.enroles ?? 0 },
+          ...(showEmail ? [{ etape: 'Écrits', n: mail.envoyes }] : []),
+          { etape: 'Appelés', n: s.appels ?? 0 },
+          { etape: 'Joints', n: joints },
+          { etape: 'Intéressés', n: (s.interesses ?? 0) + (showEmail ? mail.repondus : 0) },
+          { etape: 'Gagnées', n: s.opp_gagnees ?? 0 },
+        ];
+
 
   const chartData = daily.map((d) => ({
     jour: new Date(d.jour).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
@@ -62,14 +86,36 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
         <Tile label="Enrôlés" value={s.enroles ?? 0} />
-        <Tile label="Appels passés" value={s.appels ?? 0} hint={`${s.a_appeler ?? 0} restants`} />
-        <Tile
-          label="Détection d'intérêt"
-          value={`${taux.toFixed(0)}%`}
-          hint={`cible ${cible}%`}
-          hue={taux >= cible ? '150 65% 45%' : taux >= cible * 0.6 ? '38 92% 55%' : '0 75% 58%'}
-        />
-        <Tile label="Rappels du jour" value={s.rappels_du_jour ?? 0} hue="38 92% 55%" />
+        {canal !== 'email' && (
+          <Tile label="Appels passés" value={s.appels ?? 0} hint={`${s.a_appeler ?? 0} restants`} />
+        )}
+        {showEmail && (
+          <Tile
+            label="Emails envoyés"
+            value={mail.envoyes}
+            hint={`${mail.a_ecrire} à écrire`}
+            hue="270 65% 60%"
+          />
+        )}
+        {showEmail && (
+          <Tile
+            label="Taux de réponse"
+            value={`${mail.taux_reponse.toFixed(0)}%`}
+            hint={`${mail.repondus} réponses · ${mail.bounces} bounces`}
+            hue="270 65% 60%"
+          />
+        )}
+        {canal !== 'email' && (
+          <Tile
+            label="Détection d'intérêt"
+            value={`${taux.toFixed(0)}%`}
+            hint={`cible ${cible}%`}
+            hue={taux >= cible ? '150 65% 45%' : taux >= cible * 0.6 ? '38 92% 55%' : '0 75% 58%'}
+          />
+        )}
+        {canal !== 'email' && (
+          <Tile label="Rappels du jour" value={s.rappels_du_jour ?? 0} hue="38 92% 55%" />
+        )}
         <Tile label="Opportunités" value={s.opportunites ?? 0} hint={`${s.opp_actives ?? 0} actives`} />
         <Tile
           label="CA potentiel"
@@ -81,6 +127,31 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
           hue="150 65% 45%"
         />
       </div>
+
+      {canal === 'mixte' && (declencheur.telephone > 0 || declencheur.email > 0) && (
+        <Card className="p-4">
+          <div className="mb-2 text-sm font-semibold">Quel canal a déclenché l'intérêt ?</div>
+          <div className="flex h-3 overflow-hidden rounded-full bg-muted">
+            <div
+              style={{
+                width: `${(declencheur.telephone / (declencheur.telephone + declencheur.email)) * 100}%`,
+                background: 'hsl(210 90% 56%)',
+              }}
+            />
+            <div
+              style={{
+                width: `${(declencheur.email / (declencheur.telephone + declencheur.email)) * 100}%`,
+                background: 'hsl(270 65% 60%)',
+              }}
+            />
+          </div>
+          <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+            <span>Téléphone · {declencheur.telephone}</span>
+            <span>Email · {declencheur.email}</span>
+          </div>
+        </Card>
+      )}
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-4">
