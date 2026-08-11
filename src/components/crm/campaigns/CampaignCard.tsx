@@ -10,7 +10,7 @@ import {
   CAMPAIGN_OBJECTIF_OPTIONS,
   type CrmCampaign,
 } from '@/types/crmCampaign';
-import { canalOf, CANAL_META } from '@/lib/crm/campaignChannel';
+import { canalOf, CANAL_META, interestRateOf } from '@/lib/crm/campaignChannel';
 
 interface Props {
   campaign: CrmCampaign;
@@ -51,10 +51,14 @@ export const CampaignCard: React.FC<Props> = ({
   const reponses = counts?.reponses ?? 0;
   const aEcrire = counts?.a_ecrire ?? 0;
 
-  /* Le dénominateur du taux dépend du canal : joints au tél, envois par email. */
-  const touches = canal === 'email' ? emailsEnvoyes : canal === 'mixte' ? joints + emailsEnvoyes : joints;
-  const succes = canal === 'email' ? reponses : canal === 'mixte' ? interesses + reponses : interesses;
-  const taux = touches > 0 ? (succes / touches) * 100 : 0;
+  /* Indicateur unique, insensible au canal : un canal sans contact tracé ne compte pas. */
+  const { touches, taux } = interestRateOf({
+    joints,
+    interesses,
+    emails_envoyes: emailsEnvoyes,
+    reponses,
+  });
+
   const cible = campaign.objectif_taux ?? 10;
   const tone = taux >= cible ? '150 65% 45%' : taux >= cible * 0.6 ? '38 92% 55%' : '0 75% 58%';
   const progress = campaign.objectif_contacts

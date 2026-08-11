@@ -17,6 +17,7 @@ import {
   canalOf,
   canalDeclencheur,
   emailStatsOf,
+  interestRateOf,
   usesEmail as canalUsesEmail,
 } from '@/lib/crm/campaignChannel';
 
@@ -48,31 +49,28 @@ const Tile: React.FC<{ label: string; value: React.ReactNode; hint?: string; hue
 export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = [], members = [] }) => {
   const s = stats ?? ({} as CampaignStats);
   const joints = s.joints ?? 0;
-  const taux = joints ? ((s.interesses ?? 0) / joints) * 100 : 0;
   const cible = campaign.objectif_taux ?? 10;
   const canal = canalOf(campaign);
   const showEmail = canalUsesEmail(campaign);
   const mail = emailStatsOf(members);
   const declencheur = canalDeclencheur(members);
+  /* Indicateur roi commun à tous les canaux. */
+  const interet = interestRateOf(
+    { joints, interesses: s.interesses, emails_envoyes: mail.envoyes, reponses: mail.repondus },
+    members,
+  );
+  const taux = interet.taux;
 
+  const funnel = [
+    { etape: 'Enrôlés', n: s.enroles ?? 0 },
+    ...(showEmail ? [{ etape: 'Écrits', n: mail.envoyes }] : []),
+    ...(showEmail && mail.ouverts > 0 ? [{ etape: 'Ouverts', n: mail.ouverts }] : []),
+    ...(canal !== 'email' || (s.appels ?? 0) > 0 ? [{ etape: 'Appelés', n: s.appels ?? 0 }] : []),
+    { etape: 'Touchés', n: interet.touches },
+    { etape: 'Intéressés', n: interet.succes },
+    { etape: 'Gagnées', n: s.opp_gagnees ?? 0 },
+  ];
 
-  const funnel =
-    canal === 'email'
-      ? [
-          { etape: 'Enrôlés', n: s.enroles ?? 0 },
-          { etape: 'Écrits', n: mail.envoyes },
-          { etape: 'Ouverts', n: mail.ouverts },
-          { etape: 'Réponses', n: mail.repondus },
-          { etape: 'Gagnées', n: s.opp_gagnees ?? 0 },
-        ]
-      : [
-          { etape: 'Enrôlés', n: s.enroles ?? 0 },
-          ...(showEmail ? [{ etape: 'Écrits', n: mail.envoyes }] : []),
-          { etape: 'Appelés', n: s.appels ?? 0 },
-          { etape: 'Joints', n: joints },
-          { etape: 'Intéressés', n: (s.interesses ?? 0) + (showEmail ? mail.repondus : 0) },
-          { etape: 'Gagnées', n: s.opp_gagnees ?? 0 },
-        ];
 
 
   const chartData = daily.map((d) => ({
@@ -86,7 +84,13 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
         <Tile label="Enrôlés" value={s.enroles ?? 0} />
-        {canal !== 'email' && (
+        <Tile
+          label="Détection d'intérêt"
+          value={`${taux.toFixed(0)}%`}
+          hint={`${interet.succes} / ${interet.touches} touchés · cible ${cible}%`}
+          hue={taux >= cible ? '150 65% 45%' : taux >= cible * 0.6 ? '38 92% 55%' : '0 75% 58%'}
+        />
+        {(canal !== 'email' || (s.appels ?? 0) > 0) && (
           <Tile label="Appels passés" value={s.appels ?? 0} hint={`${s.a_appeler ?? 0} restants`} />
         )}
         {showEmail && (
@@ -105,17 +109,10 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
             hue="270 65% 60%"
           />
         )}
-        {canal !== 'email' && (
-          <Tile
-            label="Détection d'intérêt"
-            value={`${taux.toFixed(0)}%`}
-            hint={`cible ${cible}%`}
-            hue={taux >= cible ? '150 65% 45%' : taux >= cible * 0.6 ? '38 92% 55%' : '0 75% 58%'}
-          />
-        )}
-        {canal !== 'email' && (
+        {(canal !== 'email' || (s.rappels_du_jour ?? 0) > 0) && (
           <Tile label="Rappels du jour" value={s.rappels_du_jour ?? 0} hue="38 92% 55%" />
         )}
+
         <Tile label="Opportunités" value={s.opportunites ?? 0} hint={`${s.opp_actives ?? 0} actives`} />
         <Tile
           label="CA potentiel"
