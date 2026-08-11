@@ -85,7 +85,9 @@ export const ConsultationDrawer: React.FC<{
   consultation: Consultation | null;
   proprieteId: string;
   onClose: () => void;
-}> = ({ consultation, proprieteId, onClose }) => {
+  /** Ouverte depuis un écran plein (Atelier du jardin) : passe au-dessus. */
+  elevated?: boolean;
+}> = ({ consultation, proprieteId, onClose, elevated }) => {
   const { data, isLoading } = useConsultationDetail(consultation?.id);
   const toggle = useToggleAction(proprieteId);
   const addMedia = useAddConsultationMedia(proprieteId);
