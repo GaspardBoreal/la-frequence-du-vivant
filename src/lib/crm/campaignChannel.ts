@@ -259,3 +259,43 @@ export function canalDeclencheur(members: CrmCampaignMember[]): { telephone: num
   });
   return { telephone, email };
 }
+
+/* ------------------------------------------------------------------ */
+/* Taux de détection d'intérêt — insensible au canal                   */
+/* ------------------------------------------------------------------ */
+
+export interface InterestRate {
+  /** Prospects réellement touchés (joints au tél ∪ destinataires d'un email tracé). */
+  touches: number;
+  /** Prospects aboutis (intéressé au tél ∪ réponse email). */
+  succes: number;
+  taux: number;
+}
+
+/**
+ * Un seul indicateur roi pour toutes les campagnes : un canal sans aucun
+ * contact tracé n'entre jamais au dénominateur, donc il ne peut pas écraser
+ * le résultat obtenu sur l'autre canal.
+ * Si `members` est fourni, le calcul dédoublonne par prospect.
+ */
+export function interestRateOf(
+  counts: { joints?: number | null; interesses?: number | null; emails_envoyes?: number | null; reponses?: number | null } | null | undefined,
+  members?: CrmCampaignMember[],
+): InterestRate {
+  if (members && members.length > 0) {
+    const touches = members.filter(
+      (m) =>
+        (m.emails_sent ?? 0) > 0 ||
+        ['joint', 'interesse', 'refus'].includes(m.call_status as string),
+    ).length;
+    const succes = members.filter(
+      (m) => m.call_status === 'interesse' || m.email_status === 'repondu',
+    ).length;
+    return { touches, succes, taux: touches ? (succes / touches) * 100 : 0 };
+  }
+  const joints = counts?.joints ?? 0;
+  const emails = counts?.emails_envoyes ?? 0;
+  const touches = Math.max(joints, emails);
+  const succes = (counts?.interesses ?? 0) + (counts?.reponses ?? 0);
+  return { touches, succes, taux: touches ? (succes / touches) * 100 : 0 };
+}
