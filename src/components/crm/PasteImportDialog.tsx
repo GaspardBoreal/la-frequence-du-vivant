@@ -246,15 +246,23 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
           .filter(Boolean)
           .map(company_id => ({ campaign_id: campaignId, company_id, added_by: uid }));
         if (rowsToEnroll.length > 0) {
-          const { data: members, error } = await supabase
+          const { error } = await supabase
             .from('crm_campaign_members')
-            .upsert(rowsToEnroll as any, { onConflict: 'campaign_id,company_id', ignoreDuplicates: true })
-            .select('id, company_id');
+            .upsert(rowsToEnroll as any, { onConflict: 'campaign_id,company_id', ignoreDuplicates: true });
           if (error) throw error;
+
+          // ignoreDuplicates ne renvoie pas les lignes déjà existantes : on relit
+          const { data: members, error: readErr } = await supabase
+            .from('crm_campaign_members')
+            .select('id, company_id, opportunity_id')
+            .eq('campaign_id', campaignId)
+            .in('company_id', rowsToEnroll.map(r => r.company_id as string));
+          if (readErr) throw readErr;
           enrolled = members?.length ?? 0;
 
           if (createOpportunities && members && members.length > 0) {
             for (const m of members as any[]) {
+              if (m.opportunity_id) continue;
               const row = selectedRows.find(r => idBySiren.get(r.siren) === m.company_id);
               const label = row?.nom ?? 'Prospect';
               const { data: opp, error: oppErr } = await supabase
