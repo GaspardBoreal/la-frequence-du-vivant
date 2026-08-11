@@ -85,7 +85,9 @@ export const ConsultationDrawer: React.FC<{
   consultation: Consultation | null;
   proprieteId: string;
   onClose: () => void;
-}> = ({ consultation, proprieteId, onClose }) => {
+  /** Ouverte depuis un écran plein (Atelier du jardin) : passe au-dessus. */
+  elevated?: boolean;
+}> = ({ consultation, proprieteId, onClose, elevated }) => {
   const { data, isLoading } = useConsultationDetail(consultation?.id);
   const toggle = useToggleAction(proprieteId);
   const addMedia = useAddConsultationMedia(proprieteId);
@@ -147,7 +149,8 @@ export const ConsultationDrawer: React.FC<{
     <Sheet open={!!consultation} onOpenChange={(v) => { if (!v) onClose(); }}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-xl overflow-y-auto bg-[hsl(var(--ds-cream))] border-l border-[hsl(var(--ds-line))]"
+        overlayClassName={elevated ? 'z-[3200]' : undefined}
+        className={`w-full sm:max-w-xl overflow-y-auto bg-[hsl(var(--ds-cream))] border-l border-[hsl(var(--ds-line))] ${elevated ? 'z-[3210]' : ''}`}
       >
         {consultation && (
           <>

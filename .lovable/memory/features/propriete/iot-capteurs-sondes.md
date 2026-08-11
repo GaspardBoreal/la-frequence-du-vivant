@@ -26,3 +26,10 @@ Chaîne IoT de bout en bout, unités toujours normalisées SI (°C, %, Pa, lx, m
 
 Fichiers : `src/lib/iot/grandeurs.ts`, `src/hooks/iot/useIot.ts`,
 `src/components/propriete/iot/**`.
+- Photos « en situation » : table `iot_capteur_photos` (bucket `propriete-tests`,
+  préfixe `<propriete_id>/iot/<capteur_id>/`), RPC `reorder_iot_capteur_photos`,
+  bande photo dans `SensorDrawer` (`SensorPhotoStrip` + `SensorPhotoViewer`),
+  médaillon de couverture dans la bulle du plan et sur les cartes de veille.
+- Fiches ouvertes depuis l'Atelier (z-[3000]) : passer `elevated` au drawer, sinon le
+  Sheet (z-[1100]) reste invisible derrière le plein écran.
+
