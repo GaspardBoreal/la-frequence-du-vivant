@@ -95,8 +95,9 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
         <Tile
           label="Détection d'intérêt"
           value={`${taux.toFixed(0)}%`}
-          hint={`${interet.succes} / ${interet.touches} touchés · cible ${cible}%`}
+          hint={`${interet.succes} / ${interet.touches} touchés · voir les intérêts`}
           hue={taux >= cible ? '150 65% 45%' : taux >= cible * 0.6 ? '38 92% 55%' : '0 75% 58%'}
+          onClick={() => setInteretOpen(true)}
         />
         {(canal !== 'email' || (s.appels ?? 0) > 0) && (
           <Tile label="Appels passés" value={s.appels ?? 0} hint={`${s.a_appeler ?? 0} restants`} />
