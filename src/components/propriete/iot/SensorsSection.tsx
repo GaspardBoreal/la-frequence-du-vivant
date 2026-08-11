@@ -6,6 +6,8 @@ import { sensorHealth, HEALTH_COLOR, fmtHorodatage, fmtMesure, fmtProfondeur, gr
 import SensorFormDialog from './SensorFormDialog';
 import SensorDrawer from './SensorDrawer';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
+import { useTelemetryLive, useTelemetryPings } from '@/hooks/iot/useIotTelemetry';
+import { VitalityStrip } from '@/components/iot/VitalityStrip';
 
 interface Props {
   proprieteId: string;
