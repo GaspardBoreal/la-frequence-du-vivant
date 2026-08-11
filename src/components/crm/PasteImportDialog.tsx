@@ -206,7 +206,7 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
             performed_by: uid,
             type: 'note',
             summary: `Issue d'une recherche IA du ${stamp}${r.siret ? ` — établissement cité : SIRET ${r.siret}` : ''}`,
-            details: r.contexte ?? null,
+            metadata: { source: 'paste_ia', siret: r.siret ?? null, contexte: r.contexte ?? null },
           };
         })
         .filter(Boolean);
