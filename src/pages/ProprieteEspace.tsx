@@ -554,7 +554,11 @@ const PropTabs: React.FC<{
             onAtelierClose={closeAtelier}
           />
         </TabsContent>
+        <TabsContent value="capteurs" className="pt-5 min-h-[calc(100vh-8rem)]">
+          <SensorsSection proprieteId={proprieteId} proprieteNom={proprieteNom} />
+        </TabsContent>
         <TabsContent value="clinique" className="pt-5 min-h-[calc(100vh-8rem)]">
+
           <TabClinique
             proprieteId={proprieteId}
             proprieteNom={proprieteNom}
