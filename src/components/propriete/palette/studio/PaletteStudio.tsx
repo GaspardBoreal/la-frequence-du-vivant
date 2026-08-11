@@ -1162,9 +1162,11 @@ export const PaletteStudio: React.FC<Props> = ({
 
           <SensorDrawer
             capteur={openCapteur}
-            open={!!openCapteur}
-            onOpenChange={(o) => !o && setOpenCapteur(null)}
+            latest={openCapteur ? (iotLatest[openCapteur.id] ?? []) : []}
+            onClose={() => setOpenCapteur(null)}
+            proprieteId={proprieteId}
           />
+
 
 
           <InlineGpsBar curation={inlineGps} />
