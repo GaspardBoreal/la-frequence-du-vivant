@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Sparkles, Euro, Users, Calendar, MoreVertical, Pencil, Trash2, Unlink2, Megaphone, ArrowUpRight, GitBranch } from 'lucide-react';
+import { Plus, Sparkles, Euro, Users, Calendar, MoreVertical, Pencil, Trash2, Unlink2, Megaphone, ArrowUpRight, GitBranch, Repeat } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { CAMPAIGN_STATUT_OPTIONS } from '@/types/crmCampaign';
+import { TransferCampaignDialog } from '@/components/crm/campaigns/TransferCampaignDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -139,6 +140,7 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
             <OpportunityMiniCard
               key={opp.id}
               opp={opp}
+              companyId={companyId}
               onEdit={() => { setEditing(opp); setFormOpen(true); }}
               onUnlink={() => setPending({ opp, action: 'unlink' })}
               onDelete={() => setPending({ opp, action: 'delete' })}
@@ -198,11 +200,13 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
 
 const OpportunityMiniCard: React.FC<{
   opp: CompanyOpportunityRow;
+  companyId: string;
   onEdit: () => void;
   onUnlink: () => void;
   onDelete: () => void;
-}> = ({ opp, onEdit, onUnlink, onDelete }) => {
+}> = ({ opp, companyId, onEdit, onUnlink, onDelete }) => {
   const navigate = useNavigate();
+  const [transferOpen, setTransferOpen] = React.useState(false);
   const column = KANBAN_COLUMNS.find((c) => c.id === opp.statut);
   const campaign = opp.campaign ?? null;
   const campaignStatut = campaign
