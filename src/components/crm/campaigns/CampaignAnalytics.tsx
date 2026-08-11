@@ -29,14 +29,21 @@ interface Props {
 }
 
 
-const Tile: React.FC<{ label: string; value: React.ReactNode; hint?: string; hue?: string }> = ({
-  label,
-  value,
-  hint,
-  hue,
-}) => (
+const Tile: React.FC<{
+  label: string;
+  value: React.ReactNode;
+  hint?: string;
+  hue?: string;
+  onClick?: () => void;
+}> = ({ label, value, hint, hue, onClick }) => (
   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-    <Card className="p-3">
+    <Card
+      className={`p-3 ${onClick ? 'cursor-pointer transition-colors hover:border-primary/60' : ''}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => (e.key === 'Enter' || e.key === ' ') && onClick() : undefined}
+    >
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="mt-1 text-2xl font-bold" style={hue ? { color: `hsl(${hue})` } : undefined}>
         {value}
