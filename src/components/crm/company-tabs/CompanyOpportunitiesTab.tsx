@@ -9,6 +9,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { OpportunityForm } from '@/components/crm/OpportunityForm';
 import { useCompanyOpportunities, type CompanyOpportunityRow } from '@/hooks/useCompanyOpportunities';
 import { useCrmOpportunities } from '@/hooks/useCrmOpportunities';
@@ -66,6 +76,10 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
     }
   };
 
+  const [pending, setPending] = React.useState<
+    { opp: CompanyOpportunityRow; action: 'unlink' | 'delete' } | null
+  >(null);
+
   const handleUnlink = async (opportunityId: string) => {
     const { error } = await supabase
       .from('crm_opportunity_companies')
@@ -76,6 +90,19 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
     else {
       toast.success('Opportunité déliée');
       qc.invalidateQueries({ queryKey: ['crm-company-opportunities', companyId] });
+    }
+  };
+
+  const confirmPending = async () => {
+    if (!pending) return;
+    const { opp, action } = pending;
+    setPending(null);
+    if (action === 'unlink') {
+      await handleUnlink(opp.id);
+    } else {
+      deleteOpportunity.mutate(opp.id, {
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['crm-company-opportunities', companyId] }),
+      });
     }
   };
 
@@ -111,14 +138,8 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
               key={opp.id}
               opp={opp}
               onEdit={() => { setEditing(opp); setFormOpen(true); }}
-              onUnlink={() => handleUnlink(opp.id)}
-              onDelete={() => {
-                if (confirm('Supprimer définitivement cette opportunité ?')) {
-                  deleteOpportunity.mutate(opp.id, {
-                    onSuccess: () => qc.invalidateQueries({ queryKey: ['crm-company-opportunities', companyId] }),
-                  });
-                }
-              }}
+              onUnlink={() => setPending({ opp, action: 'unlink' })}
+              onDelete={() => setPending({ opp, action: 'delete' })}
             />
           ))}
         </AnimatePresence>
@@ -131,6 +152,44 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
         onSubmit={handleSubmit}
         defaultLinkedCompany={editing ? null : { company_id: companyId, role: 'primary', denomination: companyName }}
       />
+
+      <AlertDialog open={!!pending} onOpenChange={(o) => { if (!o) setPending(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pending?.action === 'unlink'
+                ? 'Délier cette opportunité ?'
+                : 'Supprimer définitivement cette opportunité ?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pending?.action === 'unlink' ? (
+                <>
+                  « {pending?.opp.titre || pending?.opp.entreprise || 'Opportunité'} » ne sera plus
+                  rattachée à {companyName} et disparaîtra de cette fiche. L'opportunité elle-même
+                  n'est pas supprimée : elle reste dans le pipeline.
+                </>
+              ) : (
+                <>
+                  « {pending?.opp.titre || pending?.opp.entreprise || 'Opportunité'} » sera
+                  définitivement supprimée du pipeline, avec son historique. Cette action est
+                  irréversible.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmPending}
+              className={pending?.action === 'delete'
+                ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                : undefined}
+            >
+              {pending?.action === 'unlink' ? 'Délier' : 'Supprimer'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
