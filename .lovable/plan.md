@@ -1,32 +1,31 @@
-# Brancher le webhook Brad (nouvelle clé partagée)
+# Webhook Brad : l'erreur vient de leur interface, pas de nous
 
-## Ce que vous saisirez chez Brad
+## Lecture de l'erreur
 
-| Champ | Valeur |
-| --- | --- |
-| Activer le Webhook | ON |
-| URL du Webhook HTTP(S) | `https://xzbunrtgbfbhinkzkzhf.supabase.co/functions/v1/iot-webhook-brad` |
-| Clé secrète (HMAC-SHA256) | la nouvelle clé partagée (voir ci-dessous) |
-| Mode de transmission | Total (full) |
+`saveResult.unwrapErr is not a function` est une erreur JavaScript **du back-office Brad** : leur code appelle une méthode qui n'existe pas sur l'objet retourné par leur propre enregistrement. Rien dans cette erreur ne concerne notre URL, notre clé ou notre fonction — aucune requête n'est même partie vers nous.
 
-## La clé secrète
+Ce qu'il faut faire : signaler ce bug à Brad (capture d'écran + message exact) et leur demander si la configuration a malgré tout été enregistrée côté serveur. Astuce utile en attendant : recharger la page de configuration — si l'URL et la clé sont toujours affichées, l'enregistrement a bien eu lieu et seule l'étape d'affichage du résultat plante.
 
-C'est un secret *partagé* : la même valeur doit exister chez Brad et chez nous. Elle ne peut donc pas être générée en aveugle de notre côté — vous devez pouvoir la copier.
+## Vos saisies sont correctes
 
-1. Vous créez une valeur aléatoire forte (gestionnaire de mots de passe, ou `openssl rand -hex 32`).
-2. Vous la collez dans le champ « Clé Secrète d'Authentification » chez Brad, puis « Enregistrer la Configuration ».
-3. Je vous ouvre le formulaire sécurisé pour enregistrer **la même valeur** dans `BRAD_WEBHOOK_SECRET` côté Lovable (remplacement de l'ancienne).
+| Champ | Valeur saisie | Verdict |
+| --- | --- | --- |
+| URL | `https://xzbunrtgbfbhinkzkzhf.supabase.co/functions/v1/iot-webhook-brad` | conforme |
+| Clé HMAC-SHA256 | clé hexadécimale 64 caractères | conforme |
+| Mode | Total (full) | conforme |
 
-Ordre important : tant que les deux valeurs diffèrent, chaque trame Brad repart en `401 — Signature HMAC invalide`.
+## Ce que je fais de mon côté (à votre validation)
 
-## Vérification après bascule
+1. Enregistrer côté Lovable, dans le secret `BRAD_WEBHOOK_SECRET`, **exactement la clé affichée dans votre capture**, pour que les signatures concordent.
+2. Vérifier ensuite dans `/admin/iot` → « Poste de contrôle » qu'une livraison Brad arrive avec signature valide dès que leur bouton de test fonctionne.
 
-- Chez Brad : bouton « Tester le Webhook Maintenant ».
-- Chez nous : `/admin/iot` → onglet « Poste de contrôle » → la livraison doit apparaître avec signature valide, et le voyant « en direct » s'allumer.
-- Si retour `404 Capteur inconnu` : le `serialNumber` envoyé par Brad ne correspond pas aux `serial_number` de nos 3 sondes (ex. `b26s002`) — on aligne alors les numéros de série dans la fiche capteur.
+Aucune modification de code n'est nécessaire.
 
-## Détails techniques
+## Point de sécurité
 
-- Fonction : `supabase/functions/iot-webhook-brad/index.ts`, publique, POST uniquement, vérification HMAC-SHA256 sur le corps brut, en-tête `X-Brad-Signature: sha256=<hmac>`.
-- Déduplication par en-tête `X-Brad-Delivery`, journalisation dans `iot_webhook_deliveries`, mesures normalisées en unités SI dans `iot_mesures`.
-- Aucune modification de code n'est nécessaire : seule la rotation du secret `BRAD_WEBHOOK_SECRET` est à faire.
+Cette clé a circulé dans une capture d'écran. Une fois la remontée confirmée et le flux stabilisé, il faudra la remplacer par une nouvelle valeur des deux côtés (Brad + `BRAD_WEBHOOK_SECRET`).
+
+## Si le test Brad part enfin et échoue chez nous
+
+- `401 Signature HMAC invalide` → les deux clés diffèrent (espace ou caractère collé en trop).
+- `404 Capteur inconnu` → le `serialNumber` envoyé ne correspond pas à nos numéros de série (`b26s001`, `b26s002`, `b26s003`) ; on alignera la fiche capteur.
