@@ -199,7 +199,10 @@ export const CampaignMembersTable: React.FC<Props> = ({
             ) : (
               filtered.map((m) => {
                 const meta = CALL_STATUS_META[m.call_status as CallStatus];
+                const eng = ENGAGEMENT_META[engagementOf(m)];
+                const next = nextActionOf(m, canal);
                 const label = m.company?.nom_complet ?? m.company?.denomination ?? 'Ce prospect';
+
                 return (
                   <motion.tr
                     key={m.id}
