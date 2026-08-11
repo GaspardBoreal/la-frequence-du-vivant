@@ -37,6 +37,8 @@ export interface SystemLayerState {
   santeTournee: boolean;
   /** Afficher aussi les foyers rétablis (mémoire du jardin). */
   santeGueris: boolean;
+  /** Capteurs et sondes déclarés sur la propriété. */
+  capteurs: boolean;
 }
 
 
