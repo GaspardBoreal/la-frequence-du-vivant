@@ -5,6 +5,7 @@ import { useIotCapteurs, useLatestMesures, useWebhookDeliveries, type IotCapteur
 import { sensorHealth, HEALTH_COLOR, fmtHorodatage, fmtMesure, fmtProfondeur, grandeurMeta } from '@/lib/iot/grandeurs';
 import SensorFormDialog from './SensorFormDialog';
 import SensorDrawer from './SensorDrawer';
+import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
 
 interface Props {
   proprieteId: string;
@@ -20,6 +21,7 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
   const ids = React.useMemo(() => capteurs.map((c) => c.id), [capteurs]);
   const { data: latest = {} } = useLatestMesures(ids);
   const { data: deliveries = [] } = useWebhookDeliveries(ids);
+  const { data: covers = {} } = useCapteurCovers(ids);
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<IotCapteur | null>(null);
   const [openCapteur, setOpenCapteur] = React.useState<IotCapteur | null>(null);
@@ -123,7 +125,24 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
               className="rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-4 text-left transition hover:shadow-[0_10px_30px_-18px_rgba(20,30,15,.6)]"
             >
               <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: HEALTH_COLOR[h.status] }} />
+                {covers[c.id]?.url ? (
+                  <span className="relative shrink-0">
+                    <img
+                      src={covers[c.id]!.url}
+                      alt={`${c.nom} en situation`}
+                      loading="lazy"
+                      className="h-11 w-11 rounded-full object-cover"
+                      style={{ border: `2px solid ${HEALTH_COLOR[h.status]}` }}
+                    />
+                    {(covers[c.id]!.count ?? 0) > 1 && (
+                      <span className="absolute -bottom-1 -right-1 rounded-full bg-[hsl(var(--ds-forest-deep))] px-1.5 text-[9px] font-bold text-[hsl(var(--ds-cream))]">
+                        {covers[c.id]!.count}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: HEALTH_COLOR[h.status] }} />
+                )}
                 <span className="flex-1 truncate font-serif text-lg text-[hsl(var(--ds-forest-deep))]">{c.nom}</span>
                 {c.battery_pct != null && (
                   <span className="inline-flex items-center gap-1 text-[10px] text-[hsl(var(--ds-forest))]/70">
