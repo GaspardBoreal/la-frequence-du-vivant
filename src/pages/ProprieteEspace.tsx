@@ -463,7 +463,7 @@ const PropTabs: React.FC<{
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => handleTabChange('synthesize')}>Je synthétise</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handleTabChange('palette')}>Palette végétale</DropdownMenuItem>
-                <DropdownMenuItem onSelect={openAtelier}>Atelier du jardin</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openAtelier(null)}>Atelier du jardin</DropdownMenuItem>
                 {/* Sous-section à part entière : capteurs et sondes, encadrée de vert */}
                 <div aria-hidden className="my-1 h-px bg-emerald-600/60" />
                 <DropdownMenuItem onSelect={() => handleTabChange('capteurs')}>Capteurs et sondes</DropdownMenuItem>
