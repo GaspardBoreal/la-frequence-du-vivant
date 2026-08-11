@@ -457,8 +457,12 @@ const PropTabs: React.FC<{
                 <DropdownMenuItem onSelect={() => handleTabChange('synthesize')}>Je synthétise</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handleTabChange('palette')}>Palette végétale</DropdownMenuItem>
                 <DropdownMenuItem onSelect={openAtelier}>Atelier du jardin</DropdownMenuItem>
-                <DropdownMenuSeparator />
+                {/* Sous-section à part entière : capteurs et sondes, encadrée de vert */}
+                <div aria-hidden className="my-1 h-px bg-emerald-600/60" />
+                <DropdownMenuItem onSelect={() => handleTabChange('capteurs')}>Capteurs et sondes</DropdownMenuItem>
+                <div aria-hidden className="my-1 h-px bg-emerald-600/60" />
                 <DropdownMenuItem onSelect={() => handleTabChange('clinique')}>Clinique du jardin</DropdownMenuItem>
+
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
