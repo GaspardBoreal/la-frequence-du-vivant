@@ -46,6 +46,18 @@ const AdminIot: React.FC = () => {
 
       <div className="mx-auto max-w-5xl space-y-8 px-6 py-8">
         {/* Fournisseurs */}
+        <Tabs defaultValue="telemetrie">
+          <TabsList className="mb-4">
+            <TabsTrigger value="telemetrie">Poste de contrôle</TabsTrigger>
+            <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="telemetrie">
+            <TelemetryControl />
+          </TabsContent>
+
+          <TabsContent value="catalogue" className="space-y-8">
+        {/* Fournisseurs */}
         <section>
           <header className="mb-3 flex items-center gap-2">
             <Building2 className="h-4 w-4 text-emerald-600" />
