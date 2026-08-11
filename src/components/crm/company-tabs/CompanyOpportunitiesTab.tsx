@@ -200,7 +200,13 @@ const OpportunityMiniCard: React.FC<{
   onUnlink: () => void;
   onDelete: () => void;
 }> = ({ opp, onEdit, onUnlink, onDelete }) => {
+  const navigate = useNavigate();
   const column = KANBAN_COLUMNS.find((c) => c.id === opp.statut);
+  const campaign = opp.campaign ?? null;
+  const campaignStatut = campaign
+    ? CAMPAIGN_STATUT_OPTIONS.find((s) => s.value === campaign.statut)
+    : undefined;
+  const campaignHue = campaignStatut?.hue ?? '150 65% 45%';
   const subtitle = opp.experience_souhaitee ||
     [opp.prenom, opp.nom].filter(Boolean).join(' ') ||
     opp.entreprise ||
@@ -281,6 +287,51 @@ const OpportunityMiniCard: React.FC<{
               <Calendar className="h-3 w-3" />
               <span className="text-foreground font-medium">{fmtDate(opp.date_souhaitee)}</span>
             </span>
+          )}
+        </div>
+
+        {/* Ruban campagne */}
+        {campaign ? (
+          <motion.button
+            whileHover={{ x: 2 }}
+            onClick={(e) => { e.stopPropagation(); navigate(`/admin/crm/campagnes/${campaign.id}`); }}
+            className="group/camp w-full flex items-center gap-2 rounded-xl border px-2.5 py-1.5 text-left transition-colors"
+            style={{
+              borderColor: `hsl(${campaignHue} / 0.35)`,
+              backgroundColor: `hsl(${campaignHue} / 0.08)`,
+            }}
+            title={`Campagne « ${campaign.nom} » — ${campaignStatut?.label ?? campaign.statut}`}
+          >
+            <Megaphone className="h-3.5 w-3.5 shrink-0" style={{ color: `hsl(${campaignHue})` }} />
+            <span className="min-w-0 flex-1 truncate text-[11px] font-medium" style={{ color: `hsl(${campaignHue})` }}>
+              {campaign.nom}
+            </span>
+            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 opacity-0 group-hover/camp:opacity-100 transition-opacity" style={{ color: `hsl(${campaignHue})` }} />
+          </motion.button>
+        ) : (
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
+            <Megaphone className="h-3 w-3" />
+            Hors campagne
+          </div>
+        )}
+
+        {/* Raccourcis de navigation */}
+        <div className="flex items-center gap-2 pt-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => { e.stopPropagation(); navigate(`/admin/crm/pipeline?opportunity=${opp.id}`); }}
+            className="inline-flex items-center gap-1 rounded-lg border border-border/60 bg-background/60 px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors"
+          >
+            <GitBranch className="h-3 w-3" />
+            Voir dans le pipeline
+          </button>
+          {campaign && (
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate(`/admin/crm/campagnes/${campaign.id}`); }}
+              className="inline-flex items-center gap-1 rounded-lg border border-border/60 bg-background/60 px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors"
+            >
+              <Megaphone className="h-3 w-3" />
+              Voir la campagne
+            </button>
           )}
         </div>
       </div>
