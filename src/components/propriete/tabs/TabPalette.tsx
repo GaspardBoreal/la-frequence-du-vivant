@@ -81,6 +81,7 @@ interface Props {
   bio?: PropertyBiodiversity;
   atelierOpen?: boolean;
   onAtelierClose?: () => void;
+  atelierIntent?: AtelierIntent | null;
 }
 
 export const TabPalette: React.FC<Props> = ({
@@ -93,6 +94,8 @@ export const TabPalette: React.FC<Props> = ({
   bio,
   atelierOpen = false,
   onAtelierClose,
+  atelierIntent,
+
 }) => {
   const palette = usePropertyPalette(proprieteId);
   const { zones, upsertZone, deleteZone } = useProprieteZones(proprieteId);
