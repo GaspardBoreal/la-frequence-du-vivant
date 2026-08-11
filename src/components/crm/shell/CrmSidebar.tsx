@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   ChevronsLeft,
   ListChecks,
+  Megaphone,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -36,6 +37,7 @@ interface NavItem {
 const ITEMS: NavItem[] = [
   { to: '/admin/crm', label: 'Accueil', icon: LayoutDashboard, end: true },
   { to: '/admin/crm/annuaire', label: 'Annuaire', icon: Building2 },
+  { to: '/admin/crm/campagnes', label: 'Campagnes', icon: Megaphone, badge: 'Nouveau' },
   { to: '/admin/crm/pipeline', label: 'Opportunités', icon: Target },
   { to: '/admin/crm/missions', label: 'Missions', icon: ListChecks, badge: 'Nouveau' },
   { to: '/admin/crm/marches', label: 'Marches', icon: CalendarRange },
