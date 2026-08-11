@@ -24,6 +24,13 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
   const { data: latest = {} } = useLatestMesures(ids);
   const { data: deliveries = [] } = useWebhookDeliveries(ids);
   const { data: covers = {} } = useCapteurCovers(ids);
+  const { live } = useTelemetryLive();
+  const { data: pings = [] } = useTelemetryPings(24, ids);
+  const pingsByCapteur = React.useMemo(() => {
+    const m: Record<string, string[]> = {};
+    pings.forEach((p) => { (m[p.capteur_id] ??= []).push(p.mesure_at); });
+    return m;
+  }, [pings]);
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<IotCapteur | null>(null);
   const [openCapteur, setOpenCapteur] = React.useState<IotCapteur | null>(null);
