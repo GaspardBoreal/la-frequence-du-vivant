@@ -403,7 +403,11 @@ const PropTabs: React.FC<{
   }, [openAtelier]);
 
 
-  const closeAtelier = React.useCallback(() => setAtelierOpen(false), []);
+  const closeAtelier = React.useCallback(() => {
+    setAtelierOpen(false);
+    setAtelierIntent(null);
+  }, []);
+
 
   const projectActive = ['portrait', 'synthesize', 'palette', 'clinique', 'capteurs'].includes(tab);
   const projectLabel =
