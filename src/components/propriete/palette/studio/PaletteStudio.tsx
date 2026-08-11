@@ -52,6 +52,10 @@ import SoilSamplesLayer from './SoilSamplesLayer';
 import CliniqueLayer from '@/components/propriete/clinique/map/CliniqueLayer';
 import CareRoundLayer from '@/components/propriete/clinique/map/CareRoundLayer';
 import CliniqueDock from '@/components/propriete/clinique/map/CliniqueDock';
+import IotLayer from '@/components/propriete/iot/map/IotLayer';
+import IotDock from '@/components/propriete/iot/map/IotDock';
+import SensorDrawer from '@/components/propriete/iot/SensorDrawer';
+import { useIotCapteurs, useLatestMesures, useMoveCapteur, type IotCapteur } from '@/hooks/iot/useIot';
 import ConsultationDrawer from '@/components/propriete/clinique/ConsultationDrawer';
 import {
   useConsultations,
