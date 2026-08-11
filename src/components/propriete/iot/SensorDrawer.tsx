@@ -227,11 +227,12 @@ export const SensorDrawer: React.FC<Props> = ({ capteur, latest, onClose, onLoca
 
 const Badge: React.FC<{ icon: React.ElementType; label: string; color?: string }> = ({ icon: Icon, label, color }) => (
   <span
-    className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-line))] bg-white/60 px-2 py-1"
-    style={color ? { color, borderColor: `${color}66` } : undefined}
+    className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] px-2 py-1 font-medium text-[hsl(var(--ds-forest-deep))]"
+    style={color ? { color, borderColor: `${color}66`, backgroundColor: `${color}14` } : undefined}
   >
-    <Icon className="h-3 w-3" /> {label}
+    <Icon className="h-3 w-3 shrink-0" /> {label}
   </span>
 );
+
 
 export default SensorDrawer;
