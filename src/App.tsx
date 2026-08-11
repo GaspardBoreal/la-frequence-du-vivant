@@ -337,7 +337,13 @@ function App() {
                 <AdminProprietes />
               </AdminAuth>
             } />
+            <Route path="/admin/iot" element={
+              <AdminAuth>
+                <AdminIot />
+              </AdminAuth>
+            } />
             <Route path="/propriete/:slug" element={<ProprieteEspace />} />
+
             <Route path="/admin/outils" element={
               <AdminAuth>
                 <AdminOutilsHub />
