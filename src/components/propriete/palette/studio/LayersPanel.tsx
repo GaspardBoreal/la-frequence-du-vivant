@@ -75,7 +75,10 @@ interface Props {
 
   objetCountByCalque: Record<string, number>;
   readOnly?: boolean;
+  /** Amène la section « Vues de fond » sous les yeux à l'ouverture. */
+  scrollToSystem?: boolean;
 }
+
 
 const rowBase =
   'group flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11px] transition-colors';
