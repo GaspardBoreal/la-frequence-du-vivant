@@ -175,7 +175,7 @@ export function useCampaignMembers(campaignId: string | undefined) {
       if (!campaignId) return [];
       const { data, error } = await supabase
         .from('crm_campaign_members')
-        .select(`*, company:crm_companies(${COMPANY_SELECT})`)
+        .select(`*, company:crm_companies(${COMPANY_SELECT}), opportunity:crm_opportunities!crm_campaign_members_opportunity_id_fkey(id, statut)`)
         .eq('campaign_id', campaignId)
         .order('priorite', { ascending: false })
         .order('created_at', { ascending: true })
