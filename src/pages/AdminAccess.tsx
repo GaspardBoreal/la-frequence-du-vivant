@@ -150,6 +150,25 @@ const AdminAccess: React.FC = () => {
             </Link>
           </Card>
 
+          {/* 6 bis. IoT, Capteurs, Sondes */}
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow border-2 border-emerald-500/20 bg-emerald-500/5">
+            <div className="flex items-center mb-4">
+              <Radio className="h-8 w-8 text-emerald-500 mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">IoT, Capteurs, Sondes</h2>
+            </div>
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
+              Catalogue des fournisseurs et des types de capteurs, passerelle de réception
+              des mesures et normalisation des unités.
+            </p>
+            <Link to="/admin/iot">
+              <Button variant="outline" className="w-full">
+                <Radio className="h-4 w-4 mr-2" />
+                Accéder aux objets connectés
+              </Button>
+            </Link>
+          </Card>
+
+
           {/* 7. Automations & Intégrations */}
           <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center mb-4">
