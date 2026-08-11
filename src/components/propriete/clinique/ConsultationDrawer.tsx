@@ -147,7 +147,8 @@ export const ConsultationDrawer: React.FC<{
     <Sheet open={!!consultation} onOpenChange={(v) => { if (!v) onClose(); }}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-xl overflow-y-auto bg-[hsl(var(--ds-cream))] border-l border-[hsl(var(--ds-line))]"
+        overlayClassName={elevated ? 'z-[3200]' : undefined}
+        className={`w-full sm:max-w-xl overflow-y-auto bg-[hsl(var(--ds-cream))] border-l border-[hsl(var(--ds-line))] ${elevated ? 'z-[3210]' : ''}`
       >
         {consultation && (
           <>

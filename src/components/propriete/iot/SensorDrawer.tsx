@@ -5,6 +5,7 @@ import type { IotCapteur, IotMesure } from '@/hooks/iot/useIot';
 import { useMesureSeries, useCapteurMutation } from '@/hooks/iot/useIot';
 import { sensorHealth, HEALTH_COLOR, fmtHorodatage, grandeurMeta, fmtProfondeur, moistureVerdict } from '@/lib/iot/grandeurs';
 import MesureTile from './MesureTile';
+import SensorPhotoStrip from './SensorPhotoStrip';
 import { Input } from '@/components/ui/input';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -35,10 +36,12 @@ interface Props {
   onLocate?: (c: IotCapteur) => void;
   proprieteId: string;
   proprieteNom?: string;
+  /** Ouverte depuis un écran plein (Atelier du jardin) : passe au-dessus. */
+  elevated?: boolean;
 }
 
 /** Fiche capteur : dernières mesures, tendance 30 jours, lecture et IA de Jardin. */
-export const SensorDrawer: React.FC<Props> = ({ capteur, latest, onClose, onLocate, proprieteId, proprieteNom }) => {
+export const SensorDrawer: React.FC<Props> = ({ capteur, latest, onClose, onLocate, proprieteId, proprieteNom, elevated }) => {
   const { data: series = [] } = useMesureSeries(capteur?.id, 30);
   const mut = useCapteurMutation(proprieteId);
   const [renaming, setRenaming] = React.useState(false);
@@ -75,7 +78,11 @@ export const SensorDrawer: React.FC<Props> = ({ capteur, latest, onClose, onLoca
 
   return (
     <Sheet open={!!capteur} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full overflow-y-auto bg-[hsl(var(--ds-cream))] sm:max-w-lg">
+      <SheetContent
+        side="right"
+        overlayClassName={elevated ? 'z-[3200]' : undefined}
+        className={`w-full overflow-y-auto bg-[hsl(var(--ds-cream))] sm:max-w-lg ${elevated ? 'z-[3210]' : ''}`}
+      >
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 text-[hsl(var(--ds-forest-deep))]">
             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: HEALTH_COLOR[health.status] }} />
@@ -132,6 +139,12 @@ export const SensorDrawer: React.FC<Props> = ({ capteur, latest, onClose, onLoca
             ))}
           </ul>
         )}
+
+        <SensorPhotoStrip
+          capteurId={capteur.id}
+          proprieteId={proprieteId}
+          healthColor={HEALTH_COLOR[health.status]}
+        />
 
         <h3 className="mt-5 text-[10px] font-bold uppercase tracking-[0.24em] text-[hsl(var(--ds-forest))]">Dernières mesures</h3>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
