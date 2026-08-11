@@ -385,7 +385,7 @@ const PropTabs: React.FC<{
   }, [handleTabChange]);
 
   const [atelierIntent, setAtelierIntent] = React.useState<{ focus?: 'capteurs' } | null>(null);
-  const [atelierReturnTab, setAtelierReturnTab] = React.useState<string | null>(null);
+  const atelierReturnTabRef = React.useRef<string | null>(null);
 
   // Ref pour que le listener global lise toujours l'onglet courant.
   const tabRef = React.useRef(tab);
@@ -393,7 +393,7 @@ const PropTabs: React.FC<{
 
   const openAtelier = React.useCallback((intent?: { focus?: 'capteurs' } | null, returnTab?: string | null) => {
     setAtelierIntent(intent ?? null);
-    setAtelierReturnTab(returnTab ?? tabRef.current ?? 'palette');
+    atelierReturnTabRef.current = returnTab ?? tabRef.current ?? 'palette';
     handleTabChange('palette');
     setAtelierOpen(true);
   }, [handleTabChange]);
@@ -415,10 +415,9 @@ const PropTabs: React.FC<{
   const closeAtelier = React.useCallback(() => {
     setAtelierOpen(false);
     setAtelierIntent(null);
-    setAtelierReturnTab((back) => {
-      if (back && back !== 'palette') handleTabChange(back);
-      return null;
-    });
+    const back = atelierReturnTabRef.current;
+    atelierReturnTabRef.current = null;
+    if (back && back !== 'palette') handleTabChange(back);
   }, [handleTabChange]);
 
 
