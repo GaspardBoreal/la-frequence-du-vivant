@@ -147,6 +147,11 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
   }, [open, lockedCampaignId, myMemberId]);
 
 
+  const assigneeName = React.useMemo(() => {
+    const m = activeMembers.find((x) => x.id === assigneeId);
+    return m ? `${m.prenom} ${m.nom}` : null;
+  }, [activeMembers, assigneeId]);
+
   const detected = React.useMemo(() => extractIdentifiers(text), [text]);
 
   // Résolution auto (débouncée) dès qu'on a des identifiants
