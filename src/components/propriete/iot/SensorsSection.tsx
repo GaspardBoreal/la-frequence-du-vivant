@@ -188,7 +188,15 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
               </div>
 
               <div className="mt-2 flex items-center gap-1 text-[10px] text-[hsl(var(--ds-forest))]/60">
-                <Wifi className="h-3 w-3" /> {fmtHorodatage(c.last_seen_at)}
+              <VitalityStrip
+                timestamps={pingsByCapteur[c.id] ?? []}
+                hours={24}
+                className="mt-2 opacity-90"
+                color="63 127 82"
+              />
+
+              <div className="mt-2 flex items-center gap-1 text-[10px] text-[hsl(var(--ds-forest))]/60">
+                <Wifi className="h-3 w-3" /> {fmtHorodatage(c.last_seen_at)} · 24 h de réceptions
               </div>
             </motion.button>
           );
