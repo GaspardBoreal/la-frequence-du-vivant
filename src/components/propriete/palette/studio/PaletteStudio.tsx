@@ -1151,6 +1151,22 @@ export const PaletteStudio: React.FC<Props> = ({
             />
           )}
 
+          {system.capteurs && (
+            <IotDock
+              capteurs={iotCapteurs}
+              placingId={placingCapteurId}
+              onPlacing={setPlacingCapteurId}
+              onOpen={(c) => setOpenCapteur(c)}
+            />
+          )}
+
+          <SensorDrawer
+            capteur={openCapteur}
+            open={!!openCapteur}
+            onOpenChange={(o) => !o && setOpenCapteur(null)}
+          />
+
+
           <InlineGpsBar curation={inlineGps} />
 
           <ObjetTransformBar
