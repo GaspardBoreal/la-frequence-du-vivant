@@ -56,13 +56,24 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
   const declencheur = canalDeclencheur(members);
 
 
-  const funnel = [
-    { etape: 'Enrôlés', n: s.enroles ?? 0 },
-    { etape: 'Appelés', n: s.appels ?? 0 },
-    { etape: 'Joints', n: joints },
-    { etape: 'Intéressés', n: s.interesses ?? 0 },
-    { etape: 'Gagnées', n: s.opp_gagnees ?? 0 },
-  ];
+  const funnel =
+    canal === 'email'
+      ? [
+          { etape: 'Enrôlés', n: s.enroles ?? 0 },
+          { etape: 'Écrits', n: mail.envoyes },
+          { etape: 'Ouverts', n: mail.ouverts },
+          { etape: 'Réponses', n: mail.repondus },
+          { etape: 'Gagnées', n: s.opp_gagnees ?? 0 },
+        ]
+      : [
+          { etape: 'Enrôlés', n: s.enroles ?? 0 },
+          ...(showEmail ? [{ etape: 'Écrits', n: mail.envoyes }] : []),
+          { etape: 'Appelés', n: s.appels ?? 0 },
+          { etape: 'Joints', n: joints },
+          { etape: 'Intéressés', n: (s.interesses ?? 0) + (showEmail ? mail.repondus : 0) },
+          { etape: 'Gagnées', n: s.opp_gagnees ?? 0 },
+        ];
+
 
   const chartData = daily.map((d) => ({
     jour: new Date(d.jour).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
