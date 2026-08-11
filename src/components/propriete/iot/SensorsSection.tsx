@@ -6,6 +6,8 @@ import { sensorHealth, HEALTH_COLOR, fmtHorodatage, fmtMesure, fmtProfondeur, gr
 import SensorFormDialog from './SensorFormDialog';
 import SensorDrawer from './SensorDrawer';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
+import { useTelemetryLive, useTelemetryPings } from '@/hooks/iot/useIotTelemetry';
+import { VitalityStrip } from '@/components/iot/VitalityStrip';
 
 interface Props {
   proprieteId: string;
@@ -22,6 +24,13 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
   const { data: latest = {} } = useLatestMesures(ids);
   const { data: deliveries = [] } = useWebhookDeliveries(ids);
   const { data: covers = {} } = useCapteurCovers(ids);
+  const { live } = useTelemetryLive();
+  const { data: pings = [] } = useTelemetryPings(24, ids);
+  const pingsByCapteur = React.useMemo(() => {
+    const m: Record<string, string[]> = {};
+    pings.forEach((p) => { (m[p.capteur_id] ??= []).push(p.mesure_at); });
+    return m;
+  }, [pings]);
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<IotCapteur | null>(null);
   const [openCapteur, setOpenCapteur] = React.useState<IotCapteur | null>(null);
@@ -45,6 +54,15 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.3em] text-[hsl(var(--ds-forest))]">
             <Radio className="h-3 w-3" /> Veille des capteurs
+            {live && (
+              <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-[#3f7f52]/15 px-2 py-0.5 text-[9px] tracking-normal text-[#2f6340]">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3f7f52] opacity-70" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#3f7f52]" />
+                </span>
+                en direct
+              </span>
+            )}
           </div>
           <div className="ml-auto flex items-center gap-3 text-[11px] text-[hsl(var(--ds-forest-deep))]">
             <Dot color={HEALTH_COLOR.green} n={counts.green} label="en veille" />
@@ -169,8 +187,15 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
                 {rows.length === 0 && <span className="text-[10px] italic opacity-55">Aucune mesure encore reçue</span>}
               </div>
 
+              <VitalityStrip
+                timestamps={pingsByCapteur[c.id] ?? []}
+                hours={24}
+                className="mt-2 opacity-90"
+                color="63 127 82"
+              />
+
               <div className="mt-2 flex items-center gap-1 text-[10px] text-[hsl(var(--ds-forest))]/60">
-                <Wifi className="h-3 w-3" /> {fmtHorodatage(c.last_seen_at)}
+                <Wifi className="h-3 w-3" /> {fmtHorodatage(c.last_seen_at)} · 24 h de réceptions
               </div>
             </motion.button>
           );

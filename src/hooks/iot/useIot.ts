@@ -253,6 +253,7 @@ export function useMesureSeries(capteurId?: string, days = 30) {
         .from('iot_mesures')
         .select('*')
         .eq('capteur_id', capteurId)
+        .neq('source', 'webhook_test')
         .gte('mesure_at', since)
         .order('mesure_at', { ascending: true })
         .limit(3000);
