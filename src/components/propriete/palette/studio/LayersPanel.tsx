@@ -131,8 +131,19 @@ export const LayersPanel: React.FC<Props> = ({
   scopeCounts,
   objetCountByCalque,
   readOnly,
+  scrollToSystem,
 }) => {
+  const systemRef = React.useRef<HTMLElement | null>(null);
+  React.useEffect(() => {
+    if (!scrollToSystem) return;
+    const t = window.setTimeout(
+      () => systemRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      120,
+    );
+    return () => window.clearTimeout(t);
+  }, [scrollToSystem]);
   const [editing, setEditing] = React.useState<string | null>(null);
+
   const [draft, setDraft] = React.useState('');
   const [showEmpty, setShowEmpty] = React.useState(false);
 
