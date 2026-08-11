@@ -628,6 +628,8 @@ export const TabPalette: React.FC<Props> = ({
   const atelier = proprieteId ? (
     <PaletteStudio
       open={atelierOpen}
+      intent={atelierIntent}
+
       onClose={onAtelierClose ?? (() => {})}
       proprieteId={proprieteId}
       center={derivedCenter}
