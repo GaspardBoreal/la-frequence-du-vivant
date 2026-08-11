@@ -206,7 +206,7 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
       const tags = selectedRows.some(r => r.siret) ? [] : [];
       const importRes = await importMutation.mutateAsync({
         sirens: selectedRows.map(r => r.siren),
-        assigned_to: assignToMe ? uid : null,
+        assigned_to: assigneeId,
         tags,
       });
       const results = importRes?.results ?? [];
