@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeft, Search, Loader2, Building2, MapPin, X, ShoppingBasket, AlertTriangle, UserRound, Plus } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Building2, MapPin, X, ShoppingBasket, AlertTriangle, UserRound, Plus, ClipboardPaste } from 'lucide-react';
+import { PasteImportDialog } from '@/components/crm/PasteImportDialog';
+
 
 import { CompanyManualCreateDialog } from '@/components/crm/CompanyManualCreateDialog';
 import { CrmContactsTab } from '@/components/crm/contacts/CrmContactsTab';
