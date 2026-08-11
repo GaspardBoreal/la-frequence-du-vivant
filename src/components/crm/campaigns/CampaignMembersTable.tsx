@@ -126,6 +126,13 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, members, onC
                       {m.refus_motif && (
                         <div className="mt-1 text-[11px] text-muted-foreground">{m.refus_motif}</div>
                       )}
+                      {(m as any).opportunity?.statut && (
+                        <div className="mt-1 text-[11px] text-muted-foreground">
+                          Pipeline ·{' '}
+                          {KANBAN_COLUMNS.find((c) => c.id === (m as any).opportunity.statut)?.title ??
+                            (m as any).opportunity.statut}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm">{m.attempts}</TableCell>
                     <TableCell className="text-sm">
