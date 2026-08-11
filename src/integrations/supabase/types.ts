@@ -4296,7 +4296,7 @@ export type Database = {
         Row: {
           capteur_id: string | null
           created_at: string
-          delivery_id: string | null
+          delivery_id: string
           error: string | null
           event: string | null
           fournisseur: string
@@ -4309,7 +4309,7 @@ export type Database = {
         Insert: {
           capteur_id?: string | null
           created_at?: string
-          delivery_id?: string | null
+          delivery_id?: string
           error?: string | null
           event?: string | null
           fournisseur?: string
@@ -4322,7 +4322,7 @@ export type Database = {
         Update: {
           capteur_id?: string | null
           created_at?: string
-          delivery_id?: string | null
+          delivery_id?: string
           error?: string | null
           event?: string | null
           fournisseur?: string
