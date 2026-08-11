@@ -620,6 +620,8 @@ const CrmAnnuaire: React.FC = () => {
           onOpenChange={setManualCreateOpen}
           onCreated={(id) => setDrawerId(id)}
         />
+        <PasteImportDialog open={pasteOpen} onOpenChange={setPasteOpen} />
+
         <CompanySelectionSheet
           open={selectionOpen}
           onOpenChange={setSelectionOpen}
