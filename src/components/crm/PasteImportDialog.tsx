@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useImportCompanies } from '@/hooks/useCrmCompanies';
 import { useCrmCampaigns } from '@/hooks/useCrmCampaigns';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { KANBAN_COLUMNS } from '@/types/crm';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -112,22 +113,44 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
   const [campaignQuery, setCampaignQuery] = React.useState('');
   const [createOpportunities, setCreateOpportunities] = React.useState(false);
   const [oppStatut, setOppStatut] = React.useState('a_contacter');
-  const [assignToMe, setAssignToMe] = React.useState(true);
+  const [assigneeId, setAssigneeId] = React.useState<string | null>(null);
   const [running, setRunning] = React.useState(false);
   const [progress, setProgress] = React.useState<{ done: number; total: number } | null>(null);
-  const [report, setReport] = React.useState<{ imported: number; enrolled: number; opportunities: number; failed: number } | null>(null);
+  const [report, setReport] = React.useState<{ imported: number; enrolled: number; opportunities: number; failed: number; assignee: string | null } | null>(null);
 
   const { data: campaigns = [] } = useCrmCampaigns();
+  const { activeMembers } = useTeamMembers();
+  const [myMemberId, setMyMemberId] = React.useState<string | null>(null);
   const importMutation = useImportCompanies();
   const qc = useQueryClient();
   const navigate = useNavigate();
+
+  // Repère le membre d'équipe correspondant au compte connecté
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      const uid = data.user?.id;
+      if (cancelled || !uid) return;
+      const me = activeMembers.find((m) => m.user_id === uid);
+      setMyMemberId(me?.id ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [activeMembers]);
 
   React.useEffect(() => {
     if (open) {
       setText(''); setRows([]); setPicked(new Set()); setReport(null); setProgress(null);
       setCampaignId(lockedCampaignId ?? null);
+      setAssigneeId(myMemberId);
     }
-  }, [open, lockedCampaignId]);
+  }, [open, lockedCampaignId, myMemberId]);
+
+
+  const assigneeName = React.useMemo(() => {
+    const m = activeMembers.find((x) => x.id === assigneeId);
+    return m ? `${m.prenom} ${m.nom}` : null;
+  }, [activeMembers, assigneeId]);
 
   const detected = React.useMemo(() => extractIdentifiers(text), [text]);
 
@@ -188,7 +211,7 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
       const tags = selectedRows.some(r => r.siret) ? [] : [];
       const importRes = await importMutation.mutateAsync({
         sirens: selectedRows.map(r => r.siren),
-        assigned_to: assignToMe ? uid : null,
+        assigned_to: assigneeId,
         tags,
       });
       const results = importRes?.results ?? [];
@@ -245,6 +268,7 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
                   statut: oppStatut,
                   source: 'campagne',
                   campaign_id: campaignId,
+                  assigned_to: assigneeId,
                   created_by: uid,
                 } as any)
                 .select('id')
@@ -273,6 +297,7 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
         enrolled,
         opportunities,
         failed: selectedRows.length - results.length,
+        assignee: assigneeName,
       });
       onDone?.();
     } catch (e: any) {
@@ -311,6 +336,7 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
               {report.imported} importée{report.imported > 1 ? 's' : ''} · {report.enrolled} enrôlée{report.enrolled > 1 ? 's' : ''}
               {report.opportunities > 0 ? ` · ${report.opportunities} opportunité${report.opportunities > 1 ? 's' : ''}` : ''}
               {report.failed > 0 ? ` · ${report.failed} échec${report.failed > 1 ? 's' : ''}` : ' · 0 échec'}
+              {report.assignee ? ` · attribuées à ${report.assignee}` : ''}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {campaignId && (
@@ -443,10 +469,35 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
               )}
 
               <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="paste-assign" className="text-sm font-normal">M'attribuer ces prospects</Label>
-                <Switch id="paste-assign" checked={assignToMe} onCheckedChange={setAssignToMe} />
+                <Label htmlFor="paste-assign" className="text-sm font-normal">Attribuer à</Label>
+                <Select
+                  value={assigneeId ?? '__none__'}
+                  onValueChange={(v) => setAssigneeId(v === '__none__' ? null : v)}
+                >
+                  <SelectTrigger id="paste-assign" className="w-[260px]">
+                    <SelectValue placeholder="Personne (non attribué)" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[1300]">
+                    <SelectItem value="__none__">Personne (non attribué)</SelectItem>
+                    {myMemberId && (
+                      <SelectItem value={myMemberId}>
+                        Moi — {activeMembers.find((m) => m.id === myMemberId)?.prenom}{' '}
+                        {activeMembers.find((m) => m.id === myMemberId)?.nom}
+                      </SelectItem>
+                    )}
+                    {activeMembers
+                      .filter((m) => m.id !== myMemberId)
+                      .map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.prenom} {m.nom}
+                          {m.fonction ? ` · ${m.fonction}` : ''}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+
           </div>
         )}
 
