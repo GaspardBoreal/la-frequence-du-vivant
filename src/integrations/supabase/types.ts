@@ -4087,6 +4087,261 @@ export type Database = {
         }
         Relationships: []
       }
+      iot_capteurs: {
+        Row: {
+          actif: boolean
+          battery_alert_pct: number
+          battery_pct: number | null
+          created_at: string
+          emplacement: string | null
+          id: string
+          last_seen_at: string | null
+          lat: number | null
+          lng: number | null
+          nom: string
+          notes: string | null
+          open_data: boolean
+          propriete_id: string
+          rssi: number | null
+          serial_number: string
+          silence_alert_hours: number
+          snr: number | null
+          type_id: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          battery_alert_pct?: number
+          battery_pct?: number | null
+          created_at?: string
+          emplacement?: string | null
+          id?: string
+          last_seen_at?: string | null
+          lat?: number | null
+          lng?: number | null
+          nom: string
+          notes?: string | null
+          open_data?: boolean
+          propriete_id: string
+          rssi?: number | null
+          serial_number: string
+          silence_alert_hours?: number
+          snr?: number | null
+          type_id: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          battery_alert_pct?: number
+          battery_pct?: number | null
+          created_at?: string
+          emplacement?: string | null
+          id?: string
+          last_seen_at?: string | null
+          lat?: number | null
+          lng?: number | null
+          nom?: string
+          notes?: string | null
+          open_data?: boolean
+          propriete_id?: string
+          rssi?: number | null
+          serial_number?: string
+          silence_alert_hours?: number
+          snr?: number | null
+          type_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iot_capteurs_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "iot_capteurs_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "iot_types_capteurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iot_fournisseurs: {
+        Row: {
+          created_at: string
+          id: string
+          logo_url: string | null
+          nom: string
+          notes: string | null
+          pays: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          nom: string
+          notes?: string | null
+          pays?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          nom?: string
+          notes?: string | null
+          pays?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      iot_mesures: {
+        Row: {
+          capteur_id: string
+          created_at: string
+          grandeur: string
+          id: string
+          mesure_at: string
+          profondeur_m: number | null
+          raw: Json | null
+          source: string
+          unite: string
+          valeur: number
+        }
+        Insert: {
+          capteur_id: string
+          created_at?: string
+          grandeur: string
+          id?: string
+          mesure_at: string
+          profondeur_m?: number | null
+          raw?: Json | null
+          source?: string
+          unite: string
+          valeur: number
+        }
+        Update: {
+          capteur_id?: string
+          created_at?: string
+          grandeur?: string
+          id?: string
+          mesure_at?: string
+          profondeur_m?: number | null
+          raw?: Json | null
+          source?: string
+          unite?: string
+          valeur?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iot_mesures_capteur_id_fkey"
+            columns: ["capteur_id"]
+            isOneToOne: false
+            referencedRelation: "iot_capteurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iot_types_capteurs: {
+        Row: {
+          created_at: string
+          description: string | null
+          famille: string
+          fournisseur_id: string
+          grandeurs: string[]
+          id: string
+          modele: string
+          profondeurs_m: number[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          famille?: string
+          fournisseur_id: string
+          grandeurs?: string[]
+          id?: string
+          modele: string
+          profondeurs_m?: number[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          famille?: string
+          fournisseur_id?: string
+          grandeurs?: string[]
+          id?: string
+          modele?: string
+          profondeurs_m?: number[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iot_types_capteurs_fournisseur_id_fkey"
+            columns: ["fournisseur_id"]
+            isOneToOne: false
+            referencedRelation: "iot_fournisseurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iot_webhook_deliveries: {
+        Row: {
+          capteur_id: string | null
+          created_at: string
+          delivery_id: string | null
+          error: string | null
+          event: string | null
+          fournisseur: string
+          id: string
+          mesures_count: number
+          payload: Json | null
+          serial_number: string | null
+          signature_valid: boolean
+        }
+        Insert: {
+          capteur_id?: string | null
+          created_at?: string
+          delivery_id?: string | null
+          error?: string | null
+          event?: string | null
+          fournisseur?: string
+          id?: string
+          mesures_count?: number
+          payload?: Json | null
+          serial_number?: string | null
+          signature_valid?: boolean
+        }
+        Update: {
+          capteur_id?: string | null
+          created_at?: string
+          delivery_id?: string | null
+          error?: string | null
+          event?: string | null
+          fournisseur?: string
+          id?: string
+          mesures_count?: number
+          payload?: Json | null
+          serial_number?: string | null
+          signature_valid?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iot_webhook_deliveries_capteur_id_fkey"
+            columns: ["capteur_id"]
+            isOneToOne: false
+            referencedRelation: "iot_capteurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kigo_entries: {
         Row: {
           created_at: string
