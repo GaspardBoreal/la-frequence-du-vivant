@@ -27,6 +27,7 @@ import { TabSynthesize } from '@/components/propriete/tabs/TabSynthesize';
 import { TabPalette } from '@/components/propriete/tabs/TabPalette';
 import { TabPortrait } from '@/components/propriete/portrait/TabPortrait';
 import { TabClinique } from '@/components/propriete/tabs/TabClinique';
+import SensorsSection from '@/components/propriete/iot/SensorsSection';
 import KenBurnsCarousel from '@/components/immersive-garden/KenBurnsCarousel';
 import { ProprieteVivantScopeProvider } from '@/contexts/ProprieteVivantScopeContext';
 import OrganicButton from '@/components/immersive-garden/OrganicButton';
@@ -388,9 +389,16 @@ const PropTabs: React.FC<{
     setAtelierOpen(true);
   }, [handleTabChange]);
 
+  // Ouverture de l'atelier depuis « Capteurs et sondes » (pose GPS d'un capteur).
+  React.useEffect(() => {
+    const onOpenAtelier = () => openAtelier();
+    window.addEventListener('propriete:open-atelier', onOpenAtelier);
+    return () => window.removeEventListener('propriete:open-atelier', onOpenAtelier);
+  }, [openAtelier]);
+
   const closeAtelier = React.useCallback(() => setAtelierOpen(false), []);
 
-  const projectActive = ['portrait', 'synthesize', 'palette', 'clinique'].includes(tab);
+  const projectActive = ['portrait', 'synthesize', 'palette', 'clinique', 'capteurs'].includes(tab);
   const projectLabel =
     tab === 'portrait'
       ? portraitSub === 'cadastre' ? 'Cadastre' : 'Galerie'
@@ -398,9 +406,12 @@ const PropTabs: React.FC<{
         ? 'Je synthétise'
         : tab === 'palette'
           ? 'Palette végétale'
-          : tab === 'clinique'
-            ? 'Clinique du jardin'
-            : '';
+          : tab === 'capteurs'
+            ? 'Capteurs et sondes'
+            : tab === 'clinique'
+              ? 'Clinique du jardin'
+              : '';
+
 
   return (
     <div className="space-y-5">
@@ -446,8 +457,12 @@ const PropTabs: React.FC<{
                 <DropdownMenuItem onSelect={() => handleTabChange('synthesize')}>Je synthétise</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handleTabChange('palette')}>Palette végétale</DropdownMenuItem>
                 <DropdownMenuItem onSelect={openAtelier}>Atelier du jardin</DropdownMenuItem>
-                <DropdownMenuSeparator />
+                {/* Sous-section à part entière : capteurs et sondes, encadrée de vert */}
+                <div aria-hidden className="my-1 h-px bg-emerald-600/60" />
+                <DropdownMenuItem onSelect={() => handleTabChange('capteurs')}>Capteurs et sondes</DropdownMenuItem>
+                <div aria-hidden className="my-1 h-px bg-emerald-600/60" />
                 <DropdownMenuItem onSelect={() => handleTabChange('clinique')}>Clinique du jardin</DropdownMenuItem>
+
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -539,7 +554,11 @@ const PropTabs: React.FC<{
             onAtelierClose={closeAtelier}
           />
         </TabsContent>
+        <TabsContent value="capteurs" className="pt-5 min-h-[calc(100vh-8rem)]">
+          <SensorsSection proprieteId={proprieteId} proprieteNom={proprieteNom} />
+        </TabsContent>
         <TabsContent value="clinique" className="pt-5 min-h-[calc(100vh-8rem)]">
+
           <TabClinique
             proprieteId={proprieteId}
             proprieteNom={proprieteNom}

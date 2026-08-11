@@ -96,6 +96,7 @@ const MarcheEventDetail = lazyWithRetry(() => import('./pages/MarcheEventDetail'
 const CommunityProfilesAdmin = lazyWithRetry(() => import('./pages/CommunityProfilesAdmin'));
 const OrganisateursAdmin = lazyWithRetry(() => import('./pages/OrganisateursAdmin'));
 const AdminProprietes = lazyWithRetry(() => import('./pages/AdminProprietes'));
+const AdminIot = lazyWithRetry(() => import('./pages/AdminIot'));
 const ProprieteEspace = lazyWithRetry(() => import('./pages/ProprieteEspace'));
 const MarchesDuVivantExplorationMarcheur = lazyWithRetry(() => import('./pages/MarchesDuVivantExplorationMarcheur'));
 const AdminOutilsHub = lazyWithRetry(() => import('./pages/AdminOutilsHub'));
@@ -336,7 +337,13 @@ function App() {
                 <AdminProprietes />
               </AdminAuth>
             } />
+            <Route path="/admin/iot" element={
+              <AdminAuth>
+                <AdminIot />
+              </AdminAuth>
+            } />
             <Route path="/propriete/:slug" element={<ProprieteEspace />} />
+
             <Route path="/admin/outils" element={
               <AdminAuth>
                 <AdminOutilsHub />

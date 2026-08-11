@@ -52,6 +52,10 @@ import SoilSamplesLayer from './SoilSamplesLayer';
 import CliniqueLayer from '@/components/propriete/clinique/map/CliniqueLayer';
 import CareRoundLayer from '@/components/propriete/clinique/map/CareRoundLayer';
 import CliniqueDock from '@/components/propriete/clinique/map/CliniqueDock';
+import IotLayer from '@/components/propriete/iot/map/IotLayer';
+import IotDock from '@/components/propriete/iot/map/IotDock';
+import SensorDrawer from '@/components/propriete/iot/SensorDrawer';
+import { useIotCapteurs, useLatestMesures, useMoveCapteur, type IotCapteur } from '@/hooks/iot/useIot';
 import ConsultationDrawer from '@/components/propriete/clinique/ConsultationDrawer';
 import {
   useConsultations,
@@ -300,6 +304,7 @@ export const PaletteStudio: React.FC<Props> = ({
     santeHalos: true,
     santeTournee: false,
     santeGueris: false,
+    capteurs: false,
   });
 
   /* ── Clinique du jardin : les foyers posés sur le plan ────────────────── */
@@ -312,6 +317,16 @@ export const PaletteStudio: React.FC<Props> = ({
   const markActionDone = useMarkActionDone(proprieteId);
   const [placingConsultationId, setPlacingConsultationId] = React.useState<string | null>(null);
   const [openConsultation, setOpenConsultation] = React.useState<Consultation | null>(null);
+
+  // Capteurs et sondes : pose GPS et lecture des dernières mesures sur le plan.
+  const { data: iotCapteurs = [] } = useIotCapteurs(proprieteId);
+  const iotIds = React.useMemo(() => iotCapteurs.map((c) => c.id), [iotCapteurs]);
+  const { data: iotLatest = {} } = useLatestMesures(iotIds);
+  const moveCapteur = useMoveCapteur(proprieteId);
+  const [placingCapteurId, setPlacingCapteurId] = React.useState<string | null>(null);
+  const [openCapteur, setOpenCapteur] = React.useState<IotCapteur | null>(null);
+
+
 
   const focusPoints = React.useMemo<FocusPoint[]>(
     () =>
@@ -1104,6 +1119,22 @@ export const PaletteStudio: React.FC<Props> = ({
 
             {system.sante && system.santeTournee && <CareRoundLayer round={careRound} />}
 
+            {system.capteurs && (
+              <IotLayer
+                capteurs={iotCapteurs}
+                latest={iotLatest}
+                draggable={!readOnly}
+                placingId={placingCapteurId}
+                onPlace={(id, lat, lng) => {
+                  moveCapteur.mutate({ id, lat, lng });
+                  setPlacingCapteurId(null);
+                }}
+                onMove={(id, lat, lng) => moveCapteur.mutate({ id, lat, lng })}
+                onOpen={(c) => setOpenCapteur(c)}
+              />
+            )}
+
+
           </RichMap>
 
           {system.sante && (focusPoints.length > 0 || consultationsToPlace.length > 0) && (
@@ -1119,6 +1150,24 @@ export const PaletteStudio: React.FC<Props> = ({
               onOpen={(c) => setOpenConsultation(c)}
             />
           )}
+
+          {system.capteurs && (
+            <IotDock
+              capteurs={iotCapteurs}
+              placingId={placingCapteurId}
+              onPlacing={setPlacingCapteurId}
+              onOpen={(c) => setOpenCapteur(c)}
+            />
+          )}
+
+          <SensorDrawer
+            capteur={openCapteur}
+            latest={openCapteur ? (iotLatest[openCapteur.id] ?? []) : []}
+            onClose={() => setOpenCapteur(null)}
+            proprieteId={proprieteId}
+          />
+
+
 
           <InlineGpsBar curation={inlineGps} />
 
