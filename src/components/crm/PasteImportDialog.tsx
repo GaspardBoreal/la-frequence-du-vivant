@@ -336,6 +336,7 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
               {report.imported} importée{report.imported > 1 ? 's' : ''} · {report.enrolled} enrôlée{report.enrolled > 1 ? 's' : ''}
               {report.opportunities > 0 ? ` · ${report.opportunities} opportunité${report.opportunities > 1 ? 's' : ''}` : ''}
               {report.failed > 0 ? ` · ${report.failed} échec${report.failed > 1 ? 's' : ''}` : ' · 0 échec'}
+              {report.assignee ? ` · attribuées à ${report.assignee}` : ''}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {campaignId && (
