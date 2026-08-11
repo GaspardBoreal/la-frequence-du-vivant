@@ -35,7 +35,7 @@ import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import OuvragesRegister from '@/components/propriete/palette/OuvragesRegister';
 import PaletteRecommandee from '@/components/propriete/palette/recommandee/PaletteRecommandee';
-import PaletteStudio from '@/components/propriete/palette/studio/PaletteStudio';
+import PaletteStudio, { type AtelierIntent } from '@/components/propriete/palette/studio/PaletteStudio';
 
 import { geometryAreaM2 } from '@/components/propriete/palette/studio/geoMetrics';
 import ExcludedSpeciesMap from '@/components/propriete/palette/ExcludedSpeciesMap';
