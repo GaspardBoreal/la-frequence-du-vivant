@@ -17,6 +17,7 @@ import {
   canalOf,
   canalDeclencheur,
   emailStatsOf,
+  interestRateOf,
   usesEmail as canalUsesEmail,
 } from '@/lib/crm/campaignChannel';
 
