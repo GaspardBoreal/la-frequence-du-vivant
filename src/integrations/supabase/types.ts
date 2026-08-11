@@ -4087,6 +4087,78 @@ export type Database = {
         }
         Relationships: []
       }
+      iot_capteur_photos: {
+        Row: {
+          capteur_id: string
+          caption: string | null
+          created_at: string
+          height: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          mime: string | null
+          order_index: number
+          propriete_id: string
+          size_bytes: number | null
+          storage_path: string
+          taken_at: string | null
+          updated_at: string
+          uploaded_by: string | null
+          width: number | null
+        }
+        Insert: {
+          capteur_id: string
+          caption?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          mime?: string | null
+          order_index?: number
+          propriete_id: string
+          size_bytes?: number | null
+          storage_path: string
+          taken_at?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Update: {
+          capteur_id?: string
+          caption?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          mime?: string | null
+          order_index?: number
+          propriete_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          taken_at?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iot_capteur_photos_capteur_id_fkey"
+            columns: ["capteur_id"]
+            isOneToOne: false
+            referencedRelation: "iot_capteurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "iot_capteur_photos_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       iot_capteurs: {
         Row: {
           actif: boolean
@@ -9972,6 +10044,10 @@ export type Database = {
           _new_orders: number[]
           _sense: Database["public"]["Enums"]["curation_sense"]
         }
+        Returns: undefined
+      }
+      reorder_iot_capteur_photos: {
+        Args: { _capteur_id: string; _ids: string[] }
         Returns: undefined
       }
       reorder_marcheur_observation_photos: {
