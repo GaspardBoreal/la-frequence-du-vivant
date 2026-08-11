@@ -291,6 +291,7 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
         enrolled,
         opportunities,
         failed: selectedRows.length - results.length,
+        assignee: assigneeName,
       });
       onDone?.();
     } catch (e: any) {
