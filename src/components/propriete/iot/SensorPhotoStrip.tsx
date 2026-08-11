@@ -211,7 +211,7 @@ export const SensorPhotoStrip: React.FC<Props> = ({ capteurId, proprieteId, heal
       <SensorPhotoViewer photos={ordered} index={viewer} onClose={() => setViewer(null)} onNavigate={setViewer} />
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[4301]" overlayClassName="z-[4300]">
           <AlertDialogHeader>
             <AlertDialogTitle>Retirer cette photo ?</AlertDialogTitle>
             <AlertDialogDescription>Le cliché sera supprimé définitivement du dossier du capteur.</AlertDialogDescription>
