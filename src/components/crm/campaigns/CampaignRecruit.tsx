@@ -77,6 +77,10 @@ export const CampaignRecruit: React.FC<Props> = ({ campaign, enrolledCompanyIds 
           <UserPlus className="mr-1.5 h-3.5 w-3.5" />
           Enrôler la sélection ({picked.size})
         </Button>
+        <Button size="sm" variant="outline" onClick={() => setPasteOpen(true)}>
+          <ClipboardPaste className="mr-1.5 h-3.5 w-3.5" />
+          Coller une liste
+        </Button>
         <Button
           size="sm"
           disabled={candidates.length === 0 || enrollCompanies.isPending}
@@ -88,6 +92,9 @@ export const CampaignRecruit: React.FC<Props> = ({ campaign, enrolledCompanyIds 
           Tout enrôler ({candidates.length})
         </Button>
       </div>
+
+      <PasteImportDialog open={pasteOpen} onOpenChange={setPasteOpen} lockedCampaignId={campaign.id} />
+
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12 text-muted-foreground">
