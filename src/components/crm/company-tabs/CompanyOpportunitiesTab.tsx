@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Sparkles, Euro, Users, Calendar, MoreVertical, Pencil, Trash2, Unlink2 } from 'lucide-react';
+import { Plus, Sparkles, Euro, Users, Calendar, MoreVertical, Pencil, Trash2, Unlink2, Megaphone, ArrowUpRight, GitBranch } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CAMPAIGN_STATUT_OPTIONS } from '@/types/crmCampaign';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
