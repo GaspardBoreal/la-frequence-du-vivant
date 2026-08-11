@@ -300,6 +300,7 @@ export const PaletteStudio: React.FC<Props> = ({
     santeHalos: true,
     santeTournee: false,
     santeGueris: false,
+    capteurs: false,
   });
 
   /* ── Clinique du jardin : les foyers posés sur le plan ────────────────── */
