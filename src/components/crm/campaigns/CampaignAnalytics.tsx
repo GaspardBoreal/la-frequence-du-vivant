@@ -20,6 +20,7 @@ import {
   interestRateOf,
   usesEmail as canalUsesEmail,
 } from '@/lib/crm/campaignChannel';
+import { InterestDrawer } from './InterestDrawer';
 
 interface Props {
   campaign: CrmCampaign;
