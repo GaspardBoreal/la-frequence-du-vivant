@@ -102,25 +102,50 @@ export const CampaignMembersTable: React.FC<Props> = ({
           >
             Tous ({members.length})
           </button>
-          {STATUSES.map((s) => {
-            const n = members.filter((m) => m.call_status === s).length;
-            const active = status === s;
-            return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setStatus(s)}
-                className="rounded-full border px-3 py-1 text-xs transition-all"
-                style={
-                  active
-                    ? { background: `hsl(${CALL_STATUS_META[s].hue})`, color: 'white', borderColor: 'transparent' }
-                    : undefined
-                }
-              >
-                {CALL_STATUS_META[s].label} ({n})
-              </button>
-            );
-          })}
+          {useEngagement
+            ? ENGAGEMENTS.map((s) => {
+                const n = members.filter((m) => engagementOf(m) === s).length;
+                const active = status === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStatus(s)}
+                    className="rounded-full border px-3 py-1 text-xs transition-all"
+                    style={
+                      active
+                        ? {
+                            background: `hsl(${ENGAGEMENT_META[s].hue})`,
+                            color: 'white',
+                            borderColor: 'transparent',
+                          }
+                        : undefined
+                    }
+                  >
+                    {ENGAGEMENT_META[s].label} ({n})
+                  </button>
+                );
+              })
+            : STATUSES.map((s) => {
+                const n = members.filter((m) => m.call_status === s).length;
+                const active = status === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStatus(s)}
+                    className="rounded-full border px-3 py-1 text-xs transition-all"
+                    style={
+                      active
+                        ? { background: `hsl(${CALL_STATUS_META[s].hue})`, color: 'white', borderColor: 'transparent' }
+                        : undefined
+                    }
+                  >
+                    {CALL_STATUS_META[s].label} ({n})
+                  </button>
+                );
+              })}
+
         </div>
       </div>
 
