@@ -124,7 +124,7 @@ const CrmCampagneDetail: React.FC = () => {
         </TabsList>
 
         <TabsContent value="pilotage" className="pt-4">
-          <CampaignAnalytics campaign={campaign} stats={stats} daily={daily} />
+          <CampaignAnalytics campaign={campaign} stats={stats} daily={daily} members={members} />
         </TabsContent>
 
         <TabsContent value="prospects" className="pt-4">
