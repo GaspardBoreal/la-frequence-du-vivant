@@ -462,10 +462,35 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
               )}
 
               <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="paste-assign" className="text-sm font-normal">M'attribuer ces prospects</Label>
-                <Switch id="paste-assign" checked={assignToMe} onCheckedChange={setAssignToMe} />
+                <Label htmlFor="paste-assign" className="text-sm font-normal">Attribuer à</Label>
+                <Select
+                  value={assigneeId ?? '__none__'}
+                  onValueChange={(v) => setAssigneeId(v === '__none__' ? null : v)}
+                >
+                  <SelectTrigger id="paste-assign" className="w-[260px]">
+                    <SelectValue placeholder="Personne (non attribué)" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[1300]">
+                    <SelectItem value="__none__">Personne (non attribué)</SelectItem>
+                    {myMemberId && (
+                      <SelectItem value={myMemberId}>
+                        Moi — {activeMembers.find((m) => m.id === myMemberId)?.prenom}{' '}
+                        {activeMembers.find((m) => m.id === myMemberId)?.nom}
+                      </SelectItem>
+                    )}
+                    {activeMembers
+                      .filter((m) => m.id !== myMemberId)
+                      .map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.prenom} {m.nom}
+                          {m.fonction ? ` · ${m.fonction}` : ''}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+
           </div>
         )}
 
