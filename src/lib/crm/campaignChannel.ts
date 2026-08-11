@@ -235,7 +235,14 @@ export function emailStatsOf(members: CrmCampaignMember[]): EmailStats {
   const ouverts = members.filter((m) =>
     ['ouvert', 'repondu'].includes(m.email_status as string),
   ).length;
-  const repondus = members.filter((m) => m.email_status === 'repondu').length;
+  /* Une réponse est une réponse, quel que soit le canal qui l'a portée :
+     réponse écrite, intérêt déclaré au téléphone ou refus explicite. */
+  const repondus = members.filter(
+    (m) =>
+      m.email_status === 'repondu' ||
+      m.call_status === 'interesse' ||
+      m.call_status === 'refus',
+  ).length;
   const bounces = members.filter((m) => m.email_status === 'bounce').length;
   const a_ecrire = members.filter(
     (m) => (m.emails_sent ?? 0) === 0 && engagementOf(m) === 'a_traiter',
