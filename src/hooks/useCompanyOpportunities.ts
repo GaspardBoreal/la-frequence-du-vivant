@@ -4,6 +4,7 @@ import type { CrmOpportunity } from '@/types/crm';
 
 export interface CompanyOpportunityRow extends CrmOpportunity {
   link_role: string;
+  campaign?: { id: string; nom: string; statut: string } | null;
 }
 
 export function useCompanyOpportunities(companyId: string | null) {
