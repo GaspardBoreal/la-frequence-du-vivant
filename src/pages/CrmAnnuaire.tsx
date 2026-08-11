@@ -123,6 +123,8 @@ const CrmAnnuaire: React.FC = () => {
   const [drawerId, setDrawerId] = React.useState<string | null>(null);
   const [previewSiren, setPreviewSiren] = React.useState<string | null>(null);
   const [manualCreateOpen, setManualCreateOpen] = React.useState(false);
+  const [pasteOpen, setPasteOpen] = React.useState(false);
+
 
   // Deep-link: ?company=<id> opens the company drawer
   React.useEffect(() => {
