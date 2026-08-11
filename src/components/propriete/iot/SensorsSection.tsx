@@ -36,7 +36,7 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
   const alerts = healths.filter((x) => x.h.status === 'amber' || x.h.status === 'red');
   const toPlace = capteurs.filter((c) => c.lat == null || c.lng == null);
 
-  const openAtelier = () => window.dispatchEvent(new CustomEvent('propriete:open-atelier', { detail: { layer: 'capteurs' } }));
+  const openAtelier = () => window.dispatchEvent(new CustomEvent('propriete:open-atelier', { detail: { layer: 'capteurs', returnTab: 'capteurs' } }));
 
   return (
     <div className="space-y-5">
