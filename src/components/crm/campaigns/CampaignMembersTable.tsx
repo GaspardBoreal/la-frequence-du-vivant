@@ -229,9 +229,11 @@ export const CampaignMembersTable: React.FC<Props> = ({
                     <TableCell>
                       <span
                         className="rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-                        style={{ background: `hsl(${meta?.hue ?? '220 10% 50%'})` }}
+                        style={{
+                          background: `hsl(${useEngagement ? eng.hue : meta?.hue ?? '220 10% 50%'})`,
+                        }}
                       >
-                        {meta?.label ?? m.call_status}
+                        {useEngagement ? eng.label : meta?.label ?? m.call_status}
                       </span>
                       {m.refus_motif && (
                         <div className="mt-1 text-[11px] text-muted-foreground">{m.refus_motif}</div>
@@ -244,18 +246,63 @@ export const CampaignMembersTable: React.FC<Props> = ({
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm">{m.attempts}</TableCell>
                     <TableCell className="text-sm">
-                      {m.last_call_at ? new Date(m.last_call_at).toLocaleDateString('fr-FR') : '—'}
+                      {useEngagement ? (
+                        <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="inline-flex items-center gap-1">
+                            <Phone className="h-3 w-3" /> {m.attempts ?? 0}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <Mail className="h-3 w-3" /> {m.emails_sent ?? 0}
+                          </span>
+                        </span>
+                      ) : (
+                        m.attempts
+                      )}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {m.next_call_at ? new Date(m.next_call_at).toLocaleDateString('fr-FR') : '—'}
+                      {useEngagement
+                        ? fmtDay(
+                            [m.last_call_at, m.last_email_at]
+                              .filter(Boolean)
+                              .sort()
+                              .slice(-1)[0] as string | undefined,
+                          )
+                        : fmtDay(m.last_call_at)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {useEngagement ? (
+                        next ? (
+                          <span
+                            className={`inline-flex items-center gap-1 text-xs ${
+                              next.due ? 'font-medium text-primary' : 'text-muted-foreground'
+                            }`}
+                          >
+                            {next.canal === 'email' ? (
+                              <Mail className="h-3 w-3" />
+                            ) : (
+                              <Phone className="h-3 w-3" />
+                            )}
+                            {next.label}
+                            {next.at && !next.due ? ` · ${fmtDay(next.at)}` : ''}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Clos</span>
+                        )
+                      ) : (
+                        fmtDay(m.next_call_at)
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onCall(m.id)}>
-                          <Phone className="h-3.5 w-3.5" />
+                          {useEngagement && next?.canal === 'email' ? (
+                            <Mail className="h-3.5 w-3.5" />
+                          ) : (
+                            <Phone className="h-3.5 w-3.5" />
+                          )}
                         </Button>
+
                         <Button
                           size="icon"
                           variant="ghost"
