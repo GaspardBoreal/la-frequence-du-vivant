@@ -162,7 +162,9 @@ export const PaletteStudio: React.FC<Props> = ({
   onPatchZone,
   onDeleteZone,
   readOnly,
+  intent,
 }) => {
+
   const {
     waypoints: rawWaypoints,
     allWaypoints: rawAllWaypoints,
