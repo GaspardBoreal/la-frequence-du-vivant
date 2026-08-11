@@ -181,11 +181,12 @@ export const CampaignMembersTable: React.FC<Props> = ({
                 <Checkbox checked={allChecked} onCheckedChange={toggleAll} aria-label="Tout sélectionner" />
               </TableHead>
               <TableHead>Prospect</TableHead>
-              <TableHead>Statut d'appel</TableHead>
-              <TableHead>Tentatives</TableHead>
-              <TableHead>Dernier appel</TableHead>
-              <TableHead>Rappel</TableHead>
+              <TableHead>{useEngagement ? 'Engagement' : "Statut d'appel"}</TableHead>
+              <TableHead>{useEngagement ? 'Touches' : 'Tentatives'}</TableHead>
+              <TableHead>Dernier contact</TableHead>
+              <TableHead>{useEngagement ? 'Prochaine action' : 'Rappel'}</TableHead>
               <TableHead className="text-right">Actions</TableHead>
+
             </TableRow>
           </TableHeader>
           <TableBody>
