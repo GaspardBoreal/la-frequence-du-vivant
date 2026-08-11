@@ -67,6 +67,7 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
     members,
   );
   const taux = interet.taux;
+  const [interetOpen, setInteretOpen] = React.useState(false);
 
   const funnel = [
     { etape: 'Enrôlés', n: s.enroles ?? 0 },
