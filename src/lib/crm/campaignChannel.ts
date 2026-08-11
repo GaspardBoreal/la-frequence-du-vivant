@@ -290,9 +290,7 @@ export function interestRateOf(
         (m.emails_sent ?? 0) > 0 ||
         ['joint', 'interesse', 'refus'].includes(m.call_status as string),
     ).length;
-    const succes = members.filter(
-      (m) => m.call_status === 'interesse' || m.email_status === 'repondu',
-    ).length;
+    const succes = members.filter((m) => engagementOf(m) === 'gagne').length;
     return { touches, succes, taux: touches ? (succes / touches) * 100 : 0 };
   }
   const joints = counts?.joints ?? 0;
