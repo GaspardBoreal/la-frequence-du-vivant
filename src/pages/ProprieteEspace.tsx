@@ -562,6 +562,8 @@ const PropTabs: React.FC<{
             proprieteCenter={proprieteCenter}
             bio={bio}
             atelierOpen={atelierOpen}
+            atelierIntent={atelierIntent}
+
             onAtelierClose={closeAtelier}
           />
         </TabsContent>
