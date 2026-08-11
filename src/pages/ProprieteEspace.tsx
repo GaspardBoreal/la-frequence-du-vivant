@@ -389,9 +389,16 @@ const PropTabs: React.FC<{
     setAtelierOpen(true);
   }, [handleTabChange]);
 
+  // Ouverture de l'atelier depuis « Capteurs et sondes » (pose GPS d'un capteur).
+  React.useEffect(() => {
+    const onOpenAtelier = () => openAtelier();
+    window.addEventListener('propriete:open-atelier', onOpenAtelier);
+    return () => window.removeEventListener('propriete:open-atelier', onOpenAtelier);
+  }, [openAtelier]);
+
   const closeAtelier = React.useCallback(() => setAtelierOpen(false), []);
 
-  const projectActive = ['portrait', 'synthesize', 'palette', 'clinique'].includes(tab);
+  const projectActive = ['portrait', 'synthesize', 'palette', 'clinique', 'capteurs'].includes(tab);
   const projectLabel =
     tab === 'portrait'
       ? portraitSub === 'cadastre' ? 'Cadastre' : 'Galerie'
@@ -399,9 +406,12 @@ const PropTabs: React.FC<{
         ? 'Je synthétise'
         : tab === 'palette'
           ? 'Palette végétale'
-          : tab === 'clinique'
-            ? 'Clinique du jardin'
-            : '';
+          : tab === 'capteurs'
+            ? 'Capteurs et sondes'
+            : tab === 'clinique'
+              ? 'Clinique du jardin'
+              : '';
+
 
   return (
     <div className="space-y-5">
