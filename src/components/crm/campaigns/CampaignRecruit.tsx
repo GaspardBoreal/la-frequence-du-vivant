@@ -3,7 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Loader2, UserPlus, Search, CheckCircle2, Building2 } from 'lucide-react';
+import { Loader2, UserPlus, Search, CheckCircle2, Building2, ClipboardPaste } from 'lucide-react';
+import { PasteImportDialog } from '@/components/crm/PasteImportDialog';
+
 import { useCrmCompanies } from '@/hooks/useCrmCompanies';
 import {
   useAllCampaignMemberships,
@@ -20,6 +22,8 @@ interface Props {
 export const CampaignRecruit: React.FC<Props> = ({ campaign, enrolledCompanyIds }) => {
   const [search, setSearch] = React.useState('');
   const [picked, setPicked] = React.useState<Set<string>>(new Set());
+  const [pasteOpen, setPasteOpen] = React.useState(false);
+
 
   const filters = React.useMemo(
     () => ({
@@ -77,6 +81,10 @@ export const CampaignRecruit: React.FC<Props> = ({ campaign, enrolledCompanyIds 
           <UserPlus className="mr-1.5 h-3.5 w-3.5" />
           Enrôler la sélection ({picked.size})
         </Button>
+        <Button size="sm" variant="outline" onClick={() => setPasteOpen(true)}>
+          <ClipboardPaste className="mr-1.5 h-3.5 w-3.5" />
+          Coller une liste
+        </Button>
         <Button
           size="sm"
           disabled={candidates.length === 0 || enrollCompanies.isPending}
@@ -88,6 +96,9 @@ export const CampaignRecruit: React.FC<Props> = ({ campaign, enrolledCompanyIds 
           Tout enrôler ({candidates.length})
         </Button>
       </div>
+
+      <PasteImportDialog open={pasteOpen} onOpenChange={setPasteOpen} lockedCampaignId={campaign.id} />
+
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12 text-muted-foreground">
