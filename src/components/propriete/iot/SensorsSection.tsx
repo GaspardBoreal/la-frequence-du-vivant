@@ -187,7 +187,6 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
                 {rows.length === 0 && <span className="text-[10px] italic opacity-55">Aucune mesure encore reçue</span>}
               </div>
 
-              <div className="mt-2 flex items-center gap-1 text-[10px] text-[hsl(var(--ds-forest))]/60">
               <VitalityStrip
                 timestamps={pingsByCapteur[c.id] ?? []}
                 hours={24}
