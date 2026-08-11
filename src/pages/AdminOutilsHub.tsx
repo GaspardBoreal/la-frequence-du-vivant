@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio } from 'lucide-react';
 
 const OUTILS = [
   {
@@ -10,6 +10,13 @@ const OUTILS = [
     description: 'Citation journalière d\'auteurs engagés dans la biodiversité, bioacoustique, géopoétique.',
     icon: Sparkles,
     to: '/admin/outils/frequences',
+    active: true,
+  },
+  {
+    titre: 'Objets connectés',
+    description: 'Catalogue IoT : fournisseurs, types de capteurs et passerelle de réception des mesures.',
+    icon: Radio,
+    to: '/admin/iot',
     active: true,
   },
   {
