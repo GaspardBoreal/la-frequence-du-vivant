@@ -10,8 +10,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Trash2, ExternalLink, Search, Phone } from 'lucide-react';
+import { Trash2, ExternalLink, Search, Phone, Megaphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   CALL_STATUS_META,
   type CallStatus,
@@ -19,19 +20,25 @@ import {
 } from '@/types/crmCampaign';
 import { KANBAN_COLUMNS } from '@/types/crm';
 import { useCampaignMemberMutations } from '@/hooks/useCrmCampaigns';
+import { TransferCampaignDialog } from './TransferCampaignDialog';
+import type { TransferTarget } from '@/hooks/useCrmCampaigns';
 
 interface Props {
   campaignId: string;
+  campaignName?: string;
   members: CrmCampaignMember[];
   onCall: (memberId: string) => void;
 }
 
 const STATUSES = Object.keys(CALL_STATUS_META) as CallStatus[];
 
-export const CampaignMembersTable: React.FC<Props> = ({ campaignId, members, onCall }) => {
+export const CampaignMembersTable: React.FC<Props> = ({ campaignId, campaignName, members, onCall }) => {
   const [q, setQ] = React.useState('');
   const [status, setStatus] = React.useState<CallStatus | 'all'>('all');
   const { removeMember } = useCampaignMemberMutations(campaignId);
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+  const [transferTargets, setTransferTargets] = React.useState<TransferTarget[] | null>(null);
+  const [transferLabel, setTransferLabel] = React.useState<string | undefined>();
 
   const filtered = members.filter((m) => {
     if (status !== 'all' && m.call_status !== status) return false;
@@ -39,6 +46,18 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, members, onC
     const name = `${m.company?.nom_complet ?? ''} ${m.company?.denomination ?? ''} ${m.company?.ville ?? ''}`;
     return name.toLowerCase().includes(q.toLowerCase());
   });
+
+  const allChecked = filtered.length > 0 && filtered.every((m) => selectedIds.includes(m.id));
+  const toggleAll = () =>
+    setSelectedIds(allChecked ? [] : filtered.map((m) => m.id));
+  const toggleOne = (id: string) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const openTransfer = (ids: string[], label?: string) => {
+    setTransferTargets(ids.map((id) => ({ memberId: id })));
+    setTransferLabel(label);
+  };
+
 
   return (
     <div className="space-y-3">
