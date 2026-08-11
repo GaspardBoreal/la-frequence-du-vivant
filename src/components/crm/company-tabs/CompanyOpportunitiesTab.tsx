@@ -128,14 +128,8 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
               key={opp.id}
               opp={opp}
               onEdit={() => { setEditing(opp); setFormOpen(true); }}
-              onUnlink={() => handleUnlink(opp.id)}
-              onDelete={() => {
-                if (confirm('Supprimer définitivement cette opportunité ?')) {
-                  deleteOpportunity.mutate(opp.id, {
-                    onSuccess: () => qc.invalidateQueries({ queryKey: ['crm-company-opportunities', companyId] }),
-                  });
-                }
-              }}
+              onUnlink={() => setPending({ opp, action: 'unlink' })}
+              onDelete={() => setPending({ opp, action: 'delete' })}
             />
           ))}
         </AnimatePresence>
