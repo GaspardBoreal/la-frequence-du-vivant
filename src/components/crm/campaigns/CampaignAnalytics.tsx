@@ -86,14 +86,36 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
         <Tile label="Enrôlés" value={s.enroles ?? 0} />
-        <Tile label="Appels passés" value={s.appels ?? 0} hint={`${s.a_appeler ?? 0} restants`} />
-        <Tile
-          label="Détection d'intérêt"
-          value={`${taux.toFixed(0)}%`}
-          hint={`cible ${cible}%`}
-          hue={taux >= cible ? '150 65% 45%' : taux >= cible * 0.6 ? '38 92% 55%' : '0 75% 58%'}
-        />
-        <Tile label="Rappels du jour" value={s.rappels_du_jour ?? 0} hue="38 92% 55%" />
+        {canal !== 'email' && (
+          <Tile label="Appels passés" value={s.appels ?? 0} hint={`${s.a_appeler ?? 0} restants`} />
+        )}
+        {showEmail && (
+          <Tile
+            label="Emails envoyés"
+            value={mail.envoyes}
+            hint={`${mail.a_ecrire} à écrire`}
+            hue="270 65% 60%"
+          />
+        )}
+        {showEmail && (
+          <Tile
+            label="Taux de réponse"
+            value={`${mail.taux_reponse.toFixed(0)}%`}
+            hint={`${mail.repondus} réponses · ${mail.bounces} bounces`}
+            hue="270 65% 60%"
+          />
+        )}
+        {canal !== 'email' && (
+          <Tile
+            label="Détection d'intérêt"
+            value={`${taux.toFixed(0)}%`}
+            hint={`cible ${cible}%`}
+            hue={taux >= cible ? '150 65% 45%' : taux >= cible * 0.6 ? '38 92% 55%' : '0 75% 58%'}
+          />
+        )}
+        {canal !== 'email' && (
+          <Tile label="Rappels du jour" value={s.rappels_du_jour ?? 0} hue="38 92% 55%" />
+        )}
         <Tile label="Opportunités" value={s.opportunites ?? 0} hint={`${s.opp_actives ?? 0} actives`} />
         <Tile
           label="CA potentiel"
@@ -105,6 +127,31 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
           hue="150 65% 45%"
         />
       </div>
+
+      {canal === 'mixte' && (declencheur.telephone > 0 || declencheur.email > 0) && (
+        <Card className="p-4">
+          <div className="mb-2 text-sm font-semibold">Quel canal a déclenché l'intérêt ?</div>
+          <div className="flex h-3 overflow-hidden rounded-full bg-muted">
+            <div
+              style={{
+                width: `${(declencheur.telephone / (declencheur.telephone + declencheur.email)) * 100}%`,
+                background: 'hsl(210 90% 56%)',
+              }}
+            />
+            <div
+              style={{
+                width: `${(declencheur.email / (declencheur.telephone + declencheur.email)) * 100}%`,
+                background: 'hsl(270 65% 60%)',
+              }}
+            />
+          </div>
+          <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+            <span>Téléphone · {declencheur.telephone}</span>
+            <span>Email · {declencheur.email}</span>
+          </div>
+        </Card>
+      )}
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-4">
