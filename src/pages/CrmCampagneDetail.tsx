@@ -132,8 +132,10 @@ const CrmCampagneDetail: React.FC = () => {
             campaignId={campaign.id}
             campaignName={campaign.nom}
             members={members}
+            canal={canalOf(campaign)}
             onCall={(memberId) => { setStartAt(memberId); setCallOpen(true); }}
           />
+
         </TabsContent>
 
         <TabsContent value="recruter" className="pt-4">
