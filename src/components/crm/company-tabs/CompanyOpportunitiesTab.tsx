@@ -266,6 +266,9 @@ const OpportunityMiniCard: React.FC<{
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                 <DropdownMenuItem onClick={onEdit}><Pencil className="h-3.5 w-3.5 mr-2" /> Modifier</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTransferOpen(true)}>
+                  <Repeat className="h-3.5 w-3.5 mr-2" /> {campaign ? 'Changer de campagne' : 'Rattacher à une campagne'}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={onUnlink}><Unlink2 className="h-3.5 w-3.5 mr-2" /> Délier de l'entreprise</DropdownMenuItem>
                 <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
                   <Trash2 className="h-3.5 w-3.5 mr-2" /> Supprimer
