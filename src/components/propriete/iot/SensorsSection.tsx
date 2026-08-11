@@ -54,6 +54,15 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.3em] text-[hsl(var(--ds-forest))]">
             <Radio className="h-3 w-3" /> Veille des capteurs
+            {live && (
+              <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-[#3f7f52]/15 px-2 py-0.5 text-[9px] tracking-normal text-[#2f6340]">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3f7f52] opacity-70" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#3f7f52]" />
+                </span>
+                en direct
+              </span>
+            )}
           </div>
           <div className="ml-auto flex items-center gap-3 text-[11px] text-[hsl(var(--ds-forest-deep))]">
             <Dot color={HEALTH_COLOR.green} n={counts.green} label="en veille" />
