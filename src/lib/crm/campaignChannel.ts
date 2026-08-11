@@ -79,8 +79,9 @@ export const ENGAGEMENT_META: Record<
 };
 
 export function engagementOf(m: CrmCampaignMember): EngagementStatus {
-  if (m.call_status === 'interesse' || m.email_status === 'repondu') return 'gagne';
+  /* Un refus prime toujours : une réponse par email peut être négative. */
   if (m.call_status === 'refus' || m.email_status === 'desabonne') return 'refus';
+  if (m.call_status === 'interesse' || m.email_status === 'repondu') return 'gagne';
   if (m.call_status === 'joint') return 'joint';
   if (
     (m.attempts ?? 0) > 0 ||

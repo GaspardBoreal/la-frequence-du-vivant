@@ -116,6 +116,8 @@ export interface CampaignStats {
   opportunites: number;
   rappels_du_jour: number;
   opp_actives: number;
+  /** Opportunités ayant dépassé la première relance et non perdues. */
+  opp_qualifiees?: number;
   opp_gagnees: number;
   opp_perdues: number;
   ca_potentiel: number;
