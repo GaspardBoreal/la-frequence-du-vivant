@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import {
@@ -20,6 +21,7 @@ import {
   interestRateOf,
   usesEmail as canalUsesEmail,
 } from '@/lib/crm/campaignChannel';
+import { InterestDrawer } from './InterestDrawer';
 
 interface Props {
   campaign: CrmCampaign;
@@ -29,14 +31,21 @@ interface Props {
 }
 
 
-const Tile: React.FC<{ label: string; value: React.ReactNode; hint?: string; hue?: string }> = ({
-  label,
-  value,
-  hint,
-  hue,
-}) => (
+const Tile: React.FC<{
+  label: string;
+  value: React.ReactNode;
+  hint?: string;
+  hue?: string;
+  onClick?: () => void;
+}> = ({ label, value, hint, hue, onClick }) => (
   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-    <Card className="p-3">
+    <Card
+      className={`p-3 ${onClick ? 'cursor-pointer transition-colors hover:border-primary/60' : ''}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => (e.key === 'Enter' || e.key === ' ') && onClick() : undefined}
+    >
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="mt-1 text-2xl font-bold" style={hue ? { color: `hsl(${hue})` } : undefined}>
         {value}
@@ -60,6 +69,8 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
     members,
   );
   const taux = interet.taux;
+  const [searchParams] = useSearchParams();
+  const [interetOpen, setInteretOpen] = React.useState(searchParams.get('interet') === '1');
 
   const funnel = [
     { etape: 'Enrôlés', n: s.enroles ?? 0 },
@@ -87,8 +98,9 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
         <Tile
           label="Détection d'intérêt"
           value={`${taux.toFixed(0)}%`}
-          hint={`${interet.succes} / ${interet.touches} touchés · cible ${cible}%`}
+          hint={`${interet.succes} / ${interet.touches} touchés · voir les intérêts`}
           hue={taux >= cible ? '150 65% 45%' : taux >= cible * 0.6 ? '38 92% 55%' : '0 75% 58%'}
+          onClick={() => setInteretOpen(true)}
         />
         {(canal !== 'email' || (s.appels ?? 0) > 0) && (
           <Tile label="Appels passés" value={s.appels ?? 0} hint={`${s.a_appeler ?? 0} restants`} />
@@ -113,7 +125,12 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
           <Tile label="Rappels du jour" value={s.rappels_du_jour ?? 0} hue="38 92% 55%" />
         )}
 
-        <Tile label="Opportunités" value={s.opportunites ?? 0} hint={`${s.opp_actives ?? 0} actives`} />
+        <Tile
+          label="Opportunités qualifiées"
+          value={s.opp_qualifiees ?? s.opp_actives ?? 0}
+          hint={`${s.opportunites ?? 0} créées · ${s.opp_perdues ?? 0} perdues`}
+          hue="190 70% 45%"
+        />
         <Tile
           label="CA potentiel"
           value={new Intl.NumberFormat('fr-FR', {
@@ -207,6 +224,13 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
           </div>
         )}
       </Card>
+
+      <InterestDrawer
+        open={interetOpen}
+        onOpenChange={setInteretOpen}
+        campaign={campaign}
+        members={members}
+      />
     </div>
   );
 };

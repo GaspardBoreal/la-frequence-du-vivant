@@ -79,8 +79,9 @@ export const ENGAGEMENT_META: Record<
 };
 
 export function engagementOf(m: CrmCampaignMember): EngagementStatus {
-  if (m.call_status === 'interesse' || m.email_status === 'repondu') return 'gagne';
+  /* Un refus prime toujours : une réponse par email peut être négative. */
   if (m.call_status === 'refus' || m.email_status === 'desabonne') return 'refus';
+  if (m.call_status === 'interesse' || m.email_status === 'repondu') return 'gagne';
   if (m.call_status === 'joint') return 'joint';
   if (
     (m.attempts ?? 0) > 0 ||
@@ -96,6 +97,7 @@ export function engagementOf(m: CrmCampaignMember): EngagementStatus {
 
 /** Par quel canal le contact a-t-il réellement abouti ? */
 export function canalAbouti(m: CrmCampaignMember): CampaignCanal | null {
+  if (m.call_status === 'refus') return null;
   if (m.call_status === 'interesse') return 'telephone';
   if (m.email_status === 'repondu') return 'email';
   return null;
@@ -288,9 +290,7 @@ export function interestRateOf(
         (m.emails_sent ?? 0) > 0 ||
         ['joint', 'interesse', 'refus'].includes(m.call_status as string),
     ).length;
-    const succes = members.filter(
-      (m) => m.call_status === 'interesse' || m.email_status === 'repondu',
-    ).length;
+    const succes = members.filter((m) => engagementOf(m) === 'gagne').length;
     return { touches, succes, taux: touches ? (succes / touches) * 100 : 0 };
   }
   const joints = counts?.joints ?? 0;
