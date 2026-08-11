@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS crm_campaign_members_campaign_company_uniq ON public.crm_campaign_members (campaign_id, company_id) WHERE company_id IS NOT NULL;
