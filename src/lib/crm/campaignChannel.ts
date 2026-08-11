@@ -97,6 +97,7 @@ export function engagementOf(m: CrmCampaignMember): EngagementStatus {
 
 /** Par quel canal le contact a-t-il réellement abouti ? */
 export function canalAbouti(m: CrmCampaignMember): CampaignCanal | null {
+  if (m.call_status === 'refus') return null;
   if (m.call_status === 'interesse') return 'telephone';
   if (m.email_status === 'repondu') return 'email';
   return null;
