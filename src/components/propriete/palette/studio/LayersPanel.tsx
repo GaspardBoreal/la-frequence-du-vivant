@@ -75,7 +75,10 @@ interface Props {
 
   objetCountByCalque: Record<string, number>;
   readOnly?: boolean;
+  /** Amène la section « Vues de fond » sous les yeux à l'ouverture. */
+  scrollToSystem?: boolean;
 }
+
 
 const rowBase =
   'group flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11px] transition-colors';
@@ -128,8 +131,19 @@ export const LayersPanel: React.FC<Props> = ({
   scopeCounts,
   objetCountByCalque,
   readOnly,
+  scrollToSystem,
 }) => {
+  const systemRef = React.useRef<HTMLElement | null>(null);
+  React.useEffect(() => {
+    if (!scrollToSystem) return;
+    const t = window.setTimeout(
+      () => systemRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      120,
+    );
+    return () => window.clearTimeout(t);
+  }, [scrollToSystem]);
   const [editing, setEditing] = React.useState<string | null>(null);
+
   const [draft, setDraft] = React.useState('');
   const [showEmpty, setShowEmpty] = React.useState(false);
 
@@ -258,7 +272,8 @@ export const LayersPanel: React.FC<Props> = ({
   return (
     <div className="flex flex-col gap-4 text-[hsl(var(--ds-forest-deep))]">
       {/* Vues de fond */}
-      <section>
+      <section id="ds-vues-de-fond" ref={systemRef}>
+
         <h4 className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--ds-forest))]/70">
           <Layers className="h-3 w-3" /> Vues de fond
         </h4>

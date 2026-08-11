@@ -384,19 +384,30 @@ const PropTabs: React.FC<{
     handleTabChange('portrait');
   }, [handleTabChange]);
 
-  const openAtelier = React.useCallback(() => {
+  const [atelierIntent, setAtelierIntent] = React.useState<{ focus?: 'capteurs' } | null>(null);
+
+  const openAtelier = React.useCallback((intent?: { focus?: 'capteurs' } | null) => {
+    setAtelierIntent(intent ?? null);
     handleTabChange('palette');
     setAtelierOpen(true);
   }, [handleTabChange]);
 
   // Ouverture de l'atelier depuis « Capteurs et sondes » (pose GPS d'un capteur).
   React.useEffect(() => {
-    const onOpenAtelier = () => openAtelier();
+    const onOpenAtelier = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { focus?: 'capteurs'; layer?: string } | undefined;
+      openAtelier(detail?.focus || detail?.layer === 'capteurs' ? { focus: 'capteurs' } : null);
+    };
     window.addEventListener('propriete:open-atelier', onOpenAtelier);
     return () => window.removeEventListener('propriete:open-atelier', onOpenAtelier);
   }, [openAtelier]);
 
-  const closeAtelier = React.useCallback(() => setAtelierOpen(false), []);
+
+  const closeAtelier = React.useCallback(() => {
+    setAtelierOpen(false);
+    setAtelierIntent(null);
+  }, []);
+
 
   const projectActive = ['portrait', 'synthesize', 'palette', 'clinique', 'capteurs'].includes(tab);
   const projectLabel =
@@ -456,7 +467,7 @@ const PropTabs: React.FC<{
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => handleTabChange('synthesize')}>Je synthétise</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handleTabChange('palette')}>Palette végétale</DropdownMenuItem>
-                <DropdownMenuItem onSelect={openAtelier}>Atelier du jardin</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openAtelier(null)}>Atelier du jardin</DropdownMenuItem>
                 {/* Sous-section à part entière : capteurs et sondes, encadrée de vert */}
                 <div aria-hidden className="my-1 h-px bg-emerald-600/60" />
                 <DropdownMenuItem onSelect={() => handleTabChange('capteurs')}>Capteurs et sondes</DropdownMenuItem>
@@ -551,6 +562,8 @@ const PropTabs: React.FC<{
             proprieteCenter={proprieteCenter}
             bio={bio}
             atelierOpen={atelierOpen}
+            atelierIntent={atelierIntent}
+
             onAtelierClose={closeAtelier}
           />
         </TabsContent>

@@ -35,7 +35,7 @@ import { StepHeader } from '@/components/propriete/observe/StepHeader';
 import { AnalyzeCard } from '@/components/propriete/analyze/AnalyzeCard';
 import OuvragesRegister from '@/components/propriete/palette/OuvragesRegister';
 import PaletteRecommandee from '@/components/propriete/palette/recommandee/PaletteRecommandee';
-import PaletteStudio from '@/components/propriete/palette/studio/PaletteStudio';
+import PaletteStudio, { type AtelierIntent } from '@/components/propriete/palette/studio/PaletteStudio';
 
 import { geometryAreaM2 } from '@/components/propriete/palette/studio/geoMetrics';
 import ExcludedSpeciesMap from '@/components/propriete/palette/ExcludedSpeciesMap';
@@ -81,6 +81,7 @@ interface Props {
   bio?: PropertyBiodiversity;
   atelierOpen?: boolean;
   onAtelierClose?: () => void;
+  atelierIntent?: AtelierIntent | null;
 }
 
 export const TabPalette: React.FC<Props> = ({
@@ -93,6 +94,8 @@ export const TabPalette: React.FC<Props> = ({
   bio,
   atelierOpen = false,
   onAtelierClose,
+  atelierIntent,
+
 }) => {
   const palette = usePropertyPalette(proprieteId);
   const { zones, upsertZone, deleteZone } = useProprieteZones(proprieteId);
@@ -625,6 +628,8 @@ export const TabPalette: React.FC<Props> = ({
   const atelier = proprieteId ? (
     <PaletteStudio
       open={atelierOpen}
+      intent={atelierIntent}
+
       onClose={onAtelierClose ?? (() => {})}
       proprieteId={proprieteId}
       center={derivedCenter}
