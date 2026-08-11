@@ -113,22 +113,39 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
   const [campaignQuery, setCampaignQuery] = React.useState('');
   const [createOpportunities, setCreateOpportunities] = React.useState(false);
   const [oppStatut, setOppStatut] = React.useState('a_contacter');
-  const [assignToMe, setAssignToMe] = React.useState(true);
+  const [assigneeId, setAssigneeId] = React.useState<string | null>(null);
   const [running, setRunning] = React.useState(false);
   const [progress, setProgress] = React.useState<{ done: number; total: number } | null>(null);
-  const [report, setReport] = React.useState<{ imported: number; enrolled: number; opportunities: number; failed: number } | null>(null);
+  const [report, setReport] = React.useState<{ imported: number; enrolled: number; opportunities: number; failed: number; assignee: string | null } | null>(null);
 
   const { data: campaigns = [] } = useCrmCampaigns();
+  const { activeMembers } = useTeamMembers();
+  const [myMemberId, setMyMemberId] = React.useState<string | null>(null);
   const importMutation = useImportCompanies();
   const qc = useQueryClient();
   const navigate = useNavigate();
+
+  // Repère le membre d'équipe correspondant au compte connecté
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      const uid = data.user?.id;
+      if (cancelled || !uid) return;
+      const me = activeMembers.find((m) => m.user_id === uid);
+      setMyMemberId(me?.id ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [activeMembers]);
 
   React.useEffect(() => {
     if (open) {
       setText(''); setRows([]); setPicked(new Set()); setReport(null); setProgress(null);
       setCampaignId(lockedCampaignId ?? null);
+      setAssigneeId(myMemberId);
     }
-  }, [open, lockedCampaignId]);
+  }, [open, lockedCampaignId, myMemberId]);
+
 
   const detected = React.useMemo(() => extractIdentifiers(text), [text]);
 
