@@ -27,6 +27,7 @@ import { TabSynthesize } from '@/components/propriete/tabs/TabSynthesize';
 import { TabPalette } from '@/components/propriete/tabs/TabPalette';
 import { TabPortrait } from '@/components/propriete/portrait/TabPortrait';
 import { TabClinique } from '@/components/propriete/tabs/TabClinique';
+import SensorsSection from '@/components/propriete/iot/SensorsSection';
 import KenBurnsCarousel from '@/components/immersive-garden/KenBurnsCarousel';
 import { ProprieteVivantScopeProvider } from '@/contexts/ProprieteVivantScopeContext';
 import OrganicButton from '@/components/immersive-garden/OrganicButton';
