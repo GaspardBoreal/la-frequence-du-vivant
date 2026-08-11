@@ -377,6 +377,24 @@ export const LayersPanel: React.FC<Props> = ({
             </div>
           )}
 
+          {/* Capteurs et sondes · objets connectés déclarés sur la propriété */}
+          <div className={`${rowBase} hover:bg-[hsl(var(--ds-forest))]/5`}>
+            <IconBtn
+              title={system.capteurs ? 'Masquer' : 'Afficher'}
+              onClick={() => onSystem({ capteurs: !system.capteurs })}
+            >
+              {system.capteurs ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            </IconBtn>
+            <span className={system.capteurs ? '' : 'opacity-45'}>Capteurs et sondes</span>
+          </div>
+          {system.capteurs && (
+            <p className="pl-8 pb-1 text-[9.5px] italic leading-snug opacity-55">
+              Sondes et stations déclarées dans « Capteurs et sondes ». Glissez une pastille pour
+              affiner sa position, posez celles qui restent à situer depuis le bandeau de la carte.
+            </p>
+          )}
+
+
         </div>
       </section>
 
