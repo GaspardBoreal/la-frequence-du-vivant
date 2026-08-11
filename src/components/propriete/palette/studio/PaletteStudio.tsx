@@ -335,6 +335,42 @@ export const PaletteStudio: React.FC<Props> = ({
   const [placingCapteurId, setPlacingCapteurId] = React.useState<string | null>(null);
   const [openCapteur, setOpenCapteur] = React.useState<IotCapteur | null>(null);
 
+  /* ── Intention « pose de capteur » : le plan s'ouvre déjà réglé ────────── */
+  const intentAppliedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!open) {
+      intentAppliedRef.current = false;
+      return;
+    }
+    if (intent?.focus !== 'capteurs' || intentAppliedRef.current) return;
+    intentAppliedRef.current = true;
+    setPanelOpen(true);
+    setTab('calques');
+    setSystem((s) => ({
+      ...s,
+      capteurs: true,
+      vivant: false,
+      parcelles: true,
+      zones: true,
+      sol: true,
+      sante: true,
+    }));
+  }, [open, intent]);
+
+  // Un seul capteur à situer : on arme directement la pose au clic.
+  const armedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!open || intent?.focus !== 'capteurs') {
+      armedRef.current = false;
+      return;
+    }
+    if (armedRef.current || iotCapteurs.length === 0) return;
+    const toPlace = iotCapteurs.filter((c) => c.lat == null || c.lng == null);
+    armedRef.current = true;
+    if (toPlace.length === 1) setPlacingCapteurId(toPlace[0].id);
+  }, [open, intent, iotCapteurs]);
+
+
 
 
   const focusPoints = React.useMemo<FocusPoint[]>(
