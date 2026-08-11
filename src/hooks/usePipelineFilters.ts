@@ -107,6 +107,28 @@ export function usePipelineFilters(): UsePipelineFiltersResult {
 
   const allStagesActive = stagesFilter.length === ALL_STAGES.length;
 
+  // --- Campagnes ---
+  const campaignsFilter = React.useMemo<string[]>(() => {
+    const raw = searchParams.get('campaigns');
+    if (!raw) return [];
+    return raw.split(',').map((s) => s.trim()).filter(Boolean);
+  }, [searchParams]);
+
+  const setCampaignsFilter = React.useCallback(
+    (next: string[]) => {
+      setSearchParams(
+        (prev) => {
+          const p = new URLSearchParams(prev);
+          if (next.length === 0) p.delete('campaigns');
+          else p.set('campaigns', next.join(','));
+          return p;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
   // --- Prédicat unifié ---
   const matchesAll = React.useCallback(
     (opp: CrmOpportunity) => {
@@ -121,9 +143,14 @@ export function usePipelineFilters(): UsePipelineFiltersResult {
       }
       // Étapes
       if (!allStagesActive && !stagesFilter.includes(opp.statut)) return false;
+      // Campagnes
+      if (campaignsFilter.length > 0) {
+        const cid = (opp as { campaign_id?: string | null }).campaign_id;
+        if (!cid || !campaignsFilter.includes(cid)) return false;
+      }
       return true;
     },
-    [actionsFilter, actionsMode, stagesFilter, allStagesActive],
+    [actionsFilter, actionsMode, stagesFilter, allStagesActive, campaignsFilter],
   );
 
   return {
@@ -134,6 +161,8 @@ export function usePipelineFilters(): UsePipelineFiltersResult {
     stagesFilter,
     setStagesFilter,
     allStagesActive,
+    campaignsFilter,
+    setCampaignsFilter,
     matchesAll,
   };
 }
