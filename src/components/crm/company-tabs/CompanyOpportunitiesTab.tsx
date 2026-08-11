@@ -66,6 +66,10 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
     }
   };
 
+  const [pending, setPending] = React.useState<
+    { opp: CompanyOpportunityRow; action: 'unlink' | 'delete' } | null
+  >(null);
+
   const handleUnlink = async (opportunityId: string) => {
     const { error } = await supabase
       .from('crm_opportunity_companies')
@@ -76,6 +80,19 @@ export const CompanyOpportunitiesTab: React.FC<Props> = ({ companyId, companyNam
     else {
       toast.success('Opportunité déliée');
       qc.invalidateQueries({ queryKey: ['crm-company-opportunities', companyId] });
+    }
+  };
+
+  const confirmPending = async () => {
+    if (!pending) return;
+    const { opp, action } = pending;
+    setPending(null);
+    if (action === 'unlink') {
+      await handleUnlink(opp.id);
+    } else {
+      deleteOpportunity.mutate(opp.id, {
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['crm-company-opportunities', companyId] }),
+      });
     }
   };
 
