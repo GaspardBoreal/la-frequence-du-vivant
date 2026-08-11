@@ -472,11 +472,16 @@ const CrmAnnuaire: React.FC = () => {
                   <span className="text-xs text-muted-foreground">
                     {companies.length} entreprise{companies.length > 1 ? 's' : ''}
                   </span>
+                  <Button size="sm" variant="outline" onClick={() => setPasteOpen(true)} className="gap-1.5">
+                    <ClipboardPaste className="h-4 w-4" />
+                    Coller une liste
+                  </Button>
                   <Button size="sm" onClick={() => setManualCreateOpen(true)} className="gap-1.5">
                     <Plus className="h-4 w-4" />
                     Nouvelle entreprise
                   </Button>
                 </>
+
               }
               chips={buildCompanyChips()}
               onClearAll={() => clearCompanyFilters()}
