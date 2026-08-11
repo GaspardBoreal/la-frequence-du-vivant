@@ -126,12 +126,6 @@ export const CampaignAnalytics: React.FC<Props> = ({ campaign, stats, daily = []
         )}
 
         <Tile
-          label="Opportunités qualifiées"
-          value={s.opp_qualifiees ?? s.opp_actives ?? 0}
-          hint={`${s.opportunites ?? 0} créées · ${s.opp_perdues ?? 0} perdues`}
-          hue="190 70% 45%"
-        />
-        <Tile
           label="CA potentiel"
           value={new Intl.NumberFormat('fr-FR', {
             style: 'currency',
