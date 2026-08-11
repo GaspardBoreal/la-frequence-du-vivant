@@ -929,8 +929,13 @@ export type Database = {
           company_id: string | null
           contact_id: string | null
           created_at: string
+          email_status: string
+          emails_sent: number
           id: string
           last_call_at: string | null
+          last_email_at: string | null
+          next_action_at: string | null
+          next_action_canal: string | null
           next_call_at: string | null
           notes: string | null
           opportunity_id: string | null
@@ -946,8 +951,13 @@ export type Database = {
           company_id?: string | null
           contact_id?: string | null
           created_at?: string
+          email_status?: string
+          emails_sent?: number
           id?: string
           last_call_at?: string | null
+          last_email_at?: string | null
+          next_action_at?: string | null
+          next_action_canal?: string | null
           next_call_at?: string | null
           notes?: string | null
           opportunity_id?: string | null
@@ -963,8 +973,13 @@ export type Database = {
           company_id?: string | null
           contact_id?: string | null
           created_at?: string
+          email_status?: string
+          emails_sent?: number
           id?: string
           last_call_at?: string | null
+          last_email_at?: string | null
+          next_action_at?: string | null
+          next_action_canal?: string | null
           next_call_at?: string | null
           notes?: string | null
           opportunity_id?: string | null
@@ -1005,6 +1020,7 @@ export type Database = {
       }
       crm_campaigns: {
         Row: {
+          canal: string
           ciblage: Json
           couleur: string | null
           created_at: string
@@ -1023,6 +1039,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          canal?: string
           ciblage?: Json
           couleur?: string | null
           created_at?: string
@@ -1041,6 +1058,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          canal?: string
           ciblage?: Json
           couleur?: string | null
           created_at?: string
@@ -1430,6 +1448,7 @@ export type Database = {
       crm_email_logs: {
         Row: {
           body_preview: string | null
+          campaign_id: string | null
           contact_id: string | null
           email_type: string
           error_message: string | null
@@ -1444,6 +1463,7 @@ export type Database = {
         }
         Insert: {
           body_preview?: string | null
+          campaign_id?: string | null
           contact_id?: string | null
           email_type: string
           error_message?: string | null
@@ -1458,6 +1478,7 @@ export type Database = {
         }
         Update: {
           body_preview?: string | null
+          campaign_id?: string | null
           contact_id?: string | null
           email_type?: string
           error_message?: string | null
@@ -1471,6 +1492,13 @@ export type Database = {
           subject?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "crm_email_logs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "crm_email_logs_contact_id_fkey"
             columns: ["contact_id"]

@@ -10,38 +10,63 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Trash2, ExternalLink, Search, Phone, Megaphone } from 'lucide-react';
+import { Trash2, ExternalLink, Search, Phone, Megaphone, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   CALL_STATUS_META,
   type CallStatus,
+  type CampaignCanal,
   type CrmCampaignMember,
 } from '@/types/crmCampaign';
 import { KANBAN_COLUMNS } from '@/types/crm';
 import { useCampaignMemberMutations } from '@/hooks/useCrmCampaigns';
 import { TransferCampaignDialog } from './TransferCampaignDialog';
 import type { TransferTarget } from '@/hooks/useCrmCampaigns';
+import {
+  ENGAGEMENT_META,
+  engagementOf,
+  nextActionOf,
+  type EngagementStatus,
+} from '@/lib/crm/campaignChannel';
 
 interface Props {
   campaignId: string;
   campaignName?: string;
   members: CrmCampaignMember[];
   onCall: (memberId: string) => void;
+  canal?: CampaignCanal;
 }
 
 const STATUSES = Object.keys(CALL_STATUS_META) as CallStatus[];
+const ENGAGEMENTS = Object.keys(ENGAGEMENT_META) as EngagementStatus[];
 
-export const CampaignMembersTable: React.FC<Props> = ({ campaignId, campaignName, members, onCall }) => {
+const fmtDay = (d?: string | null) =>
+  d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : '—';
+
+export const CampaignMembersTable: React.FC<Props> = ({
+  campaignId,
+  campaignName,
+  members,
+  onCall,
+  canal = 'telephone',
+}) => {
   const [q, setQ] = React.useState('');
-  const [status, setStatus] = React.useState<CallStatus | 'all'>('all');
+  const [status, setStatus] = React.useState<string>('all');
   const { removeMember } = useCampaignMemberMutations(campaignId);
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const [transferTargets, setTransferTargets] = React.useState<TransferTarget[] | null>(null);
   const [transferLabel, setTransferLabel] = React.useState<string | undefined>();
 
+  /* Au téléphone on filtre par issue d'appel ; dès qu'il y a de l'email,
+     on filtre par statut d'engagement consolidé. */
+  const useEngagement = canal !== 'telephone';
+
   const filtered = members.filter((m) => {
-    if (status !== 'all' && m.call_status !== status) return false;
+    if (status !== 'all') {
+      const key = useEngagement ? engagementOf(m) : (m.call_status as string);
+      if (key !== status) return false;
+    }
     if (!q.trim()) return true;
     const name = `${m.company?.nom_complet ?? ''} ${m.company?.denomination ?? ''} ${m.company?.ville ?? ''}`;
     return name.toLowerCase().includes(q.toLowerCase());
@@ -57,6 +82,7 @@ export const CampaignMembersTable: React.FC<Props> = ({ campaignId, campaignName
     setTransferTargets(ids.map((id) => ({ memberId: id })));
     setTransferLabel(label);
   };
+
 
 
   return (

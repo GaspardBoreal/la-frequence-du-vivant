@@ -15,8 +15,10 @@ import { CampaignAnalytics } from '@/components/crm/campaigns/CampaignAnalytics'
 import { CampaignMembersTable } from '@/components/crm/campaigns/CampaignMembersTable';
 import { CampaignRecruit } from '@/components/crm/campaigns/CampaignRecruit';
 import { CampaignFormDialog } from '@/components/crm/campaigns/CampaignFormDialog';
-import { CallRoom } from '@/components/crm/campaigns/CallRoom';
+import { CampaignWorkbench } from '@/components/crm/campaigns/CampaignWorkbench';
+import { canalOf, CANAL_META } from '@/lib/crm/campaignChannel';
 import { CAMPAIGN_STATUT_OPTIONS, type CrmCampaign } from '@/types/crmCampaign';
+
 
 const CrmCampagneDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -90,6 +92,13 @@ const CrmCampagneDetail: React.FC = () => {
               >
                 {statut?.label}
               </span>
+              <span
+                className="rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
+                style={{ background: `hsl(${CANAL_META[canalOf(campaign)].hue})` }}
+              >
+                {CANAL_META[canalOf(campaign)].label}
+              </span>
+
             </h1>
             {campaign.description && (
               <p className="mt-1 max-w-2xl text-sm crm-muted">{campaign.description}</p>
@@ -100,8 +109,9 @@ const CrmCampagneDetail: React.FC = () => {
               <Pencil className="mr-1.5 h-4 w-4" /> Réglages
             </Button>
             <Button onClick={() => { setStartAt(null); setCallOpen(true); }}>
-              <Phone className="mr-1.5 h-4 w-4" /> Salle d'appels
+              <Phone className="mr-1.5 h-4 w-4" /> {CANAL_META[canalOf(campaign)].atelier}
             </Button>
+
           </div>
         </div>
       </motion.div>
@@ -143,7 +153,7 @@ const CrmCampagneDetail: React.FC = () => {
         isSubmitting={updateCampaign.isPending}
       />
 
-      <CallRoom
+      <CampaignWorkbench
         open={callOpen}
         onOpenChange={(o) => {
           setCallOpen(o);
@@ -153,6 +163,7 @@ const CrmCampagneDetail: React.FC = () => {
         members={members}
         startAtId={startAt}
       />
+
     </div>
   );
 };
