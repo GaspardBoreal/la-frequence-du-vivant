@@ -10,7 +10,7 @@ import {
   CAMPAIGN_OBJECTIF_OPTIONS,
   type CrmCampaign,
 } from '@/types/crmCampaign';
-import { canalOf, CANAL_META } from '@/lib/crm/campaignChannel';
+import { canalOf, CANAL_META, interestRateOf } from '@/lib/crm/campaignChannel';
 
 interface Props {
   campaign: CrmCampaign;
