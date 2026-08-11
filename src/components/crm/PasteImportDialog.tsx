@@ -268,6 +268,7 @@ export const PasteImportDialog: React.FC<Props> = ({ open, onOpenChange, lockedC
                   statut: oppStatut,
                   source: 'campagne',
                   campaign_id: campaignId,
+                  assigned_to: assigneeId,
                   created_by: uid,
                 } as any)
                 .select('id')
