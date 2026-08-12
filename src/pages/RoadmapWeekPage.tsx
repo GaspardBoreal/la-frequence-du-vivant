@@ -30,9 +30,15 @@ const RoadmapWeekPage: React.FC = () => {
   const week = weeks.find(
     (w) => String(w.iso_year) === String(year) && String(w.iso_week) === String(weekNo),
   );
-  const { data: entries = [] } = useRoadmapEntries(week ? [week.id] : []);
+  const weekIds = React.useMemo(() => weeks.map((w) => w.id), [weeks]);
+  const { data: allEntries = [] } = useRoadmapEntries(weekIds);
+  const entries = React.useMemo(
+    () => (week ? allEntries.filter((e) => e.week_id === week.id) : []),
+    [allEntries, week],
+  );
 
   const shown = audience ? entries.filter((e) => e.audiences.includes(audience)) : entries;
+
 
   const share = async () => {
     try {
