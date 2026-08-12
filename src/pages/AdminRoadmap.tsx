@@ -321,7 +321,15 @@ const AdminRoadmap: React.FC = () => {
           )}
         </main>
       </div>
+
+      <CreateWeekDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        existing={weeks}
+        onCreated={setSelectedId}
+      />
     </div>
+
   );
 };
 
