@@ -82,20 +82,30 @@ const AdminRoadmap: React.FC = () => {
 
   const compose = async () => {
     if (!week) return;
+    const hasDigest = digest && Object.keys(digest).length > 0;
+    if (!raw.trim() && !hasDigest) {
+      toast.error('Ajoutez vos notes ou lancez « Relever l’activité réelle » avant de composer.');
+      return;
+    }
     setBusy('compose');
     try {
       const { data, error } = await supabase.functions.invoke('roadmap-compose', {
-        body: { week, rawNotes: raw, activity: digest ?? {} },
+        body: {
+          raw,
+          digest: hasDigest ? digest : null,
+          periode: `Semaine ${week.iso_week}/${week.iso_year} (${week.starts_on} → ${week.ends_on})`,
+        },
       });
       if (error) throw error;
       const payload = data as any;
-      if (payload?.narrative || payload?.title) {
+      if (payload?.narrative || payload?.week_title) {
         await upsertWeek.mutateAsync({
           ...week,
-          title: payload.title || week.title,
+          title: payload.week_title || week.title,
           narrative: payload.narrative ?? week.narrative,
         });
       }
+
       const proposals = payload?.entries ?? [];
       for (let i = 0; i < proposals.length; i += 1) {
         const p = proposals[i];
