@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import EntryEditor from '@/components/roadmap/admin/EntryEditor';
 import SocialStudio from '@/components/roadmap/admin/SocialStudio';
+import CreateWeekDialog from '@/components/roadmap/admin/CreateWeekDialog';
 import { useRoadmapAdmin, useRoadmapEntries, useRoadmapWeeks } from '@/hooks/roadmap/useRoadmap';
 import { isoWeekInfo, weekRangeLabel, type RoadmapWeek } from '@/lib/roadmap/types';
 
@@ -28,6 +29,8 @@ const AdminRoadmap: React.FC = () => {
   const { data: weeks = [] } = useRoadmapWeeks(true);
   const { upsertWeek, deleteWeek, saveEntry } = useRoadmapAdmin();
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const [createOpen, setCreateOpen] = React.useState(false);
+  const todayIso = React.useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [raw, setRaw] = React.useState('');
   const [busy, setBusy] = React.useState<'digest' | 'compose' | null>(null);
   const [digest, setDigest] = React.useState<Record<string, number> | null>(null);
@@ -160,9 +163,13 @@ const AdminRoadmap: React.FC = () => {
                 Voir la page publique
               </Link>
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
+              <CalendarDays className="mr-2 h-4 w-4" /> Autre semaine…
+            </Button>
             <Button size="sm" onClick={createCurrentWeek}>
               <Plus className="mr-2 h-4 w-4" /> Semaine en cours
             </Button>
+
           </div>
         </div>
       </header>
@@ -189,7 +196,14 @@ const AdminRoadmap: React.FC = () => {
                 </Badge>
               </div>
               <div className="mt-1 text-sm font-medium text-foreground">{w.title}</div>
-              <div className="text-[11px] text-muted-foreground">{weekRangeLabel(w)}</div>
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                {weekRangeLabel(w)}
+                {w.status === 'draft' && w.ends_on < todayIso && (
+                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide">
+                    rétrospective
+                  </span>
+                )}
+              </div>
             </button>
           ))}
           {weeks.length === 0 && (
@@ -307,7 +321,15 @@ const AdminRoadmap: React.FC = () => {
           )}
         </main>
       </div>
+
+      <CreateWeekDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        existing={weeks}
+        onCreated={setSelectedId}
+      />
     </div>
+
   );
 };
 
