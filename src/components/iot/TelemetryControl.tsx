@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, AlertTriangle, CheckCircle2, ChevronDown, MoonStar, Radio, Send, ShieldX } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, ChevronDown, Inbox, MoonStar, Radio, Send, ShieldX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
 import {
