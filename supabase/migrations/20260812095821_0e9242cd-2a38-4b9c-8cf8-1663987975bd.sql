@@ -1,0 +1,1 @@
+grant execute on function public.get_iot_trust_report(timestamptz) to supabase_read_only_user;
