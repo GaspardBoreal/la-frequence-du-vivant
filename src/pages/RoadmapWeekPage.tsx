@@ -138,6 +138,17 @@ const RoadmapWeekPage: React.FC = () => {
               </div>
             </header>
 
+            {weeks.length > 1 && (
+              <div className="mb-8">
+                <FriseVivante
+                  weeks={weeks}
+                  entries={allEntries}
+                  audience={audience}
+                  activeWeekId={week.id}
+                />
+              </div>
+            )}
+
             {shown.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border/70 p-8 text-center text-sm text-muted-foreground">
                 Aucune nouveauté pour ce public cette semaine.
@@ -149,6 +160,19 @@ const RoadmapWeekPage: React.FC = () => {
                 ))}
               </div>
             )}
+
+            {shown.some((e) => (e.medias?.length ?? 0) > 0) && (
+              <section className="mt-12">
+                <h2 className="mb-4 text-sm uppercase tracking-wider text-muted-foreground">
+                  La planche de preuves
+                </h2>
+                <PlancheDePreuves
+                  medias={shown.flatMap((e) => e.medias ?? [])}
+                  onOpen={setZoom}
+                />
+              </section>
+            )}
+
           </>
         )}
       </main>
