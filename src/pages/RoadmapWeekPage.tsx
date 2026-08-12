@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button';
 import Footer from '@/components/Footer';
 import RoadmapNav from '@/components/roadmap/RoadmapNav';
 import EntryCard from '@/components/roadmap/EntryCard';
+import FriseVivante from '@/components/roadmap/viz/FriseVivante';
+import PlancheDePreuves from '@/components/roadmap/viz/PlancheDePreuves';
 import MediaLightbox from '@/components/roadmap/MediaLightbox';
+
 import { useRoadmapEntries, useRoadmapWeeks } from '@/hooks/roadmap/useRoadmap';
 import {
   AUDIENCES,
