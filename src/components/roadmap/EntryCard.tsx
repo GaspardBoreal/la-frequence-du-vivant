@@ -1,6 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import ScreenshotFrame from './ScreenshotFrame';
+import EntryGlyph from './viz/EntryGlyph';
 import {
   AUDIENCES,
   pitchFor,
@@ -23,7 +24,12 @@ const EntryCard: React.FC<Props> = ({ entry, audience, onOpenMedia }) => {
   return (
     <article className="rounded-2xl border border-border/60 bg-card/70 p-5 shadow-sm backdrop-blur transition hover:border-primary/40 hover:shadow-md">
       <header className="mb-3 flex flex-wrap items-start justify-between gap-2">
-        <h3 className="text-lg font-semibold leading-snug text-foreground">{entry.title}</h3>
+        <div className="flex items-start gap-3">
+          {medias.length === 0 && (
+            <EntryGlyph domain={entry.domain} seed={entry.id} className="mt-0.5 h-11 w-11 shrink-0" />
+          )}
+          <h3 className="text-lg font-semibold leading-snug text-foreground">{entry.title}</h3>
+        </div>
         <div className="flex flex-wrap gap-1.5">
           {entry.domain && (
             <Badge variant="secondary" className="text-[11px]">{entry.domain}</Badge>
@@ -43,6 +49,7 @@ const EntryCard: React.FC<Props> = ({ entry, audience, onOpenMedia }) => {
           {entry.body}
         </p>
       )}
+
 
       {medias.length > 0 && (
         <div
