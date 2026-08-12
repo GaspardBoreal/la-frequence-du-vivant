@@ -342,6 +342,15 @@ function App() {
                 <AdminIot />
               </AdminAuth>
             } />
+            <Route path="/admin/roadmap" element={
+              <AdminAuth>
+                <AdminRoadmap />
+              </AdminAuth>
+            } />
+            <Route path="/roadmap" element={<RoadmapPublic />} />
+            <Route path="/roadmap/semaine/:year/:week" element={<RoadmapWeekPage />} />
+            <Route path="/roadmap/:audience" element={<RoadmapPublic />} />
+
             <Route path="/propriete/:slug" element={<ProprieteEspace />} />
 
             <Route path="/admin/outils" element={
