@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import EntryEditor from '@/components/roadmap/admin/EntryEditor';
 import SocialStudio from '@/components/roadmap/admin/SocialStudio';
+import CreateWeekDialog from '@/components/roadmap/admin/CreateWeekDialog';
 import { useRoadmapAdmin, useRoadmapEntries, useRoadmapWeeks } from '@/hooks/roadmap/useRoadmap';
 import { isoWeekInfo, weekRangeLabel, type RoadmapWeek } from '@/lib/roadmap/types';
 
