@@ -101,40 +101,8 @@ export const TelemetryControl: React.FC = () => {
       </section>
 
       {/* Journal des livraisons */}
-      <section className="space-y-2">
-        <h3 className="text-sm font-semibold">Journal des livraisons · {deliveries.length}</h3>
-        <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-          {deliveries.map((d) => {
-            const ok = d.signature_valid && !d.error;
-            return (
-              <div key={d.id} className="text-sm">
-                <button
-                  onClick={() => setOpen(open === d.id ? null : d.id)}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted/40"
-                >
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${ok ? 'bg-emerald-500' : d.signature_valid === false ? 'bg-red-500' : 'bg-amber-500'}`} />
-                  <span className="min-w-0 flex-1">
-                    <span className="truncate font-medium">{d.serial_number ?? 'sonde inconnue'}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {d.mesures_count ?? 0} mesure{(d.mesures_count ?? 0) > 1 ? 's' : ''} · {fmtAgo(d.created_at)}
-                      {d.error ? ` · ${d.error}` : ''}
-                    </span>
-                  </span>
-                  <ChevronDown className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open === d.id ? 'rotate-180' : ''}`} />
-                </button>
-                {open === d.id && (
-                  <pre className="max-h-72 overflow-auto border-t border-border bg-muted/30 px-3 py-2 text-[11px] leading-relaxed">
-                    {JSON.stringify({ delivery_id: d.delivery_id, event: d.event, signature_valid: d.signature_valid, payload: d.payload }, null, 2)}
-                  </pre>
-                )}
-              </div>
-            );
-          })}
-          {deliveries.length === 0 && (
-            <p className="p-4 text-sm text-muted-foreground">Aucune livraison enregistrée : la passerelle n’a encore rien émis.</p>
-          )}
-        </div>
-      </section>
+      <JournalLivraisons deliveries={deliveries} open={open} setOpen={setOpen} />
+
     </div>
   );
 };
