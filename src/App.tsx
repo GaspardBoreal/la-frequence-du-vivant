@@ -121,6 +121,7 @@ const PartenaireAudit = lazyWithRetry(() => import('./pages/PartenaireAudit'));
 const PartenaireOffre = lazyWithRetry(() => import('./pages/PartenaireOffre'));
 const PartenaireFeuilleDeRoute = lazyWithRetry(() => import('./pages/PartenaireFeuilleDeRoute'));
 const TrustInFrequenceVivant = lazyWithRetry(() => import('./pages/TrustInFrequenceVivant'));
+const TrustTableRonde = lazyWithRetry(() => import('./pages/TrustTableRonde'));
 
 const AgentIA = lazyWithRetry(() => import('./pages/AgentIA'));
 const AgentIAFiche = lazyWithRetry(() => import('./pages/AgentIAFiche'));
