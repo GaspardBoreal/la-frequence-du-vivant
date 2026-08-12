@@ -124,7 +124,10 @@ export const SensorDrawer: React.FC<Props> = ({ capteur, latest, onClose, onLoca
 
         <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
           <Badge icon={Radio} label={health.label} color={HEALTH_COLOR[health.status]} />
-          <Badge icon={Battery} label={capteur.battery_pct != null ? `${Math.round(capteur.battery_pct)} %` : '—'} />
+          <Badge
+            icon={Battery}
+            label={capteur.battery_pct != null && capteur.battery_pct > 0 ? `${Math.round(capteur.battery_pct)} %` : 'non communiquée'}
+          />
           <Badge icon={Signal} label={capteur.rssi != null ? `${capteur.rssi} dBm` : '—'} />
           <Badge icon={History} label={fmtHorodatage(capteur.last_seen_at)} />
           <Badge
