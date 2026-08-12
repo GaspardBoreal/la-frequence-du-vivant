@@ -121,6 +121,7 @@ const PartenaireAudit = lazyWithRetry(() => import('./pages/PartenaireAudit'));
 const PartenaireOffre = lazyWithRetry(() => import('./pages/PartenaireOffre'));
 const PartenaireFeuilleDeRoute = lazyWithRetry(() => import('./pages/PartenaireFeuilleDeRoute'));
 const TrustInFrequenceVivant = lazyWithRetry(() => import('./pages/TrustInFrequenceVivant'));
+const TrustTableRonde = lazyWithRetry(() => import('./pages/TrustTableRonde'));
 
 const AgentIA = lazyWithRetry(() => import('./pages/AgentIA'));
 const AgentIAFiche = lazyWithRetry(() => import('./pages/AgentIAFiche'));
@@ -396,6 +397,7 @@ function App() {
 
             <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />
             <Route path="/trust-in-frequence-vivant" element={<TrustInFrequenceVivant />} />
+            <Route path="/trust-in-frequence-vivant/table-ronde" element={<TrustTableRonde />} />
             <Route path="/partenaires/:slug/offre" element={<PartenaireOffre />} />
             <Route path="/partenaires/:slug/:date" element={<PartenaireFeuilleDeRoute />} />
             <Route path="/partenaires/:slug" element={<PartenaireAudit />} />
