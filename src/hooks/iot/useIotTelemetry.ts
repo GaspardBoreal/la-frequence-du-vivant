@@ -157,7 +157,8 @@ export function useTelemetryCounters(deliveries: TelemetryDelivery[], capteurs: 
       return h > (c.silence_alert_hours ?? 6);
     }).length;
     return {
-      acceptees: recent.filter((d) => d.signature_valid && !d.error).length,
+      acceptees: recent.filter((d) => d.signature_valid && !d.error && (d.mesures_count ?? 0) > 0).length,
+      vides: recent.filter((d) => d.signature_valid && !d.error && (d.mesures_count ?? 0) === 0).length,
       refusees: recent.filter((d) => d.signature_valid === false).length,
       erreurs: recent.filter((d) => !!d.error && d.signature_valid !== false).length,
       silencieux,
