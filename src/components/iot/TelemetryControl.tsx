@@ -62,8 +62,9 @@ export const TelemetryControl: React.FC = () => {
       </div>
 
       {/* Compteurs 24 h */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Tile icon={<CheckCircle2 className="h-3.5 w-3.5" />} value={counters.acceptees} label="Livraisons acceptées · 24 h" />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <Tile icon={<CheckCircle2 className="h-3.5 w-3.5" />} value={counters.acceptees} label="Avec relevé · 24 h" />
+        <Tile icon={<Inbox className="h-3.5 w-3.5" />} value={counters.vides} label="Sans relevé · 24 h" tone="text-amber-600" />
         <Tile icon={<ShieldX className="h-3.5 w-3.5" />} value={counters.refusees} label="Signatures refusées · 24 h" tone="text-red-600" />
         <Tile icon={<AlertTriangle className="h-3.5 w-3.5" />} value={counters.erreurs} label="Erreurs de traitement · 24 h" tone="text-amber-600" />
         <Tile icon={<MoonStar className="h-3.5 w-3.5" />} value={counters.silencieux} label="Sondes silencieuses" tone="text-slate-600" />
