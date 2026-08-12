@@ -37,6 +37,17 @@ const RoadmapPublic: React.FC = () => {
     [weeks, entries, audience],
   );
 
+  /** Séries chronologiques pour les micro-sparklines des cartouches. */
+  const chrono = React.useMemo(
+    () => [...visibleWeeks].sort((a, b) => a.iso_year - b.iso_year || a.iso_week - b.iso_week),
+    [visibleWeeks],
+  );
+  const perWeek = React.useMemo(
+    () => chrono.map((w) => entries.filter((e) => e.week_id === w.id)),
+    [chrono, entries],
+  );
+
+
   const lastWeek = visibleWeeks[0];
   const lastEntries = lastWeek ? entries.filter((e) => e.week_id === lastWeek.id) : [];
 
