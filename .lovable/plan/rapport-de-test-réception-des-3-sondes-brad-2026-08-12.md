@@ -4,11 +4,13 @@ Vérification faite directement en base ce 12/08/2026 à 11 h (Paris), sur les 7
 
 ## Réponse à donner à BRAD : oui, on reçoit
 
-| Sonde | N° série | Dernier signal | Livraisons 72 h | Mesures 24 h |
-|---|---|---|---|---|
-| Sonde Potager d'Été | b26s002 | 12/08 10 h 41 | 124 | 84 |
-| Sonde Potager d'Hiver | b26s001 | 12/08 10 h 37 | 141 | 66 |
-| Sonde Verger | b26s003 | 12/08 11 h 00 | 56 | 17 |
+
+| Sonde                 | N° série | Dernier signal | Livraisons 72 h | Mesures 24 h |
+| --------------------- | -------- | -------------- | --------------- | ------------ |
+| Sonde Potager d'Été   | b26s002  | 12/08 10 h 41  | 124             | 84           |
+| Sonde Potager d'Hiver | b26s001  | 12/08 10 h 37  | 141             | 66           |
+| Sonde Verger          | b26s003  | 12/08 11 h 00  | 56              | 17           |
+
 
 - Signature HMAC : **330 livraisons valides**, une seule refusée (leur essai avant réglage de la clé).
 - Aucune erreur applicative sur les 3 vraies sondes ; horodatage, unités et fiche capteur à jour.
@@ -34,4 +36,6 @@ Reçu et exploité aujourd'hui : température de l'air, humidité de l'air, lumi
 
 - Lecture seule pour l'analyse ; aucune donnée modifiée.
 - Points 1 à 3 : affichage uniquement (`AdminIot`, `SensorDrawer`, `useIotTelemetry`), aucun changement de schéma.
-- Point 4 : suppression ciblée des lignes `iot_webhook_deliveries` avec `serial_number = 'test-probe-001'`, ou simple filtre d'affichage si vous préférez tout conserver.
+- Point 4 : simple filtre d'affichage si vous préférez tout conserver.  
+  
+Il faut publier les résultats dans une page hyper wahouhhh nommée TrustInFrequenceVivant protéger par mot de pase WINWINBRAD-LFDV
