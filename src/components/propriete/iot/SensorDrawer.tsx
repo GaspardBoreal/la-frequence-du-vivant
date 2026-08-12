@@ -124,7 +124,15 @@ export const SensorDrawer: React.FC<Props> = ({ capteur, latest, onClose, onLoca
 
         <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
           <Badge icon={Radio} label={health.label} color={HEALTH_COLOR[health.status]} />
-          <Badge icon={Battery} label={capteur.battery_pct != null ? `${Math.round(capteur.battery_pct)} %` : '—'} />
+          <Badge
+            icon={Battery}
+            label={capteur.battery_pct != null && capteur.battery_pct > 0 ? `${Math.round(capteur.battery_pct)} %` : 'non communiquée'}
+          />
+          {soil.length === 0 && latest.length > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-gold))]/50 bg-[hsl(var(--ds-gold))]/10 px-2 py-0.5 text-[10px] text-[hsl(var(--ds-forest-deep))]">
+              Données partielles · humidité de sol non transmise
+            </span>
+          )}
           <Badge icon={Signal} label={capteur.rssi != null ? `${capteur.rssi} dBm` : '—'} />
           <Badge icon={History} label={fmtHorodatage(capteur.last_seen_at)} />
           <Badge

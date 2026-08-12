@@ -132,7 +132,9 @@ export function sensorHealth(c: HealthInput, now = Date.now()): HealthResult {
     reasons.push(`Dernier signal il y a ${fmtDuree(hours)}`);
   }
 
-  if (typeof c.battery_pct === 'number') {
+  // Une batterie à 0 % signifie « champ non renseigné par la passerelle » (cas BRAD),
+  // pas une batterie vide : on n'alerte pas là-dessus.
+  if (typeof c.battery_pct === 'number' && c.battery_pct > 0) {
     if (c.battery_pct <= Math.max(5, Math.round(c.battery_alert_pct / 2))) {
       status = 'red';
       reasons.push(`Batterie critique · ${Math.round(c.battery_pct)} %`);
