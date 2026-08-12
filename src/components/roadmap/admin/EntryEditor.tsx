@@ -215,9 +215,9 @@ const EntryEditor: React.FC<Props> = ({ entry }) => {
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogFooter>
-      </AlertDialogContent>
+        </AlertDialogContent>
       </AlertDialog>
+
     </article>
   );
 };
