@@ -396,7 +396,6 @@ function App() {
 
             <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />
             <Route path="/trust-in-frequence-vivant" element={<TrustInFrequenceVivant />} />
-            <Route path="/TrustInFrequenceVivant" element={<TrustInFrequenceVivant />} />
             <Route path="/partenaires/:slug/offre" element={<PartenaireOffre />} />
             <Route path="/partenaires/:slug/:date" element={<PartenaireFeuilleDeRoute />} />
             <Route path="/partenaires/:slug" element={<PartenaireAudit />} />
