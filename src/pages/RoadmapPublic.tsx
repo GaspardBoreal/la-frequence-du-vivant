@@ -129,14 +129,32 @@ const RoadmapPublic: React.FC = () => {
           </section>
         )}
 
-        {audience === 'partenaire' && visibleWeeks.length > 1 && (
-          <section className="mb-12 rounded-2xl border border-border/60 bg-card/60 p-5">
-            <h2 className="mb-3 text-sm uppercase tracking-wider text-muted-foreground">
-              Cadence de livraison
-            </h2>
-            <CadenceChart weeks={visibleWeeks} entries={entries} />
+        {visibleWeeks.length > 0 && (
+          <section className="mb-12 space-y-8">
+            <div>
+              <h2 className="mb-3 text-sm uppercase tracking-wider text-muted-foreground">
+                La frise vivante
+              </h2>
+              <FriseVivante weeks={visibleWeeks} entries={entries} audience={audience} />
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-3xl border border-border/60 bg-card/50 p-5 backdrop-blur">
+                <h2 className="mb-2 text-sm uppercase tracking-wider text-muted-foreground">
+                  Où le projet a poussé
+                </h2>
+                <ConstellationDomaines entries={entries} audience={audience} />
+              </div>
+              <div className="rounded-3xl border border-border/60 bg-card/50 p-5 backdrop-blur">
+                <h2 className="mb-2 text-sm uppercase tracking-wider text-muted-foreground">
+                  Cadence de livraison
+                </h2>
+                <Sismographe weeks={visibleWeeks} entries={entries} />
+              </div>
+            </div>
           </section>
         )}
+
 
         {isLoading && (
           <p className="py-16 text-center text-sm text-muted-foreground">Chargement du journal…</p>
