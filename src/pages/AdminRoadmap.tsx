@@ -160,9 +160,13 @@ const AdminRoadmap: React.FC = () => {
                 Voir la page publique
               </Link>
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
+              <CalendarDays className="mr-2 h-4 w-4" /> Autre semaine…
+            </Button>
             <Button size="sm" onClick={createCurrentWeek}>
               <Plus className="mr-2 h-4 w-4" /> Semaine en cours
             </Button>
+
           </div>
         </div>
       </header>
