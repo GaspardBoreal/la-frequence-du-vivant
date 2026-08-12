@@ -162,7 +162,7 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: HEALTH_COLOR[h.status] }} />
                 )}
                 <span className="flex-1 truncate font-serif text-lg text-[hsl(var(--ds-forest-deep))]">{c.nom}</span>
-                {c.battery_pct != null && (
+                {c.battery_pct != null && c.battery_pct > 0 && (
                   <span className="inline-flex items-center gap-1 text-[10px] text-[hsl(var(--ds-forest))]/70">
                     <Battery className="h-3 w-3" /> {Math.round(c.battery_pct)} %
                   </span>
