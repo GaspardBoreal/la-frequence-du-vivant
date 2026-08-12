@@ -8135,6 +8135,242 @@ export type Database = {
         }
         Relationships: []
       }
+      roadmap_entries: {
+        Row: {
+          audiences: string[]
+          body: string | null
+          created_at: string
+          domain: string | null
+          id: string
+          pitch_marcheur: string | null
+          pitch_partenaire: string | null
+          pitch_proprietaire: string | null
+          position: number
+          promise: string | null
+          title: string
+          updated_at: string
+          week_id: string
+        }
+        Insert: {
+          audiences?: string[]
+          body?: string | null
+          created_at?: string
+          domain?: string | null
+          id?: string
+          pitch_marcheur?: string | null
+          pitch_partenaire?: string | null
+          pitch_proprietaire?: string | null
+          position?: number
+          promise?: string | null
+          title: string
+          updated_at?: string
+          week_id: string
+        }
+        Update: {
+          audiences?: string[]
+          body?: string | null
+          created_at?: string
+          domain?: string | null
+          id?: string
+          pitch_marcheur?: string | null
+          pitch_partenaire?: string | null
+          pitch_proprietaire?: string | null
+          position?: number
+          promise?: string | null
+          title?: string
+          updated_at?: string
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadmap_entries_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "roadmap_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roadmap_entry_media: {
+        Row: {
+          created_at: string
+          entry_id: string
+          id: string
+          media_id: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          entry_id: string
+          id?: string
+          media_id: string
+          position?: number
+        }
+        Update: {
+          created_at?: string
+          entry_id?: string
+          id?: string
+          media_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadmap_entry_media_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "roadmap_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roadmap_entry_media_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "roadmap_media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roadmap_media: {
+        Row: {
+          caption: string | null
+          created_at: string
+          height: number | null
+          id: string
+          kind: string
+          public_url: string
+          source_route: string | null
+          storage_path: string
+          updated_at: string
+          width: number | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          kind?: string
+          public_url: string
+          source_route?: string | null
+          storage_path: string
+          updated_at?: string
+          width?: number | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          kind?: string
+          public_url?: string
+          source_route?: string | null
+          storage_path?: string
+          updated_at?: string
+          width?: number | null
+        }
+        Relationships: []
+      }
+      roadmap_social_posts: {
+        Row: {
+          audience: string
+          body: string
+          created_at: string
+          hashtags: string[]
+          id: string
+          network: string
+          scheduled_for: string | null
+          status: string
+          updated_at: string
+          visual_media_id: string | null
+          week_id: string
+        }
+        Insert: {
+          audience: string
+          body?: string
+          created_at?: string
+          hashtags?: string[]
+          id?: string
+          network: string
+          scheduled_for?: string | null
+          status?: string
+          updated_at?: string
+          visual_media_id?: string | null
+          week_id: string
+        }
+        Update: {
+          audience?: string
+          body?: string
+          created_at?: string
+          hashtags?: string[]
+          id?: string
+          network?: string
+          scheduled_for?: string | null
+          status?: string
+          updated_at?: string
+          visual_media_id?: string | null
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadmap_social_posts_visual_media_id_fkey"
+            columns: ["visual_media_id"]
+            isOneToOne: false
+            referencedRelation: "roadmap_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roadmap_social_posts_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "roadmap_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roadmap_weeks: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          ends_on: string
+          id: string
+          iso_week: number
+          iso_year: number
+          narrative: string | null
+          published_at: string | null
+          starts_on: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          ends_on: string
+          id?: string
+          iso_week: number
+          iso_year: number
+          narrative?: string | null
+          published_at?: string | null
+          starts_on: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          ends_on?: string
+          id?: string
+          iso_week?: number
+          iso_year?: number
+          narrative?: string | null
+          published_at?: string | null
+          starts_on?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       search_logs: {
         Row: {
           clicked_id: string | null
@@ -10096,6 +10332,7 @@ export type Database = {
         Args: { p_marche_id?: string; p_name: string }
         Returns: string
       }
+      roadmap_week_is_public: { Args: { _week_id: string }; Returns: boolean }
       round_coord: { Args: { _v: number }; Returns: number }
       search_community_profiles_for_invite: {
         Args: { _event_id: string; _search: string }
