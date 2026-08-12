@@ -9681,6 +9681,7 @@ export type Database = {
           url: string
         }[]
       }
+      get_iot_trust_report: { Args: { p_since: string }; Returns: Json }
       get_marche_events_dashboard_stats:
         | {
             Args: {
