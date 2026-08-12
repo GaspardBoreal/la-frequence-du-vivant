@@ -138,3 +138,30 @@ export function weekRangeLabel(week: Pick<RoadmapWeek, 'starts_on' | 'ends_on'>)
     return '';
   }
 }
+
+export interface IsoWeekRef {
+  isoYear: number;
+  isoWeek: number;
+  startsOn: string;
+  endsOn: string;
+}
+
+/** Toutes les semaines ISO couvrant l'intervalle (bornes incluses), du plus ancien au plus récent. */
+export function isoWeeksBetween(from: Date, to: Date): IsoWeekRef[] {
+  if (from > to) return isoWeeksBetween(to, from);
+  const out: IsoWeekRef[] = [];
+  const seen = new Set<string>();
+  const cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  while (cursor <= to) {
+    const info = isoWeekInfo(cursor);
+    const key = `${info.isoYear}-${info.isoWeek}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(info);
+    }
+    cursor.setDate(cursor.getDate() + 7);
+  }
+  const last = isoWeekInfo(to);
+  if (!seen.has(`${last.isoYear}-${last.isoWeek}`)) out.push(last);
+  return out;
+}
