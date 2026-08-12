@@ -195,7 +195,14 @@ const AdminRoadmap: React.FC = () => {
                 </Badge>
               </div>
               <div className="mt-1 text-sm font-medium text-foreground">{w.title}</div>
-              <div className="text-[11px] text-muted-foreground">{weekRangeLabel(w)}</div>
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                {weekRangeLabel(w)}
+                {w.status === 'draft' && w.ends_on < todayIso && (
+                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide">
+                    rétrospective
+                  </span>
+                )}
+              </div>
             </button>
           ))}
           {weeks.length === 0 && (
