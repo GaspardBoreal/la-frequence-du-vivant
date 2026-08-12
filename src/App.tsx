@@ -120,6 +120,7 @@ const PublicAuditFrugal = lazyWithRetry(() => import('./pages/PublicAuditFrugal'
 const PartenaireAudit = lazyWithRetry(() => import('./pages/PartenaireAudit'));
 const PartenaireOffre = lazyWithRetry(() => import('./pages/PartenaireOffre'));
 const PartenaireFeuilleDeRoute = lazyWithRetry(() => import('./pages/PartenaireFeuilleDeRoute'));
+const TrustInFrequenceVivant = lazyWithRetry(() => import('./pages/TrustInFrequenceVivant'));
 
 const AgentIA = lazyWithRetry(() => import('./pages/AgentIA'));
 const AgentIAFiche = lazyWithRetry(() => import('./pages/AgentIAFiche'));
