@@ -97,6 +97,9 @@ const CommunityProfilesAdmin = lazyWithRetry(() => import('./pages/CommunityProf
 const OrganisateursAdmin = lazyWithRetry(() => import('./pages/OrganisateursAdmin'));
 const AdminProprietes = lazyWithRetry(() => import('./pages/AdminProprietes'));
 const AdminIot = lazyWithRetry(() => import('./pages/AdminIot'));
+const AdminRoadmap = lazyWithRetry(() => import('./pages/AdminRoadmap'));
+const RoadmapPublic = lazyWithRetry(() => import('./pages/RoadmapPublic'));
+const RoadmapWeekPage = lazyWithRetry(() => import('./pages/RoadmapWeekPage'));
 const ProprieteEspace = lazyWithRetry(() => import('./pages/ProprieteEspace'));
 const MarchesDuVivantExplorationMarcheur = lazyWithRetry(() => import('./pages/MarchesDuVivantExplorationMarcheur'));
 const AdminOutilsHub = lazyWithRetry(() => import('./pages/AdminOutilsHub'));
@@ -342,6 +345,15 @@ function App() {
                 <AdminIot />
               </AdminAuth>
             } />
+            <Route path="/admin/roadmap" element={
+              <AdminAuth>
+                <AdminRoadmap />
+              </AdminAuth>
+            } />
+            <Route path="/roadmap" element={<RoadmapPublic />} />
+            <Route path="/roadmap/semaine/:year/:week" element={<RoadmapWeekPage />} />
+            <Route path="/roadmap/:audience" element={<RoadmapPublic />} />
+
             <Route path="/propriete/:slug" element={<ProprieteEspace />} />
 
             <Route path="/admin/outils" element={

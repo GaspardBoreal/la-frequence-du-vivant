@@ -168,6 +168,26 @@ const AdminAccess: React.FC = () => {
             </Link>
           </Card>
 
+          {/* Roadmap vivante */}
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center mb-4">
+              <Radio className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Roadmap vivante</h2>
+            </div>
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
+              Composer l'édition hebdomadaire, l'illustrer de captures réelles, la publier
+              et préparer les publications LinkedIn, Instagram et Pinterest.
+            </p>
+            <Link to="/admin/roadmap">
+              <Button variant="outline" className="w-full">
+                <Radio className="h-4 w-4 mr-2" />
+                Ouvrir l'atelier hebdomadaire
+              </Button>
+            </Link>
+          </Card>
+
+
+
 
           {/* 7. Automations & Intégrations */}
           <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
