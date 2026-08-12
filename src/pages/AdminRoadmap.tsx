@@ -30,6 +30,7 @@ const AdminRoadmap: React.FC = () => {
   const { upsertWeek, deleteWeek, saveEntry } = useRoadmapAdmin();
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [createOpen, setCreateOpen] = React.useState(false);
+  const todayIso = React.useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [raw, setRaw] = React.useState('');
   const [busy, setBusy] = React.useState<'digest' | 'compose' | null>(null);
   const [digest, setDigest] = React.useState<Record<string, number> | null>(null);
