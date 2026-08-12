@@ -95,18 +95,29 @@ const RoadmapPublic: React.FC = () => {
 
           <LiveStats
             stats={[
-              { label: 'Semaines publiées', value: visibleWeeks.length },
-              { label: 'Nouveautés', value: entries.length },
+              {
+                label: 'Semaines publiées',
+                value: visibleWeeks.length,
+                series: perWeek.map((_, i) => i + 1),
+              },
+              {
+                label: 'Nouveautés',
+                value: entries.length,
+                series: perWeek.map((es) => es.length),
+              },
               {
                 label: 'Illustrées',
                 value: entries.filter((e) => (e.medias?.length ?? 0) > 0).length,
+                series: perWeek.map((es) => es.filter((e) => (e.medias?.length ?? 0) > 0).length),
               },
               {
                 label: 'Domaines couverts',
                 value: new Set(entries.map((e) => e.domain).filter(Boolean)).size,
+                series: perWeek.map((es) => new Set(es.map((e) => e.domain).filter(Boolean)).size),
               },
             ]}
           />
+
         </header>
 
         {!audienceDef && (
