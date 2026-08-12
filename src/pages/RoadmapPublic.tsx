@@ -192,6 +192,19 @@ const RoadmapPublic: React.FC = () => {
           </section>
         )}
 
+        {entries.some((e) => (e.medias?.length ?? 0) > 0) && (
+          <section className="mb-14">
+            <h2 className="mb-4 text-sm uppercase tracking-wider text-muted-foreground">
+              La planche de preuves
+            </h2>
+            <PlancheDePreuves
+              medias={entries.flatMap((e) => e.medias ?? [])}
+              onOpen={setZoom}
+            />
+          </section>
+        )}
+
+
         {visibleWeeks.length > 0 && (
           <section>
             <h2 className="mb-4 text-sm uppercase tracking-wider text-muted-foreground">
