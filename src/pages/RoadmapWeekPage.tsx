@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button';
 import Footer from '@/components/Footer';
 import RoadmapNav from '@/components/roadmap/RoadmapNav';
 import EntryCard from '@/components/roadmap/EntryCard';
+import FriseVivante from '@/components/roadmap/viz/FriseVivante';
+import PlancheDePreuves from '@/components/roadmap/viz/PlancheDePreuves';
 import MediaLightbox from '@/components/roadmap/MediaLightbox';
+
 import { useRoadmapEntries, useRoadmapWeeks } from '@/hooks/roadmap/useRoadmap';
 import {
   AUDIENCES,
@@ -27,9 +30,15 @@ const RoadmapWeekPage: React.FC = () => {
   const week = weeks.find(
     (w) => String(w.iso_year) === String(year) && String(w.iso_week) === String(weekNo),
   );
-  const { data: entries = [] } = useRoadmapEntries(week ? [week.id] : []);
+  const weekIds = React.useMemo(() => weeks.map((w) => w.id), [weeks]);
+  const { data: allEntries = [] } = useRoadmapEntries(weekIds);
+  const entries = React.useMemo(
+    () => (week ? allEntries.filter((e) => e.week_id === week.id) : []),
+    [allEntries, week],
+  );
 
   const shown = audience ? entries.filter((e) => e.audiences.includes(audience)) : entries;
+
 
   const share = async () => {
     try {
@@ -129,6 +138,17 @@ const RoadmapWeekPage: React.FC = () => {
               </div>
             </header>
 
+            {weeks.length > 1 && (
+              <div className="mb-8">
+                <FriseVivante
+                  weeks={weeks}
+                  entries={allEntries}
+                  audience={audience}
+                  activeWeekId={week.id}
+                />
+              </div>
+            )}
+
             {shown.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border/70 p-8 text-center text-sm text-muted-foreground">
                 Aucune nouveauté pour ce public cette semaine.
@@ -140,6 +160,19 @@ const RoadmapWeekPage: React.FC = () => {
                 ))}
               </div>
             )}
+
+            {shown.some((e) => (e.medias?.length ?? 0) > 0) && (
+              <section className="mt-12">
+                <h2 className="mb-4 text-sm uppercase tracking-wider text-muted-foreground">
+                  La planche de preuves
+                </h2>
+                <PlancheDePreuves
+                  medias={shown.flatMap((e) => e.medias ?? [])}
+                  onOpen={setZoom}
+                />
+              </section>
+            )}
+
           </>
         )}
       </main>

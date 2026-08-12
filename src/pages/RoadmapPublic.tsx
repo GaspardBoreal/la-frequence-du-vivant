@@ -7,10 +7,14 @@ import RoadmapNav from '@/components/roadmap/RoadmapNav';
 import WeekCard from '@/components/roadmap/WeekCard';
 import EntryCard from '@/components/roadmap/EntryCard';
 import LiveStats from '@/components/roadmap/LiveStats';
-import CadenceChart from '@/components/roadmap/CadenceChart';
+import FriseVivante from '@/components/roadmap/viz/FriseVivante';
+import ConstellationDomaines from '@/components/roadmap/viz/ConstellationDomaines';
+import Sismographe from '@/components/roadmap/viz/Sismographe';
+import PlancheDePreuves from '@/components/roadmap/viz/PlancheDePreuves';
 import MediaLightbox from '@/components/roadmap/MediaLightbox';
 import { useRoadmapEntries, useRoadmapWeeks } from '@/hooks/roadmap/useRoadmap';
 import { AUDIENCES, audienceBySlug, type RoadmapMedia } from '@/lib/roadmap/types';
+
 
 /** Page publique de la Roadmap vivante : accueil et déclinaisons par public. */
 const RoadmapPublic: React.FC = () => {
@@ -32,6 +36,17 @@ const RoadmapPublic: React.FC = () => {
     () => (audience ? weeks.filter((w) => entries.some((e) => e.week_id === w.id)) : weeks),
     [weeks, entries, audience],
   );
+
+  /** Séries chronologiques pour les micro-sparklines des cartouches. */
+  const chrono = React.useMemo(
+    () => [...visibleWeeks].sort((a, b) => a.iso_year - b.iso_year || a.iso_week - b.iso_week),
+    [visibleWeeks],
+  );
+  const perWeek = React.useMemo(
+    () => chrono.map((w) => entries.filter((e) => e.week_id === w.id)),
+    [chrono, entries],
+  );
+
 
   const lastWeek = visibleWeeks[0];
   const lastEntries = lastWeek ? entries.filter((e) => e.week_id === lastWeek.id) : [];
@@ -80,18 +95,29 @@ const RoadmapPublic: React.FC = () => {
 
           <LiveStats
             stats={[
-              { label: 'Semaines publiées', value: visibleWeeks.length },
-              { label: 'Nouveautés', value: entries.length },
+              {
+                label: 'Semaines publiées',
+                value: visibleWeeks.length,
+                series: perWeek.map((_, i) => i + 1),
+              },
+              {
+                label: 'Nouveautés',
+                value: entries.length,
+                series: perWeek.map((es) => es.length),
+              },
               {
                 label: 'Illustrées',
                 value: entries.filter((e) => (e.medias?.length ?? 0) > 0).length,
+                series: perWeek.map((es) => es.filter((e) => (e.medias?.length ?? 0) > 0).length),
               },
               {
                 label: 'Domaines couverts',
                 value: new Set(entries.map((e) => e.domain).filter(Boolean)).size,
+                series: perWeek.map((es) => new Set(es.map((e) => e.domain).filter(Boolean)).size),
               },
             ]}
           />
+
         </header>
 
         {!audienceDef && (
@@ -114,14 +140,32 @@ const RoadmapPublic: React.FC = () => {
           </section>
         )}
 
-        {audience === 'partenaire' && visibleWeeks.length > 1 && (
-          <section className="mb-12 rounded-2xl border border-border/60 bg-card/60 p-5">
-            <h2 className="mb-3 text-sm uppercase tracking-wider text-muted-foreground">
-              Cadence de livraison
-            </h2>
-            <CadenceChart weeks={visibleWeeks} entries={entries} />
+        {visibleWeeks.length > 0 && (
+          <section className="mb-12 space-y-8">
+            <div>
+              <h2 className="mb-3 text-sm uppercase tracking-wider text-muted-foreground">
+                La frise vivante
+              </h2>
+              <FriseVivante weeks={visibleWeeks} entries={entries} audience={audience} />
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-3xl border border-border/60 bg-card/50 p-5 backdrop-blur">
+                <h2 className="mb-2 text-sm uppercase tracking-wider text-muted-foreground">
+                  Où le projet a poussé
+                </h2>
+                <ConstellationDomaines entries={entries} audience={audience} />
+              </div>
+              <div className="rounded-3xl border border-border/60 bg-card/50 p-5 backdrop-blur">
+                <h2 className="mb-2 text-sm uppercase tracking-wider text-muted-foreground">
+                  Cadence de livraison
+                </h2>
+                <Sismographe weeks={visibleWeeks} entries={entries} />
+              </div>
+            </div>
           </section>
         )}
+
 
         {isLoading && (
           <p className="py-16 text-center text-sm text-muted-foreground">Chargement du journal…</p>
@@ -147,6 +191,19 @@ const RoadmapPublic: React.FC = () => {
             </div>
           </section>
         )}
+
+        {entries.some((e) => (e.medias?.length ?? 0) > 0) && (
+          <section className="mb-14">
+            <h2 className="mb-4 text-sm uppercase tracking-wider text-muted-foreground">
+              La planche de preuves
+            </h2>
+            <PlancheDePreuves
+              medias={entries.flatMap((e) => e.medias ?? [])}
+              onOpen={setZoom}
+            />
+          </section>
+        )}
+
 
         {visibleWeeks.length > 0 && (
           <section>
