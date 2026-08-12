@@ -7,10 +7,14 @@ import RoadmapNav from '@/components/roadmap/RoadmapNav';
 import WeekCard from '@/components/roadmap/WeekCard';
 import EntryCard from '@/components/roadmap/EntryCard';
 import LiveStats from '@/components/roadmap/LiveStats';
-import CadenceChart from '@/components/roadmap/CadenceChart';
+import FriseVivante from '@/components/roadmap/viz/FriseVivante';
+import ConstellationDomaines from '@/components/roadmap/viz/ConstellationDomaines';
+import Sismographe from '@/components/roadmap/viz/Sismographe';
+import PlancheDePreuves from '@/components/roadmap/viz/PlancheDePreuves';
 import MediaLightbox from '@/components/roadmap/MediaLightbox';
 import { useRoadmapEntries, useRoadmapWeeks } from '@/hooks/roadmap/useRoadmap';
 import { AUDIENCES, audienceBySlug, type RoadmapMedia } from '@/lib/roadmap/types';
+
 
 /** Page publique de la Roadmap vivante : accueil et déclinaisons par public. */
 const RoadmapPublic: React.FC = () => {
