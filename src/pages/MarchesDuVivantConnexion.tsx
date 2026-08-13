@@ -158,8 +158,9 @@ const MarchesDuVivantConnexion = () => {
       try {
         const { data: apps } = await supabase.rpc('get_user_apps_access');
         const list: ProprieteAccess[] = ((apps as any)?.proprietesAccessibles ?? []) as ProprieteAccess[];
+        const partners: PartenaireIotAccess[] = ((apps as any)?.partenairesIot ?? []) as PartenaireIotAccess[];
 
-        if (list.length >= 1) {
+        if (list.length >= 1 || partners.length >= 1) {
           // Préférence mémorisée (« Toujours ouvrir cet espace ») : on court-circuite.
           const pref = getDefaultAppTarget();
           if (pref === 'mon-espace') {
@@ -174,13 +175,21 @@ const MarchesDuVivantConnexion = () => {
             }
             clearDefaultAppTarget();
           }
+          if (pref?.startsWith('partenaire-iot:')) {
+            const slug = pref.slice('partenaire-iot:'.length);
+            if (partners.some((f) => f.slug === slug)) {
+              navigate(`/partenaire-iot/${slug}`);
+              return;
+            }
+            clearDefaultAppTarget();
+          }
           // Récupère le prénom pour personnaliser le dialogue.
           const { data: prof } = await supabase
             .from('community_profiles')
             .select('prenom')
             .eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '')
             .maybeSingle();
-          setAppChoice({ open: true, prenom: prof?.prenom, proprietes: list });
+          setAppChoice({ open: true, prenom: prof?.prenom, proprietes: list, partenaires: partners });
           return;
         }
       } catch { /* fallback vers mon-espace */ }
