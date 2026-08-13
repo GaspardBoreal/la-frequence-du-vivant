@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
 import { AppChoiceDialog, getDefaultAppTarget, clearDefaultAppTarget } from '@/components/community/AppChoiceDialog';
-import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
+import type { ProprieteAccess, PartenaireIotAccess } from '@/hooks/useUserAppsAccess';
 import { absoluteUrlForPath, isOAuthConsentPath, readPendingOAuthRequest, safeNextPath } from '@/lib/oauthFlow';
 
 
@@ -55,7 +55,7 @@ const MarchesDuVivantConnexion = () => {
   const [consentementAnalyse, setConsentementAnalyse] = useState(false);
   const [emailConfirmDialog, setEmailConfirmDialog] = useState<{ open: boolean; email: string }>({ open: false, email: '' });
   const [resendingEmail, setResendingEmail] = useState(false);
-  const [appChoice, setAppChoice] = useState<{ open: boolean; prenom?: string; proprietes: ProprieteAccess[] }>({ open: false, proprietes: [] });
+  const [appChoice, setAppChoice] = useState<{ open: boolean; prenom?: string; proprietes: ProprieteAccess[]; partenaires: PartenaireIotAccess[] }>({ open: false, proprietes: [], partenaires: [] });
 
   // Invitation Lecteur invité
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
@@ -158,8 +158,9 @@ const MarchesDuVivantConnexion = () => {
       try {
         const { data: apps } = await supabase.rpc('get_user_apps_access');
         const list: ProprieteAccess[] = ((apps as any)?.proprietesAccessibles ?? []) as ProprieteAccess[];
+        const partners: PartenaireIotAccess[] = ((apps as any)?.partenairesIot ?? []) as PartenaireIotAccess[];
 
-        if (list.length >= 1) {
+        if (list.length >= 1 || partners.length >= 1) {
           // Préférence mémorisée (« Toujours ouvrir cet espace ») : on court-circuite.
           const pref = getDefaultAppTarget();
           if (pref === 'mon-espace') {
@@ -174,13 +175,21 @@ const MarchesDuVivantConnexion = () => {
             }
             clearDefaultAppTarget();
           }
+          if (pref?.startsWith('partenaire-iot:')) {
+            const slug = pref.slice('partenaire-iot:'.length);
+            if (partners.some((f) => f.slug === slug)) {
+              navigate(`/partenaire-iot/${slug}`);
+              return;
+            }
+            clearDefaultAppTarget();
+          }
           // Récupère le prénom pour personnaliser le dialogue.
           const { data: prof } = await supabase
             .from('community_profiles')
             .select('prenom')
             .eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '')
             .maybeSingle();
-          setAppChoice({ open: true, prenom: prof?.prenom, proprietes: list });
+          setAppChoice({ open: true, prenom: prof?.prenom, proprietes: list, partenaires: partners });
           return;
         }
       } catch { /* fallback vers mon-espace */ }
@@ -660,6 +669,7 @@ const MarchesDuVivantConnexion = () => {
         onDismiss={() => navigate('/marches-du-vivant/mon-espace')}
         prenom={appChoice.prenom}
         proprietes={appChoice.proprietes}
+        partenaires={appChoice.partenaires}
       />
     </>
 

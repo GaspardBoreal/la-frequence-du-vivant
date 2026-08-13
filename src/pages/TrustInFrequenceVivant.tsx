@@ -379,7 +379,10 @@ const TrustInFrequenceVivant: React.FC = () => {
             {TRUST_TABS.map((t) => (
               <button
                 key={t.key}
-                onClick={() => setTab(t.key)}
+                onClick={() => {
+                  if (t.key === 'accueil') { setTab('accueil'); return; }
+                  window.location.assign(`/partenaire-iot/brad-technology?tab=${t.key}`);
+                }}
                 className={`rounded-full px-4 py-1.5 text-xs transition ${
                   tab === t.key ? 'bg-emerald-400 text-emerald-950' : 'text-emerald-100/70 hover:bg-emerald-400/10'
                 }`}

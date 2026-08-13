@@ -11,10 +11,20 @@ export interface ProprieteAccess {
   is_main: boolean;
 }
 
+/** Fabricant de sondes dont l'utilisateur est partenaire habilité (ou admin). */
+export interface PartenaireIotAccess {
+  id: string;
+  nom: string;
+  slug: string;
+  logo_url: string | null;
+  capteurs_count: number;
+}
+
 export interface UserAppsAccess {
   hasMarcheurAccess: boolean;
   proprietesAccessibles: ProprieteAccess[];
   proprietePrincipaleId: string | null;
+  partenairesIot: PartenaireIotAccess[];
 }
 
 export const useUserAppsAccess = (userId?: string) => {
@@ -23,10 +33,12 @@ export const useUserAppsAccess = (userId?: string) => {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_user_apps_access');
       if (error) throw error;
-      return (data as unknown as UserAppsAccess) ?? {
-        hasMarcheurAccess: false,
-        proprietesAccessibles: [],
-        proprietePrincipaleId: null,
+      const raw = (data as any) ?? {};
+      return {
+        hasMarcheurAccess: !!raw.hasMarcheurAccess,
+        proprietesAccessibles: (raw.proprietesAccessibles ?? []) as ProprieteAccess[],
+        proprietePrincipaleId: raw.proprietePrincipaleId ?? null,
+        partenairesIot: (raw.partenairesIot ?? []) as PartenaireIotAccess[],
       };
     },
     enabled: !!userId,

@@ -1,9 +1,9 @@
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Leaf, MapPin, Star, ArrowRight } from 'lucide-react';
+import { Leaf, MapPin, Star, ArrowRight, Radio } from 'lucide-react';
 import { ProprieteTile } from './ProprieteTile';
-import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
+import type { ProprieteAccess, PartenaireIotAccess } from '@/hooks/useUserAppsAccess';
 
 const DEFAULT_KEY = 'mdv:default-app';
 
@@ -12,11 +12,13 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   prenom?: string;
   proprietes: ProprieteAccess[];
+  /** Fabricants de sondes dont l'utilisateur est partenaire. */
+  partenaires?: PartenaireIotAccess[];
   /** Appelé si le dialogue est fermé sans qu'aucun espace n'ait été choisi. */
   onDismiss?: () => void;
 }
 
-export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, onDismiss }: Props) {
+export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, partenaires = [], onDismiss }: Props) {
   const navigate = useNavigate();
   const chosenRef = useRef(false);
 
@@ -35,6 +37,8 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, onDism
       navigate('/marches-du-vivant/mon-espace');
     } else if (target.startsWith('propriete:')) {
       navigate(`/propriete/${target.slice('propriete:'.length)}`);
+    } else if (target.startsWith('partenaire-iot:')) {
+      navigate(`/partenaire-iot/${target.slice('partenaire-iot:'.length)}`);
     }
   };
 
@@ -100,6 +104,49 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, onDism
                       <MapPin className="w-3.5 h-3.5" /> {p.ville}
                     </div>
                   )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); go(target, true); }}
+                    className="text-xs text-emerald-300/70 hover:text-emerald-200 mt-1 underline-offset-2 hover:underline"
+                  >
+                    Toujours ouvrir cet espace
+                  </button>
+                </div>
+                <ArrowRight className="w-5 h-5 text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            );
+          })}
+
+          {/* Espaces partenaires (fabricants de sondes) */}
+          {partenaires.length > 0 && (
+            <div className="mt-1 text-[11px] uppercase tracking-wide text-emerald-200/50">
+              Vos espaces partenaires
+            </div>
+          )}
+          {partenaires.map((f) => {
+            const target = `partenaire-iot:${f.slug}`;
+            return (
+              <button
+                key={f.id}
+                onClick={() => go(target)}
+                className="group relative overflow-hidden rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 transition-all p-4 text-left flex items-center gap-4"
+              >
+                <div className="w-14 h-14 rounded-full bg-sky-500/20 flex items-center justify-center shrink-0 overflow-hidden">
+                  {f.logo_url ? (
+                    <img src={f.logo_url} alt={`Logo ${f.nom}`} className="h-full w-full object-cover" />
+                  ) : (
+                    <Radio className="w-6 h-6 text-sky-300" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-white flex items-center gap-2 flex-wrap">
+                    <span className="truncate">{f.nom}</span>
+                    <span className="text-[10px] uppercase tracking-wide bg-sky-400/20 text-sky-200 px-2 py-0.5 rounded-full">
+                      Partenaire IoT
+                    </span>
+                  </div>
+                  <div className="text-sm text-emerald-100/70 mt-0.5">
+                    {f.capteurs_count} sonde{f.capteurs_count > 1 ? 's' : ''} · poste de contrôle et carte
+                  </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); go(target, true); }}
                     className="text-xs text-emerald-300/70 hover:text-emerald-200 mt-1 underline-offset-2 hover:underline"

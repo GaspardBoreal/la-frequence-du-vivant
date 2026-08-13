@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Compass, Leaf, Check, ChevronDown } from 'lucide-react';
+import { Compass, Leaf, Check, ChevronDown, Radio } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useUserAppsAccess, ProprieteAccess } from '@/hooks/useUserAppsAccess';
+import { useUserAppsAccess, ProprieteAccess, PartenaireIotAccess } from '@/hooks/useUserAppsAccess';
 import { ProprieteTile } from '@/components/community/ProprieteTile';
 import { cn } from '@/lib/utils';
 
@@ -16,14 +16,17 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
   const navigate = useNavigate();
   const { data } = useUserAppsAccess(userId);
   const proprietes = data?.proprietesAccessibles ?? [];
+  const partenaires = data?.partenairesIot ?? [];
 
-  // Only show switcher if user has at least one propriete
-  if (proprietes.length === 0) return null;
+  // Only show switcher if user has at least one other espace
+  if (proprietes.length === 0 && partenaires.length === 0) return null;
 
   const currentLabel =
     currentContext === 'mdv'
       ? 'Mon Espace'
-      : proprietes.find((p) => p.slug === currentContext)?.nom ?? 'Espace';
+      : proprietes.find((p) => p.slug === currentContext)?.nom ??
+        partenaires.find((f) => f.slug === currentContext)?.nom ??
+        'Espace';
 
   const go = (path: string) => navigate(path);
 
@@ -63,9 +66,11 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
           {currentContext === 'mdv' && <Check className="w-4 h-4 text-primary" />}
         </button>
 
-        <div className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 pt-3 pb-1">
-          Propriétés
-        </div>
+        {proprietes.length > 0 && (
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 pt-3 pb-1">
+            Propriétés
+          </div>
+        )}
         <div className="max-h-72 overflow-y-auto space-y-0.5">
           {proprietes.map((p: ProprieteAccess) => {
             const active = currentContext === p.slug;
@@ -99,6 +104,44 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
             );
           })}
         </div>
+        {partenaires.length > 0 && (
+          <>
+            <div className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 pt-3 pb-1">
+              Espaces partenaires
+            </div>
+            <div className="space-y-0.5">
+              {partenaires.map((f: PartenaireIotAccess) => {
+                const active = currentContext === f.slug;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => go(`/partenaire-iot/${f.slug}`)}
+                    className={cn(
+                      'w-full flex items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-muted/60 transition-colors',
+                      active && 'bg-muted/40'
+                    )}
+                  >
+                    <div className="w-9 h-9 rounded-md bg-sky-500/15 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {f.logo_url ? (
+                        <img src={f.logo_url} alt={`Logo ${f.nom}`} className="h-full w-full object-cover" />
+                      ) : (
+                        <Radio className="w-4 h-4 text-sky-600 dark:text-sky-300" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-foreground truncate">{f.nom}</div>
+                      <div className="text-[11px] text-muted-foreground truncate">
+                        {f.capteurs_count} sonde{f.capteurs_count > 1 ? 's' : ''} · partenaire IoT
+                      </div>
+                    </div>
+                    {active && <Check className="w-4 h-4 text-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
       </PopoverContent>
     </Popover>
   );
