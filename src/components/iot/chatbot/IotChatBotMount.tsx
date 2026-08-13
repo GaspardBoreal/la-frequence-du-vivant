@@ -3,7 +3,7 @@ import { Sparkles } from 'lucide-react';
 import { ChatBot } from '@/components/chatbot/ChatBot';
 import { chatPageContext, contextSliceKey } from '@/hooks/useChatPageContext';
 import { useIotChatProviders } from '@/hooks/iot/useIotChatProviders';
-import { useRefreshIotAiCredit, type IotAiCredit } from '@/hooks/iot/useIotAiCredit';
+import type { IotAiCredit } from '@/hooks/iot/useIotAiCredit';
 import { useIotChatFocus, IOT_AUTO_CONTEXT_IDS } from './iotChatFocus';
 import IotFocusBanner from './IotFocusBanner';
 
@@ -21,7 +21,6 @@ interface Props {
 export function IotChatBotMount({ fournisseurId = null, credit = null }: Props) {
   const focus = useIotChatFocus();
   const { providers, providersTitle, scope } = useIotChatProviders();
-  const refreshCredit = useRefreshIotAiCredit();
 
   // Inventaire des contextes activables (Console 📎).
   useEffect(() => {
@@ -76,14 +75,6 @@ export function IotChatBotMount({ fournisseurId = null, credit = null }: Props) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
-
-  // La jauge se rafraîchit dès qu'une réponse s'achève.
-  useEffect(() => {
-    if (!fournisseurId) return;
-    const onDone = () => refreshCredit();
-    window.addEventListener('community-chat:answer-done', onDone);
-    return () => window.removeEventListener('community-chat:answer-done', onDone);
-  }, [fournisseurId, refreshCredit]);
 
   const exhausted = !!credit && !credit.admin && credit.remaining === 0;
 

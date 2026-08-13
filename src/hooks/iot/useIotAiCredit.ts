@@ -23,7 +23,10 @@ const EMPTY: IotAiCredit = { enabled: false, quota: 0, used: 0, remaining: 0, ad
 export function useIotAiCredit(fournisseurId?: string | null) {
   return useQuery<IotAiCredit>({
     queryKey: ['iot-ai-credit', fournisseurId ?? 'none'],
-    staleTime: 15_000,
+    staleTime: 10_000,
+    // La jauge suit la consommation sans dépendre d'un signal du chat.
+    refetchInterval: 20_000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       if (!fournisseurId) return EMPTY;
       const { data, error } = await db.rpc('get_iot_ai_credit', { _fournisseur_id: fournisseurId });
