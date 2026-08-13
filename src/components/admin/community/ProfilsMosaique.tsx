@@ -12,6 +12,7 @@ import SuggestionsBanner from './SuggestionsBanner';
 import type { EditableProfile } from './MarcheurEditSheet';
 import { useAllScienceAccounts } from '@/hooks/useScienceAccounts';
 import { NETWORK_ORDER, type ScienceAccount, type ScienceNetwork } from '@/types/scienceAccounts';
+import { useIotPartnerBadges } from '@/hooks/iot/useIotPartnerAdmin';
 
 interface Props {
   profiles: (EditableProfile & { marches_count?: number })[];
@@ -38,8 +39,16 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
   const [special, setSpecial] = useState<SpecialFilter>('none');
   const [adhesion, setAdhesion] = useState<AdhesionFilter>('all');
   const [college, setCollege] = useState<CollegeFilter>('all');
+  const [partner, setPartner] = useState('all');
 
   const { data: allAccounts = [] } = useAllScienceAccounts();
+  const { byUser: partnersByUser, rows: partnerRows } = useIotPartnerBadges();
+  const partnerFournisseurs = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of partnerRows) m.set(r.fournisseur_id, r.fournisseur_nom);
+    return Array.from(m, ([id, nom]) => ({ id, nom }));
+  }, [partnerRows]);
+
 
   // Map profile_id → accounts
   const accountsByProfile = useMemo(() => {
@@ -56,7 +65,12 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
   const enriched = useMemo(() => profiles.map(p => ({
     ...p,
     science_accounts: accountsByProfile.get(p.id) || [],
-  })), [profiles, accountsByProfile]);
+    iot_partners: (partnersByUser.get(p.user_id) || []).map(r => ({
+      fournisseur_id: r.fournisseur_id,
+      nom: r.fournisseur_nom,
+      actif: r.actif,
+    })),
+  })), [profiles, accountsByProfile, partnersByUser]);
 
   // Counts per network (across visible profiles before network filter)
   const networkCounts = useMemo(() => {
@@ -124,9 +138,15 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
           if (!selectedNetworks.every(n => owned.has(n))) return false;
         }
       }
+
+      // Accès partenaire IoT
+      if (partner === 'any' && p.iot_partners.length === 0) return false;
+      if (partner !== 'all' && partner !== 'any') {
+        if (!p.iot_partners.some(x => x.fournisseur_id === partner)) return false;
+      }
       return true;
     });
-  }, [enriched, search, age, gender, csp, role, selectedNetworks, networkMode, special, adhesion, college]);
+  }, [enriched, search, age, gender, csp, role, selectedNetworks, networkMode, special, adhesion, college, partner]);
 
   return (
     <div className="space-y-4">
@@ -188,13 +208,25 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
       />
 
 
-      <div className="flex items-center justify-between">
-        <Select value={role} onValueChange={setRole}>
-          <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {ROLE_FILTERS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={role} onValueChange={setRole}>
+            <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {ROLE_FILTERS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={partner} onValueChange={setPartner}>
+            <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Accès partenaire : tous</SelectItem>
+              <SelectItem value="any">Partenaires uniquement</SelectItem>
+              {partnerFournisseurs.map(f => (
+                <SelectItem key={f.id} value={f.id}>Partenaire {f.nom}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <p className="text-sm text-muted-foreground">
           {filtered.length} profil{filtered.length > 1 ? 's' : ''}
         </p>

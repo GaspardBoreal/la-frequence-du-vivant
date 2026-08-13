@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CSP_OPTIONS, GENDER_OPTIONS } from '@/lib/communityProfileTaxonomy';
 import ScienceAccountsEditor, { type ScienceAccountsEditorHandle } from './ScienceAccountsEditor';
 import ProfileSuggestionsList from './ProfileSuggestionsList';
+import IotPartnerSection from './IotPartnerSection';
 import MarcheurEventsSection from './MarcheurEventsSection';
 
 export interface EditableProfile {
@@ -343,6 +344,17 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
           <section className="space-y-3">
             <ProfileSuggestionsList profileId={form.id} />
             <ScienceAccountsEditor ref={scienceRef} profileId={form.id} />
+          </section>
+
+          <Separator />
+
+          <section>
+            <IotPartnerSection
+              userId={form.user_id}
+              prenom={form.prenom}
+              nom={form.nom}
+              avatarUrl={form.avatar_url}
+            />
           </section>
 
           <div className="flex gap-2 pt-2 sticky bottom-0 bg-background py-3">

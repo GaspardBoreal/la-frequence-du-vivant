@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pencil, MapPin, Sparkles, CalendarPlus, Heart } from 'lucide-react';
+import { Pencil, MapPin, Sparkles, CalendarPlus, Heart, Radio } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -12,7 +12,11 @@ import type { ScienceAccount } from '@/types/scienceAccounts';
 import NetworkBadge from './NetworkBadge';
 
 interface Props {
-  profile: EditableProfile & { marches_count?: number; science_accounts?: ScienceAccount[] };
+  profile: EditableProfile & {
+    marches_count?: number;
+    science_accounts?: ScienceAccount[];
+    iot_partners?: { fournisseur_id: string; nom: string; actif: boolean }[];
+  };
   onEdit: (p: EditableProfile) => void;
 }
 
@@ -67,6 +71,23 @@ export const ProfilCard: React.FC<Props> = ({ profile, onEdit }) => {
           <div className="min-w-0 flex-1">
             <p className="font-semibold text-foreground truncate">{profile.prenom} {profile.nom}</p>
             <p className="text-xs text-muted-foreground">{ROLE_LABELS[profile.role] || profile.role}</p>
+            {(profile.iot_partners?.length ?? 0) > 0 && (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {profile.iot_partners!.map(p => (
+                  <span
+                    key={p.fournisseur_id}
+                    className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ring-1 ${
+                      p.actif
+                        ? 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/30'
+                        : 'bg-muted text-muted-foreground ring-border'
+                    }`}
+                  >
+                    <Radio className="h-2.5 w-2.5" />
+                    {p.nom}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
