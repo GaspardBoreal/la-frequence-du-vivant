@@ -216,6 +216,12 @@ const TrustInFrequenceVivant: React.FC = () => {
   const [windowKey, setWindowKey] = React.useState<TrustWindowKey>('ce_matin');
   const [tab, setTab] = React.useState<TrustTab>('accueil');
 
+  // Retour sur l'onglet demandé après connexion (aucune route /auth n'existe).
+  const partnerNext = `/trust-in-frequence-vivant?tab=${tab}`;
+  const partnerLoginHref = `/marches-du-vivant/connexion?next=${encodeURIComponent(partnerNext)}`;
+  const partnerSignupHref = `${partnerLoginHref}&mode=register`;
+
+
   const { data: fournisseurs = [] } = useIotFournisseurs();
   const bradId = React.useMemo(
     () => fournisseurs.find((f: any) => (f.nom ?? '').toLowerCase().startsWith('brad'))?.id ?? null,
