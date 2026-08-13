@@ -690,6 +690,9 @@ export function ChatBot({
                   </div>
 
                   {/* Input */}
+                  {composerLock ? (
+                    <div className="border-t border-border bg-card p-3">{composerLock}</div>
+                  ) : (
                   <div className="border-t border-border bg-card p-3">
                     <input
                       ref={fileInputRef}
