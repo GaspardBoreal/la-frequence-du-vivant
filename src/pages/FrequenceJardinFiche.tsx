@@ -18,6 +18,14 @@ import {
 const FrequenceJardinFiche: React.FC = () => {
   const [copied, setCopied] = React.useState(false);
   const [pdfBusy, setPdfBusy] = React.useState(false);
+  const [copiedLogo, setCopiedLogo] = React.useState<string | null>(null);
+
+  const onCopyUrl = async (url: string, key: string) => {
+    await navigator.clipboard.writeText(url);
+    setCopiedLogo(key);
+    toast.success('URL de l’image copiée');
+    setTimeout(() => setCopiedLogo(null), 2000);
+  };
   const markdown = React.useMemo(() => ficheToMarkdown(), []);
 
   const download = (content: string, filename: string, type: string) => {
