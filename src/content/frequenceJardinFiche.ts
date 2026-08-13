@@ -26,7 +26,7 @@ export const FICHE_URL = 'https://la-frequence-du-vivant.com/roadmap/frequence-j
 
 export const fiche = {
   name: 'Fréquence Jardin',
-  publishedAt: '15.08.2026',
+  publishedAt: '13.08.2026',
   baseline: "Le diagnostic vivant d'un lieu, de la première observation au geste de plantation.",
   summary:
     "Fréquence Jardin est une application web de diagnostic écologique de terrain. Elle conduit un jardin, une propriété ou une parcelle à travers cinq temps — observer, analyser le sol, identifier la flore bio-indicatrice, synthétiser, composer une palette végétale — puis prolonge ce diagnostic par un atelier de projet, une clinique sanitaire, un réseau de capteurs et une IA agronomique frugale. Elle est éditée par l'association La Fréquence du Vivant, dans la continuité des Marches du Vivant.",
