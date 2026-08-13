@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import Footer from '@/components/Footer';
 import { clearStoredAffiliateToken, getStoredAffiliateToken, storeAffiliateToken } from '@/utils/communityAffiliate';
 import { AppChoiceDialog, getDefaultAppTarget, clearDefaultAppTarget } from '@/components/community/AppChoiceDialog';
-import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
+import type { ProprieteAccess, PartenaireIotAccess } from '@/hooks/useUserAppsAccess';
 import { absoluteUrlForPath, isOAuthConsentPath, readPendingOAuthRequest, safeNextPath } from '@/lib/oauthFlow';
 
 
