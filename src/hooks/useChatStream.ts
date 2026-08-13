@@ -67,7 +67,10 @@ export function useChatStream(
             voiceMode,
             scope: currentContext,
             entity: pageEntity ?? undefined,
-            pageState: pageEntity ? pageState : undefined,
+            // Le cadrage part aussi sans entité : certains postes (poste IoT
+            // admin, parc entier) raisonnent hors d'une propriété précise.
+            pageState:
+              pageEntity || pageState?.filters || pageState?.visibleData ? pageState : undefined,
           }),
           signal: controller.signal,
         });
