@@ -70,6 +70,10 @@ export const TelemetryControl: React.FC = () => {
         <Tile icon={<MoonStar className="h-3.5 w-3.5" />} value={counters.silencieux} label="Sondes silencieuses" tone="text-slate-600" />
       </div>
 
+      <p className="-mt-4 text-[11px] text-muted-foreground">
+        Ces cinq compteurs portent toujours sur les 24 dernières heures : ils ne suivent pas les filtres du journal.
+      </p>
+
       {/* Vitalité par sonde */}
       <section className="space-y-2">
         <h3 className="flex items-center gap-2 text-sm font-semibold"><Activity className="h-4 w-4 text-emerald-600" /> Vitalité des sondes · 48 dernières heures</h3>
