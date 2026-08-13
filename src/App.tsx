@@ -100,6 +100,7 @@ const AdminIot = lazyWithRetry(() => import('./pages/AdminIot'));
 const AdminRoadmap = lazyWithRetry(() => import('./pages/AdminRoadmap'));
 const RoadmapPublic = lazyWithRetry(() => import('./pages/RoadmapPublic'));
 const RoadmapWeekPage = lazyWithRetry(() => import('./pages/RoadmapWeekPage'));
+const FrequenceJardinFiche = lazyWithRetry(() => import('./pages/FrequenceJardinFiche'));
 const ProprieteEspace = lazyWithRetry(() => import('./pages/ProprieteEspace'));
 const MarchesDuVivantExplorationMarcheur = lazyWithRetry(() => import('./pages/MarchesDuVivantExplorationMarcheur'));
 const AdminOutilsHub = lazyWithRetry(() => import('./pages/AdminOutilsHub'));
