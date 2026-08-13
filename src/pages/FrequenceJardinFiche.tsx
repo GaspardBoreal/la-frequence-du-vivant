@@ -187,12 +187,10 @@ const FrequenceJardinFiche: React.FC = () => {
         {/* Pied de fiche */}
         <section className="mb-12 rounded-2xl border border-border/60 bg-card/50 p-6">
           <h2 className="text-lg font-semibold text-foreground">Éditeur de la fiche</h2>
-          <address className="mt-3 not-italic text-sm leading-relaxed text-muted-foreground">
-            <p className="font-medium text-foreground">{fiche.imprint.association}</p>
-            {fiche.imprint.address.map((line) => (
-              <p key={line}>{line}</p>
-            ))}
-            <p className="mt-2">Contact : {fiche.imprint.contact}</p>
+          <address className="mt-3 not-italic text-sm leading-snug text-muted-foreground">
+            <p className="text-foreground">
+              {fiche.imprint.association} · {fiche.imprint.address.join(' · ')} · Contact : {fiche.imprint.contact}
+            </p>
           </address>
         </section>
 
