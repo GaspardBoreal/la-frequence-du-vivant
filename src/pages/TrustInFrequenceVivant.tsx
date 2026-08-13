@@ -214,12 +214,17 @@ const TrustInFrequenceVivant: React.FC = () => {
   const [value, setValue] = React.useState('');
   const [error, setError] = React.useState(false);
   const [windowKey, setWindowKey] = React.useState<TrustWindowKey>('ce_matin');
-  const [tab, setTab] = React.useState<TrustTab>('accueil');
+  const [tab, setTab] = React.useState<TrustTab>(() => {
+    if (typeof window === 'undefined') return 'accueil';
+    const t = new URLSearchParams(window.location.search).get('tab');
+    return t === 'controle' || t === 'carte' ? (t as TrustTab) : 'accueil';
+  });
 
   // Retour sur l'onglet demandé après connexion (aucune route /auth n'existe).
   const partnerNext = `/trust-in-frequence-vivant?tab=${tab}`;
   const partnerLoginHref = `/marches-du-vivant/connexion?next=${encodeURIComponent(partnerNext)}`;
-  const partnerSignupHref = `${partnerLoginHref}&mode=register`;
+  const partnerSignupHref = `${partnerLoginHref}&tab=register`;
+
 
 
   const { data: fournisseurs = [] } = useIotFournisseurs();
