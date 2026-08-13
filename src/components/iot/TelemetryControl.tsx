@@ -1,7 +1,8 @@
 import React from 'react';
-import { Activity, AlertTriangle, CheckCircle2, ChevronDown, Inbox, MoonStar, Radio, Send, ShieldX } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, Inbox, MoonStar, Radio, Send, ShieldX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
+import DeliveryJournal from '@/components/iot/DeliveryJournal';
 import {
   useAllCapteurs, useTelemetryCounters, useTelemetryDeliveries, useTelemetryLive, useTelemetryPings, useTestDelivery,
 } from '@/hooks/iot/useIotTelemetry';
@@ -26,12 +27,11 @@ const Tile: React.FC<{ icon: React.ReactNode; value: number | string; label: str
 /** Poste de contrôle : voir à l'œil que la télémétrie arrive vraiment. */
 export const TelemetryControl: React.FC = () => {
   const { data: capteurs = [] } = useAllCapteurs();
-  const { data: deliveries = [] } = useTelemetryDeliveries(60);
+  const { data: deliveries = [] } = useTelemetryDeliveries(200);
   const { data: pings = [] } = useTelemetryPings(48);
   const { lastLiveAt, live } = useTelemetryLive();
   const counters = useTelemetryCounters(deliveries, capteurs);
   const test = useTestDelivery();
-  const [open, setOpen] = React.useState<string | null>(null);
 
   const pingsByCapteur = React.useMemo(() => {
     const m: Record<string, string[]> = {};
@@ -70,6 +70,10 @@ export const TelemetryControl: React.FC = () => {
         <Tile icon={<MoonStar className="h-3.5 w-3.5" />} value={counters.silencieux} label="Sondes silencieuses" tone="text-slate-600" />
       </div>
 
+      <p className="-mt-4 text-[11px] text-muted-foreground">
+        Ces cinq compteurs portent toujours sur les 24 dernières heures : ils ne suivent pas les filtres du journal.
+      </p>
+
       {/* Vitalité par sonde */}
       <section className="space-y-2">
         <h3 className="flex items-center gap-2 text-sm font-semibold"><Activity className="h-4 w-4 text-emerald-600" /> Vitalité des sondes · 48 dernières heures</h3>
@@ -101,97 +105,9 @@ export const TelemetryControl: React.FC = () => {
         </div>
       </section>
 
-      {/* Journal des livraisons */}
-      <JournalLivraisons deliveries={deliveries} open={open} setOpen={setOpen} />
+      <DeliveryJournal />
 
     </div>
-  );
-};
-
-/* ── Journal, trié en trois familles ───────────────────────────────────── */
-
-const TEST_SERIALS = ['test-probe-001'];
-
-const DeliveryRow: React.FC<{ d: any; open: string | null; setOpen: (v: string | null) => void }> = ({ d, open, setOpen }) => {
-  const ok = d.signature_valid && !d.error;
-  return (
-    <div className="text-sm">
-      <button
-        onClick={() => setOpen(open === d.id ? null : d.id)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted/40"
-      >
-        <span className={`h-2 w-2 shrink-0 rounded-full ${ok ? 'bg-emerald-500' : d.signature_valid === false ? 'bg-red-500' : 'bg-amber-500'}`} />
-        <span className="min-w-0 flex-1">
-          <span className="truncate font-medium">{d.serial_number ?? 'sonde inconnue'}</span>
-          <span className="ml-2 text-xs text-muted-foreground">
-            {d.mesures_count ?? 0} mesure{(d.mesures_count ?? 0) > 1 ? 's' : ''} · {fmtAgo(d.created_at)}
-            {d.error ? ` · ${d.error}` : ''}
-          </span>
-        </span>
-        <ChevronDown className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open === d.id ? 'rotate-180' : ''}`} />
-      </button>
-      {open === d.id && (
-        <pre className="max-h-72 overflow-auto border-t border-border bg-muted/30 px-3 py-2 text-[11px] leading-relaxed">
-          {JSON.stringify({ delivery_id: d.delivery_id, event: d.event, signature_valid: d.signature_valid, payload: d.payload }, null, 2)}
-        </pre>
-      )}
-    </div>
-  );
-};
-
-const Groupe: React.FC<{
-  titre: string;
-  items: any[];
-  tone: string;
-  open: string | null;
-  setOpen: (v: string | null) => void;
-}> = ({ titre, items, tone, open, setOpen }) => {
-  const [deplie, setDeplie] = React.useState(false);
-  if (items.length === 0) return null;
-  return (
-    <div className="overflow-hidden rounded-xl border border-dashed border-border bg-muted/20">
-      <button onClick={() => setDeplie(!deplie)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/40">
-        <Inbox className={`h-3.5 w-3.5 ${tone}`} />
-        <span className="flex-1">{titre}</span>
-        <span className="text-xs tabular-nums text-muted-foreground">{items.length}</span>
-        <ChevronDown className={`h-3.5 w-3.5 opacity-50 transition-transform ${deplie ? 'rotate-180' : ''}`} />
-      </button>
-      {deplie && (
-        <div className="divide-y divide-border border-t border-border bg-card">
-          {items.map((d) => <DeliveryRow key={d.id} d={d} open={open} setOpen={setOpen} />)}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const JournalLivraisons: React.FC<{
-  deliveries: any[];
-  open: string | null;
-  setOpen: (v: string | null) => void;
-}> = ({ deliveries, open, setOpen }) => {
-  const { reelles, vides, essais } = React.useMemo(() => {
-    const essais = deliveries.filter((d) => TEST_SERIALS.includes(d.serial_number ?? ''));
-    const reste = deliveries.filter((d) => !TEST_SERIALS.includes(d.serial_number ?? ''));
-    return {
-      essais,
-      vides: reste.filter((d) => !d.error && d.signature_valid && (d.mesures_count ?? 0) === 0),
-      reelles: reste.filter((d) => !(!d.error && d.signature_valid && (d.mesures_count ?? 0) === 0)),
-    };
-  }, [deliveries]);
-
-  return (
-    <section className="space-y-2">
-      <h3 className="text-sm font-semibold">Journal des livraisons · {reelles.length} avec relevé</h3>
-      <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-        {reelles.map((d) => <DeliveryRow key={d.id} d={d} open={open} setOpen={setOpen} />)}
-        {reelles.length === 0 && (
-          <p className="p-4 text-sm text-muted-foreground">Aucune livraison avec relevé : la passerelle n’a encore rien émis d’exploitable.</p>
-        )}
-      </div>
-      <Groupe titre="Reçues sans relevé (measures vide)" items={vides} tone="text-amber-600" open={open} setOpen={setOpen} />
-      <Groupe titre="Essais fournisseur" items={essais} tone="text-slate-500" open={open} setOpen={setOpen} />
-    </section>
   );
 };
 
