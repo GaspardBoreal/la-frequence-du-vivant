@@ -100,10 +100,10 @@ const FicheDoc = () => (
       <View style={s.section} wrap={false}>
         <View style={s.sectionHead} minPresenceAhead={140}>
           <Text style={s.h2num}>{String(fiche.sections.length + 1).padStart(2, '0')}</Text>
-          <Text style={s.h2}>Identite visuelle — trois propositions</Text>
+          <Text style={s.h2}>Identité visuelle — trois propositions</Text>
         </View>
         <Text style={s.intro}>
-          Trois directions de logo pour Frequence Jardin, non encore arbitrees.
+          Trois directions de logo pour Fréquence Jardin, non encore arbitrées. Chacune dispose de sa page dédiée et de son URL d’image directe.
         </Text>
         <View style={s.logoRow}>
           {ficheLogos.map((l) => (
