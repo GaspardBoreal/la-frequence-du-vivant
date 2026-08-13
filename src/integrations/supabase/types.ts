@@ -4320,6 +4320,41 @@ export type Database = {
           },
         ]
       }
+      iot_partner_users: {
+        Row: {
+          actif: boolean
+          created_at: string
+          fournisseur_id: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string
+          fournisseur_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string
+          fournisseur_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iot_partner_users_fournisseur_id_fkey"
+            columns: ["fournisseur_id"]
+            isOneToOne: false
+            referencedRelation: "iot_fournisseurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       iot_types_capteurs: {
         Row: {
           created_at: string
@@ -10042,6 +10077,10 @@ export type Database = {
             }
             Returns: string
           }
+      iot_partner_fournisseur_ids: {
+        Args: { _user_id: string }
+        Returns: string[]
+      }
       is_admin_user: { Args: never; Returns: boolean }
       is_current_user_admin: { Args: never; Returns: boolean }
       is_eco_curator: { Args: { _user_id: string }; Returns: boolean }
@@ -10053,6 +10092,14 @@ export type Database = {
       is_gps_curator: { Args: { _user_id: string }; Returns: boolean }
       is_invited_reader: {
         Args: { _event_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_iot_partner_capteur: {
+        Args: { _capteur_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_iot_partner_of_fournisseur: {
+        Args: { _fournisseur_id: string; _user_id: string }
         Returns: boolean
       }
       is_marcheur_fiche_curator: {
