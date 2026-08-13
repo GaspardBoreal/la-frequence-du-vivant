@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CSP_OPTIONS, GENDER_OPTIONS } from '@/lib/communityProfileTaxonomy';
 import ScienceAccountsEditor, { type ScienceAccountsEditorHandle } from './ScienceAccountsEditor';
 import ProfileSuggestionsList from './ProfileSuggestionsList';
+import IotPartnerSection from './IotPartnerSection';
 import MarcheurEventsSection from './MarcheurEventsSection';
 
 export interface EditableProfile {
