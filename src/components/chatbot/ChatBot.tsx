@@ -83,6 +83,7 @@ export function ChatBot({
   fabId = 'chatbot-global',
   fabLabel,
   focusBanner,
+  composerLock,
 }: ChatBotProps) {
   // Une surface plein écran (Atelier…) vit en z-[3000] : on passe au-dessus.
   const fullscreenOpen = useFullscreenSurfaceOpen();
