@@ -3,7 +3,7 @@ import { TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Link } from 'react-router-dom';
-import { BarChart3, Battery, ExternalLink, MapPin, Radio, Search, Signal } from 'lucide-react';
+import { BarChart3, Battery, ExternalLink, MapPin, Radio, Search, Signal, Sparkles } from 'lucide-react';
 import SafeMapContainer from '@/components/maps/SafeMapContainer';
 import IotLayer from '@/components/propriete/iot/map/IotLayer';
 import SensorObservatory from '@/components/iot/SensorObservatory';
@@ -14,6 +14,7 @@ import { useAllCapteursGeo, useTelemetryLive, useTelemetryPings, type CapteurGeo
 import { useLatestMesures } from '@/hooks/iot/useIot';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
 import { HEALTH_COLOR, fmtHorodatage, fmtMesure, fmtProfondeur, sensorHealth } from '@/lib/iot/grandeurs';
+import { iotChatFocus, openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 
 const FONDS = [
   { key: 'plan', label: 'Plan', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; OpenStreetMap' },
@@ -87,6 +88,17 @@ export const SensorsMapTab: React.FC = () => {
     setSelectedId(c.id);
     if (c.lat != null && c.lng != null) setFocus([c.lat, c.lng]);
   };
+
+  // L'IA regarde ce que l'administrateur regarde : sonde > propriété > parc.
+  React.useEffect(() => {
+    iotChatFocus.setCapteur(selectedId, selected?.propriete_id ?? (propriete === 'all' ? null : propriete));
+  }, [selectedId, selected?.propriete_id, propriete]);
+
+  React.useEffect(() => {
+    if (!selectedId) iotChatFocus.setPropriete(propriete === 'all' ? null : propriete);
+  }, [propriete, selectedId]);
+
+  React.useEffect(() => () => iotChatFocus.reset(), []);
 
   const fondMeta = FONDS.find((f) => f.key === fond)!;
 
@@ -311,6 +323,21 @@ export const SensorsMapTab: React.FC = () => {
 
               <Button size="sm" className="mt-3 w-full" onClick={() => setObservatory(selected)}>
                 <BarChart3 className="mr-1 h-3.5 w-3.5" /> Voir tous les graphes
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2 w-full"
+                onClick={() =>
+                  openIotAi({
+                    capteurId: selected.id,
+                    proprieteId: selected.propriete_id,
+                    prefill: `Cette sonde « ${selected.nom} » est-elle fiable ? Que dit-elle du sol ${selected.emplacement ? `au ${selected.emplacement}` : ''} ?`,
+                  })
+                }
+              >
+                <Sparkles className="mr-1 h-3.5 w-3.5" /> Interroger l'IA de Jardin
               </Button>
             </div>
           )}
