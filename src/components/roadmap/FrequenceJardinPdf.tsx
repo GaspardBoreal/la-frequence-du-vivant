@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, Image, StyleSheet, pdf } from '@react-pdf/renderer';
-import { fiche, FICHE_URL, ficheLogos, logoImageUrl } from '@/content/frequenceJardinFiche';
+import { fiche, FICHE_URL, logoFamilies, logosByFamily, logoImageUrl } from '@/content/frequenceJardinFiche';
 
 const C = {
   ink: '#14201b',
