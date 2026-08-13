@@ -22,7 +22,62 @@ export interface FicheMeta {
   value: string;
 }
 
-export const FICHE_URL = 'https://la-frequence-du-vivant.com/roadmap/frequence-jardin';
+export const SITE_URL = 'https://la-frequence-du-vivant.com';
+export const FICHE_URL = `${SITE_URL}/roadmap/frequence-jardin`;
+
+import logoGermination from '@/assets/brand/frequence-jardin/logos/logo-germination.png.asset.json';
+import logoFeuilleSignal from '@/assets/brand/frequence-jardin/logos/logo-feuille-signal.png.asset.json';
+import logoJardinOndulant from '@/assets/brand/frequence-jardin/logos/logo-jardin-ondulant.png.asset.json';
+
+export interface FicheLogo {
+  slug: string;
+  name: string;
+  intention: string;
+  /** Chemin CDN relatif de l'image. */
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+}
+
+export const ficheLogos: FicheLogo[] = [
+  {
+    slug: 'germination',
+    name: 'Germination en fréquence',
+    intention:
+      "Une graine en train de germer, dont la tige devient une onde. Le logo dit le commencement : ce qui lève dans un sol lu, et l'écoute qui l'accompagne. C'est la proposition la plus narrative des trois.",
+    src: logoGermination.url,
+    alt: "Logo Fréquence Jardin — Germination en fréquence : une graine germant en onde, identité visuelle de l'espace Jardin de La Fréquence du Vivant",
+    width: 1024,
+    height: 1024,
+  },
+  {
+    slug: 'feuille-signal',
+    name: 'Feuille-signal',
+    intention:
+      "Une feuille dont la nervure centrale se transforme en signal. Le plus minimaliste et contemporain des trois : lisible en très petit, idéal en favicon, en signature ou en pastille d'annuaire.",
+    src: logoFeuilleSignal.url,
+    alt: 'Logo Fréquence Jardin — Feuille-signal : une feuille dont la nervure devient une onde, marque de La Fréquence du Vivant',
+    width: 1024,
+    height: 1024,
+  },
+  {
+    slug: 'jardin-ondulant',
+    name: 'Jardin ondulant',
+    intention:
+      "Trois feuilles en spirale accompagnées d'ondes concentriques. Le plus ample et le plus premium : il tient les formats paysage, les couvertures de rapport et les supports imprimés.",
+    src: logoJardinOndulant.url,
+    alt: 'Logo Fréquence Jardin — Jardin ondulant : trois feuilles en spirale entourées d’ondes concentriques, identité de La Fréquence du Vivant',
+    width: 1024,
+    height: 1024,
+  },
+];
+
+/** URL absolue d'une image de logo (utilisable dans un annuaire externe). */
+export const logoImageUrl = (l: FicheLogo) => `${SITE_URL}${l.src}`;
+/** URL absolue de la page dédiée d'un logo. */
+export const logoPageUrl = (l: FicheLogo) => `${FICHE_URL}/logo/${l.slug}`;
+export const findLogo = (slug?: string) => ficheLogos.find((l) => l.slug === slug);
 
 export const fiche = {
   name: 'Fréquence Jardin',
