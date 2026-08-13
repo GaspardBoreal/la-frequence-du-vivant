@@ -2,7 +2,8 @@ import React from 'react';
 import {
   CartesianGrid, Line, LineChart, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { Download, FileText, X } from 'lucide-react';
+import { Download, FileText, Sparkles, X } from 'lucide-react';
+import { openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -143,6 +144,20 @@ export const SensorObservatory: React.FC<Props> = ({ capteur, onClose }) => {
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-emerald-400/30 bg-transparent text-emerald-100 hover:bg-emerald-800"
+              onClick={() =>
+                openIotAi({
+                  capteurId: capteur.id,
+                  proprieteId: capteur.propriete_id,
+                  prefill: `Lis les séries de la sonde « ${capteur.nom} » : que faut-il en retenir, et qu'est-ce qui n'est pas fiable ?`,
+                })
+              }
+            >
+              <Sparkles className="mr-1 h-3.5 w-3.5" /> IA de Jardin
+            </Button>
             <Button size="sm" variant="outline" className="border-emerald-400/30 bg-transparent text-emerald-100 hover:bg-emerald-800" onClick={copyMarkdown}>
               <FileText className="mr-1 h-3.5 w-3.5" /> Markdown
             </Button>

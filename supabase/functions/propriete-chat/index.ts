@@ -61,6 +61,20 @@ Règles de lecture :
 - \`especesRetenuesPalette\` (contexte 🏗️) est la **palette de plantation projetée** par le propriétaire, PAS un relevé de terrain. Vide = simplement aucun choix saisi ; ne la présente jamais comme une absence d'espèces sur le site.
 - Si seul le contexte 🏗️ est actif et que la question porte sur les espèces présentes, demande d'activer 🌱 « Espèces dans l'ouvrage ».`;
 
+/** Mode « poste de commandement IoT » : lecture prudente de la télémétrie. */
+const TELEMETRY_ADDENDUM = (pageState: any) => `
+
+## MODE TÉLÉMÉTRIE (poste de commandement des sondes)
+Périmètre courant : ${pageState?.filters?.iotPerimetre ?? "(non fourni)"} — niveau : ${pageState?.filters?.iotNiveau ?? "?"} — fenêtre : ${pageState?.filters?.fenetreJours ?? "?"} jour(s).
+
+Règles supplémentaires :
+- Cite TOUJOURS l'unité et, quand elle existe, la profondeur (« humidité du sol à 30 cm : 24 % »).
+- Une grandeur absente n'est pas une valeur nulle : dis qu'elle n'est pas transmise par la sonde, et indique quel contexte activer (📡 Santé, 📊 Dernières mesures, 📈 Séries agrégées, 🪨 Lecture croisée sol).
+- Une valeur marquée \`suspecte\` (ou manifestement hors plage physique : air à 49 °C sous abri, humidité de sol > 100 %, profondeur absente sur une sonde à deux profondeurs) est un défaut de chaîne de mesure : signale-le comme tel, ne le commente jamais comme un fait agronomique.
+- Distingue clairement diagnostic de fiabilité (batterie, signal, silences, trous de transmission) et lecture agronomique (état du sol, irrigation, vie du sol).
+- Au niveau « parc », raisonne par propriété puis par sonde en alerte ; ne noie pas la réponse dans le détail de sondes saines.
+- Termine par une action concrète quand c'est utile : sonde à aller voir, réglage de cadence, seuil à ajuster, mesure de terrain à croiser.`;
+
 const VOICE_MODE_ADDENDUM = `
 
 MODE VOCAL : réponses courtes et naturelles (2-3 phrases max), sans markdown.`;
@@ -101,23 +115,39 @@ serve(async (req) => {
       });
     }
 
-    // Le chat n'est disponible que sur une propriété à laquelle l'utilisateur a accès.
+    // Le chat n'est disponible que sur une propriété à laquelle l'utilisateur a
+    // accès — sauf en mode « poste de commandement IoT » (parc entier), réservé
+    // aux administrateurs.
     const proprieteId = typeof entity?.id === "string" ? entity.id : null;
-    if (!proprieteId) {
+    const iotAdminMode = pageState?.filters?.iotAdmin === true;
+
+    if (!proprieteId && !iotAdminMode) {
       return new Response(JSON.stringify({ error: "Propriété manquante" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { data: canAccess, error: accessErr } = await userClient.rpc("can_access_propriete", {
-      _propriete_id: proprieteId,
-    });
-    if (accessErr || !canAccess) {
-      return new Response(JSON.stringify({ error: "Forbidden — accès propriété requis" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (proprieteId) {
+      const { data: canAccess, error: accessErr } = await userClient.rpc("can_access_propriete", {
+        _propriete_id: proprieteId,
       });
+      if (accessErr || !canAccess) {
+        return new Response(JSON.stringify({ error: "Forbidden — accès propriété requis" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      const { data: isAdmin, error: adminErr } = await userClient.rpc("check_is_admin_user", {
+        check_user_id: userData.user.id,
+      });
+      if (adminErr || !isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden — accès administrateur requis" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Frugalité : on ne transmet que les contextes activés par l'utilisateur.
@@ -147,6 +177,7 @@ Un ouvrage est cadré (rayon ${pageState?.filters?.rayonEcouteM ?? "?"} m) mais 
 L'utilisateur n'a activé aucun contexte. Réponds sur la méthode et invite-le à sélectionner un ouvrage dans l'Atelier puis à cliquer sur **« Cadrer l'IA sur cet ouvrage »**, ou à ouvrir la **Console de contextes** (trombone 📎) pour activer les données utiles (vivant, sol, ouvrage, portrait du site).`;
 
     let systemContent = SYSTEM_PROMPT + contextBlock;
+    if (iotAdminMode) systemContent += TELEMETRY_ADDENDUM(pageState);
     if (voiceMode) systemContent += VOICE_MODE_ADDENDUM;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

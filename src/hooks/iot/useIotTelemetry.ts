@@ -341,3 +341,30 @@ export function useMesureSeriesRange(capteurId?: string, fromISO?: string, toISO
     },
   });
 }
+
+/** Séries de plusieurs sondes sur une fenêtre glissante (agrégats IA). */
+export function useMesuresWindow(capteurIds: string[], days: number) {
+  const ids = [...capteurIds].sort();
+  return useQuery<any[]>({
+    queryKey: ['iot-mesures', 'window', ids.join(','), days],
+    enabled: ids.length > 0,
+    staleTime: 120_000,
+    queryFn: async () => {
+      const since = new Date(Date.now() - days * 86_400_000).toISOString();
+      const { data, error } = await db
+        .from('iot_mesures')
+        .select('capteur_id, grandeur, valeur, unite, profondeur_m, mesure_at')
+        .in('capteur_id', ids)
+        .neq('source', 'webhook_test')
+        .gte('mesure_at', since)
+        .order('mesure_at', { ascending: true })
+        .limit(20000);
+      if (error) throw error;
+      return (data ?? []).map((m: any) => ({
+        ...m,
+        valeur: Number(m.valeur),
+        profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),
+      }));
+    },
+  });
+}

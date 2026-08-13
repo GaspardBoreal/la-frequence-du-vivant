@@ -16,6 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TelemetryControl from '@/components/iot/TelemetryControl';
 import SensorsMapTab from '@/components/iot/SensorsMapTab';
+import IotChatBotMount from '@/components/iot/chatbot/IotChatBotMount';
 
 const FAMILLES = ['sol', 'meteo', 'eau', 'air', 'autre'];
 
@@ -255,6 +256,9 @@ const AdminIot: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* IA de Jardin cadrée sur le poste de commandement des sondes */}
+      <IotChatBotMount />
 
       <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
         <AlertDialogContent>
