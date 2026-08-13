@@ -174,10 +174,19 @@ const FrequenceJardinFiche: React.FC = () => {
 
               {isMarches && (
                 <a
-                  href="/marches-du-vivant"
-                  className="mt-6 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-5 py-2.5 text-sm text-primary transition hover:bg-primary/20"
+                  href="/marches-du-vivant/carte-marches-du-vivant"
+                  className="mt-6 group inline-flex w-full items-center justify-between rounded-2xl border border-primary/30 bg-primary/10 p-5 text-left transition hover:bg-primary/15 hover:border-primary/50"
                 >
-                  Découvrir Les Marches du Vivant <ArrowUpRight className="h-4 w-4" />
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">
+                      <Footprints className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-primary">Carte des Marches du Vivant</p>
+                      <p className="text-sm text-muted-foreground">Explorez le vivant en France</p>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="h-5 w-5 text-primary transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </a>
               )}
             </section>
