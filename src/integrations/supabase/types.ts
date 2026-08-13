@@ -4248,6 +4248,7 @@ export type Database = {
           nom: string
           notes: string | null
           pays: string | null
+          slug: string | null
           updated_at: string
           website: string | null
         }
@@ -4258,6 +4259,7 @@ export type Database = {
           nom: string
           notes?: string | null
           pays?: string | null
+          slug?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -4268,6 +4270,7 @@ export type Database = {
           nom?: string
           notes?: string | null
           pays?: string | null
+          slug?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -10077,6 +10080,7 @@ export type Database = {
             }
             Returns: string
           }
+      iot_fournisseur_slugify: { Args: { _nom: string }; Returns: string }
       iot_partner_fournisseur_ids: {
         Args: { _user_id: string }
         Returns: string[]
