@@ -83,7 +83,10 @@ const FrequenceJardinFiche: React.FC = () => {
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-primary">
             <Leaf className="h-3.5 w-3.5" /> Fiche application
           </div>
-          <h1 className="mt-5 text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
+          <p className="mt-4 text-sm font-medium tracking-wide text-muted-foreground">
+            Publiée le {fiche.publishedAt}
+          </p>
+          <h1 className="mt-3 text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
             {fiche.name}
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-primary">{fiche.baseline}</p>
