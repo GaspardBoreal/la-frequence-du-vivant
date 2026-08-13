@@ -214,7 +214,18 @@ const TrustInFrequenceVivant: React.FC = () => {
   const [value, setValue] = React.useState('');
   const [error, setError] = React.useState(false);
   const [windowKey, setWindowKey] = React.useState<TrustWindowKey>('ce_matin');
-  const [tab, setTab] = React.useState<TrustTab>('accueil');
+  const [tab, setTab] = React.useState<TrustTab>(() => {
+    if (typeof window === 'undefined') return 'accueil';
+    const t = new URLSearchParams(window.location.search).get('tab');
+    return t === 'controle' || t === 'carte' ? (t as TrustTab) : 'accueil';
+  });
+
+  // Retour sur l'onglet demandé après connexion (aucune route /auth n'existe).
+  const partnerNext = `/trust-in-frequence-vivant?tab=${tab}`;
+  const partnerLoginHref = `/marches-du-vivant/connexion?next=${encodeURIComponent(partnerNext)}`;
+  const partnerSignupHref = `${partnerLoginHref}&tab=register`;
+
+
 
   const { data: fournisseurs = [] } = useIotFournisseurs();
   const bradId = React.useMemo(
@@ -402,11 +413,18 @@ const TrustInFrequenceVivant: React.FC = () => {
               <h2 className="text-lg font-semibold">Espace partenaire BRAD</h2>
               <p className="mt-2 text-sm text-emerald-100/70">
                 Le poste de contrôle et la carte des sondes s’ouvrent avec un compte partenaire BRAD.
-                Connectez-vous, ou demandez-nous l’ouverture de votre accès.
+                Connectez-vous avec votre compte, ou demandez-nous l’ouverture de votre accès :
+                créer un compte ne suffit pas, il doit être rattaché à BRAD Technology par
+                La Fréquence du Vivant.
               </p>
-              <Button asChild size="sm" className="mt-4 bg-emerald-500 text-emerald-950 hover:bg-emerald-400">
-                <Link to="/auth">Se connecter</Link>
-              </Button>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <Button asChild size="sm" className="bg-emerald-500 text-emerald-950 hover:bg-emerald-400">
+                  <Link to={partnerLoginHref}>Se connecter</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="border-emerald-400/30 bg-transparent text-emerald-100 hover:bg-emerald-400/10">
+                  <Link to={partnerSignupHref}>Créer un compte</Link>
+                </Button>
+              </div>
             </div>
           )}
         </div>
