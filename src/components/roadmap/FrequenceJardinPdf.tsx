@@ -39,7 +39,7 @@ const s = StyleSheet.create({
 });
 
 const Bullet = ({ children }: { children: string }) => (
-  <View style={s.bullet}>
+  <View style={s.bullet} wrap={false}>
     <Text style={s.dot}>—</Text>
     <Text style={s.bulletText}>{children}</Text>
   </View>
