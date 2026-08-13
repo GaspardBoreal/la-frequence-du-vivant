@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Leaf, Download, FileText, Copy, Check, ArrowUpRight, Footprints } from 'lucide-react';
+import { Leaf, Download, FileText, Copy, Check, ArrowUpRight, Footprints, Images } from 'lucide-react';
 import Footer from '@/components/Footer';
 import RoadmapNav from '@/components/roadmap/RoadmapNav';
 import { Button } from '@/components/ui/button';
