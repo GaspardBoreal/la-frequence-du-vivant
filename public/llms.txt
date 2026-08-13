@@ -18,6 +18,10 @@ La Fréquence du Vivant relie poésie contemporaine, bioacoustique et science ci
 
 
 
+## Applications (fiches de référence)
+
+- [Fréquence Jardin — fiche application](/roadmap/frequence-jardin): application web de diagnostic écologique d'un lieu (sol, flore bio-indicatrice, ICG, palette végétale, atelier de projet, clinique du vivant, capteurs IoT, IA de jardin). Fiche disponible en page web, Markdown et PDF. Reliée à l'application des marcheurs Les Marches du Vivant.
+
 ## Pages
 
 - [Accueil](/): Portail principal — bioacoustique, poésie, fréquences du vivant.
