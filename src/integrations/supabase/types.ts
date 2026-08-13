@@ -4326,6 +4326,10 @@ export type Database = {
       iot_partner_users: {
         Row: {
           actif: boolean
+          ai_enabled: boolean
+          ai_period_start: string
+          ai_quota: number
+          ai_used: number
           created_at: string
           fournisseur_id: string
           id: string
@@ -4334,6 +4338,10 @@ export type Database = {
         }
         Insert: {
           actif?: boolean
+          ai_enabled?: boolean
+          ai_period_start?: string
+          ai_quota?: number
+          ai_used?: number
           created_at?: string
           fournisseur_id: string
           id?: string
@@ -4342,6 +4350,10 @@ export type Database = {
         }
         Update: {
           actif?: boolean
+          ai_enabled?: boolean
+          ai_period_start?: string
+          ai_quota?: number
+          ai_used?: number
           created_at?: string
           fournisseur_id?: string
           id?: string
@@ -9323,6 +9335,10 @@ export type Database = {
       }
       confirm_admin_email: { Args: { target_email: string }; Returns: boolean }
       consume_event_invitation: { Args: { _token: string }; Returns: Json }
+      consume_iot_ai_credit: {
+        Args: { _fournisseur_id: string }
+        Returns: Json
+      }
       create_admin_user: {
         Args: { new_email: string; new_user_id: string }
         Returns: boolean
@@ -9719,6 +9735,7 @@ export type Database = {
           url: string
         }[]
       }
+      get_iot_ai_credit: { Args: { _fournisseur_id: string }; Returns: Json }
       get_iot_trust_report: { Args: { p_since: string }; Returns: Json }
       get_marche_events_dashboard_stats:
         | {

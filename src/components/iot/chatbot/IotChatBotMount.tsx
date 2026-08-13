@@ -1,16 +1,24 @@
 import { useEffect, useMemo } from 'react';
+import { Sparkles } from 'lucide-react';
 import { ChatBot } from '@/components/chatbot/ChatBot';
 import { chatPageContext, contextSliceKey } from '@/hooks/useChatPageContext';
 import { useIotChatProviders } from '@/hooks/iot/useIotChatProviders';
+import type { IotAiCredit } from '@/hooks/iot/useIotAiCredit';
 import { useIotChatFocus, IOT_AUTO_CONTEXT_IDS } from './iotChatFocus';
 import IotFocusBanner from './IotFocusBanner';
+
+interface Props {
+  /** Fabricant cadré (console partenaire) — pilote les crédits de messages. */
+  fournisseurId?: string | null;
+  credit?: IotAiCredit | null;
+}
 
 /**
  * IA de Jardin montée dans le poste de commandement IoT.
  * Le cadrage suit ce que l'administrateur regarde (sonde > propriété > parc) ;
  * les contextes essentiels sont activés d'office, la Console 📎 garde la main.
  */
-export function IotChatBotMount() {
+export function IotChatBotMount({ fournisseurId = null, credit = null }: Props) {
   const focus = useIotChatFocus();
   const { providers, providersTitle, scope } = useIotChatProviders();
 
@@ -50,12 +58,13 @@ export function IotChatBotMount() {
       label: `Poste IoT — ${scope.label}`,
       filters: {
         iotAdmin: true,
+        iotFournisseurId: fournisseurId,
         iotPerimetre: scope.label,
         iotNiveau: scope.level,
         fenetreJours: focus.windowDays,
       },
     });
-  }, [providers, scope.label, scope.level, scope.proprieteId, focus.windowDays]);
+  }, [providers, scope.label, scope.level, scope.proprieteId, focus.windowDays, fournisseurId]);
 
   // Nettoyage au démontage de la page.
   useEffect(
@@ -67,6 +76,8 @@ export function IotChatBotMount() {
     [],
   );
 
+  const exhausted = !!credit && !credit.admin && credit.remaining === 0;
+
   return (
     <ChatBot
       key="admin-iot"
@@ -76,7 +87,21 @@ export function IotChatBotMount() {
       roleBadge="Sondes"
       fabId="ia-jardin-iot"
       fabLabel="IA de Jardin"
-      focusBanner={<IotFocusBanner scope={scope} activeProviders={autoProviders} />}
+      focusBanner={<IotFocusBanner scope={scope} activeProviders={autoProviders} credit={credit} />}
+      composerLock={
+        exhausted ? (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+            <div>
+              <p className="font-medium">Vos crédits IA du mois sont épuisés</p>
+              <p className="mt-0.5 text-muted-foreground">
+                {credit?.quota} messages accordés, tous consommés. Demandez une recharge à
+                La Fréquence du Vivant — le compteur se renouvelle automatiquement le 1er du mois.
+              </p>
+            </div>
+          </div>
+        ) : undefined
+      }
     />
   );
 }

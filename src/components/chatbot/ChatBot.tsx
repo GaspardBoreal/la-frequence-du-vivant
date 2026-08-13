@@ -67,6 +67,8 @@ interface ChatBotProps {
   fabLabel?: string;
   /** Bandeau de cadrage affiché juste au-dessus du header (ex : ouvrage ciblé). */
   focusBanner?: React.ReactNode;
+  /** Remplace la zone de saisie (ex : crédits IA épuisés). */
+  composerLock?: React.ReactNode;
 }
 
 
@@ -81,6 +83,7 @@ export function ChatBot({
   fabId = 'chatbot-global',
   fabLabel,
   focusBanner,
+  composerLock,
 }: ChatBotProps) {
   // Une surface plein écran (Atelier…) vit en z-[3000] : on passe au-dessus.
   const fullscreenOpen = useFullscreenSurfaceOpen();
@@ -690,6 +693,9 @@ export function ChatBot({
                   </div>
 
                   {/* Input */}
+                  {composerLock ? (
+                    <div className="border-t border-border bg-card p-3">{composerLock}</div>
+                  ) : (
                   <div className="border-t border-border bg-card p-3">
                     <input
                       ref={fileInputRef}
@@ -887,9 +893,10 @@ export function ChatBot({
                           <Send className="h-4 w-4" />
                         </Button>
                       )}
-                    </div>
-                  </div>
-                </div>
+                     </div>
+                   </div>
+                   )}
+                 </div>
               </div>
             </motion.div>
           </motion.div>

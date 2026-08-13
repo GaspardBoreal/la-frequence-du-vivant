@@ -4,6 +4,7 @@ import { iotChatFocus, useIotChatFocus, IOT_WINDOWS } from './iotChatFocus';
 import { formatBytes } from '@/lib/chatContextCost';
 import type { ContextProvider } from '@/hooks/useChatPageContext';
 import type { IotScope } from '@/hooks/iot/useIotChatProviders';
+import type { IotAiCredit } from '@/hooks/iot/useIotAiCredit';
 
 /**
  * Bandeau de cadrage du poste IoT : l'administrateur voit d'un coup d'œil sur
@@ -12,9 +13,12 @@ import type { IotScope } from '@/hooks/iot/useIotChatProviders';
 export function IotFocusBanner({
   scope,
   activeProviders = [],
+  credit = null,
 }: {
   scope: IotScope;
   activeProviders?: ContextProvider[];
+  /** Crédits de messages du partenaire (absent côté admin). */
+  credit?: IotAiCredit | null;
 }) {
   const focus = useIotChatFocus();
   const totalBytes = activeProviders.reduce((s, p) => s + p.bytes, 0);
@@ -25,6 +29,21 @@ export function IotFocusBanner({
       <span className="min-w-0 truncate text-[11px]">
         Cadré sur <span className="font-semibold">{scope.label}</span>
       </span>
+
+      {credit && !credit.admin && credit.quota >= 0 && (
+        <span
+          title="Messages IA restants ce mois-ci"
+          className={`rounded-full border px-2 py-0.5 text-[10px] ${
+            credit.remaining === 0
+              ? 'border-red-400/60 text-red-200'
+              : credit.remaining <= 2
+                ? 'border-amber-400/60 text-amber-200'
+                : 'border-[hsl(var(--ds-gold))]/50 text-[hsl(var(--ds-gold))]'
+          }`}
+        >
+          ✦ {credit.remaining}/{credit.quota}
+        </span>
+      )}
 
       <span className="ml-auto flex items-center gap-1">
         {IOT_WINDOWS.map((d) => (
