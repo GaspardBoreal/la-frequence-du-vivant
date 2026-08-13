@@ -138,9 +138,15 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
           if (!selectedNetworks.every(n => owned.has(n))) return false;
         }
       }
+
+      // Accès partenaire IoT
+      if (partner === 'any' && p.iot_partners.length === 0) return false;
+      if (partner !== 'all' && partner !== 'any') {
+        if (!p.iot_partners.some(x => x.fournisseur_id === partner)) return false;
+      }
       return true;
     });
-  }, [enriched, search, age, gender, csp, role, selectedNetworks, networkMode, special, adhesion, college]);
+  }, [enriched, search, age, gender, csp, role, selectedNetworks, networkMode, special, adhesion, college, partner]);
 
   return (
     <div className="space-y-4">
