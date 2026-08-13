@@ -67,6 +67,8 @@ interface ChatBotProps {
   fabLabel?: string;
   /** Bandeau de cadrage affiché juste au-dessus du header (ex : ouvrage ciblé). */
   focusBanner?: React.ReactNode;
+  /** Remplace la zone de saisie (ex : crédits IA épuisés). */
+  composerLock?: React.ReactNode;
 }
 
 
