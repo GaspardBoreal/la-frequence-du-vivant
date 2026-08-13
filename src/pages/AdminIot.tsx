@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TelemetryControl from '@/components/iot/TelemetryControl';
+import SensorsMapTab from '@/components/iot/SensorsMapTab';
 
 const FAMILLES = ['sol', 'meteo', 'eau', 'air', 'autre'];
 
@@ -44,15 +45,20 @@ const AdminIot: React.FC = () => {
         </div>
       </div>
 
-      <div className="mx-auto max-w-5xl space-y-8 px-6 py-8">
+      <div className="mx-auto max-w-7xl space-y-8 px-6 py-8">
         <Tabs defaultValue="telemetrie">
           <TabsList className="mb-4">
             <TabsTrigger value="telemetrie">Poste de contrôle</TabsTrigger>
+            <TabsTrigger value="carte">Carte des sondes</TabsTrigger>
             <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
           </TabsList>
 
           <TabsContent value="telemetrie">
             <TelemetryControl />
+          </TabsContent>
+
+          <TabsContent value="carte">
+            <SensorsMapTab />
           </TabsContent>
 
           <TabsContent value="catalogue" className="space-y-8">
