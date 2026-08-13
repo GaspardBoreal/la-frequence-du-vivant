@@ -70,6 +70,30 @@ const FrequenceJardinFiche: React.FC = () => {
         <meta property="og:url" content={FICHE_URL} />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
+        <meta property="og:image" content={logoImageUrl(ficheLogos[0])} />
+        <meta property="og:image:alt" content={ficheLogos[0].alt} />
+        <meta name="twitter:image" content={logoImageUrl(ficheLogos[0])} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ImageGallery',
+            name: 'Logos Fréquence Jardin — La Fréquence du Vivant',
+            url: `${FICHE_URL}#identite-visuelle`,
+            inLanguage: 'fr',
+            image: ficheLogos.map((l) => ({
+              '@type': 'ImageObject',
+              name: `${l.name} — logo Fréquence Jardin`,
+              caption: l.alt,
+              description: l.intention,
+              contentUrl: logoImageUrl(l),
+              url: logoPageUrl(l),
+              width: l.width,
+              height: l.height,
+              encodingFormat: 'image/png',
+              creditText: 'La Fréquence du Vivant',
+            })),
+          })}
+        </script>
         <script type="application/ld+json">
           {JSON.stringify({
             '@context': 'https://schema.org',
