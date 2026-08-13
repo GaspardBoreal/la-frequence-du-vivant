@@ -97,23 +97,30 @@ const FicheDoc = () => (
         </View>
       ))}
 
-      <View style={s.section} wrap={false}>
+      <View style={s.section} wrap>
         <View style={s.sectionHead} minPresenceAhead={140}>
           <Text style={s.h2num}>{String(fiche.sections.length + 1).padStart(2, '0')}</Text>
-          <Text style={s.h2}>Identité visuelle — trois propositions</Text>
+          <Text style={s.h2}>Identité visuelle</Text>
         </View>
         <Text style={s.intro}>
-          Trois directions de logo pour Fréquence Jardin, non encore arbitrées. Chacune dispose de sa page dédiée et de son URL d’image directe.
+          Propositions de logo par famille de marque, non encore arbitrées. Chacune dispose de sa page dédiée et de son URL d’image directe.
         </Text>
-        <View style={s.logoRow}>
-          {ficheLogos.map((l) => (
-            <View key={l.slug} style={s.logoCard}>
-              <Image style={s.logoImg} src={logoImageUrl(l)} />
-              <Text style={s.logoName}>{l.name}</Text>
+        {logoFamilies.map((fam) => (
+          <View key={fam.id} style={{ marginBottom: 14 }} wrap={false}>
+            <Text style={s.itemName}>{fam.title}</Text>
+            <Text style={[s.intro, { marginTop: 2, marginBottom: 6 }]}>{fam.intro}</Text>
+            <View style={s.logoRow}>
+              {logosByFamily(fam.id).map((l) => (
+                <View key={l.slug} style={s.logoCard}>
+                  <Image style={s.logoImg} src={logoImageUrl(l)} />
+                  <Text style={s.logoName}>{l.name}</Text>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          </View>
+        ))}
       </View>
+
       <Footer />
     </Page>
   </Document>
