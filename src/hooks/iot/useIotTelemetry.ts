@@ -165,3 +165,106 @@ export function useTelemetryCounters(deliveries: TelemetryDelivery[], capteurs: 
     };
   }, [deliveries, capteurs]);
 }
+
+/* ── Journal paginé et filtrable ───────────────────────────────────────── */
+
+export type DeliveryEtat = 'all' | 'avec' | 'sans' | 'refusee' | 'erreur' | 'essai';
+
+export interface DeliveryFilters {
+  since: string | null;   // ISO, borne basse
+  until: string | null;   // ISO, borne haute
+  fournisseur: string;    // '' = tous
+  serial: string;         // '' = toutes les sondes
+  etat: DeliveryEtat;
+  q: string;              // recherche libre
+  page: number;           // 1-indexé
+  pageSize: number;
+}
+
+export const TEST_SERIALS = ['test-probe-001'];
+
+/** Livraisons filtrées, lues page par page en base (total exact). */
+export function useTelemetryDeliveriesPaged(f: DeliveryFilters) {
+  return useQuery<{ rows: TelemetryDelivery[]; total: number }>({
+    queryKey: ['iot-deliveries', 'paged', f],
+    refetchInterval: 60_000,
+    placeholderData: (prev) => prev,
+    queryFn: async () => {
+      let q = db
+        .from('iot_webhook_deliveries')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false });
+
+      if (f.since) q = q.gte('created_at', f.since);
+      if (f.until) q = q.lte('created_at', f.until);
+      if (f.fournisseur) q = q.eq('fournisseur', f.fournisseur);
+      if (f.serial) q = q.eq('serial_number', f.serial);
+
+      switch (f.etat) {
+        case 'avec':
+          q = q.is('error', null).eq('signature_valid', true).gt('mesures_count', 0)
+            .not('serial_number', 'in', `(${TEST_SERIALS.join(',')})`);
+          break;
+        case 'sans':
+          q = q.is('error', null).eq('signature_valid', true).eq('mesures_count', 0)
+            .not('serial_number', 'in', `(${TEST_SERIALS.join(',')})`);
+          break;
+        case 'refusee':
+          q = q.eq('signature_valid', false);
+          break;
+        case 'erreur':
+          q = q.not('error', 'is', null);
+          break;
+        case 'essai':
+          q = q.in('serial_number', TEST_SERIALS);
+          break;
+        default:
+          break;
+      }
+
+      if (f.q.trim()) {
+        const t = f.q.trim().replace(/[%,()]/g, '');
+        q = q.or(`serial_number.ilike.%${t}%,delivery_id.ilike.%${t}%,error.ilike.%${t}%,event.ilike.%${t}%`);
+      }
+
+      const from = (f.page - 1) * f.pageSize;
+      const { data, error, count } = await q.range(from, from + f.pageSize - 1);
+      if (error) throw error;
+      return { rows: (data ?? []) as TelemetryDelivery[], total: count ?? 0 };
+    },
+  });
+}
+
+/** Fournisseurs réellement présents dans le journal. */
+export function useDeliveryFournisseurs() {
+  return useQuery<string[]>({
+    queryKey: ['iot-deliveries', 'fournisseurs'],
+    staleTime: 300_000,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from('iot_webhook_deliveries')
+        .select('fournisseur')
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return Array.from(new Set((data ?? []).map((d: any) => d.fournisseur).filter(Boolean))).sort();
+    },
+  });
+}
+
+/** Numéros de série vus dans le journal (y compris sondes non déclarées). */
+export function useDeliverySerials() {
+  return useQuery<string[]>({
+    queryKey: ['iot-deliveries', 'serials'],
+    staleTime: 300_000,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from('iot_webhook_deliveries')
+        .select('serial_number')
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return Array.from(new Set((data ?? []).map((d: any) => d.serial_number).filter(Boolean))).sort();
+    },
+  });
+}
