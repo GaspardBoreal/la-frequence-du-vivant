@@ -1,8 +1,5 @@
 import { Document, Page, Text, View, Image, StyleSheet, pdf } from '@react-pdf/renderer';
-import { fiche, FICHE_URL, ficheLogos } from '@/content/frequenceJardinFiche';
-
-/** Origine courante : les images du CDN sont servies par l'application elle-même. */
-const origin = typeof window !== 'undefined' ? window.location.origin : 'https://la-frequence-du-vivant.com';
+import { fiche, FICHE_URL, ficheLogos, logoImageUrl } from '@/content/frequenceJardinFiche';
 
 const C = {
   ink: '#14201b',
@@ -111,7 +108,7 @@ const FicheDoc = () => (
         <View style={s.logoRow}>
           {ficheLogos.map((l) => (
             <View key={l.slug} style={s.logoCard}>
-              <Image style={s.logoImg} src={`${origin}${l.src}`} />
+              <Image style={s.logoImg} src={logoImageUrl(l)} />
               <Text style={s.logoName}>{l.name}</Text>
             </View>
           ))}
