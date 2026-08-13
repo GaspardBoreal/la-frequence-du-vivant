@@ -64,7 +64,7 @@ const FicheDoc = () => (
     <Page size="A4" style={s.page}>
       {fiche.sections.map((sec, i) => (
         <View key={sec.id} style={s.section} wrap>
-          <View style={s.sectionHead}>
+          <View style={s.sectionHead} minPresenceAhead={90}>
             <Text style={s.h2num}>{String(i + 1).padStart(2, '0')}</Text>
             <Text style={s.h2}>{sec.title}</Text>
           </View>
