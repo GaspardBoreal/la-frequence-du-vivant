@@ -26,9 +26,15 @@ export const FICHE_URL = 'https://la-frequence-du-vivant.com/roadmap/frequence-j
 
 export const fiche = {
   name: 'Fréquence Jardin',
+  publishedAt: '15.08.2026',
   baseline: "Le diagnostic vivant d'un lieu, de la première observation au geste de plantation.",
   summary:
     "Fréquence Jardin est une application web de diagnostic écologique de terrain. Elle conduit un jardin, une propriété ou une parcelle à travers cinq temps — observer, analyser le sol, identifier la flore bio-indicatrice, synthétiser, composer une palette végétale — puis prolonge ce diagnostic par un atelier de projet, une clinique sanitaire, un réseau de capteurs et une IA agronomique frugale. Elle est éditée par l'association La Fréquence du Vivant, dans la continuité des Marches du Vivant.",
+  imprint: {
+    association: 'Association LA FREQUENCE DU VIVANT',
+    address: ['6 rue du Champ de Foire', '16 190 DEVIAT'],
+    contact: 'Laurent TRIPIED : lt@bziiit.com / 06 70 76 14 99',
+  },
   meta: [
     { label: 'Nom', value: 'Fréquence Jardin (espace Jardin de La Fréquence du Vivant)' },
     { label: 'Type', value: 'Application web (React / TypeScript / PostgreSQL), usage sur navigateur, mobile et desktop' },
@@ -184,6 +190,8 @@ export function ficheToMarkdown(): string {
   L.push('');
   L.push(`> ${fiche.baseline}`);
   L.push('');
+  L.push(`*Fiche publiée le ${fiche.publishedAt}.*`);
+  L.push('');
   L.push(fiche.summary);
   L.push('');
   L.push("## Carte d'identité");
@@ -211,6 +219,11 @@ export function ficheToMarkdown(): string {
   });
 
   L.push('---');
+  L.push('');
+  L.push(fiche.imprint.association);
+  fiche.imprint.address.forEach((line) => L.push(line));
+  L.push('');
+  L.push(`Contact : ${fiche.imprint.contact}`);
   L.push('');
   L.push(
     `Fiche publiée par l'association La Fréquence du Vivant — ${FICHE_URL}`,

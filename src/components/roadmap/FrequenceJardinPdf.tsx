@@ -10,10 +10,11 @@ const C = {
 };
 
 const s = StyleSheet.create({
-  page: { padding: 44, paddingBottom: 62, backgroundColor: C.paper, fontFamily: 'Helvetica', fontSize: 10, color: C.ink },
-  cover: { padding: 54, backgroundColor: C.paper, fontFamily: 'Helvetica', color: C.ink },
+  page: { padding: 44, paddingBottom: 82, backgroundColor: C.paper, fontFamily: 'Helvetica', fontSize: 10, color: C.ink },
+  cover: { padding: 54, paddingBottom: 82, backgroundColor: C.paper, fontFamily: 'Helvetica', color: C.ink },
   eyebrow: { fontSize: 8, letterSpacing: 2, color: C.accent, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
-  coverTitle: { fontSize: 38, fontFamily: 'Helvetica-Bold', color: C.ink, marginTop: 18, marginBottom: 10 },
+  coverTitle: { fontSize: 38, fontFamily: 'Helvetica-Bold', color: C.ink, marginTop: 18, marginBottom: 8 },
+  coverDate: { fontSize: 10, color: C.soft, marginBottom: 10 },
   coverBaseline: { fontSize: 13, color: C.accent, lineHeight: 1.5, marginBottom: 22 },
   coverSummary: { fontSize: 10.5, color: C.soft, lineHeight: 1.7, marginBottom: 26 },
   rule: { borderBottomWidth: 1, borderBottomColor: C.line, marginVertical: 16 },
@@ -33,9 +34,11 @@ const s = StyleSheet.create({
   section: { marginBottom: 20 },
   footer: {
     position: 'absolute', bottom: 26, left: 44, right: 44,
-    flexDirection: 'row', justifyContent: 'space-between',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
     fontSize: 7.5, color: '#8a978f',
   },
+  footerImprint: { flex: 1, lineHeight: 1.5 },
+  footerPage: { textAlign: 'right', marginLeft: 20 },
 });
 
 const Bullet = ({ children }: { children: string }) => (
@@ -45,11 +48,23 @@ const Bullet = ({ children }: { children: string }) => (
   </View>
 );
 
+const Footer = () => (
+  <View style={s.footer} fixed>
+    <View style={s.footerImprint}>
+      <Text>{fiche.imprint.association}</Text>
+      <Text>{fiche.imprint.address.join(' · ')}</Text>
+      <Text>Contact : {fiche.imprint.contact}</Text>
+    </View>
+    <Text style={s.footerPage} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+  </View>
+);
+
 const FicheDoc = () => (
   <Document title={`${fiche.name} — fiche application`} author="La Frequence du Vivant">
     <Page size="A4" style={s.cover}>
       <Text style={s.eyebrow}>Fiche application</Text>
       <Text style={s.coverTitle}>{fiche.name}</Text>
+      <Text style={s.coverDate}>Publiée le {fiche.publishedAt}</Text>
       <Text style={s.coverBaseline}>{fiche.baseline}</Text>
       <Text style={s.coverSummary}>{fiche.summary}</Text>
       <View style={s.rule} />
@@ -59,6 +74,7 @@ const FicheDoc = () => (
           <Text style={s.metaValue}>{m.value}</Text>
         </View>
       ))}
+      <Footer />
     </Page>
 
     <Page size="A4" style={s.page}>
@@ -78,10 +94,7 @@ const FicheDoc = () => (
           ))}
         </View>
       ))}
-      <View style={s.footer} fixed>
-        <Text>{fiche.name} — La Frequence du Vivant</Text>
-        <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
-      </View>
+      <Footer />
     </Page>
   </Document>
 );
