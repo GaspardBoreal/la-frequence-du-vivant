@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url><loc>https://la-frequence-du-vivant.com/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://la-frequence-du-vivant.com/marches-du-vivant</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://la-frequence-du-vivant.com/marches-du-vivant/entreprises</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
@@ -17,4 +17,14 @@
   <url><loc>https://la-frequence-du-vivant.com/explorations</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://la-frequence-du-vivant.com/galerie-fleuve</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://la-frequence-du-vivant.com/jardin/deviat-jardin-monde-du-11-03-26-a-aujourd-hui-2026-06-30</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://la-frequence-du-vivant.com/roadmap/frequence-jardin</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://la-frequence-du-vivant.com/roadmap/frequence-jardin/logo/germination</loc><changefreq>monthly</changefreq><priority>0.6</priority>
+    <image:image><image:loc>https://la-frequence-du-vivant.com/__l5e/assets-v1/5e277dd6-5b25-4f51-8a37-8dd2cca407f6/logo-germination.png</image:loc><image:title>Germination en fréquence — logo Fréquence Jardin</image:title><image:caption>Logo Fréquence Jardin — Germination en fréquence, identité visuelle de La Fréquence du Vivant</image:caption></image:image>
+  </url>
+  <url><loc>https://la-frequence-du-vivant.com/roadmap/frequence-jardin/logo/feuille-signal</loc><changefreq>monthly</changefreq><priority>0.6</priority>
+    <image:image><image:loc>https://la-frequence-du-vivant.com/__l5e/assets-v1/b8a63936-f512-454c-916e-8fcf91c68a86/logo-feuille-signal.png</image:loc><image:title>Feuille-signal — logo Fréquence Jardin</image:title><image:caption>Logo Fréquence Jardin — Feuille-signal, marque de La Fréquence du Vivant</image:caption></image:image>
+  </url>
+  <url><loc>https://la-frequence-du-vivant.com/roadmap/frequence-jardin/logo/jardin-ondulant</loc><changefreq>monthly</changefreq><priority>0.6</priority>
+    <image:image><image:loc>https://la-frequence-du-vivant.com/__l5e/assets-v1/17316922-0c86-4faf-a72a-e566fd98e0a4/logo-jardin-ondulant.png</image:loc><image:title>Jardin ondulant — logo Fréquence Jardin</image:title><image:caption>Logo Fréquence Jardin — Jardin ondulant, identité de La Fréquence du Vivant</image:caption></image:image>
+  </url>
 </urlset>

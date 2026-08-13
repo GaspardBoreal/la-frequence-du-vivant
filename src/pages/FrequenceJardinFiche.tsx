@@ -5,12 +5,27 @@ import Footer from '@/components/Footer';
 import RoadmapNav from '@/components/roadmap/RoadmapNav';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { fiche, ficheToMarkdown, FICHE_URL } from '@/content/frequenceJardinFiche';
+import {
+  fiche,
+  ficheToMarkdown,
+  FICHE_URL,
+  ficheLogos,
+  logoImageUrl,
+  logoPageUrl,
+} from '@/content/frequenceJardinFiche';
 
 /** Fiche application publique « Fréquence Jardin », référençable par les IA. */
 const FrequenceJardinFiche: React.FC = () => {
   const [copied, setCopied] = React.useState(false);
   const [pdfBusy, setPdfBusy] = React.useState(false);
+  const [copiedLogo, setCopiedLogo] = React.useState<string | null>(null);
+
+  const onCopyUrl = async (url: string, key: string) => {
+    await navigator.clipboard.writeText(url);
+    setCopiedLogo(key);
+    toast.success('URL de l’image copiée');
+    setTimeout(() => setCopiedLogo(null), 2000);
+  };
   const markdown = React.useMemo(() => ficheToMarkdown(), []);
 
   const download = (content: string, filename: string, type: string) => {
@@ -55,6 +70,30 @@ const FrequenceJardinFiche: React.FC = () => {
         <meta property="og:url" content={FICHE_URL} />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
+        <meta property="og:image" content={logoImageUrl(ficheLogos[0])} />
+        <meta property="og:image:alt" content={ficheLogos[0].alt} />
+        <meta name="twitter:image" content={logoImageUrl(ficheLogos[0])} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ImageGallery',
+            name: 'Logos Fréquence Jardin — La Fréquence du Vivant',
+            url: `${FICHE_URL}#identite-visuelle`,
+            inLanguage: 'fr',
+            image: ficheLogos.map((l) => ({
+              '@type': 'ImageObject',
+              name: `${l.name} — logo Fréquence Jardin`,
+              caption: l.alt,
+              description: l.intention,
+              contentUrl: logoImageUrl(l),
+              url: logoPageUrl(l),
+              width: l.width,
+              height: l.height,
+              encodingFormat: 'image/png',
+              creditText: 'La Fréquence du Vivant',
+            })),
+          })}
+        </script>
         <script type="application/ld+json">
           {JSON.stringify({
             '@context': 'https://schema.org',
@@ -192,6 +231,72 @@ const FrequenceJardinFiche: React.FC = () => {
             </section>
           );
         })}
+
+        {/* Identité visuelle */}
+        <section id="identite-visuelle" className="mb-14 scroll-mt-24">
+          <div className="mb-5 flex items-baseline gap-3 border-b border-border/60 pb-3">
+            <span className="font-mono text-xs text-primary">
+              {String(fiche.sections.length + 1).padStart(2, '0')}
+            </span>
+            <h2 className="text-2xl font-semibold text-foreground">
+              Identité visuelle — trois propositions
+            </h2>
+          </div>
+          <p className="mb-6 max-w-3xl text-base leading-relaxed text-muted-foreground">
+            Trois directions de logo pour Fréquence Jardin, non encore arbitrées. Chacune dispose
+            d'une page dédiée et d'une URL d'image directe, réutilisables telles quelles dans un
+            annuaire ou une fiche partenaire.
+          </p>
+
+          <div className="grid gap-5 sm:grid-cols-3">
+            {ficheLogos.map((l) => (
+              <article
+                key={l.slug}
+                className="overflow-hidden rounded-2xl border border-border/60 bg-card/40 transition hover:border-primary/40"
+              >
+                <a href={`/roadmap/frequence-jardin/logo/${l.slug}`} className="block">
+                  <img
+                    src={l.src}
+                    alt={l.alt}
+                    title={`${l.name} — logo Fréquence Jardin, La Fréquence du Vivant`}
+                    width={l.width}
+                    height={l.height}
+                    loading="lazy"
+                    decoding="async"
+                    className="aspect-square w-full object-cover"
+                  />
+                </a>
+                <div className="p-4">
+                  <h3 className="text-sm font-semibold text-foreground">{l.name}</h3>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{l.intention}</p>
+                  <a
+                    href={`/roadmap/frequence-jardin/logo/${l.slug}`}
+                    className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  >
+                    Voir la page du logo <ArrowUpRight className="h-3.5 w-3.5" />
+                  </a>
+                  <div className="mt-3 flex items-start gap-2">
+                    <p className="min-w-0 flex-1 break-all font-mono text-[10px] leading-relaxed text-muted-foreground">
+                      {logoImageUrl(l)}
+                    </p>
+                    <button
+                      type="button"
+                      aria-label={`Copier l'URL de l'image ${l.name}`}
+                      onClick={() => onCopyUrl(logoImageUrl(l), l.slug)}
+                      className="shrink-0 rounded-md border border-border/60 p-1.5 text-muted-foreground transition hover:text-primary"
+                    >
+                      {copiedLogo === l.slug ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
 
         {/* Pied de fiche */}
         <section className="mb-12 rounded-2xl border border-border/60 bg-card/50 p-6">

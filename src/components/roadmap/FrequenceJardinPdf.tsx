@@ -1,5 +1,5 @@
-import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
-import { fiche, FICHE_URL } from '@/content/frequenceJardinFiche';
+import { Document, Page, Text, View, Image, StyleSheet, pdf } from '@react-pdf/renderer';
+import { fiche, FICHE_URL, ficheLogos, logoImageUrl } from '@/content/frequenceJardinFiche';
 
 const C = {
   ink: '#14201b',
@@ -32,6 +32,10 @@ const s = StyleSheet.create({
   itemName: { fontSize: 10.5, fontFamily: 'Helvetica-Bold', color: C.ink, marginBottom: 3 },
   itemDesc: { fontSize: 9.5, lineHeight: 1.55, color: C.soft },
   section: { marginBottom: 20 },
+  logoRow: { flexDirection: 'row', gap: 14, marginTop: 6 },
+  logoCard: { flex: 1, alignItems: 'center' },
+  logoImg: { width: 118, height: 118, borderRadius: 10, marginBottom: 6 },
+  logoName: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: C.ink, textAlign: 'center' },
   footer: {
     position: 'absolute', bottom: 26, left: 44, right: 44,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
@@ -92,6 +96,24 @@ const FicheDoc = () => (
           ))}
         </View>
       ))}
+
+      <View style={s.section} wrap={false}>
+        <View style={s.sectionHead} minPresenceAhead={140}>
+          <Text style={s.h2num}>{String(fiche.sections.length + 1).padStart(2, '0')}</Text>
+          <Text style={s.h2}>Identité visuelle — trois propositions</Text>
+        </View>
+        <Text style={s.intro}>
+          Trois directions de logo pour Fréquence Jardin, non encore arbitrées. Chacune dispose de sa page dédiée et de son URL d’image directe.
+        </Text>
+        <View style={s.logoRow}>
+          {ficheLogos.map((l) => (
+            <View key={l.slug} style={s.logoCard}>
+              <Image style={s.logoImg} src={logoImageUrl(l)} />
+              <Text style={s.logoName}>{l.name}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
       <Footer />
     </Page>
   </Document>
