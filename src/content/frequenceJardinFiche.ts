@@ -28,10 +28,17 @@ export const FICHE_URL = `${SITE_URL}/roadmap/frequence-jardin`;
 import logoGermination from '@/assets/brand/frequence-jardin/logos/logo-germination.png.asset.json';
 import logoFeuilleSignal from '@/assets/brand/frequence-jardin/logos/logo-feuille-signal.png.asset.json';
 import logoJardinOndulant from '@/assets/brand/frequence-jardin/logos/logo-jardin-ondulant.png.asset.json';
+import logoFeuilleSignalLfdv from '@/assets/brand/lfdv/logo-feuille-signal-lfdv.png.asset.json';
+import logoSentier from '@/assets/brand/marches-du-vivant/logo-sentier-frequence.png.asset.json';
+import logoEmpreinte from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante.png.asset.json';
+import logoHorizon from '@/assets/brand/marches-du-vivant/logo-horizon-marche.png.asset.json';
+
+export type FicheLogoFamily = 'jardin' | 'marches';
 
 export interface FicheLogo {
   slug: string;
   name: string;
+  family: FicheLogoFamily;
   intention: string;
   /** Chemin CDN relatif de l'image. */
   src: string;
@@ -40,10 +47,26 @@ export interface FicheLogo {
   height: number;
 }
 
+export const logoFamilies: { id: FicheLogoFamily; title: string; intro: string }[] = [
+  {
+    id: 'jardin',
+    title: 'Fréquence Jardin',
+    intro:
+      "Quatre directions de logo pour l'espace Jardin, non encore arbitrées. La dernière décline la Feuille-signal en marque ombrelle « La Fréquence du Vivant ».",
+  },
+  {
+    id: 'marches',
+    title: 'Les Marches du Vivant',
+    intro:
+      "Trois directions pour l'application des marcheurs, dans la même écriture botanique poétique, orientée chemin, pas et itinéraire.",
+  },
+];
+
 export const ficheLogos: FicheLogo[] = [
   {
     slug: 'germination',
     name: 'Germination en fréquence',
+    family: 'jardin',
     intention:
       "Une graine en train de germer, dont la tige devient une onde. Le logo dit le commencement : ce qui lève dans un sol lu, et l'écoute qui l'accompagne. C'est la proposition la plus narrative des trois.",
     src: logoGermination.url,
@@ -54,6 +77,7 @@ export const ficheLogos: FicheLogo[] = [
   {
     slug: 'feuille-signal',
     name: 'Feuille-signal',
+    family: 'jardin',
     intention:
       "Une feuille dont la nervure centrale se transforme en signal. Le plus minimaliste et contemporain des trois : lisible en très petit, idéal en favicon, en signature ou en pastille d'annuaire.",
     src: logoFeuilleSignal.url,
@@ -64,6 +88,7 @@ export const ficheLogos: FicheLogo[] = [
   {
     slug: 'jardin-ondulant',
     name: 'Jardin ondulant',
+    family: 'jardin',
     intention:
       "Trois feuilles en spirale accompagnées d'ondes concentriques. Le plus ample et le plus premium : il tient les formats paysage, les couvertures de rapport et les supports imprimés.",
     src: logoJardinOndulant.url,
@@ -71,13 +96,61 @@ export const ficheLogos: FicheLogo[] = [
     width: 1024,
     height: 1024,
   },
+  {
+    slug: 'feuille-signal-la-frequence-du-vivant',
+    name: 'Feuille-signal — La Fréquence du Vivant',
+    family: 'jardin',
+    intention:
+      "La même Feuille-signal, mot pour mot dans son dessin, mais signée « La Fréquence du Vivant ». C'est la version marque ombrelle : elle porte l'association plutôt que le seul espace Jardin, et s'utilise en en-tête de document, en signature et en fiche d'annuaire.",
+    src: logoFeuilleSignalLfdv.url,
+    alt: 'Logo La Fréquence du Vivant — Feuille-signal : une feuille dont la nervure devient une onde, marque de l’association La Fréquence du Vivant',
+    width: 1024,
+    height: 1024,
+  },
+  {
+    slug: 'sentier-frequence',
+    name: 'Sentier en fréquence',
+    family: 'marches',
+    intention:
+      "Un chemin sinueux qui se change progressivement en onde, ponctué de graminées et d'ombelles. Le logo raconte la marche elle-même : on entre par le sentier, on ressort en signal.",
+    src: logoSentier.url,
+    alt: 'Logo Les Marches du Vivant — Sentier en fréquence : un chemin qui devient une onde parmi les graminées, identité de La Fréquence du Vivant',
+    width: 1024,
+    height: 1024,
+  },
+  {
+    slug: 'empreinte-vivante',
+    name: 'Empreinte vivante',
+    family: 'marches',
+    intention:
+      "Une empreinte de pas dont l'intérieur est un feuillage, entourée d'ondes concentriques. Le plus symbolique : la trace laissée par le marcheur est faite de vivant, et elle se propage.",
+    src: logoEmpreinte.url,
+    alt: 'Logo Les Marches du Vivant — Empreinte vivante : une empreinte de pas remplie de feuillages entourée d’ondes, identité de La Fréquence du Vivant',
+    width: 1024,
+    height: 1024,
+  },
+  {
+    slug: 'horizon-marche',
+    name: 'Horizon marché',
+    family: 'marches',
+    intention:
+      "Un horizon de courbes superposées — haies, coteaux, lisières — traversé par une fine ligne de signal ambrée. Le plus paysager : il tient les bandeaux, les couvertures et les formats larges.",
+    src: logoHorizon.url,
+    alt: 'Logo Les Marches du Vivant — Horizon marché : des collines et haies en courbes traversées par un signal, identité de La Fréquence du Vivant',
+    width: 1024,
+    height: 1024,
+  },
 ];
+
+export const logosByFamily = (family: FicheLogoFamily) =>
+  ficheLogos.filter((l) => l.family === family);
 
 /** URL absolue d'une image de logo (utilisable dans un annuaire externe). */
 export const logoImageUrl = (l: FicheLogo) => `${SITE_URL}${l.src}`;
 /** URL absolue de la page dédiée d'un logo. */
 export const logoPageUrl = (l: FicheLogo) => `${FICHE_URL}/logo/${l.slug}`;
 export const findLogo = (slug?: string) => ficheLogos.find((l) => l.slug === slug);
+
 
 export const fiche = {
   name: 'Fréquence Jardin',
@@ -276,21 +349,28 @@ export function ficheToMarkdown(): string {
   L.push('## Identité visuelle');
   L.push('');
   L.push(
-    "Trois propositions de logo pour Fréquence Jardin. Chaque logo dispose d'une page dédiée et d'une URL d'image directe, réutilisables dans un annuaire ou une fiche externe.",
+    "Propositions de logo, par famille de marque. Chaque logo dispose d'une page dédiée et d'une URL d'image directe, réutilisables dans un annuaire ou une fiche externe.",
   );
   L.push('');
-  ficheLogos.forEach((l) => {
-    L.push(`### ${l.name}`);
+  logoFamilies.forEach((fam) => {
+    L.push(`### ${fam.title}`);
     L.push('');
-    L.push(l.intention);
+    L.push(fam.intro);
     L.push('');
-    L.push(`![${l.alt}](${logoImageUrl(l)})`);
-    L.push('');
-    L.push(`- Page du logo : ${logoPageUrl(l)}`);
-    L.push(`- Image directe : ${logoImageUrl(l)}`);
-    L.push(`- Texte alternatif : ${l.alt}`);
-    L.push('');
+    logosByFamily(fam.id).forEach((l) => {
+      L.push(`#### ${l.name}`);
+      L.push('');
+      L.push(l.intention);
+      L.push('');
+      L.push(`![${l.alt}](${logoImageUrl(l)})`);
+      L.push('');
+      L.push(`- Page du logo : ${logoPageUrl(l)}`);
+      L.push(`- Image directe : ${logoImageUrl(l)}`);
+      L.push(`- Texte alternatif : ${l.alt}`);
+      L.push('');
+    });
   });
+
 
   L.push('---');
   L.push('');
