@@ -139,14 +139,36 @@ serve(async (req) => {
         });
       }
     } else {
-      const { data: isAdmin, error: adminErr } = await userClient.rpc("check_is_admin_user", {
+      const { data: isAdmin } = await userClient.rpc("check_is_admin_user", {
         check_user_id: userData.user.id,
       });
-      if (adminErr || !isAdmin) {
-        return new Response(JSON.stringify({ error: "Forbidden — accès administrateur requis" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+      if (!isAdmin) {
+        // Partenaire IoT : accès autorisé dans la limite de ses crédits mensuels.
+        const fournisseurId = typeof pageState?.filters?.iotFournisseurId === "string"
+          ? pageState.filters.iotFournisseurId
+          : null;
+        if (!fournisseurId) {
+          return new Response(JSON.stringify({ error: "Forbidden — accès administrateur requis" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data: credit, error: creditErr } = await userClient.rpc("consume_iot_ai_credit", {
+          _fournisseur_id: fournisseurId,
         });
+        if (creditErr || !credit?.allowed) {
+          const reason = credit?.reason ?? "forbidden";
+          const message = reason === "quota_exhausted"
+            ? `Crédits IA épuisés (${credit?.used ?? "?"}/${credit?.quota ?? "?"} messages ce mois-ci).`
+            : reason === "ai_disabled"
+              ? "L'IA de Jardin n'est pas ouverte sur votre compte partenaire."
+              : "Forbidden — accès partenaire requis";
+          return new Response(JSON.stringify({ error: message, reason }), {
+            status: reason === "quota_exhausted" ? 429 : 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        console.log("[propriete-chat] partner credit consumed", { fournisseurId, remaining: credit.remaining });
       }
     }
 
