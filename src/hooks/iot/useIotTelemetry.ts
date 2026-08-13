@@ -268,3 +268,76 @@ export function useDeliverySerials() {
     },
   });
 }
+
+/* ── Carte des sondes (admin, toutes propriétés) ──────────────────────── */
+
+export interface CapteurGeo {
+  id: string;
+  nom: string;
+  serial_number: string;
+  propriete_id: string;
+  emplacement: string | null;
+  lat: number | null;
+  lng: number | null;
+  actif: boolean;
+  battery_pct: number | null;
+  rssi: number | null;
+  snr: number | null;
+  last_seen_at: string | null;
+  silence_alert_hours: number;
+  battery_alert_pct: number;
+  notes: string | null;
+  type?: any;
+  propriete?: { id: string; nom: string; ville: string | null } | null;
+}
+
+/** Toutes les sondes déclarées, avec leur propriété — pour la carte admin. */
+export function useAllCapteursGeo() {
+  return useQuery<CapteurGeo[]>({
+    queryKey: ['iot-capteurs', 'geo'],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from('iot_capteurs')
+        .select(
+          '*, type:iot_types_capteurs(*, fournisseur:iot_fournisseurs(*)), propriete:proprietes(id, nom, ville)',
+        )
+        .order('nom');
+      if (error) throw error;
+      return (data ?? []).map((c: any) => ({
+        ...c,
+        lat: c.lat == null ? null : Number(c.lat),
+        lng: c.lng == null ? null : Number(c.lng),
+        battery_pct: c.battery_pct == null ? null : Number(c.battery_pct),
+        type: c.type
+          ? { ...c.type, profondeurs_m: (c.type.profondeurs_m ?? []).map(Number), grandeurs: c.type.grandeurs ?? [] }
+          : null,
+      })) as CapteurGeo[];
+    },
+  });
+}
+
+/** Série temporelle d'une sonde sur une plage libre (observatoire). */
+export function useMesureSeriesRange(capteurId?: string, fromISO?: string, toISO?: string) {
+  return useQuery<any[]>({
+    queryKey: ['iot-mesures', 'range', capteurId, fromISO, toISO],
+    enabled: !!capteurId && !!fromISO && !!toISO,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from('iot_mesures')
+        .select('*')
+        .eq('capteur_id', capteurId)
+        .neq('source', 'webhook_test')
+        .gte('mesure_at', fromISO)
+        .lte('mesure_at', toISO)
+        .order('mesure_at', { ascending: true })
+        .limit(20000);
+      if (error) throw error;
+      return (data ?? []).map((m: any) => ({
+        ...m,
+        valeur: Number(m.valeur),
+        profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),
+      }));
+    },
+  });
+}
