@@ -12,6 +12,7 @@ import SuggestionsBanner from './SuggestionsBanner';
 import type { EditableProfile } from './MarcheurEditSheet';
 import { useAllScienceAccounts } from '@/hooks/useScienceAccounts';
 import { NETWORK_ORDER, type ScienceAccount, type ScienceNetwork } from '@/types/scienceAccounts';
+import { useIotPartnerBadges } from '@/hooks/iot/useIotPartnerAdmin';
 
 interface Props {
   profiles: (EditableProfile & { marches_count?: number })[];
