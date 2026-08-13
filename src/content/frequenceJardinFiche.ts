@@ -273,6 +273,25 @@ export function ficheToMarkdown(): string {
     });
   });
 
+  L.push('## Identité visuelle');
+  L.push('');
+  L.push(
+    "Trois propositions de logo pour Fréquence Jardin. Chaque logo dispose d'une page dédiée et d'une URL d'image directe, réutilisables dans un annuaire ou une fiche externe.",
+  );
+  L.push('');
+  ficheLogos.forEach((l) => {
+    L.push(`### ${l.name}`);
+    L.push('');
+    L.push(l.intention);
+    L.push('');
+    L.push(`![${l.alt}](${logoImageUrl(l)})`);
+    L.push('');
+    L.push(`- Page du logo : ${logoPageUrl(l)}`);
+    L.push(`- Image directe : ${logoImageUrl(l)}`);
+    L.push(`- Texte alternatif : ${l.alt}`);
+    L.push('');
+  });
+
   L.push('---');
   L.push('');
   L.push(
