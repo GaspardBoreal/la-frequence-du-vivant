@@ -2,6 +2,7 @@ import React from 'react';
 import TelemetryControl from '@/components/iot/TelemetryControl';
 import SensorsMapTab from '@/components/iot/SensorsMapTab';
 import IotChatBotMount from '@/components/iot/chatbot/IotChatBotMount';
+import { useIotAiCredit } from '@/hooks/iot/useIotAiCredit';
 import { useIotConsole } from './IotConsoleContext';
 
 export type IotConsoleView = 'controle' | 'carte';
@@ -14,11 +15,22 @@ export type IotConsoleView = 'controle' | 'carte';
 export const IotConsolePanel: React.FC<{ view: IotConsoleView }> = ({ view }) =>
   view === 'carte' ? <SensorsMapTab /> : <TelemetryControl />;
 
-/** IA de Jardin cadrée sur le périmètre de la console (si le droit est ouvert). */
+/**
+ * IA de Jardin cadrée sur le périmètre de la console.
+ * Sur une console partenaire, elle n'apparaît que si des crédits de messages
+ * lui ont été accordés depuis sa fiche marcheur.
+ */
 export const IotConsoleAi: React.FC = () => {
-  const { capabilities } = useIotConsole();
+  const { capabilities, scope } = useIotConsole();
+  const fournisseurId = scope.fournisseurIds?.[0] ?? null;
+  const { data: credit } = useIotAiCredit(fournisseurId);
+
   if (!capabilities.ai) return null;
-  return <IotChatBotMount />;
+  // Console admin (aucun fabricant cadré) : comportement historique.
+  if (!fournisseurId) return <IotChatBotMount />;
+  if (!credit || (!credit.admin && !credit.enabled)) return null;
+
+  return <IotChatBotMount fournisseurId={fournisseurId} credit={credit} />;
 };
 
 export default IotConsolePanel;
