@@ -7,6 +7,7 @@ import {
   useIotPartnerRows, useRemoveIotPartner, useToggleIotPartner,
 } from '@/hooks/iot/useIotPartnerAdmin';
 import AddIotPartnerDialog from '@/components/iot/AddIotPartnerDialog';
+import AiCreditControl from '@/components/iot/AiCreditControl';
 
 interface Props {
   userId: string;
