@@ -39,8 +39,16 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
   const [special, setSpecial] = useState<SpecialFilter>('none');
   const [adhesion, setAdhesion] = useState<AdhesionFilter>('all');
   const [college, setCollege] = useState<CollegeFilter>('all');
+  const [partner, setPartner] = useState('all');
 
   const { data: allAccounts = [] } = useAllScienceAccounts();
+  const { byUser: partnersByUser, rows: partnerRows } = useIotPartnerBadges();
+  const partnerFournisseurs = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of partnerRows) m.set(r.fournisseur_id, r.fournisseur_nom);
+    return Array.from(m, ([id, nom]) => ({ id, nom }));
+  }, [partnerRows]);
+
 
   // Map profile_id → accounts
   const accountsByProfile = useMemo(() => {
