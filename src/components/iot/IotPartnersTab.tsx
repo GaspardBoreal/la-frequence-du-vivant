@@ -14,6 +14,7 @@ import {
   useIotPartnerRows, useRemoveIotPartner, useToggleIotPartner, type IotPartnerRow,
 } from '@/hooks/iot/useIotPartnerAdmin';
 import AddIotPartnerDialog from './AddIotPartnerDialog';
+import AiCreditControl from './AiCreditControl';
 
 const ROLE_LABELS: Record<string, string> = {
   marcheur_en_devenir: 'En devenir',
@@ -88,6 +89,7 @@ export const IotPartnersTab: React.FC = () => {
                 <th className="px-3 py-2 text-left">Fabricant</th>
                 <th className="px-3 py-2 text-left">Ajouté le</th>
                 <th className="px-3 py-2 text-left">Accès actif</th>
+                <th className="px-3 py-2 text-left">Crédits IA</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -121,6 +123,9 @@ export const IotPartnersTab: React.FC = () => {
                       checked={r.actif}
                       onCheckedChange={(v) => toggle.mutate({ id: r.id, actif: v })}
                     />
+                  </td>
+                  <td className="px-3 py-2 min-w-[280px]">
+                    <AiCreditControl row={r} compact />
                   </td>
                   <td className="px-3 py-2 text-right">
                     <Button variant="ghost" size="sm" onClick={() => setConfirm(r)}>
