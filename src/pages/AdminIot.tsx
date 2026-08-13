@@ -51,6 +51,7 @@ const AdminIot: React.FC = () => {
           <TabsList className="mb-4">
             <TabsTrigger value="telemetrie">Poste de contrôle</TabsTrigger>
             <TabsTrigger value="carte">Carte des sondes</TabsTrigger>
+            <TabsTrigger value="partenaires">Partenaires</TabsTrigger>
             <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
           </TabsList>
 
@@ -60,6 +61,10 @@ const AdminIot: React.FC = () => {
 
           <TabsContent value="carte">
             <SensorsMapTab />
+          </TabsContent>
+
+          <TabsContent value="partenaires">
+            <IotPartnersTab />
           </TabsContent>
 
           <TabsContent value="catalogue" className="space-y-8">
