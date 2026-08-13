@@ -247,7 +247,7 @@ export function useDeliveryFournisseurs() {
         .order('created_at', { ascending: false })
         .limit(1000);
       if (error) throw error;
-      return Array.from(new Set((data ?? []).map((d: any) => d.fournisseur).filter(Boolean))).sort();
+      return Array.from(new Set((data ?? []).map((d: any) => d.fournisseur as string).filter(Boolean))).sort() as string[];
     },
   });
 }
@@ -264,7 +264,7 @@ export function useDeliverySerials() {
         .order('created_at', { ascending: false })
         .limit(1000);
       if (error) throw error;
-      return Array.from(new Set((data ?? []).map((d: any) => d.serial_number).filter(Boolean))).sort();
+      return Array.from(new Set((data ?? []).map((d: any) => d.serial_number as string).filter(Boolean))).sort() as string[];
     },
   });
 }
