@@ -20,3 +20,11 @@ Un seul socle de code sert toutes les lectures des sondes.
   partenaire actif du fournisseur. Les onglets interactifs de la page BRAD exigent une connexion,
   le rapport « Accueil » reste protégé par mot de passe seul.
 - Prochain réemploi prévu : l'Atelier du jardin (scope `proprieteIds`).
+- Espace partenaire générique : route `/partenaire-iot/:slug` (`src/pages/PartenaireIot.tsx`),
+  slug porté par `iot_fournisseurs.slug`. Trois onglets : Accueil générique
+  (`IotPartnerHome`, KPIs parc fabricant + vitalité 48 h), Poste de contrôle, Carte.
+  `/trust-in-frequence-vivant` garde son rapport « Accueil » et renvoie vers cet espace
+  pour les onglets interactifs.
+- `get_user_apps_access` renvoie `partenairesIot[]` ; l'écran de bienvenue (`AppChoiceDialog`)
+  et l'`AppSwitcher` affichent une troisième section « espaces partenaires »
+  (préférence mémorisée `partenaire-iot:<slug>`).
