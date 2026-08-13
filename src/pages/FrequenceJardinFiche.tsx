@@ -10,8 +10,11 @@ import {
   ficheToMarkdown,
   FICHE_URL,
   ficheLogos,
+  logoFamilies,
+  logosByFamily,
   logoImageUrl,
   logoPageUrl,
+
 } from '@/content/frequenceJardinFiche';
 
 /** Fiche application publique « Fréquence Jardin », référençable par les IA. */
