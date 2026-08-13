@@ -2,10 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { capteurInScope, useIotConsole } from '@/components/iot/console/IotConsoleContext';
 
 /**
  * Poste de contrôle de la télémétrie : livraisons du webhook, vitalité des
  * capteurs et rafraîchissement en direct (Realtime) sans recharger la page.
+ *
+ * Tous les hooks respectent le périmètre de la console courante (parc entier,
+ * fournisseur partenaire, ou propriété) — cf. `IotConsoleContext`.
  */
 
 const db = supabase as any;
@@ -30,32 +34,40 @@ export interface TelemetryPing {
   source: string;
 }
 
-/** Tous les capteurs, toutes propriétés confondues (vue admin). */
+/** Tous les capteurs du périmètre courant. */
 export function useAllCapteurs() {
+  const { scope, scopeKey } = useIotConsole();
   return useQuery<any[]>({
-    queryKey: ['iot-capteurs', 'all'],
+    queryKey: ['iot-capteurs', 'all', scopeKey],
     queryFn: async () => {
       const { data, error } = await db
         .from('iot_capteurs')
-        .select('id, nom, serial_number, propriete_id, last_seen_at, actif, silence_alert_hours, type:iot_types_capteurs(modele, fournisseur:iot_fournisseurs(nom))')
+        .select('id, nom, serial_number, propriete_id, last_seen_at, actif, silence_alert_hours, type:iot_types_capteurs(modele, fournisseur_id, fournisseur:iot_fournisseurs(id, nom))')
         .order('nom');
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).filter((c: any) => capteurInScope(c, scope));
     },
   });
 }
 
-/** Journal complet des livraisons (toutes sondes). */
+/** Applique le périmètre fournisseur à une requête sur le journal. */
+const applyFournisseurScope = (q: any, keys?: string[] | null) =>
+  keys && keys.length ? q.in('fournisseur', keys) : q;
+
+/** Journal des livraisons du périmètre courant. */
 export function useTelemetryDeliveries(limit = 60) {
+  const { scope, scopeKey } = useIotConsole();
   return useQuery<TelemetryDelivery[]>({
-    queryKey: ['iot-deliveries', 'all', limit],
+    queryKey: ['iot-deliveries', 'all', limit, scopeKey],
     refetchInterval: 60_000,
     queryFn: async () => {
-      const { data, error } = await db
+      let q = db
         .from('iot_webhook_deliveries')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
+      q = applyFournisseurScope(q, scope.fournisseurKeys);
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
@@ -68,6 +80,7 @@ export function useTelemetryPings(hours = 48, capteurIds?: string[]) {
   return useQuery<TelemetryPing[]>({
     queryKey: ['iot-pings', hours, ids?.join(',') ?? 'all'],
     refetchInterval: 60_000,
+    enabled: !capteurIds || ids!.length > 0,
     queryFn: async () => {
       const since = new Date(Date.now() - hours * 3_600_000).toISOString();
       let q = db
@@ -83,6 +96,7 @@ export function useTelemetryPings(hours = 48, capteurIds?: string[]) {
     },
   });
 }
+
 
 /**
  * Abonnement temps réel : rafraîchit les listes dès qu'une mesure ou une
@@ -185,8 +199,9 @@ export const TEST_SERIALS = ['test-probe-001'];
 
 /** Livraisons filtrées, lues page par page en base (total exact). */
 export function useTelemetryDeliveriesPaged(f: DeliveryFilters) {
+  const { scope, scopeKey } = useIotConsole();
   return useQuery<{ rows: TelemetryDelivery[]; total: number }>({
-    queryKey: ['iot-deliveries', 'paged', f],
+    queryKey: ['iot-deliveries', 'paged', f, scopeKey],
     refetchInterval: 60_000,
     placeholderData: (prev) => prev,
     queryFn: async () => {
@@ -194,6 +209,8 @@ export function useTelemetryDeliveriesPaged(f: DeliveryFilters) {
         .from('iot_webhook_deliveries')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false });
+
+      q = applyFournisseurScope(q, scope.fournisseurKeys);
 
       if (f.since) q = q.gte('created_at', f.since);
       if (f.until) q = q.lte('created_at', f.until);
@@ -235,17 +252,20 @@ export function useTelemetryDeliveriesPaged(f: DeliveryFilters) {
   });
 }
 
-/** Fournisseurs réellement présents dans le journal. */
+/** Fournisseurs réellement présents dans le journal du périmètre. */
 export function useDeliveryFournisseurs() {
+  const { scope, scopeKey } = useIotConsole();
   return useQuery<string[]>({
-    queryKey: ['iot-deliveries', 'fournisseurs'],
+    queryKey: ['iot-deliveries', 'fournisseurs', scopeKey],
     staleTime: 300_000,
     queryFn: async () => {
-      const { data, error } = await db
+      let q = db
         .from('iot_webhook_deliveries')
         .select('fournisseur')
         .order('created_at', { ascending: false })
         .limit(1000);
+      q = applyFournisseurScope(q, scope.fournisseurKeys);
+      const { data, error } = await q;
       if (error) throw error;
       return Array.from(new Set((data ?? []).map((d: any) => d.fournisseur as string).filter(Boolean))).sort() as string[];
     },
@@ -254,20 +274,24 @@ export function useDeliveryFournisseurs() {
 
 /** Numéros de série vus dans le journal (y compris sondes non déclarées). */
 export function useDeliverySerials() {
+  const { scope, scopeKey } = useIotConsole();
   return useQuery<string[]>({
-    queryKey: ['iot-deliveries', 'serials'],
+    queryKey: ['iot-deliveries', 'serials', scopeKey],
     staleTime: 300_000,
     queryFn: async () => {
-      const { data, error } = await db
+      let q = db
         .from('iot_webhook_deliveries')
         .select('serial_number')
         .order('created_at', { ascending: false })
         .limit(1000);
+      q = applyFournisseurScope(q, scope.fournisseurKeys);
+      const { data, error } = await q;
       if (error) throw error;
       return Array.from(new Set((data ?? []).map((d: any) => d.serial_number as string).filter(Boolean))).sort() as string[];
     },
   });
 }
+
 
 /* ── Carte des sondes (admin, toutes propriétés) ──────────────────────── */
 
@@ -291,10 +315,11 @@ export interface CapteurGeo {
   propriete?: { id: string; nom: string; ville: string | null } | null;
 }
 
-/** Toutes les sondes déclarées, avec leur propriété — pour la carte admin. */
+/** Sondes du périmètre courant, avec leur propriété — pour la carte. */
 export function useAllCapteursGeo() {
+  const { scope, scopeKey } = useIotConsole();
   return useQuery<CapteurGeo[]>({
-    queryKey: ['iot-capteurs', 'geo'],
+    queryKey: ['iot-capteurs', 'geo', scopeKey],
     refetchInterval: 60_000,
     queryFn: async () => {
       const { data, error } = await db
@@ -304,18 +329,21 @@ export function useAllCapteursGeo() {
         )
         .order('nom');
       if (error) throw error;
-      return (data ?? []).map((c: any) => ({
-        ...c,
-        lat: c.lat == null ? null : Number(c.lat),
-        lng: c.lng == null ? null : Number(c.lng),
-        battery_pct: c.battery_pct == null ? null : Number(c.battery_pct),
-        type: c.type
-          ? { ...c.type, profondeurs_m: (c.type.profondeurs_m ?? []).map(Number), grandeurs: c.type.grandeurs ?? [] }
-          : null,
-      })) as CapteurGeo[];
+      return (data ?? [])
+        .filter((c: any) => capteurInScope(c, scope))
+        .map((c: any) => ({
+          ...c,
+          lat: c.lat == null ? null : Number(c.lat),
+          lng: c.lng == null ? null : Number(c.lng),
+          battery_pct: c.battery_pct == null ? null : Number(c.battery_pct),
+          type: c.type
+            ? { ...c.type, profondeurs_m: (c.type.profondeurs_m ?? []).map(Number), grandeurs: c.type.grandeurs ?? [] }
+            : null,
+        })) as CapteurGeo[];
     },
   });
 }
+
 
 /** Série temporelle d'une sonde sur une plage libre (observatoire). */
 export function useMesureSeriesRange(capteurId?: string, fromISO?: string, toISO?: string) {

@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PaginationControls from '@/components/admin/marche-events/PaginationControls';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useIotConsole } from '@/components/iot/console/IotConsoleContext';
+
 import {
   TEST_SERIALS,
   useDeliveryFournisseurs,
@@ -59,6 +61,8 @@ const jourEnIso = (jour: string, fin: boolean) =>
 /* ── Journal ───────────────────────────────────────────────────────────── */
 
 export const DeliveryJournal: React.FC = () => {
+  const { capabilities: { rawPayload } } = useIotConsole();
+
   const [params, setParams] = useSearchParams();
 
   const periode = params.get('per') ?? '24h';
@@ -187,8 +191,8 @@ export const DeliveryJournal: React.FC = () => {
           return (
             <div key={d.id} className="text-sm">
               <button
-                onClick={() => setOpen(open === d.id ? null : d.id)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted/40"
+                onClick={() => rawPayload && setOpen(open === d.id ? null : d.id)}
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left ${rawPayload ? 'hover:bg-muted/40' : 'cursor-default'}`}
               >
                 <span className={`h-2 w-2 shrink-0 rounded-full ${e.dot}`} />
                 <span className="min-w-0 flex-1">
@@ -199,14 +203,17 @@ export const DeliveryJournal: React.FC = () => {
                     {d.error ? ` · ${d.error}` : ''}
                   </span>
                 </span>
-                <ChevronDown className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open === d.id ? 'rotate-180' : ''}`} />
+                {rawPayload && (
+                  <ChevronDown className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open === d.id ? 'rotate-180' : ''}`} />
+                )}
               </button>
-              {open === d.id && (
+              {rawPayload && open === d.id && (
                 <pre className="max-h-72 overflow-auto border-t border-border bg-muted/30 px-3 py-2 text-[11px] leading-relaxed">
                   {JSON.stringify({ delivery_id: d.delivery_id, event: d.event, signature_valid: d.signature_valid, payload: d.payload }, null, 2)}
                 </pre>
               )}
             </div>
+
           );
         })}
         {rows.length === 0 && (

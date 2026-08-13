@@ -7,6 +7,7 @@ import { sensorHealth, grandeurMeta, fmtProfondeur } from '@/lib/iot/grandeurs';
 import { payloadBytes } from '@/lib/chatContextCost';
 import type { ContextProvider } from '@/hooks/useChatPageContext';
 import { useIotChatFocus } from '@/components/iot/chatbot/iotChatFocus';
+import { useIotConsole } from '@/components/iot/console/IotConsoleContext';
 
 const round = (v: number | null | undefined, d = 2) =>
   v == null || !Number.isFinite(v) ? null : Number(v.toFixed(d));
@@ -51,6 +52,8 @@ export interface IotScope {
 export function useIotScope(): IotScope {
   const focus = useIotChatFocus();
   const { data: all = [] } = useAllCapteursGeo();
+  const { label: consoleLabel } = useIotConsole();
+
 
   return useMemo(() => {
     const capteur = focus.capteurId ? all.find((c) => c.id === focus.capteurId) ?? null : null;
@@ -70,7 +73,7 @@ export function useIotScope(): IotScope {
       ? `${capteur.nom} · ${proprieteNom ?? 'propriété'}`
       : proprieteId
         ? `${proprieteNom ?? 'Propriété'} · ${capteurs.length} sonde${capteurs.length > 1 ? 's' : ''}`
-        : `Parc entier · ${capteurs.length} sonde${capteurs.length > 1 ? 's' : ''} / ${proprieteCount} propriété${proprieteCount > 1 ? 's' : ''}`;
+        : `${consoleLabel} · ${capteurs.length} sonde${capteurs.length > 1 ? 's' : ''} / ${proprieteCount} propriété${proprieteCount > 1 ? 's' : ''}`;
 
     return {
       capteurs,
@@ -82,8 +85,9 @@ export function useIotScope(): IotScope {
       label,
       level,
     };
-  }, [all, focus.capteurId, focus.proprieteId]);
+  }, [all, focus.capteurId, focus.proprieteId, consoleLabel]);
 }
+
 
 /**
  * Contextes IoT activables dans la Console 📎 — frugaux : agrégats et
