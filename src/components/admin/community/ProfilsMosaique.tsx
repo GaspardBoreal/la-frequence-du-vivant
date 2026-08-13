@@ -65,7 +65,12 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
   const enriched = useMemo(() => profiles.map(p => ({
     ...p,
     science_accounts: accountsByProfile.get(p.id) || [],
-  })), [profiles, accountsByProfile]);
+    iot_partners: (partnersByUser.get(p.user_id) || []).map(r => ({
+      fournisseur_id: r.fournisseur_id,
+      nom: r.fournisseur_nom,
+      actif: r.actif,
+    })),
+  })), [profiles, accountsByProfile, partnersByUser]);
 
   // Counts per network (across visible profiles before network filter)
   const networkCounts = useMemo(() => {
