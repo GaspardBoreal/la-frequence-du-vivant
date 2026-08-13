@@ -402,11 +402,18 @@ const TrustInFrequenceVivant: React.FC = () => {
               <h2 className="text-lg font-semibold">Espace partenaire BRAD</h2>
               <p className="mt-2 text-sm text-emerald-100/70">
                 Le poste de contrôle et la carte des sondes s’ouvrent avec un compte partenaire BRAD.
-                Connectez-vous, ou demandez-nous l’ouverture de votre accès.
+                Connectez-vous avec votre compte, ou demandez-nous l’ouverture de votre accès :
+                créer un compte ne suffit pas, il doit être rattaché à BRAD Technology par
+                La Fréquence du Vivant.
               </p>
-              <Button asChild size="sm" className="mt-4 bg-emerald-500 text-emerald-950 hover:bg-emerald-400">
-                <Link to="/auth">Se connecter</Link>
-              </Button>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <Button asChild size="sm" className="bg-emerald-500 text-emerald-950 hover:bg-emerald-400">
+                  <Link to={partnerLoginHref}>Se connecter</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="border-emerald-400/30 bg-transparent text-emerald-100 hover:bg-emerald-400/10">
+                  <Link to={partnerSignupHref}>Créer un compte</Link>
+                </Button>
+              </div>
             </div>
           )}
         </div>
