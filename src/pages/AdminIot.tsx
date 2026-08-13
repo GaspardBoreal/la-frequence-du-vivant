@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TelemetryControl from '@/components/iot/TelemetryControl';
 import SensorsMapTab from '@/components/iot/SensorsMapTab';
 import IotChatBotMount from '@/components/iot/chatbot/IotChatBotMount';
+import IotPartnersTab from '@/components/iot/IotPartnersTab';
 
 const FAMILLES = ['sol', 'meteo', 'eau', 'air', 'autre'];
 
