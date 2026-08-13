@@ -140,6 +140,16 @@ const FrequenceJardinFiche: React.FC = () => {
             <Button variant="secondary" onClick={onPdf} disabled={pdfBusy}>
               <Download className="mr-2 h-4 w-4" /> {pdfBusy ? 'Génération…' : 'PDF'}
             </Button>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                document
+                  .getElementById('identite-visuelle')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            >
+              <Images className="mr-2 h-4 w-4" /> Logos ({ficheLogos.length})
+            </Button>
             <Button variant="outline" onClick={onCopy}>
               {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
               Copier la fiche
