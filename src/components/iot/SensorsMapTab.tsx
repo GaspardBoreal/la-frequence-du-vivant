@@ -15,6 +15,8 @@ import { useLatestMesures } from '@/hooks/iot/useIot';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
 import { HEALTH_COLOR, fmtHorodatage, fmtMesure, fmtProfondeur, sensorHealth } from '@/lib/iot/grandeurs';
 import { iotChatFocus, openIotAi } from '@/components/iot/chatbot/iotChatFocus';
+import { useIotConsole } from '@/components/iot/console/IotConsoleContext';
+
 
 const FONDS = [
   { key: 'plan', label: 'Plan', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; OpenStreetMap' },
@@ -42,11 +44,13 @@ const FitAll: React.FC<{ positions: [number, number][]; focus?: [number, number]
 
 /** Carte de terrain de toutes les sondes déclarées + fiche + observatoire. */
 export const SensorsMapTab: React.FC = () => {
+  const { capabilities } = useIotConsole();
   const { data: capteurs = [], isLoading } = useAllCapteursGeo();
   const ids = React.useMemo(() => capteurs.map((c) => c.id), [capteurs]);
   const { data: latest = {} } = useLatestMesures(ids);
   const { data: covers = {} } = useCapteurCovers(ids);
-  const { data: pings = [] } = useTelemetryPings(48);
+  const { data: pings = [] } = useTelemetryPings(48, ids);
+
   const { live, lastLiveAt } = useTelemetryLive();
 
   const [fond, setFond] = React.useState<'plan' | 'satellite'>('satellite');
@@ -212,10 +216,13 @@ export const SensorsMapTab: React.FC = () => {
                 {orphans.map((c) => (
                   <li key={c.id} className="flex items-center gap-1">
                     <span className="truncate">{c.nom}</span>
-                    <Link to={`/jardin/${c.propriete_id}?tab=carte`} className="ml-auto inline-flex items-center gap-1 text-emerald-700">
-                      poser <ExternalLink className="h-3 w-3" />
-                    </Link>
+                    {capabilities.proprieteLinks && (
+                      <Link to={`/jardin/${c.propriete_id}?tab=carte`} className="ml-auto inline-flex items-center gap-1 text-emerald-700">
+                        poser <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    )}
                   </li>
+
                 ))}
               </ul>
             </div>
@@ -276,10 +283,15 @@ export const SensorsMapTab: React.FC = () => {
                 <div className="flex justify-between gap-2">
                   <dt className="text-muted-foreground">Propriété</dt>
                   <dd className="truncate">
-                    <Link to={`/jardin/${selected.propriete_id}`} className="text-emerald-700 underline">
-                      {selected.propriete?.nom ?? '—'}
-                    </Link>
+                    {capabilities.proprieteLinks ? (
+                      <Link to={`/jardin/${selected.propriete_id}`} className="text-emerald-700 underline">
+                        {selected.propriete?.nom ?? '—'}
+                      </Link>
+                    ) : (
+                      <span>{selected.propriete?.nom ?? '—'}</span>
+                    )}
                   </dd>
+
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-muted-foreground">Emplacement</dt>
@@ -325,20 +337,23 @@ export const SensorsMapTab: React.FC = () => {
                 <BarChart3 className="mr-1 h-3.5 w-3.5" /> Voir tous les graphes
               </Button>
 
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-2 w-full"
-                onClick={() =>
-                  openIotAi({
-                    capteurId: selected.id,
-                    proprieteId: selected.propriete_id,
-                    prefill: `Cette sonde « ${selected.nom} » est-elle fiable ? Que dit-elle du sol ${selected.emplacement ? `au ${selected.emplacement}` : ''} ?`,
-                  })
-                }
-              >
-                <Sparkles className="mr-1 h-3.5 w-3.5" /> Interroger l'IA de Jardin
-              </Button>
+              {capabilities.ai && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 w-full"
+                  onClick={() =>
+                    openIotAi({
+                      capteurId: selected.id,
+                      proprieteId: selected.propriete_id,
+                      prefill: `Cette sonde « ${selected.nom} » est-elle fiable ? Que dit-elle du sol ${selected.emplacement ? `au ${selected.emplacement}` : ''} ?`,
+                    })
+                  }
+                >
+                  <Sparkles className="mr-1 h-3.5 w-3.5" /> Interroger l'IA de Jardin
+                </Button>
+              )}
+
             </div>
           )}
         </div>

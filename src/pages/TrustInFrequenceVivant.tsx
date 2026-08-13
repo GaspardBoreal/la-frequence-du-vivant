@@ -15,6 +15,11 @@ import {
   tauxSignature, tauxUtile, cadenceMinutes, grandeursEtat, anomalies, DEMANDES,
   buildTrustMarkdown, buildBriefMarkdown, downloadMarkdown, fmtFR, fmtFRLong, depuisMinutes,
 } from '@/lib/iot/trustReport';
+import { useIotFournisseurs } from '@/hooks/iot/useIot';
+import { useCanOpenIotConsole } from '@/hooks/iot/useIotPartner';
+import { IotConsoleProvider } from '@/components/iot/console/IotConsoleContext';
+import { IotConsolePanel, IotConsoleAi } from '@/components/iot/console/IotConsole';
+
 
 const STORAGE_KEY = 'trust-lfdv-unlocked';
 
@@ -192,11 +197,32 @@ const ReportBody: React.FC<{ r: TrustReport }> = ({ r }) => {
 };
 
 /* ── Page ──────────────────────────────────────────────────────────────── */
+
+/** Trois lectures d'une même chaîne : le récit, la salle des machines, le terrain. */
+const TRUST_TABS = [
+  { key: 'accueil', label: 'Accueil' },
+  { key: 'controle', label: 'Poste de contrôle' },
+  { key: 'carte', label: 'Carte des sondes' },
+] as const;
+type TrustTab = (typeof TRUST_TABS)[number]['key'];
+
+/** Nom du fournisseur tel qu'il apparaît dans le journal des livraisons. */
+const BRAD_DELIVERY_KEYS = ['brad'];
+
 const TrustInFrequenceVivant: React.FC = () => {
   const [unlocked, setUnlocked] = React.useState(() => sessionStorage.getItem(STORAGE_KEY) === '1');
   const [value, setValue] = React.useState('');
   const [error, setError] = React.useState(false);
   const [windowKey, setWindowKey] = React.useState<TrustWindowKey>('ce_matin');
+  const [tab, setTab] = React.useState<TrustTab>('accueil');
+
+  const { data: fournisseurs = [] } = useIotFournisseurs();
+  const bradId = React.useMemo(
+    () => fournisseurs.find((f: any) => (f.nom ?? '').toLowerCase().startsWith('brad'))?.id ?? null,
+    [fournisseurs],
+  );
+  const { allowed: consoleAllowed, isLoading: consoleLoading } = useCanOpenIotConsole(bradId);
+
 
   const since = React.useMemo(
     () => (TRUST_WINDOWS.find((w) => w.key === windowKey) ?? TRUST_WINDOWS[0]).since(),
@@ -293,7 +319,8 @@ const TrustInFrequenceVivant: React.FC = () => {
           </p>
 
           {/* Barre vivante */}
-          <div className="mt-6 flex flex-wrap items-center gap-2 print:hidden">
+          <div className={`mt-6 flex-wrap items-center gap-2 print:hidden ${tab === 'accueil' ? 'flex' : 'hidden'}`}>
+
             <div className="flex flex-wrap gap-1 rounded-full border border-emerald-500/20 bg-emerald-950/50 p-1">
               {TRUST_WINDOWS.map((w) => (
                 <button
@@ -329,38 +356,86 @@ const TrustInFrequenceVivant: React.FC = () => {
             </Button>
           </div>
 
-          {report && (
+          {report && tab === 'accueil' && (
             <p className="mt-3 flex items-center gap-1.5 text-xs text-emerald-300/70">
               <Clock className="h-3.5 w-3.5" />
               Mis à jour il y a {depuisMinutes(report.generated_at)} min · {report.livraisons_total} livraisons lues sur la fenêtre
             </p>
           )}
+
+          {/* Trois lectures d'une même chaîne */}
+          <div className="mt-8 flex flex-wrap gap-1 rounded-full border border-emerald-500/20 bg-emerald-950/50 p-1 print:hidden">
+            {TRUST_TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`rounded-full px-4 py-1.5 text-xs transition ${
+                  tab === t.key ? 'bg-emerald-400 text-emerald-950' : 'text-emerald-100/70 hover:bg-emerald-400/10'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
-      <AnimatePresence mode="wait">
-        {isLoading ? (
-          <motion.div key="load" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mx-auto max-w-5xl px-6 py-24 text-center text-emerald-100/60">
-            <RefreshCw className="mx-auto mb-3 h-6 w-6 animate-spin text-emerald-300" />
-            Lecture de la chaîne télémétrie…
-          </motion.div>
-        ) : qError ? (
-          <div className="mx-auto max-w-5xl px-6 py-24 text-center text-amber-200">
-            Impossible de lire le journal des livraisons pour le moment.
-            <div className="mt-4"><Button variant="outline" onClick={() => refetch()} className="border-amber-400/30 bg-transparent text-amber-100">Réessayer</Button></div>
-          </div>
-        ) : report && report.livraisons_total === 0 ? (
-          <div className="mx-auto max-w-5xl px-6 py-24 text-center text-emerald-100/70">
-            Aucune livraison reçue depuis le {fmtFRLong(since.toISOString())}. Élargissez la fenêtre de lecture pour retrouver l’historique.
-          </div>
-        ) : report ? (
-          <motion.div key="body" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <ReportBody r={report} />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      {tab !== 'accueil' ? (
+        <div className="mx-auto max-w-7xl px-6 py-10">
+          {consoleLoading ? (
+            <p className="py-20 text-center text-emerald-100/60">Vérification de vos droits…</p>
+          ) : consoleAllowed ? (
+            <IotConsoleProvider
+              scope={{ fournisseurIds: bradId ? [bradId] : [], fournisseurKeys: BRAD_DELIVERY_KEYS }}
+              capabilities={{ testDelivery: false, rawPayload: false, catalogue: false, proprieteLinks: false }}
+              chrome="partenaire"
+              label="Parc BRAD TECHNOLOGY"
+            >
+              <div className="rounded-3xl bg-background p-4 text-foreground sm:p-6">
+                <IotConsolePanel view={tab === 'carte' ? 'carte' : 'controle'} />
+              </div>
+              <IotConsoleAi />
+            </IotConsoleProvider>
+          ) : (
+            <div className="mx-auto max-w-xl rounded-3xl border border-emerald-500/20 bg-emerald-950/40 p-8 text-center">
+              <Lock className="mx-auto mb-3 h-6 w-6 text-emerald-300" />
+              <h2 className="text-lg font-semibold">Espace partenaire BRAD</h2>
+              <p className="mt-2 text-sm text-emerald-100/70">
+                Le poste de contrôle et la carte des sondes s’ouvrent avec un compte partenaire BRAD.
+                Connectez-vous, ou demandez-nous l’ouverture de votre accès.
+              </p>
+              <Button asChild size="sm" className="mt-4 bg-emerald-500 text-emerald-950 hover:bg-emerald-400">
+                <Link to="/auth">Se connecter</Link>
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div key="load" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mx-auto max-w-5xl px-6 py-24 text-center text-emerald-100/60">
+              <RefreshCw className="mx-auto mb-3 h-6 w-6 animate-spin text-emerald-300" />
+              Lecture de la chaîne télémétrie…
+            </motion.div>
+          ) : qError ? (
+            <div className="mx-auto max-w-5xl px-6 py-24 text-center text-amber-200">
+              Impossible de lire le journal des livraisons pour le moment.
+              <div className="mt-4"><Button variant="outline" onClick={() => refetch()} className="border-amber-400/30 bg-transparent text-amber-100">Réessayer</Button></div>
+            </div>
+          ) : report && report.livraisons_total === 0 ? (
+            <div className="mx-auto max-w-5xl px-6 py-24 text-center text-emerald-100/70">
+              Aucune livraison reçue depuis le {fmtFRLong(since.toISOString())}. Élargissez la fenêtre de lecture pour retrouver l’historique.
+            </div>
+          ) : report ? (
+            <motion.div key="body" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <ReportBody r={report} />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      )}
     </div>
   );
 };
+
 
 export default TrustInFrequenceVivant;

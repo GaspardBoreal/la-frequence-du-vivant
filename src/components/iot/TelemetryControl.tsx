@@ -6,6 +6,8 @@ import DeliveryJournal from '@/components/iot/DeliveryJournal';
 import {
   useAllCapteurs, useTelemetryCounters, useTelemetryDeliveries, useTelemetryLive, useTelemetryPings, useTestDelivery,
 } from '@/hooks/iot/useIotTelemetry';
+import { useIotConsole } from '@/components/iot/console/IotConsoleContext';
+
 
 const fmtAgo = (iso?: string | null) => {
   if (!iso) return 'jamais';
@@ -26,12 +28,15 @@ const Tile: React.FC<{ icon: React.ReactNode; value: number | string; label: str
 
 /** Poste de contrôle : voir à l'œil que la télémétrie arrive vraiment. */
 export const TelemetryControl: React.FC = () => {
+  const { capabilities, label: scopeLabel, chrome } = useIotConsole();
   const { data: capteurs = [] } = useAllCapteurs();
   const { data: deliveries = [] } = useTelemetryDeliveries(200);
-  const { data: pings = [] } = useTelemetryPings(48);
+  const capteurIds = React.useMemo(() => capteurs.map((c: any) => c.id), [capteurs]);
+  const { data: pings = [] } = useTelemetryPings(48, capteurIds);
   const { lastLiveAt, live } = useTelemetryLive();
   const counters = useTelemetryCounters(deliveries, capteurs);
   const test = useTestDelivery();
+
 
   const pingsByCapteur = React.useMemo(() => {
     const m: Record<string, string[]> = {};
@@ -55,7 +60,9 @@ export const TelemetryControl: React.FC = () => {
             <div className="text-xs text-emerald-200/80">
               {lastLiveAt ? `Dernier signal ${fmtAgo(new Date(lastLiveAt).toISOString())}` : 'Aucune trame depuis l’ouverture de cette page'}
               {' · '}{capteurs.length} sonde{capteurs.length > 1 ? 's' : ''} déclarée{capteurs.length > 1 ? 's' : ''}
+              {chrome !== 'admin' && ` · ${scopeLabel}`}
             </div>
+
           </div>
           <Radio className="ml-auto h-5 w-5 text-emerald-300" />
         </div>
@@ -87,14 +94,17 @@ export const TelemetryControl: React.FC = () => {
                     {c.serial_number} · {c.type?.modele ?? '—'} · vue {fmtAgo(c.last_seen_at)}
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={test.isPending}
-                  onClick={() => test.mutate(c.id)}
-                >
-                  <Send className="mr-1 h-3.5 w-3.5" /> Trame de test
-                </Button>
+                {capabilities.testDelivery && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={test.isPending}
+                    onClick={() => test.mutate(c.id)}
+                  >
+                    <Send className="mr-1 h-3.5 w-3.5" /> Trame de test
+                  </Button>
+                )}
+
               </div>
               <VitalityStrip timestamps={pingsByCapteur[c.id] ?? []} hours={48} showScale />
             </div>
