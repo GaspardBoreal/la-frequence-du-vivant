@@ -41,17 +41,20 @@ export const IotPartnerSection: React.FC<Props> = ({ userId, prenom, nom, avatar
       ) : (
         <ul className="space-y-2">
           {mine.map((r) => (
-            <li key={r.id} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{r.fournisseur_nom}</p>
-                <p className="text-xs text-muted-foreground">
-                  {r.actif ? 'Console ouverte' : 'Accès suspendu'}
-                </p>
+            <li key={r.id} className="space-y-2 rounded-lg border border-border p-2.5">
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{r.fournisseur_nom}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {r.actif ? 'Console ouverte' : 'Accès suspendu'}
+                  </p>
+                </div>
+                <Switch checked={r.actif} onCheckedChange={(v) => toggle.mutate({ id: r.id, actif: v })} />
+                <Button variant="ghost" size="sm" onClick={() => remove.mutate(r.id)}>
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
               </div>
-              <Switch checked={r.actif} onCheckedChange={(v) => toggle.mutate({ id: r.id, actif: v })} />
-              <Button variant="ghost" size="sm" onClick={() => remove.mutate(r.id)}>
-                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-              </Button>
+              <AiCreditControl row={r} />
             </li>
           ))}
         </ul>
