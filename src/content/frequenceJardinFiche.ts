@@ -190,6 +190,8 @@ export function ficheToMarkdown(): string {
   L.push('');
   L.push(`> ${fiche.baseline}`);
   L.push('');
+  L.push(`*Fiche publiée le ${fiche.publishedAt}.*`);
+  L.push('');
   L.push(fiche.summary);
   L.push('');
   L.push("## Carte d'identité");
@@ -217,6 +219,11 @@ export function ficheToMarkdown(): string {
   });
 
   L.push('---');
+  L.push('');
+  L.push(fiche.imprint.association);
+  fiche.imprint.address.forEach((line) => L.push(line));
+  L.push('');
+  L.push(`Contact : ${fiche.imprint.contact}`);
   L.push('');
   L.push(
     `Fiche publiée par l'association La Fréquence du Vivant — ${FICHE_URL}`,
