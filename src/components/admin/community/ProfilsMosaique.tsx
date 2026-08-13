@@ -208,13 +208,25 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
       />
 
 
-      <div className="flex items-center justify-between">
-        <Select value={role} onValueChange={setRole}>
-          <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {ROLE_FILTERS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={role} onValueChange={setRole}>
+            <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {ROLE_FILTERS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={partner} onValueChange={setPartner}>
+            <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Accès partenaire : tous</SelectItem>
+              <SelectItem value="any">Partenaires uniquement</SelectItem>
+              {partnerFournisseurs.map(f => (
+                <SelectItem key={f.id} value={f.id}>Partenaire {f.nom}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <p className="text-sm text-muted-foreground">
           {filtered.length} profil{filtered.length > 1 ? 's' : ''}
         </p>
