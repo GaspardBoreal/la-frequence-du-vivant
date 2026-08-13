@@ -248,65 +248,74 @@ const FrequenceJardinFiche: React.FC = () => {
             <span className="font-mono text-xs text-primary">
               {String(fiche.sections.length + 1).padStart(2, '0')}
             </span>
-            <h2 className="text-2xl font-semibold text-foreground">
-              Identité visuelle — trois propositions
-            </h2>
+            <h2 className="text-2xl font-semibold text-foreground">Identité visuelle</h2>
           </div>
-          <p className="mb-6 max-w-3xl text-base leading-relaxed text-muted-foreground">
-            Trois directions de logo pour Fréquence Jardin, non encore arbitrées. Chacune dispose
-            d'une page dédiée et d'une URL d'image directe, réutilisables telles quelles dans un
-            annuaire ou une fiche partenaire.
+          <p className="mb-8 max-w-3xl text-base leading-relaxed text-muted-foreground">
+            Les propositions de logo, par famille de marque. Aucune n'est encore arbitrée. Chacune
+            dispose d'une page dédiée et d'une URL d'image directe, réutilisables telles quelles
+            dans un annuaire ou une fiche partenaire.
           </p>
 
-          <div className="grid gap-5 sm:grid-cols-3">
-            {ficheLogos.map((l) => (
-              <article
-                key={l.slug}
-                className="overflow-hidden rounded-2xl border border-border/60 bg-card/40 transition hover:border-primary/40"
-              >
-                <a href={`/roadmap/frequence-jardin/logo/${l.slug}`} className="block">
-                  <img
-                    src={l.src}
-                    alt={l.alt}
-                    title={`${l.name} — logo Fréquence Jardin, La Fréquence du Vivant`}
-                    width={l.width}
-                    height={l.height}
-                    loading="lazy"
-                    decoding="async"
-                    className="aspect-square w-full object-cover"
-                  />
-                </a>
-                <div className="p-4">
-                  <h3 className="text-sm font-semibold text-foreground">{l.name}</h3>
-                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{l.intention}</p>
-                  <a
-                    href={`/roadmap/frequence-jardin/logo/${l.slug}`}
-                    className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          {logoFamilies.map((fam) => (
+            <div key={fam.id} className="mb-10 last:mb-0">
+              <h3 className="text-lg font-semibold text-foreground">{fam.title}</h3>
+              <p className="mb-5 mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+                {fam.intro}
+              </p>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {logosByFamily(fam.id).map((l) => (
+                  <article
+                    key={l.slug}
+                    className="overflow-hidden rounded-2xl border border-border/60 bg-card/40 transition hover:border-primary/40"
                   >
-                    Voir la page du logo <ArrowUpRight className="h-3.5 w-3.5" />
-                  </a>
-                  <div className="mt-3 flex items-start gap-2">
-                    <p className="min-w-0 flex-1 break-all font-mono text-[10px] leading-relaxed text-muted-foreground">
-                      {logoImageUrl(l)}
-                    </p>
-                    <button
-                      type="button"
-                      aria-label={`Copier l'URL de l'image ${l.name}`}
-                      onClick={() => onCopyUrl(logoImageUrl(l), l.slug)}
-                      className="shrink-0 rounded-md border border-border/60 p-1.5 text-muted-foreground transition hover:text-primary"
-                    >
-                      {copiedLogo === l.slug ? (
-                        <Check className="h-3.5 w-3.5" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                    <a href={`/roadmap/frequence-jardin/logo/${l.slug}`} className="block">
+                      <img
+                        src={l.src}
+                        alt={l.alt}
+                        title={`${l.name} — logo ${fam.title}, La Fréquence du Vivant`}
+                        width={l.width}
+                        height={l.height}
+                        loading="lazy"
+                        decoding="async"
+                        className="aspect-square w-full object-cover"
+                      />
+                    </a>
+                    <div className="p-4">
+                      <h4 className="text-sm font-semibold text-foreground">{l.name}</h4>
+                      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                        {l.intention}
+                      </p>
+                      <a
+                        href={`/roadmap/frequence-jardin/logo/${l.slug}`}
+                        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                      >
+                        Voir la page du logo <ArrowUpRight className="h-3.5 w-3.5" />
+                      </a>
+                      <div className="mt-3 flex items-start gap-2">
+                        <p className="min-w-0 flex-1 break-all font-mono text-[10px] leading-relaxed text-muted-foreground">
+                          {logoImageUrl(l)}
+                        </p>
+                        <button
+                          type="button"
+                          aria-label={`Copier l'URL de l'image ${l.name}`}
+                          onClick={() => onCopyUrl(logoImageUrl(l), l.slug)}
+                          className="shrink-0 rounded-md border border-border/60 p-1.5 text-muted-foreground transition hover:text-primary"
+                        >
+                          {copiedLogo === l.slug ? (
+                            <Check className="h-3.5 w-3.5" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ))}
         </section>
+
 
         {/* Pied de fiche */}
         <section className="mb-12 rounded-2xl border border-border/60 bg-card/50 p-6">
