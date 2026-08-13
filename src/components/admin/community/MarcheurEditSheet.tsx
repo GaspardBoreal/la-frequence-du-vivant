@@ -345,6 +345,17 @@ export const MarcheurEditSheet: React.FC<Props> = ({ profile, open, onOpenChange
             <ScienceAccountsEditor ref={scienceRef} profileId={form.id} />
           </section>
 
+          <Separator />
+
+          <section>
+            <IotPartnerSection
+              userId={form.user_id}
+              prenom={form.prenom}
+              nom={form.nom}
+              avatarUrl={form.avatar_url}
+            />
+          </section>
+
           <div className="flex gap-2 pt-2 sticky bottom-0 bg-background py-3">
             <Button onClick={handleSave} disabled={mutation.isPending} className="flex-1">
               <Save className="h-4 w-4 mr-2" />
