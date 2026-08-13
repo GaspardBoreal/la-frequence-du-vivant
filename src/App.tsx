@@ -355,6 +355,7 @@ function App() {
             } />
             <Route path="/roadmap" element={<RoadmapPublic />} />
             <Route path="/roadmap/semaine/:year/:week" element={<RoadmapWeekPage />} />
+            <Route path="/roadmap/frequence-jardin" element={<FrequenceJardinFiche />} />
             <Route path="/roadmap/:audience" element={<RoadmapPublic />} />
 
             <Route path="/propriete/:slug" element={<ProprieteEspace />} />
