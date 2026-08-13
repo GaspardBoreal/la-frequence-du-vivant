@@ -37,7 +37,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
     fontSize: 7.5, color: '#8a978f',
   },
-  footerImprint: { flex: 1, lineHeight: 1.5 },
+  footerImprint: { flex: 1, lineHeight: 1 },
   footerPage: { textAlign: 'right', marginLeft: 20 },
 });
 
@@ -51,9 +51,7 @@ const Bullet = ({ children }: { children: string }) => (
 const Footer = () => (
   <View style={s.footer} fixed>
     <View style={s.footerImprint}>
-      <Text>{fiche.imprint.association}</Text>
-      <Text>{fiche.imprint.address.join(' · ')}</Text>
-      <Text>Contact : {fiche.imprint.contact}</Text>
+      <Text>{fiche.imprint.association} · {fiche.imprint.address.join(' · ')} · Contact : {fiche.imprint.contact}</Text>
     </View>
     <Text style={s.footerPage} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
   </View>

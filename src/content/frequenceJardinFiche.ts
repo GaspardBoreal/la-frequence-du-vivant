@@ -220,10 +220,9 @@ export function ficheToMarkdown(): string {
 
   L.push('---');
   L.push('');
-  L.push(fiche.imprint.association);
-  fiche.imprint.address.forEach((line) => L.push(line));
-  L.push('');
-  L.push(`Contact : ${fiche.imprint.contact}`);
+  L.push(
+    `${fiche.imprint.association} · ${fiche.imprint.address.join(' · ')} · Contact : ${fiche.imprint.contact}`,
+  );
   L.push('');
   L.push(
     `Fiche publiée par l'association La Fréquence du Vivant — ${FICHE_URL}`,
