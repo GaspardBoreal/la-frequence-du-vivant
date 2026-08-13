@@ -12,7 +12,11 @@ import type { ScienceAccount } from '@/types/scienceAccounts';
 import NetworkBadge from './NetworkBadge';
 
 interface Props {
-  profile: EditableProfile & { marches_count?: number; science_accounts?: ScienceAccount[] };
+  profile: EditableProfile & {
+    marches_count?: number;
+    science_accounts?: ScienceAccount[];
+    iot_partners?: { fournisseur_id: string; nom: string; actif: boolean }[];
+  };
   onEdit: (p: EditableProfile) => void;
 }
 
