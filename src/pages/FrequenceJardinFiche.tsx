@@ -5,7 +5,14 @@ import Footer from '@/components/Footer';
 import RoadmapNav from '@/components/roadmap/RoadmapNav';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { fiche, ficheToMarkdown, FICHE_URL } from '@/content/frequenceJardinFiche';
+import {
+  fiche,
+  ficheToMarkdown,
+  FICHE_URL,
+  ficheLogos,
+  logoImageUrl,
+  logoPageUrl,
+} from '@/content/frequenceJardinFiche';
 
 /** Fiche application publique « Fréquence Jardin », référençable par les IA. */
 const FrequenceJardinFiche: React.FC = () => {
