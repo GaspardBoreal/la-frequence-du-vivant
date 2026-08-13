@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Leaf, Download, FileText, Copy, Check, ArrowUpRight, Footprints } from 'lucide-react';
+import { Leaf, Download, FileText, Copy, Check, ArrowUpRight, Footprints, Images } from 'lucide-react';
 import Footer from '@/components/Footer';
 import RoadmapNav from '@/components/roadmap/RoadmapNav';
 import { Button } from '@/components/ui/button';
@@ -139,6 +139,16 @@ const FrequenceJardinFiche: React.FC = () => {
             </Button>
             <Button variant="secondary" onClick={onPdf} disabled={pdfBusy}>
               <Download className="mr-2 h-4 w-4" /> {pdfBusy ? 'Génération…' : 'PDF'}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                document
+                  .getElementById('identite-visuelle')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            >
+              <Images className="mr-2 h-4 w-4" /> Logos ({ficheLogos.length})
             </Button>
             <Button variant="outline" onClick={onCopy}>
               {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
