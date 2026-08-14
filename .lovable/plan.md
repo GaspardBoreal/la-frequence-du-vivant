@@ -21,16 +21,21 @@ Ce cadrage transforme une question ouverte en protocole : l'IA sait quelle éche
 
 ## 3. Une réponse professionnelle et explicable
 
-L'IA répond selon une trame imposée par le prompt :
+L'IA répond selon une trame imposée par le prompt, avec une base de raisonnement explicite et reproductible :
 
-1. **Ce que je vois** — description factuelle de l'image (couleurs, strates, repères), sans interprétation.
-2. **Lecture chiffrée** — valeur lue + **plage d'incertitude** (ex. « pH 6,5 ± 0,5 — lecture colorimétrique, éclairage non contrôlé ») et unité SI.
-3. **Interprétation agronomique** — rattachée aux quatre curseurs existants (eau, texture, nutrition, pH) et au verdict du registre de sol.
-4. **Concordance / écart** — comparaison avec le prélèvement rattaché et avec le cortège floristique de la propriété : accord, ou écart signalé avec hypothèses.
-5. **Limites** — ce que la photo ne permet pas de conclure, et le geste à faire pour lever le doute (reprendre la photo à la lumière du jour, refaire à 20 cm, envoyer au labo).
-6. **Ce que ça change** — irrigation, amendement, palette végétale.
+1. **Ce que je vois** — description factuelle de l'image (couleurs, strates, repères, zone de lecture), sans interprétation.
+2. **Méthode de lecture** — indique le protocole utilisé selon le type de test : échelle colorimétrique standard, loi de Stokes (sédimentation), règle de test au vinaigre, échelle de structure, grilles de comparaison de teinte. Chaque lecture est relativisée par le **mode de prise de vue** (lumière, angle, résolution).
+3. **Lecture chiffrée** — valeur estimée + **plage d'incertitude** (ex. « pH 6,5 ± 0,5 ») et unité SI. Les incertitudes sont majorées par défaut : ±0,5 pour pH colorimétrique, ±1 cran pour texture, ±10 % pour NPK.
+4. **Interprétation agronomique** — rattachée aux quatre curseurs existants (eau, texture, nutrition, pH) et au verdict du registre de sol. Les seuils de référence sont ceux du référentiel pédologique français INRAE / Arvalis / BRGM adaptés au contexte Dordogne.
+5. **Concordance / écart** — comparaison avec le prélèvement rattaché et le cortège floristique de la propriété. Si l'écart dépasse le seuil de confiance, on le signale explicitement.
+6. **Limites** — ce que la photo ne permet pas de conclure, et le geste à faire pour lever le doute (reprendre la photo, refaire le test, envoyer au labo).
+7. **Ce que ça change** — irrigation, amendement, palette végétale.
 
-Garde-fous : jamais de valeur inventée quand la photo est floue, surexposée ou hors cadre — dans ce cas l'IA demande une reprise et dit pourquoi. Toute valeur reste une estimation visuelle, jamais présentée comme une mesure de laboratoire.
+Garde-fous scientifiques :
+- Jamais de valeur inventée quand la photo est floue, surexposée ou hors cadre. L'IA refuse la lecture et explique pourquoi.
+- Toute valeur reste une **estimation visuelle**, jamais présentée comme une mesure de laboratoire.
+- Les anomalies connues de la chaîne BRAD (capteurs partiels, températures aberrantes) sont signalées comme telles, pas commentées comme des faits agronomiques.
+- Chaque conclusion mentionne la source du raisonnement : test visual, contexte sol, données sondes, ou cortège.
 
 ## 4. Coût de chaque requête
 
