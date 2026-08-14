@@ -746,6 +746,17 @@ export function ChatBot({
                           </div>
                         )}
                         {docError && <div className="text-xs text-destructive">{docError}</div>}
+                        {imageError && <div className="text-xs text-destructive">{imageError}</div>}
+                        {imageProcessing && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <div className="flex gap-1">
+                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
+                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
+                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary" />
+                            </div>
+                            Préparation de la photo…
+                          </div>
+                        )}
                         {attachedDoc && !isExtracting && (
                           <div className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs text-primary">
                             <FileText className="h-3.5 w-3.5 shrink-0" />
@@ -754,6 +765,41 @@ export function ChatBot({
                               onClick={removeDocument}
                               className="ml-1 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
                               title="Retirer le document"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                        {attachedImage && (
+                          <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-xs text-emerald-300 border border-emerald-400/30">
+                            <img
+                              src={attachedImage.dataUrl}
+                              alt="Photo de test de sol"
+                              className="h-8 w-8 rounded object-cover"
+                            />
+                            <div className="flex flex-col min-w-0">
+                              <span className="truncate max-w-[140px] font-medium">{attachedImage.fileName}</span>
+                              <span className="text-[10px] tabular-nums opacity-80">
+                                {formatBytes(attachedImage.bytes)} · {attachedImage.width}×{attachedImage.height}
+                              </span>
+                            </div>
+                            <select
+                              value={attachedImage.testType ?? ''}
+                              onChange={(e) => setTestType(e.target.value as SoilTestType)}
+                              className="ml-1 max-w-[110px] rounded border border-emerald-400/30 bg-emerald-950/20 px-1.5 py-0.5 text-[10px] text-emerald-100 focus:outline-none focus:ring-1 focus:ring-emerald-400/50"
+                              title="Type de test"
+                            >
+                              <option value="">Type de test…</option>
+                              {SOIL_TEST_TYPES.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {t.icon} {t.label}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={removeImage}
+                              className="ml-1 rounded-full p-0.5 hover:bg-emerald-500/20 transition-colors"
+                              title="Retirer la photo"
                             >
                               <X className="h-3 w-3" />
                             </button>
