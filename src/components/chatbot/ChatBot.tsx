@@ -321,10 +321,12 @@ export function ChatBot({
 
   const handleSend = () => {
     const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
+    if ((!trimmed && !attachedImage) || isLoading) return;
+    const toSend = trimmed || (attachedImage ? 'Que lis-tu sur cette photo ?' : '');
     setInput('');
-    send(trimmed, voiceMode, attachedDoc ?? undefined);
+    send(toSend, voiceMode, attachedDoc ?? undefined, attachedImage ?? undefined);
     removeDocument();
+    removeImage();
   };
 
   const handleSuggestion = (question: string) => send(question);
