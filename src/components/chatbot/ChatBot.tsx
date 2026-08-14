@@ -405,10 +405,15 @@ export function ChatBot({
     stopListening();
     setInput('');
     removeDocument();
+    removeImage();
     detachSpeciesPool();
     clearContexts();
     reset();
     setInterruptBanner(false);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleImageFileChange(e);
   };
 
 
