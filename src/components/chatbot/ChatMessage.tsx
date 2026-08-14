@@ -16,7 +16,7 @@ interface ChatMessageProps {
   image?: string;
 }
 
-export function ChatMessage({ role, content, isExpanded, isStreaming }: ChatMessageProps) {
+export function ChatMessage({ role, content, isExpanded, isStreaming, image }: ChatMessageProps) {
   const isUser = role === 'user';
   const { isSupported, isSpeaking, speak, stopSpeaking } = useSpeechSynthesis();
   const [copied, setCopied] = useState(false);
