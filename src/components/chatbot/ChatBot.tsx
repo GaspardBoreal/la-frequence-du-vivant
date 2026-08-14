@@ -917,16 +917,38 @@ export function ChatBot({
                             </DropdownMenuContent>
                           </DropdownMenu>
                         ) : (
-                          <Button
-                            onClick={openFilePicker}
-                            size="icon"
-                            variant="outline"
-                            disabled={isExtracting}
-                            className="h-10 w-10 shrink-0 rounded-xl"
-                            title="Joindre un document (PDF, TXT, CSV, MD)"
-                          >
-                            <Paperclip className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                disabled={isExtracting || imageProcessing}
+                                className="h-10 w-10 shrink-0 rounded-xl"
+                                title="Joindre…"
+                                aria-label="Joindre une pièce jointe"
+                              >
+                                <Paperclip className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-64" style={{ zIndex: chatZ + 50 }}>
+                              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                                Joindre à la conversation
+                              </DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); openFilePicker(); }}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                <span className="flex-1">Un document (PDF, TXT, CSV, MD)</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={(e) => { e.preventDefault(); openImagePicker(); }}
+                                disabled={imageProcessing || !!attachedImage}
+                              >
+                                <ImageIcon className="h-4 w-4 mr-2 text-emerald-400" />
+                                <span className="flex-1">Une photo de test de sol</span>
+                                {attachedImage && <Check className="h-3.5 w-3.5 ml-2 text-primary" />}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         )
                       )}
 
