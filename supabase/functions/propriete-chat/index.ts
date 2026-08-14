@@ -225,6 +225,29 @@ L'utilisateur n'a activé aucun contexte. Réponds sur la méthode et invite-le 
     if (iotAdminMode) systemContent += TELEMETRY_ADDENDUM(pageState);
     if (voiceMode) systemContent += VOICE_MODE_ADDENDUM;
 
+    // Normalize messages for multimodal support (text + image_url)
+    const normalizeMessages = (rawMessages: unknown[]) => {
+      return (rawMessages as Array<{ role: string; content?: string; image?: string; testType?: string }>).map((m) => {
+        const role = m.role;
+        const text = m.content ?? "";
+        const image = m.image;
+        const testType = m.testType;
+        if (!image) return { role, content: text };
+        const addendum = testType
+          ? `\n\n[TEST DE SOL — type : ${testType}]\nTraite cette image selon le protocole scientifique du mode "Lecture d'une photo de test de sol". N'oublie pas l'incertitude.\n`
+          : "\n\n[PHOTO DE TEST DE SOL]\nTraite cette image selon le protocole scientifique du mode \"Lecture d'une photo de test de sol\". N'oublie pas l'incertitude.\n";
+        return {
+          role,
+          content: [
+            { type: "text", text: text + addendum },
+            { type: "image_url", image_url: { url: image } },
+          ],
+        };
+      });
+    };
+
+    const normalizedMessages = normalizeMessages(messages);
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -236,7 +259,7 @@ L'utilisateur n'a activé aucun contexte. Réponds sur la méthode et invite-le 
       },
       body: JSON.stringify({
         model: "google/gemini-3.6-flash",
-        messages: [{ role: "system", content: systemContent }, ...messages],
+        messages: [{ role: "system", content: systemContent }, ...normalizedMessages],
         stream: true,
       }),
     });
