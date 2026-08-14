@@ -993,7 +993,7 @@ export function ChatBot({
                         <Button
                           onClick={handleSend}
                           size="icon"
-                          disabled={!input.trim() || isListening}
+                          disabled={(!input.trim() && !attachedImage) || isListening}
                           className="h-10 w-10 shrink-0 rounded-xl bg-primary hover:bg-primary/90"
                         >
                           <Send className="h-4 w-4" />
