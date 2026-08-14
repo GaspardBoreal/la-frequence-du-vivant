@@ -17,6 +17,7 @@ import {
   FileText,
   MoreVertical,
   Check,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,7 @@ import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { ChatMessage } from './ChatMessage';
 import { ChatSuggestions } from './ChatSuggestions';
 import { useChatExport } from './useChatExport';
+import { useChatImage, SOIL_TEST_TYPES, type SoilTestType } from '@/hooks/useChatImage';
 import { ChatExportDrawer } from './ChatExportDrawer';
 import { chatConfig, type ChatContext } from './chatConfig';
 import { scenographeStore } from '@/components/propriete/scenographe/scenographeStore';
@@ -151,6 +153,17 @@ export function ChatBot({
     openFilePicker,
     acceptedFormats,
   } = useDocumentExtractor();
+  const {
+    image: attachedImage,
+    error: imageError,
+    processing: imageProcessing,
+    fileInputRef: imageInputRef,
+    removeImage,
+    openFilePicker: openImagePicker,
+    setTestType,
+    handleFileChange: handleImageFileChange,
+    acceptedFormats: imageAcceptedFormats,
+  } = useChatImage();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const wasLoadingRef = useRef(false);
@@ -308,10 +321,12 @@ export function ChatBot({
 
   const handleSend = () => {
     const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
+    if ((!trimmed && !attachedImage) || isLoading) return;
+    const toSend = trimmed || (attachedImage ? 'Que lis-tu sur cette photo ?' : '');
     setInput('');
-    send(trimmed, voiceMode, attachedDoc ?? undefined);
+    send(toSend, voiceMode, attachedDoc ?? undefined, attachedImage ?? undefined);
     removeDocument();
+    removeImage();
   };
 
   const handleSuggestion = (question: string) => send(question);
@@ -373,8 +388,9 @@ export function ChatBot({
   const attachedBaseBytes = useMemo(
     () =>
       (speciesPoolAttached && speciesPoolAvailable ? payloadBytes(speciesPoolAvailable.items) : 0) +
-      (attachedDoc ? payloadBytes(attachedDoc.text) : 0),
-    [speciesPoolAttached, speciesPoolAvailable, attachedDoc],
+      (attachedDoc ? payloadBytes(attachedDoc.text) : 0) +
+      (attachedImage ? attachedImage.bytes : 0),
+    [speciesPoolAttached, speciesPoolAvailable, attachedDoc, attachedImage],
   );
   const totalContextBytes = activeContextBytes + attachedBaseBytes;
   const contextVerdict = ecoVerdict(totalContextBytes);
@@ -390,10 +406,15 @@ export function ChatBot({
     stopListening();
     setInput('');
     removeDocument();
+    removeImage();
     detachSpeciesPool();
     clearContexts();
     reset();
     setInterruptBanner(false);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleImageFileChange(e);
   };
 
 
@@ -643,6 +664,7 @@ export function ChatBot({
                           key={i}
                           role={msg.role}
                           content={msg.content}
+                          image={msg.image}
                           isExpanded={isExpanded}
                           isStreaming={isLoading && i === messages.length - 1 && msg.role === 'assistant'}
                         />
@@ -704,8 +726,15 @@ export function ChatBot({
                       onChange={handleFileChange}
                       className="hidden"
                     />
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept={imageAcceptedFormats}
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
 
-                    {(attachedDoc || isExtracting || docError || speciesPoolAttached || activeContextKeys.length > 0) && (
+                    {(attachedDoc || isExtracting || docError || attachedImage || imageProcessing || imageError || speciesPoolAttached || activeContextKeys.length > 0) && (
                       <div className="mb-2 px-1 flex flex-wrap gap-1.5">
                         {isExtracting && (
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -718,6 +747,17 @@ export function ChatBot({
                           </div>
                         )}
                         {docError && <div className="text-xs text-destructive">{docError}</div>}
+                        {imageError && <div className="text-xs text-destructive">{imageError}</div>}
+                        {imageProcessing && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <div className="flex gap-1">
+                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
+                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
+                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary" />
+                            </div>
+                            Préparation de la photo…
+                          </div>
+                        )}
                         {attachedDoc && !isExtracting && (
                           <div className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs text-primary">
                             <FileText className="h-3.5 w-3.5 shrink-0" />
@@ -726,6 +766,41 @@ export function ChatBot({
                               onClick={removeDocument}
                               className="ml-1 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
                               title="Retirer le document"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                        {attachedImage && (
+                          <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-xs text-emerald-300 border border-emerald-400/30">
+                            <img
+                              src={attachedImage.dataUrl}
+                              alt="Photo de test de sol"
+                              className="h-8 w-8 rounded object-cover"
+                            />
+                            <div className="flex flex-col min-w-0">
+                              <span className="truncate max-w-[140px] font-medium">{attachedImage.fileName}</span>
+                              <span className="text-[10px] tabular-nums opacity-80">
+                                {formatBytes(attachedImage.bytes)} · {attachedImage.width}×{attachedImage.height}
+                              </span>
+                            </div>
+                            <select
+                              value={attachedImage.testType ?? ''}
+                              onChange={(e) => setTestType(e.target.value as SoilTestType)}
+                              className="ml-1 max-w-[110px] rounded border border-emerald-400/30 bg-emerald-950/20 px-1.5 py-0.5 text-[10px] text-emerald-100 focus:outline-none focus:ring-1 focus:ring-emerald-400/50"
+                              title="Type de test"
+                            >
+                              <option value="">Type de test…</option>
+                              {SOIL_TEST_TYPES.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {t.icon} {t.label}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={removeImage}
+                              className="ml-1 rounded-full p-0.5 hover:bg-emerald-500/20 transition-colors"
+                              title="Retirer la photo"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -809,6 +884,14 @@ export function ChatBot({
                                 <FileText className="h-4 w-4 mr-2" />
                                 <span className="flex-1">Un document (PDF, TXT, CSV, MD)</span>
                               </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={(e) => { e.preventDefault(); openImagePicker(); }}
+                                disabled={imageProcessing || !!attachedImage}
+                              >
+                                <ImageIcon className="h-4 w-4 mr-2 text-emerald-400" />
+                                <span className="flex-1">Une photo de test de sol</span>
+                                {attachedImage && <Check className="h-3.5 w-3.5 ml-2 text-primary" />}
+                              </DropdownMenuItem>
                               {hasContextConsole && (
                                 <DropdownMenuItem
                                   onSelect={(e) => { e.preventDefault(); setConsoleOpen(true); }}
@@ -835,16 +918,38 @@ export function ChatBot({
                             </DropdownMenuContent>
                           </DropdownMenu>
                         ) : (
-                          <Button
-                            onClick={openFilePicker}
-                            size="icon"
-                            variant="outline"
-                            disabled={isExtracting}
-                            className="h-10 w-10 shrink-0 rounded-xl"
-                            title="Joindre un document (PDF, TXT, CSV, MD)"
-                          >
-                            <Paperclip className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                disabled={isExtracting || imageProcessing}
+                                className="h-10 w-10 shrink-0 rounded-xl"
+                                title="Joindre…"
+                                aria-label="Joindre une pièce jointe"
+                              >
+                                <Paperclip className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-64" style={{ zIndex: chatZ + 50 }}>
+                              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                                Joindre à la conversation
+                              </DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); openFilePicker(); }}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                <span className="flex-1">Un document (PDF, TXT, CSV, MD)</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={(e) => { e.preventDefault(); openImagePicker(); }}
+                                disabled={imageProcessing || !!attachedImage}
+                              >
+                                <ImageIcon className="h-4 w-4 mr-2 text-emerald-400" />
+                                <span className="flex-1">Une photo de test de sol</span>
+                                {attachedImage && <Check className="h-3.5 w-3.5 ml-2 text-primary" />}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         )
                       )}
 
@@ -855,11 +960,13 @@ export function ChatBot({
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                         placeholder={
-                          attachedDoc
-                            ? 'Posez une question sur le document…'
-                            : isListening
-                            ? 'Parlez maintenant…'
-                            : chatConfig.placeholderInput
+                          attachedImage
+                            ? 'Commentez ou demandez une lecture de la photo…'
+                            : attachedDoc
+                              ? 'Posez une question sur le document…'
+                              : isListening
+                                ? 'Parlez maintenant…'
+                                : chatConfig.placeholderInput
                         }
                         className={`flex-1 rounded-xl border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 ${
                           isExpanded ? 'py-3' : 'py-2.5'
@@ -887,7 +994,7 @@ export function ChatBot({
                         <Button
                           onClick={handleSend}
                           size="icon"
-                          disabled={!input.trim() || isListening}
+                          disabled={(!input.trim() && !attachedImage) || isListening}
                           className="h-10 w-10 shrink-0 rounded-xl bg-primary hover:bg-primary/90"
                         >
                           <Send className="h-4 w-4" />

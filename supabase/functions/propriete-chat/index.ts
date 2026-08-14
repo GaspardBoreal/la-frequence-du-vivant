@@ -59,6 +59,29 @@ Règles de lecture :
 - Quand on te demande « quelles espèces sont présentes dans cet ouvrage », énumère la liste **dedans** intégralement (puis, si utile, la lisière) — jamais le voisinage à sa place.
 - Ne dis JAMAIS « aucune espèce n'est enregistrée » si la liste **dedans** est non vide.
 - \`especesRetenuesPalette\` (contexte 🏗️) est la **palette de plantation projetée** par le propriétaire, PAS un relevé de terrain. Vide = simplement aucun choix saisi ; ne la présente jamais comme une absence d'espèces sur le site.
+
+## LECTURE D'UNE PHOTO DE TEST DE SOL (mode scientifique)
+Si l'utilisateur joint une photo de test de sol, tu deviens un assistant de lecture **explicable** et **prudent**. Tu ne remplaces jamais un laboratoire.
+
+Trame obligatoire, dans l'ordre :
+1. **Ce que je vois** — description factuelle (couleurs, zones, repères, échelle de comparaison si présente), sans interprétation.
+2. **Méthode de lecture** — protocole adapté au type de test (colorimétrie standard, loi de Stokes pour la sédimentation, test à l'acide pour le calcaire, échelle de structure INRAE, grilles de teinte).
+3. **Lecture chiffrée** — valeur estimée + **plage d'incertitude** majorée par défaut :
+   - pH colorimétrique : ±0,5
+   - Texture (bocal) : ±1 cran (argile/limon/sable)
+   - NPK colorimétrique : ±10 % relatif
+   - Calcaire : présent / absent / réaction modérée
+   - Structure : type de sol selon échelle INRAE
+4. **Interprétation agronomique** — rattachée aux quatre curseurs existants (eau, texture, nutrition, pH) et au verdict du registre de sol.
+5. **Concordance / écart** — compare avec le prélèvement rattaché (s'il est fourni) et avec le cortège floristique de la propriété. Si l'écart dépasse le seuil de confiance, signale-le explicitement.
+6. **Limites** — ce que la photo ne permet pas de conclure, et le geste à faire pour lever le doute (reprendre la photo, refaire le test, envoyer au labo).
+7. **Ce que ça change** — irrigation, amendement, palette végétale.
+
+Garde-fous :
+- Si la photo est illisible (floue, surexposée, cadrage manquant, échelle absente), refuse la lecture et explique pourquoi.
+- Jamais présenter une estimation visuelle comme une mesure de laboratoire.
+- Ne commente jamais une anomalie de capteur BRAD comme un fait agronomique.
+- Chaque conclusion mentionne sa source : test visuel, contexte sol, données sondes, ou cortège.
 - Si seul le contexte 🏗️ est actif et que la question porte sur les espèces présentes, demande d'activer 🌱 « Espèces dans l'ouvrage ».`;
 
 /** Mode « poste de commandement IoT » : lecture prudente de la télémétrie. */
@@ -202,6 +225,29 @@ L'utilisateur n'a activé aucun contexte. Réponds sur la méthode et invite-le 
     if (iotAdminMode) systemContent += TELEMETRY_ADDENDUM(pageState);
     if (voiceMode) systemContent += VOICE_MODE_ADDENDUM;
 
+    // Normalize messages for multimodal support (text + image_url)
+    const normalizeMessages = (rawMessages: unknown[]) => {
+      return (rawMessages as Array<{ role: string; content?: string; image?: string; testType?: string }>).map((m) => {
+        const role = m.role;
+        const text = m.content ?? "";
+        const image = m.image;
+        const testType = m.testType;
+        if (!image) return { role, content: text };
+        const addendum = testType
+          ? `\n\n[TEST DE SOL — type : ${testType}]\nTraite cette image selon le protocole scientifique du mode "Lecture d'une photo de test de sol". N'oublie pas l'incertitude.\n`
+          : "\n\n[PHOTO DE TEST DE SOL]\nTraite cette image selon le protocole scientifique du mode \"Lecture d'une photo de test de sol\". N'oublie pas l'incertitude.\n";
+        return {
+          role,
+          content: [
+            { type: "text", text: text + addendum },
+            { type: "image_url", image_url: { url: image } },
+          ],
+        };
+      });
+    };
+
+    const normalizedMessages = normalizeMessages(messages);
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -213,7 +259,7 @@ L'utilisateur n'a activé aucun contexte. Réponds sur la méthode et invite-le 
       },
       body: JSON.stringify({
         model: "google/gemini-3.6-flash",
-        messages: [{ role: "system", content: systemContent }, ...messages],
+        messages: [{ role: "system", content: systemContent }, ...normalizedMessages],
         stream: true,
       }),
     });
