@@ -883,6 +883,14 @@ export function ChatBot({
                                 <FileText className="h-4 w-4 mr-2" />
                                 <span className="flex-1">Un document (PDF, TXT, CSV, MD)</span>
                               </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={(e) => { e.preventDefault(); openImagePicker(); }}
+                                disabled={imageProcessing || !!attachedImage}
+                              >
+                                <ImageIcon className="h-4 w-4 mr-2 text-emerald-400" />
+                                <span className="flex-1">Une photo de test de sol</span>
+                                {attachedImage && <Check className="h-3.5 w-3.5 ml-2 text-primary" />}
+                              </DropdownMenuItem>
                               {hasContextConsole && (
                                 <DropdownMenuItem
                                   onSelect={(e) => { e.preventDefault(); setConsoleOpen(true); }}
