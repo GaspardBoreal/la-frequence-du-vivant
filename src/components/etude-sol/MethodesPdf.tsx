@@ -109,9 +109,10 @@ const MethodesDoc = () => {
           if (!list.length) return null;
           return (
             <View key={cat.id} style={s.section}>
-              <Text style={s.h3} minPresenceAhead={90}>{cat.label}</Text>
-              {list.map((m) => (
-                <View key={m.id} style={s.card} wrap={false}>
+              {list.map((m, mi) => (
+                <View key={m.id} wrap={false}>
+                  {mi === 0 ? <Text style={s.h3}>{cat.label}</Text> : null}
+                  <View style={s.card}>
                   <Text style={s.cardName}>
                     {m.name} {m.optional ? <Text style={s.optional}>(optionnel)</Text> : null}
                   </Text>
@@ -138,6 +139,7 @@ const MethodesDoc = () => {
                     </Text>
                   ) : null}
                   <Text style={s.deliver}>Livrable : {safe(m.deliverable)}</Text>
+                  </View>
                 </View>
               ))}
             </View>
