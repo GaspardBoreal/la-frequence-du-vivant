@@ -3,8 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { chatConfig } from '@/components/chatbot/chatConfig';
 import type { ChatContext } from '@/components/chatbot/chatConfig';
 import { useChatPageContextStore } from '@/hooks/useChatPageContext';
+import type { ChatImageAttachment } from '@/hooks/useChatImage';
 
-type Msg = { role: 'user' | 'assistant'; content: string };
+export type ChatMessage = { role: 'user' | 'assistant'; content: string; image?: string };
+
+/** OpenAI-compatible chat completion content (string or multimodal array). */
+export type ApiContent =
+  | string
+  | Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }>;
+
+export type ApiMessage = { role: 'user' | 'assistant'; content: ApiContent };
 
 export function useChatStream(
   currentContext: ChatContext = 'dashboard',
@@ -13,20 +21,48 @@ export function useChatStream(
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${edgeFunctionPath}`;
   const pageEntity = useChatPageContextStore((s) => s.entity);
   const pageState = useChatPageContextStore((s) => s.pageState);
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [wasStopped, setWasStopped] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const send = useCallback(
-    async (input: string, voiceMode = false, documentContext?: { fileName: string; text: string }) => {
-      let apiContent = input;
+    async (
+      input: string,
+      voiceMode = false,
+      documentContext?: { fileName: string; text: string },
+      imageAttachment?: ChatImageAttachment,
+    ) => {
+      let apiContent: ApiContent = input;
       if (documentContext) {
         apiContent = `[DOCUMENT JOINT : ${documentContext.fileName}]\n--- DÉBUT DU CONTENU ---\n${documentContext.text}\n--- FIN DU CONTENU ---\n\nQuestion de l'utilisateur : ${input}`;
       }
 
-      const userMsg: Msg = { role: 'user', content: input };
-      const apiMsg: Msg = { role: 'user', content: apiContent };
+      if (imageAttachment) {
+        const testLabel = imageAttachment.testType
+          ? {
+              ph: 'Bandelette pH',
+              npk: 'Test NPK colorimétrique',
+              sedimentation: 'Bocal de sédimentation',
+              calcaire: "Test à l'acide (calcaire)",
+              structure: 'Test bêche / structure',
+              labo: 'Rapport de labo',
+              autre: 'Autre test de sol',
+            }[imageAttachment.testType]
+          : 'Test de sol';
+        const prefix = `[PHOTO DE TEST DE SOL — ${testLabel}]\n`;
+        apiContent = [
+          { type: 'text', text: prefix + (typeof apiContent === 'string' ? apiContent : input) },
+          { type: 'image_url', image_url: { url: imageAttachment.dataUrl } },
+        ];
+      }
+
+      const userMsg: ChatMessage = {
+        role: 'user',
+        content: input,
+        image: imageAttachment?.dataUrl,
+      };
+      const apiMsg: ApiMessage = { role: 'user', content: apiContent };
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
       setWasStopped(false);
@@ -54,7 +90,10 @@ export function useChatStream(
           throw new Error('Session expirée — reconnectez-vous.');
         }
 
-        const allMessages = [...messages.map((m) => ({ ...m })), apiMsg];
+        const allMessages: ApiMessage[] = [
+          ...messages.map((m): ApiMessage => ({ role: m.role, content: m.content })),
+          apiMsg,
+        ];
         const resp = await fetch(CHAT_URL, {
           method: 'POST',
           headers: {
