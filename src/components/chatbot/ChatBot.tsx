@@ -153,6 +153,17 @@ export function ChatBot({
     openFilePicker,
     acceptedFormats,
   } = useDocumentExtractor();
+  const {
+    image: attachedImage,
+    error: imageError,
+    processing: imageProcessing,
+    fileInputRef: imageInputRef,
+    removeImage,
+    openFilePicker: openImagePicker,
+    setTestType,
+    handleFileChange: handleImageFileChange,
+    acceptedFormats: imageAcceptedFormats,
+  } = useChatImage();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const wasLoadingRef = useRef(false);
