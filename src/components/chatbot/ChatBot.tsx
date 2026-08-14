@@ -388,8 +388,9 @@ export function ChatBot({
   const attachedBaseBytes = useMemo(
     () =>
       (speciesPoolAttached && speciesPoolAvailable ? payloadBytes(speciesPoolAvailable.items) : 0) +
-      (attachedDoc ? payloadBytes(attachedDoc.text) : 0),
-    [speciesPoolAttached, speciesPoolAvailable, attachedDoc],
+      (attachedDoc ? payloadBytes(attachedDoc.text) : 0) +
+      (attachedImage ? attachedImage.bytes : 0),
+    [speciesPoolAttached, speciesPoolAvailable, attachedDoc, attachedImage],
   );
   const totalContextBytes = activeContextBytes + attachedBaseBytes;
   const contextVerdict = ecoVerdict(totalContextBytes);
