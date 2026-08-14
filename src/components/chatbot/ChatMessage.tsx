@@ -71,7 +71,17 @@ export function ChatMessage({ role, content, isExpanded, isStreaming, image }: C
             }`}
           >
             {isUser ? (
-              <p className="whitespace-pre-wrap">{content}</p>
+              <div className="space-y-2">
+                {image && (
+                  <img
+                    src={image}
+                    alt="Photo de test de sol jointe"
+                    className="max-w-[200px] max-h-[160px] rounded-lg object-cover border border-primary-foreground/20"
+                    loading="lazy"
+                  />
+                )}
+                <p className="whitespace-pre-wrap">{content}</p>
+              </div>
             ) : (
               <div className="prose prose-sm max-w-none dark:prose-invert [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_strong]:text-foreground">
                 <ReactMarkdown
