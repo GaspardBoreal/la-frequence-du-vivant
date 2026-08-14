@@ -959,11 +959,13 @@ export function ChatBot({
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                         placeholder={
-                          attachedDoc
-                            ? 'Posez une question sur le document…'
-                            : isListening
-                            ? 'Parlez maintenant…'
-                            : chatConfig.placeholderInput
+                          attachedImage
+                            ? 'Commentez ou demandez une lecture de la photo…'
+                            : attachedDoc
+                              ? 'Posez une question sur le document…'
+                              : isListening
+                                ? 'Parlez maintenant…'
+                                : chatConfig.placeholderInput
                         }
                         className={`flex-1 rounded-xl border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 ${
                           isExpanded ? 'py-3' : 'py-2.5'
