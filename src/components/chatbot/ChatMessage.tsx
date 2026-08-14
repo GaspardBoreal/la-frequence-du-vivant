@@ -12,6 +12,8 @@ interface ChatMessageProps {
   isExpanded?: boolean;
   /** Vrai tant que la réponse est en cours de streaming (répare sans casser). */
   isStreaming?: boolean;
+  /** Image jointe par l'utilisateur (affichée dans le message utilisateur). */
+  image?: string;
 }
 
 export function ChatMessage({ role, content, isExpanded, isStreaming }: ChatMessageProps) {
