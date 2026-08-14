@@ -664,6 +664,7 @@ export function ChatBot({
                           key={i}
                           role={msg.role}
                           content={msg.content}
+                          image={msg.image}
                           isExpanded={isExpanded}
                           isStreaming={isLoading && i === messages.length - 1 && msg.role === 'assistant'}
                         />
