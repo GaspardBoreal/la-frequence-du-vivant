@@ -30,6 +30,13 @@ const TEXTURE_LABEL: Record<string, string> = {
   argile: 'Argileuse',
 };
 
+/** `soilLiteFromState` renvoie des identifiants nuancés (limon_moyen…) : on garde la dominante. */
+function textureLabel(value?: string | null): string {
+  if (!value) return '—';
+  const root = value.split('_')[0];
+  return TEXTURE_LABEL[root] ?? TEXTURE_LABEL[value] ?? value;
+}
+
 export const CasDeviatSection: React.FC = () => {
   const { data, isLoading, isError } = useCaseDeviat();
   const soil = data?.soil ?? null;
@@ -59,8 +66,8 @@ export const CasDeviatSection: React.FC = () => {
 
   const verdicts = [
     { label: 'Structure', value: lite.structure ? STRUCTURE_LABEL[lite.structure] ?? lite.structure : '—' },
-    { label: 'Texture dominante', value: lite.texture ? TEXTURE_LABEL[lite.texture] ?? lite.texture : '—' },
-    { label: 'Acidité', value: phAvg != null ? `pH ${phAvg.toFixed(1)}` : '—' },
+    { label: 'Texture dominante', value: textureLabel(lite.texture) },
+    { label: 'Acidité', value: phAvg != null ? `pH ${phAvg.toFixed(1).replace('.', ',')}` : '—' },
     {
       label: 'Indices de vie',
       value: soil?.life_signs?.length ? `${soil.life_signs.length} relevés` : '—',
@@ -158,7 +165,7 @@ export const CasDeviatSection: React.FC = () => {
                       </div>
                       <ul className="mt-3 space-y-1 text-[12.5px] text-[hsl(var(--ds-cream))]/70">
                         {s.texture_result && (
-                          <li>Texture : {TEXTURE_LABEL[s.texture_result] ?? s.texture_result}</li>
+                          <li>Texture : {textureLabel(s.texture_result)}</li>
                         )}
                         {s.structure_result && (
                           <li>
@@ -218,7 +225,7 @@ export const CasDeviatSection: React.FC = () => {
               </h3>
               <p className="mt-4 max-w-3xl text-[15px] leading-relaxed text-[hsl(var(--ds-cream))]/82">
                 Un sol limoneux dominant, à structure grumeleuse là où la vie s’installe, et une
-                réaction franchement basique{phAvg != null ? ` (pH ${phAvg.toFixed(1)} en moyenne)` : ''}.
+                réaction franchement basique{phAvg != null ? ` (pH ${phAvg.toFixed(1).replace('.', ',')} en moyenne)` : ''}.
                 Conséquence directe sur le projet : les acidophiles sont écartées de la palette, les
                 zones tassées passent en priorité de décompactage, et les massifs méditerranéens sont
                 confirmés sur les points les plus drainants.
