@@ -725,8 +725,15 @@ export function ChatBot({
                       onChange={handleFileChange}
                       className="hidden"
                     />
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept={imageAcceptedFormats}
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
 
-                    {(attachedDoc || isExtracting || docError || speciesPoolAttached || activeContextKeys.length > 0) && (
+                    {(attachedDoc || isExtracting || docError || attachedImage || imageProcessing || imageError || speciesPoolAttached || activeContextKeys.length > 0) && (
                       <div className="mb-2 px-1 flex flex-wrap gap-1.5">
                         {isExtracting && (
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
