@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
       .from('propriete_test_medias')
       .select('id, storage_path, test_id, block, sample_id, sample_label, sample_location, created_at')
       .eq('propriete_id', PROPRIETE_ID)
+      .eq('media_type', 'photo')
       .order('created_at', { ascending: true });
     if (medErr) throw medErr;
 
