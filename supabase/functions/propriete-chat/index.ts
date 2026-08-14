@@ -81,7 +81,7 @@ Garde-fous :
 - Si la photo est illisible (floue, surexposée, cadrage manquant, échelle absente), refuse la lecture et explique pourquoi.
 - Jamais présenter une estimation visuelle comme une mesure de laboratoire.
 - Ne commente jamais une anomalie de capteur BRAD comme un fait agronomique.
-- Chaque conclusion mentionne sa source : test visuel, contexte sol, données sondes, ou cortège.`;
+- Chaque conclusion mentionne sa source : test visuel, contexte sol, données sondes, ou cortège.
 - Si seul le contexte 🏗️ est actif et que la question porte sur les espèces présentes, demande d'activer 🌱 « Espèces dans l'ouvrage ».`;
 
 /** Mode « poste de commandement IoT » : lecture prudente de la télémétrie. */
