@@ -36,7 +36,7 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { ChatMessage } from './ChatMessage';
 import { ChatSuggestions } from './ChatSuggestions';
-import { useChatExport } from './useChatExport';
+import { useChatImage, SOIL_TEST_TYPES, type SoilTestType } from '@/hooks/useChatImage';
 import { ChatExportDrawer } from './ChatExportDrawer';
 import { chatConfig, type ChatContext } from './chatConfig';
 import { scenographeStore } from '@/components/propriete/scenographe/scenographeStore';
