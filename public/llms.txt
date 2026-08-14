@@ -20,6 +20,7 @@ La Fréquence du Vivant relie poésie contemporaine, bioacoustique et science ci
 
 ## Applications (fiches de référence)
 
+- [L'étude de sol vivante](/etude-de-sol): page publique — enjeux du sol, synthèse des 12 méthodes de diagnostic de terrain sans laboratoire (bêche, stabilité, boudin, sédimentation, pH bandelette/pHmètre, bêche vivante, vinaigre, sachet de thé) avec leurs livrables, et cas concret documenté au Jardin Monde DEVIAT (prélèvements géolocalisés, photos de terrain, synthèse).
 - [Fréquence Jardin — fiche application](/roadmap/frequence-jardin): application web de diagnostic écologique d'un lieu (sol, flore bio-indicatrice, ICG, palette végétale, atelier de projet, clinique du vivant, capteurs IoT, IA de jardin). Fiche disponible en page web, Markdown et PDF. Reliée à l'application des marcheurs Les Marches du Vivant. Logos Fréquence Jardin : /roadmap/frequence-jardin/logo/germination, /roadmap/frequence-jardin/logo/feuille-signal, /roadmap/frequence-jardin/logo/jardin-ondulant, /roadmap/frequence-jardin/logo/feuille-signal-la-frequence-du-vivant. Logos Les Marches du Vivant : /roadmap/frequence-jardin/logo/sentier-frequence, /roadmap/frequence-jardin/logo/empreinte-vivante, /roadmap/frequence-jardin/logo/horizon-marche.
 
 ## Pages

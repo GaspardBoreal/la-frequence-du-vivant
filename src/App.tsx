@@ -102,6 +102,7 @@ const RoadmapPublic = lazyWithRetry(() => import('./pages/RoadmapPublic'));
 const RoadmapWeekPage = lazyWithRetry(() => import('./pages/RoadmapWeekPage'));
 const FrequenceJardinFiche = lazyWithRetry(() => import('./pages/FrequenceJardinFiche'));
 const FrequenceJardinLogo = lazyWithRetry(() => import('./pages/FrequenceJardinLogo'));
+const EtudeDeSolPublique = lazyWithRetry(() => import('./pages/EtudeDeSolPublique'));
 const ProprieteEspace = lazyWithRetry(() => import('./pages/ProprieteEspace'));
 const MarchesDuVivantExplorationMarcheur = lazyWithRetry(() => import('./pages/MarchesDuVivantExplorationMarcheur'));
 const AdminOutilsHub = lazyWithRetry(() => import('./pages/AdminOutilsHub'));
@@ -359,6 +360,7 @@ function App() {
             <Route path="/roadmap/semaine/:year/:week" element={<RoadmapWeekPage />} />
             <Route path="/roadmap/frequence-jardin" element={<FrequenceJardinFiche />} />
             <Route path="/roadmap/frequence-jardin/logo/:slug" element={<FrequenceJardinLogo />} />
+            <Route path="/etude-de-sol" element={<EtudeDeSolPublique />} />
             <Route path="/roadmap/:audience" element={<RoadmapPublic />} />
 
             <Route path="/propriete/:slug" element={<ProprieteEspace />} />
