@@ -1,40 +1,26 @@
-# Sonde météo BRAD : notre recommandation d'intégration
+# Synthèse des méthodes d'analyse de sol — phase « J'analyse »
 
-## Réponse courte à Olivier
+Aucune modification de code n'est requise. La synthèse est livrée directement ci-dessous.
 
-**Une sonde de plein exercice.** La station météo doit avoir son propre numéro de série et envoyer ses propres trames, exactement comme les trois sondes de sol. Pas de météo greffée dans le payload des sondes de sol.
+## Tableau des méthodes gérées dans `TabAnalyze`
 
-Trois raisons :
+| Catégorie | Nom | Résumé simple | Livrable |
+|---|---|---|---|
+| **État du terrain** | État du terrain | Diagnostic historique : remanié, remblai, décaissement, naturel (en place) ou inconnu. | `terrain_status` (remanie / remblai / decaissement / naturel / inconnu) |
+| **Prélèvements** | Géolocalisation des prélèvements | Jusqu'à 10 points de prélèvement nommés, repositionnables sur la carte, renommables et supprimables. | Tableau `samples` avec `lat`, `lng`, `label`, `location` |
+| **Structure** | Test de la bêche | Observer comment une motte de ~20 cm se rompt au choc ou à la main : bloc massif, agrégats nets ou effondrement. | `structure_result` par prélèvement : `compacte`, `grumeleuse`, `particulaire` |
+| **Structure** | Test de stabilité | Immerger un agrégat sec dans un bocal d'eau claire et observer la tenue, les bulles d'air ou la dispersion. | `structure_result` complémentaire + `structure_test` |
+| **Texture** | Test du boudin | Humidifier un échantillon, rouler un boudin de 1 cm et le courber : droit, lune ou cercle. | `texture_result` par prélèvement : `sable`, `limon`, `argile` + `boudin_form` |
+| **Texture** | Test de sédimentation (optionnel) | Bocal au tiers de terre + deux tiers d'eau, agitation, repos 24 h, lecture des strates sable/limon/argile. | `texture_result` confirmé par `sedimentation` |
+| **Acidité** | Bandelette / kit colorimétrique | Mélanger terre humide + eau déminéralisée, tremper la bandelette, comparer au nuancier. | `ph_value` par prélèvement + `ph_test` = `bandelette` |
+| **Acidité** | pHmètre électronique (optionnel) | Sonde calibrée insérée dans une boue de terre humide ; lecture chiffrée plus précise. | `ph_value` par prélèvement + `ph_test` = `phmetre` |
+| **Vie du sol** | Test de la bêche vivante | Emietter un bloc 20 × 20 × 20 cm et compter les vers, puis relever les indices de vie. | `life_signs[]` + `worm_count` par prélèvement |
+| **Vie du sol** | Test du vinaigre | Déposer quelques gouttes de vinaigre blanc sur une motte sèche et observer l'effervescence (CO₂ = calcaire actif). | `life_signs` incluant `effervescence` |
+| **Vie du sol** | Test du sachet de thé (optionnel) | Enterrer un sachet de thé/coton à 8 cm pendant 6 à 8 semaines et évaluer la vitesse de dégradation. | `life_test` = `sachet` + observation qualitative |
+| **Synthèse** | Synthèse du diagnostic | Rédaction libre par l'utilisateur qui consolide les observations de l'étape. | `synthesis` (texte libre) |
 
-1. **Fréquences différentes.** Une station météo respire toutes les 10-15 minutes, une sonde de sol toutes les heures. Coller la météo au payload sol, c'est soit sur-échantillonner, soit perdre les pics de pluie et de vent — précisément ce qui explique un assèchement.
-2. **Traçabilité de la source.** AccuWeather (modèle) et station maison (mesure) ne se valent pas scientifiquement. Un capteur distinct permet d'afficher honnêtement l'origine de la donnée ; une valeur noyée dans un payload sol devient indistincte.
-3. **Croisement plus riche, pas moins.** Le croisement pluie/humidité de sol se fait déjà chez nous par horodatage — deux séries indépendantes se croisent parfaitement, et on gagne en plus la météo seule (bilan hydrique, gel, ETP).
+## Points clés de l'architecture
 
-**Ce qu'on accepte volontiers en complément** : un petit bloc `context` optionnel dans les trames sol (température et humidité d'air au moment du relevé, source indiquée). Utile comme repère de lecture, jamais comme série météo de référence.
-
-## Ce que ça change côté BRAD (rien de lourd)
-
-- Déclarer la station comme une sonde de plus, avec son `serialNumber`.
-- Même webhook, même signature HMAC, même format `measures`.
-- Clés attendues : `temperature`, `humidity`, `pressure`, `rainfall`, `luminosity`, `ultraviolet`, `dewPoint`, `windSpeed`, `windGust`, `windDirection`.
-- Ajouter dans `probe` un champ `source` : `station` ou `accuweather`.
-
-## Ce que nous ferons de notre côté
-
-1. **Dictionnaire des grandeurs** : ajouter vent (rafale, direction) et compléter les libellés — `wind_speed` existe déjà, `wind_gust` et `wind_direction` manquent.
-2. **Webhook `iot-webhook-brad`** : accepter les nouvelles clés, mémoriser la source (`station` / `accuweather` / `webhook`) sur chaque mesure, et absorber le bloc `context` optionnel s'il arrive.
-3. **Catalogue** : nouvelle famille de type de capteur « station météo », avec sa fiche et sa pastille propre sur la carte des sondes.
-4. **Fiche sonde météo** : cadran des conditions du moment (pluie du jour, cumul 7 j, températures min/max, vent, UV) plutôt que le verdict agronomique des sondes de sol.
-5. **Croisement pluie / sol** : dans l'Observatoire, superposer la pluviométrie en barres derrière les courbes d'humidité de sol des sondes de la même propriété. C'est la lecture qu'attend un jardinier : « il a plu 8 mm, l'humidité à 15 cm est montée de 4 points, à 30 cm rien ».
-6. **IA de Jardin** : nouveau contexte météo frugal (7 et 30 derniers jours agrégés) pour que les réponses tiennent compte de la pluie et de la chaleur réellement mesurées.
-
-## Détails techniques
-
-- Aucune migration de table : `iot_capteurs` / `iot_mesures` accueillent la station telle quelle. On ajoute seulement les nouvelles valeurs de `grandeur` et on renseigne `source`.
-- La météo modèle (AccuWeather) sera marquée distinctement de la mesure station, pour ne jamais mélanger observé et prédit dans les graphes.
-- Les seuils de confort restent définis dans `src/lib/iot/grandeurs.ts`.
-- Zéro impact sur les trois sondes de sol existantes et sur les URL publiques.
-
-## Message prêt à envoyer à BRAD
-
-> Sonde de plein exercice, sans hésiter : même webhook, même signature, un `serialNumber` dédié et ses propres trames météo. Le croisement avec les sondes de sol se fait chez nous par horodatage, on ne perd rien et on gagne la finesse temporelle de la météo. Si tu veux, ajoute un champ `source` (`station` ou `accuweather`) dans le bloc `probe` pour qu'on distingue la mesure du modèle. Optionnellement, un petit bloc `context` (température/humidité d'air) dans les trames sol nous sert de repère de lecture — mais il ne remplace pas la station.
+- Chaque prélèvement peut porter ses propres résultats (`structure_result`, `texture_result`, `ph_value`, `life_signs`, `worm_count`) et sa propre preuve photo (via `TestMediaBadge` / `TestMediaRegistry`).
+- Les valeurs globales du site (`structure`, `texture`, `boudin_shape`, `ph`, `life_signs`) sont **dérivées** des prélèvements par agrégation (`dominantResult`, `dominantTexture`, `aggregatePh`, `aggregateLife`), et non saisies manuellement.
+- Les résultats alimentent ensuite la phase « J'identifie » via `soilLiteFromState()` et les 4 curseurs de concordance sol/flore (`soilFloraScales.ts`).
