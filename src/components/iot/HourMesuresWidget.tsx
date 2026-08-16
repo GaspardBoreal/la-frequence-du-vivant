@@ -1,7 +1,7 @@
 import React from 'react';
 import { Activity, CloudRain, Droplets, Gauge, Sun, Thermometer, X } from 'lucide-react';
 import { useMesuresInWindow } from '@/hooks/iot/useIotTelemetry';
-import { fmtMesure, fmtProfondeur, grandeurMeta, moistureVerdict } from '@/lib/iot/grandeurs';
+import { compareGrandeurs, fmtMesure, fmtProfondeur, grandeurMeta, moistureVerdict } from '@/lib/iot/grandeurs';
 
 const ICONS: Record<string, React.ElementType> = {
   soil_moisture: Droplets,
