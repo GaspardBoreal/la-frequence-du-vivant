@@ -43,6 +43,20 @@ const BOUNDS: Record<string, [number, number]> = {
 };
 
 /**
+ * Table de normalisation des profondeurs annoncées par le fournisseur.
+ * Brad a étiqueté un temps le capteur superficiel `_0cm` avant de basculer en
+ * `_5cm` : les deux désignent le même capteur, à 5 cm. On les ramène donc à
+ * 0,05 m pour que la courbe reste continue de part et d'autre du correctif.
+ */
+const DEPTH_ALIASES: { from: number; to: number }[] = [{ from: 0, to: 0.05 }];
+
+function normalizeDepth(depth?: number): { depth?: number; alias?: { from: number; to: number } } {
+  if (depth == null) return {};
+  const alias = DEPTH_ALIASES.find((a) => Math.abs(a.from - depth) < 1e-9);
+  return alias ? { depth: alias.to, alias } : { depth };
+}
+
+/**
  * `soilMoisture_15cm`, `soilMoisture15`, `soilTemperature_30cm`…
  * Le tiret bas est optionnel ; la profondeur est rendue en mètres.
  */
@@ -59,6 +73,7 @@ export function parseKey(key: string): { base: string; depth?: number } {
   }
   return { base: key.toLowerCase() };
 }
+
 
 async function hmacHex(secret: string, body: string): Promise<string> {
   const enc = new TextEncoder();
@@ -84,9 +99,14 @@ const json = (body: unknown, status = 200) =>
  */
 export function normalizeMeasures(
   measures: Record<string, any>,
-): { kept: any[]; ignored: { key: string; reason: string; value?: unknown }[] } {
+): {
+  kept: any[];
+  ignored: { key: string; reason: string; value?: unknown }[];
+  normalized: { key: string; from: number; to: number }[];
+} {
   const kept: any[] = [];
   const ignored: { key: string; reason: string; value?: unknown }[] = [];
+  const normalized: { key: string; from: number; to: number }[] = [];
 
   const parsed = Object.entries(measures ?? {}).map(([key, m]) => ({ key, m, ...parseKey(key) }));
   const withDepth = new Set(parsed.filter((p) => p.depth != null && MAP[p.base]).map((p) => p.base));
@@ -113,16 +133,20 @@ export function normalizeMeasures(
       ignored.push({ key, reason: `valeur aberrante (hors ${b[0]}–${b[1]} ${norm.unite})`, value: converted });
       continue;
     }
+    const rawDepth = (typeof m?.depth === 'number' ? m.depth : depth) ?? null;
+    const { depth: finalDepth, alias } = normalizeDepth(rawDepth ?? undefined);
+    if (alias) normalized.push({ key, from: alias.from, to: alias.to });
     kept.push({
       grandeur: norm.grandeur,
       valeur: converted,
       unite: norm.unite,
-      profondeur_m: (typeof m?.depth === 'number' ? m.depth : depth) ?? null,
+      profondeur_m: finalDepth ?? null,
       interpretation: typeof m?.interpretation === 'string' ? m.interpretation : null,
       raw: { key, ...(typeof m === 'object' && m ? m : { value }) },
     });
   }
-  return { kept, ignored };
+  return { kept, ignored, normalized };
+
 }
 
 Deno.serve(async (req) => {
@@ -195,7 +219,7 @@ Deno.serve(async (req) => {
 
   // 4. Mesures normalisées
   const at = body.timestamp ? new Date(body.timestamp).toISOString() : new Date().toISOString();
-  const { kept, ignored } = normalizeMeasures((body.measures ?? {}) as Record<string, any>);
+  const { kept, ignored, normalized } = normalizeMeasures((body.measures ?? {}) as Record<string, any>);
   const rows = kept.map((m) => ({
     capteur_id: capteur.id,
     grandeur: m.grandeur,
@@ -235,10 +259,11 @@ Deno.serve(async (req) => {
     capteur_id: capteur.id,
     mesures_count: rows.length,
     error: null,
-    payload: { ...(payload as any), _lfdv: { kept: rows.length, ignored } },
+    payload: { ...(payload as any), _lfdv: { kept: rows.length, ignored, normalized } },
   });
 
-  return json({ ok: true, inserted: rows.length, ignored });
+  return json({ ok: true, inserted: rows.length, ignored, normalized });
+
 });
 
 function safeParse(raw: string): unknown {
