@@ -7944,6 +7944,7 @@ export type Database = {
           main_walker_id: string | null
           metadata: Json
           nom: string
+          onboarding_preferences: Json
           owner_company_id: string | null
           photo_hero_url: string | null
           region: string | null
@@ -7967,6 +7968,7 @@ export type Database = {
           main_walker_id?: string | null
           metadata?: Json
           nom: string
+          onboarding_preferences?: Json
           owner_company_id?: string | null
           photo_hero_url?: string | null
           region?: string | null
@@ -7990,6 +7992,7 @@ export type Database = {
           main_walker_id?: string | null
           metadata?: Json
           nom?: string
+          onboarding_preferences?: Json
           owner_company_id?: string | null
           photo_hero_url?: string | null
           region?: string | null
