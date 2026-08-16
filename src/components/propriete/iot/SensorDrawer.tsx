@@ -157,7 +157,7 @@ export const SensorDrawer: React.FC<Props> = ({ capteur, latest, onClose, onLoca
         <h3 className="mt-5 text-[10px] font-bold uppercase tracking-[0.24em] text-[hsl(var(--ds-forest))]">Dernières mesures</h3>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           {latest.length === 0 && <p className="text-xs italic opacity-60">Aucune mesure reçue.</p>}
-          {latest.map((m, i) => (
+          {[...latest].sort(compareGrandeurs).map((m, i) => (
             <MesureTile key={m.id} m={m} index={i} />
           ))}
         </div>
