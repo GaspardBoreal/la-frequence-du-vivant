@@ -202,6 +202,17 @@ export const DeliveryJournal: React.FC = () => {
                     {fmtParis(d.created_at)} · {d.fournisseur} · {d.mesures_count ?? 0} mesure{(d.mesures_count ?? 0) > 1 ? 's' : ''}
                     {d.error ? ` · ${d.error}` : ''}
                   </span>
+                  {Array.isArray(d.payload?._lfdv?.ignored) && d.payload._lfdv.ignored.length > 0 && (
+                    <span className="mt-0.5 block text-[11px] italic text-muted-foreground">
+                      {d.payload._lfdv.ignored.length} mesure{d.payload._lfdv.ignored.length > 1 ? 's' : ''} écartée
+                      {d.payload._lfdv.ignored.length > 1 ? 's' : ''} :{' '}
+                      {d.payload._lfdv.ignored
+                        .slice(0, 4)
+                        .map((i: any) => `${i.key} (${i.reason})`)
+                        .join(', ')}
+                      {d.payload._lfdv.ignored.length > 4 ? '…' : ''}
+                    </span>
+                  )}
                 </span>
                 {rawPayload && (
                   <ChevronDown className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open === d.id ? 'rotate-180' : ''}`} />
