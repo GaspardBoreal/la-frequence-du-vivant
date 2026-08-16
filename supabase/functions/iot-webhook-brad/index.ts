@@ -43,6 +43,20 @@ const BOUNDS: Record<string, [number, number]> = {
 };
 
 /**
+ * Table de normalisation des profondeurs annoncées par le fournisseur.
+ * Brad a étiqueté un temps le capteur superficiel `_0cm` avant de basculer en
+ * `_5cm` : les deux désignent le même capteur, à 5 cm. On les ramène donc à
+ * 0,05 m pour que la courbe reste continue de part et d'autre du correctif.
+ */
+const DEPTH_ALIASES: { from: number; to: number }[] = [{ from: 0, to: 0.05 }];
+
+function normalizeDepth(depth?: number): { depth?: number; alias?: { from: number; to: number } } {
+  if (depth == null) return {};
+  const alias = DEPTH_ALIASES.find((a) => Math.abs(a.from - depth) < 1e-9);
+  return alias ? { depth: alias.to, alias } : { depth };
+}
+
+/**
  * `soilMoisture_15cm`, `soilMoisture15`, `soilTemperature_30cm`…
  * Le tiret bas est optionnel ; la profondeur est rendue en mètres.
  */
@@ -59,6 +73,7 @@ export function parseKey(key: string): { base: string; depth?: number } {
   }
   return { base: key.toLowerCase() };
 }
+
 
 async function hmacHex(secret: string, body: string): Promise<string> {
   const enc = new TextEncoder();
