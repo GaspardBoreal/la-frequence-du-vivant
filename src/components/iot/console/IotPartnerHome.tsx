@@ -85,15 +85,26 @@ export const IotPartnerHome: React.FC = () => {
         <ul className="mt-3 divide-y divide-border/50">
           {capteurs.map((c) => {
             const m = minutesSince(c.last_seen_at);
+            const statut = sensorStatus(m, c.silence_alert_hours);
+            const batterie =
+              c.battery_pct != null && c.battery_pct > 0
+                ? `Batterie ${Math.round(c.battery_pct)} %`
+                : 'Batterie non transmise';
             return (
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] ${statut.className}`}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                    {statut.label}
+                  </span>
                   <span className="font-medium text-foreground">{c.nom}</span>
-                  <span className="ml-2 text-xs text-muted-foreground">{c.serial_number}</span>
+                  <span className="text-xs text-muted-foreground">{c.serial_number}</span>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {c.propriete?.nom ?? '—'} · {m == null ? 'jamais vue' : m < 60 ? `il y a ${m} min` : `il y a ${Math.round(m / 60)} h`}
-                  {c.battery_pct != null && ` · ${Math.round(c.battery_pct)} %`}
+                  {c.propriete?.nom ?? '—'} ·{' '}
+                  {m == null ? 'jamais vue' : m < 60 ? `vue il y a ${m} min` : `vue il y a ${Math.round(m / 60)} h`}
+                  {' · '}
+                  <span className={c.battery_pct != null && c.battery_pct > 0 ? '' : 'opacity-60'}>{batterie}</span>
                 </div>
               </li>
             );
@@ -102,6 +113,14 @@ export const IotPartnerHome: React.FC = () => {
             <li className="py-6 text-center text-sm text-muted-foreground">Aucune sonde déclarée pour ce fabricant.</li>
           )}
         </ul>
+        {capteurs.length > 0 && (
+          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+            <span className="text-foreground/80">En ligne</span> : vue il y a moins de 2 h ·{' '}
+            <span className="text-foreground/80">En veille</span> : pas de remontée depuis plus de 2 h ·{' '}
+            <span className="text-foreground/80">Silencieuse</span> : au-delà du seuil d'alerte de la sonde. « Batterie
+            non transmise » signifie que le fabricant n'envoie pas cette donnée — ce n'est pas une batterie vide.
+          </p>
+        )}
       </div>
     </div>
   );
