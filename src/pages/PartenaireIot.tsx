@@ -38,6 +38,8 @@ const PartenaireIot: React.FC = () => {
     [fournisseurs, slug],
   );
   const { allowed, isLoading } = useCanOpenIotConsole(fournisseur?.id ?? null);
+  const { user } = useCommunityAuth();
+  const navigate = useNavigate();
 
   const loginHref = `/marches-du-vivant/connexion?next=${encodeURIComponent(`/partenaire-iot/${slug}?tab=${tab}`)}`;
 
@@ -45,6 +47,12 @@ const PartenaireIot: React.FC = () => {
     const next = new URLSearchParams(params);
     next.set('tab', k);
     setParams(next, { replace: true });
+  };
+
+  /** Depuis un onglet, on revient à l'accueil partenaire ; depuis l'accueil, on sort vers Mon Espace. */
+  const goBack = () => {
+    if (tab !== 'accueil') setTab('accueil');
+    else navigate('/marches-du-vivant/mon-espace');
   };
 
   if (loadingF || isLoading) {
