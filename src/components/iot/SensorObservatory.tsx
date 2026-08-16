@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
 import { useMesureSeriesRange } from '@/hooks/iot/useIotTelemetry';
-import { grandeurMeta, fmtProfondeur, fmtHorodatage } from '@/lib/iot/grandeurs';
+import { grandeurMeta, fmtProfondeur, fmtHorodatage, compareGrandeurs } from '@/lib/iot/grandeurs';
 
 type PresetKey = '24h' | '7j' | '30j' | '90j' | '1an' | 'perso';
 
