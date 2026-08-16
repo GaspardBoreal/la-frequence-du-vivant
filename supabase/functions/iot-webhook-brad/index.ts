@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
 
   // 4. Mesures normalisées
   const at = body.timestamp ? new Date(body.timestamp).toISOString() : new Date().toISOString();
-  const { kept, ignored } = normalizeMeasures((body.measures ?? {}) as Record<string, any>);
+  const { kept, ignored, normalized } = normalizeMeasures((body.measures ?? {}) as Record<string, any>);
   const rows = kept.map((m) => ({
     capteur_id: capteur.id,
     grandeur: m.grandeur,
