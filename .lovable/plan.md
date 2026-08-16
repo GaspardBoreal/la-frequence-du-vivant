@@ -1,54 +1,69 @@
-# Onboarding Fréquence Jardin — prochaines étapes
+# Onboarding Fréquence Jardin — application mobile-first
 
-Le projet dérivé est en place, l'écran `/admin/parametrage` inventorie les 10 secrets et la Search Console est reliée. Voici la suite, par ordre de priorité.
+Les secrets sont reportés à demain. Ce plan couvre uniquement ce qui se construit **dans le projet dérivé « Onboarding Fréquence Jardin »**, à partir du cahier des charges.
 
-## Point de vigilance à traiter en premier
+## Intention de design
 
-Les deux projets partagent la même base Supabase. Les secrets d'Edge Functions ne vivent pas dans le projet Lovable mais dans le projet Supabase partagé : **créer un secret depuis le projet dérivé le crée pour tout le monde, et déployer une Edge Function depuis le dérivé écrase celle du projet central**. Conséquence directe sur la répartition du travail :
+Une application qui se tient dans le pouce : une question par écran, plein écran, fond photographique, réponse en une tape, transition douce vers la suivante. Pas de formulaire, pas de barre d'onglets, pas de tableau. Une barre de progression fine en haut, un bouton retour discret, rien d'autre.
 
-- Les valeurs de secrets se posent **une seule fois**, depuis le projet central.
-- Laurent ne doit jamais créer, modifier ni redéployer de fichier sous `supabase/functions/**` ni lancer de migration depuis le projet dérivé.
-- L'écran `/admin/parametrage` reste un tableau de bord de lecture : il affiche l'état, il ne pose pas les valeurs.
+- Palette : Papier Crème en clair, Forêt Émeraude en sombre (déjà en place dans le projet).
+- Cartes-choix en aquarelle, ombres basses, coins généreux, une seule couleur d'accent par écran.
+- Micro-animations : apparition en cascade des choix, pulsation légère au tap, transition latérale entre questions.
+- Chaque écran tient sans scroll sur un iPhone SE ; le desktop reçoit la même colonne centrée, jamais élargie.
 
-## Étape 1 — Poser les 10 valeurs de secrets (projet central)
+## A — Le questionnaire d'initialisation
 
-Depuis le projet central, créer les valeurs via le formulaire sécurisé, dans cet ordre de dépendance fonctionnelle :
+Sept temps, un par écran, avec branchements :
 
-1. SMTP (envoi des invitations et des mails de compte) — c'est le bloc bloquant pour l'onboarding
-2. Clés IA (IA de jardin, résumés éditoriaux, reconnaissance photo)
-3. Secrets partagés de webhooks (IoT Brad, backfill iNaturalist)
+```text
+1. Priorité         → fruits peu exigeants / légumes famille / autonomie / beau jardin
+     └─ si « légumes famille » : période de récolte, puis panier d'envies
+2. Temps disponible → curseur h/semaine, formulé en gestes ("un samedi matin")
+3. Surface & eau    → surface totale, surface encore libre, irrigation possible
+4. Style de jardin  → galerie plein écran, choix par image, pas de libellé abstrait
+5. Espaces désirés  → mare, carré potager, espace de beauté, serre (multi-choix)
+6. Budget           → 50 € / 500 € / 5 000 € / sans limite
+7. Bilan            → « Voilà ce que vous allez pouvoir faire »
+```
 
-Après chaque bloc, vérifier une fonction représentative par un appel réel et lire ses logs, plutôt que de se fier au statut affiché.
+Le panier d'envies (légumes, fruits, fleurs, aromatiques) est une grille d'images à cocher, filtrable par saison, avec recherche.
 
-## Étape 2 — Verrouiller le périmètre d'écriture de Laurent
+### Le bilan
 
-Poser la règle dans le projet dérivé, en clair dans le README du projet :
+Écran de récompense, pas de récapitulatif administratif : un verdict en une phrase, trois à cinq gestes réalisables classés par effort, une estimation de temps et de budget, et le bouton « Ouvrir mon jardin » qui crée la propriété.
 
-- Autorisé : `src/pages/JardinDemarrer.tsx`, `src/components/propriete/**`, `src/hooks/propriete/**`, l'accueil et le paramétrage
-- Interdit : `supabase/**`, tout `/admin/*` hors `/admin/parametrage`, tout ce qui touche au CRM, à l'IoT et aux marches
+## Personae
 
-## Étape 3 — Terminer l'élagage des routes
+Le questionnaire adapte son vocabulaire et ses seuils selon le profil déduit (balcon citadin, terrain nu, propriété déjà engagée, plaisir, entreprise, collectivité). Un écran d'entrée demande simplement « Où jardinez-vous ? » et la réponse règle les unités (m² ou bacs), les surfaces proposées et les paliers de budget.
 
-Reprendre le plan de nettoyage déjà validé, avec l'exception `/admin/parametrage` (et `AdminAuth` + sa carte d'accès conservés). Familles restantes à retirer : explorations et livre vivant, marches du vivant hors connexion, partenaires et IoT, roadmap et pages publiques annexes. Build vérifié après chaque famille.
+## B — Atelier de conception (niveau 2)
 
-## Étape 4 — Éprouver le parcours d'onboarding de bout en bout
+Accessible après le bilan, réutilise l'existant du projet central : croquis de surface avec assolement, temps de mise en œuvre et gain estimé ; diagnostic de sol ; dessin sur cadastre ; chat expert.
 
-Avec un compte neuf non-admin, sur le projet dérivé :
+## C — Implantation et suivi (niveau 3)
 
-1. Créer un compte, recevoir le mail (dépend de l'étape 1)
-2. `/jardin/demarrer` → créer un jardin, vérifier le slug et le rôle `proprietaire`
-3. Ouvrir l'espace, faire une étape J'observe et une étape J'analyse
-4. Générer un code d'invitation, le consommer depuis un second compte, vérifier le rôle `prestataire`
-5. Poser une question à l'IA de jardin
+Diagnostic de sol actualisé, atelier cadastre, reconnaissance et suivi des maladies, chat expert.
 
-Chaque échec est consigné avec la fonction concernée, pas seulement le message d'écran.
+Les niveaux B et C sont **branchés**, pas réécrits : ils pointent vers les onglets J'analyse, Portrait · Cadastre, Clinique du vivant et l'IA de jardin déjà en service.
 
-## Étape 5 — Boucle de remontée vers le projet central
+## Ordre de réalisation
 
-Définir le rythme : Laurent signale ses lots terminés, on compare les trois dossiers autorisés et on reporte les changements dans le projet central. Rien ne remonte automatiquement.
+1. Coquille mobile-first + moteur de questionnaire (état, branchements, progression, reprise).
+2. Écrans A1 à A7 avec leurs visuels.
+3. Écran bilan et création du jardin via `onboard_create_propriete`.
+4. Ponts vers les niveaux B et C.
+5. Passage sur appareil réel, thème clair et sombre, 375 px.
 
 ## Détails techniques
 
-- Les Edge Functions à surveiller après la pose des secrets : `send-smtp-email`, `elevenlabs-tts`, `audio-transcription`, `marche-editorial-summary`, `recognize-marcheur-photos`, `iot-webhook-brad`, `backfill-marcheur-inat-batch`.
-- Les deux secrets partagés générés par `openssl rand -hex 32` doivent avoir la même valeur des deux côtés de l'appel (émetteur du webhook et fonction réceptrice) : les créer une fois, puis les transmettre aux partenaires par un canal privé.
-- Le fallback `*` (NotFound) reste en dernière position de `src/App.tsx` après l'élagage, et les imports `lazyWithRetry` des pages retirées partent avec leurs routes.
+- Nouveau dossier `src/components/onboarding/` dans le projet dérivé ; `src/pages/JardinDemarrer.tsx` devient le point d'entrée du parcours.
+- État du questionnaire dans un réducteur unique, persisté en `localStorage` pour permettre l'abandon puis la reprise, puis versé en une fois dans la propriété créée.
+- Le résultat est stocké sur la propriété (préférences, budget, temps, style, espaces souhaités) — une colonne `jsonb` dédiée est nécessaire ; la migration se fait **depuis le projet central**, jamais depuis le dérivé.
+- Aucune écriture dans `supabase/functions/**` depuis le projet dérivé : base et fonctions sont partagées.
+- Les images de style de jardin et du panier d'envies sont générées et rangées sous `src/assets/onboarding/`.
+- Réutilisation des composants existants (`RichMap`, IA de jardin, TabAnalyze) sans duplication.
+
+## À trancher avant vendredi
+
+- La colonne `jsonb` de préférences : je peux la préparer côté projet central dès validation.
+- Les images de la galerie de styles : génération ou photos fournies.
