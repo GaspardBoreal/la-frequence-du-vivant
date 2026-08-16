@@ -1,30 +1,39 @@
-# Profondeurs de sol — se rendre insensible au correctif Brad
+# Profondeurs de sol — absorber le correctif Brad sans rupture
 
-Olivier confirme : `_0cm` = 5 cm, et « 5/15 » / « 5/30 » sont bien des combinaisons de profondeurs. Il bascule b26s001 en `_5cm` et regarde b26s002 sous 30–45 min.
+Olivier a livré côté Brad : `_0cm` devient `_5cm` (sondes 5/15 et 5/30), et la clé générique `soilMoisture` sans profondeur disparaît du payload. Il continue d'investiguer les capteurs muets (piste microcode).
 
-Attendre 45 min n'est pas nécessaire pour avancer : le webhook doit accepter **les deux étiquettes** de toute façon, sinon la bascule d'Olivier cassera la lecture juste avant la démo. On pose le filet maintenant, et sa correction arrive dans un système déjà prêt.
+Notre webhook ne connaît aujourd'hui ni la normalisation `_0cm → 5 cm` ni cette disparition. Sans filet, la bascule crée une coupure dans les courbes juste avant la démo.
 
-## 1. Normalisation des profondeurs (à faire tout de suite)
+## Constat vérifié en base (sondes Deviat)
 
-- `_0cm` et `_5cm` sont lus comme **0,05 m** : la bascule d'Olivier devient un non-événement, et l'historique déjà stocké à 0 m reste lisible sous la même étiquette « 5 cm ».
-- Toute profondeur inconnue reste enregistrée telle quelle — rien n'est jeté.
-- Le journal des livraisons trace « profondeur normalisée 0 cm → 5 cm » pour garder la traçabilité.
-- Migration légère : les relevés de sol existants à `profondeur_m = 0` passent à `0.05` (uniquement pour les sondes Brad), pour que les courbes 5 cm soient continues avant/après le correctif.
+- b26s001 : humidité à **0,05 m** du 5 au 11 août (80 relevés), puis plus rien à 0,05 m ; depuis le 16 août à 18 h, des relevés à **0 m** (nouvelle étiquette `_0cm`) et à 0,30 m.
+- b26s002 : humidité à 0,05 m jusqu'au 11 août, puis uniquement 0,15 m — le capteur superficiel ne transmet plus (cohérent avec l'investigation d'Olivier).
+- 238 relevés b26s002 et 4 b26s001 en humidité **sans profondeur** : ce flux s'arrête maintenant côté Brad.
+- `soil_capacitance` (645 relevés) s'arrête également, comme annoncé.
 
-## 2. Grille de lecture attendue par modèle
+## 1. Normaliser les profondeurs à la réception
 
-- Le modèle de la sonde (`5/15`, `5/30`) donne les profondeurs attendues.
-- Une profondeur attendue sans donnée s'affiche en tuile grisée « — · non transmise » au lieu de disparaître : la sonde d'Été montre clairement son trou à 5 cm, et les deux sondes se lisent enfin sur la même grille.
-- Dès qu'Olivier remet le capteur superficiel de b26s002 en ligne, la tuile se remplit toute seule, sans nouvelle intervention.
+- `_0cm` et `_5cm` sont lus comme **0,05 m** : la courbe « 5 cm » redevient continue du 5 août à aujourd'hui, quelle que soit l'étiquette envoyée.
+- Toute autre profondeur reste enregistrée telle quelle — rien n'est jeté.
+- Le journal des livraisons trace « profondeur normalisée 0 cm → 5 cm ».
+- Migration de données : les relevés de sol déjà stockés à `profondeur_m = 0` passent à `0,05`, pour raccorder les 5 relevés du 16 août à l'historique.
 
-## 3. Ce qu'on attend d'Olivier (les 45 min)
+## 2. Survivre à la disparition de la clé générique
 
-Rien de bloquant : seulement la réponse sur b26s002 (capteur superficiel absent du payload ou capteur muet). On vérifiera à réception que la trame contient bien `soilMoisture_5cm` / `soilTemperature_5cm`, et la démo affichera 5 cm et 15 cm côte à côte.
+- La règle de dédoublonnage « plat vs profondeur » reste en place mais devient inoffensive : plus aucune clé plate n'arrivera.
+- Les relevés historiques sans profondeur ne sont ni supprimés ni fusionnés : ils gardent leur étiquette « profondeur non précisée » et sortent naturellement des courbes récentes.
+- La capacitance devient une série close : affichée comme telle (« série arrêtée le 16 août ») plutôt que comme une sonde en panne.
+
+## 3. Grille de lecture par modèle de sonde
+
+- Le modèle (`5/15`, `5/30`) donne les profondeurs attendues.
+- Une profondeur attendue sans donnée s'affiche en tuile grisée « — · non transmise » au lieu de disparaître : le trou à 5 cm de b26s002 devient visible et explicable en démo, et les deux sondes se lisent sur la même grille.
+- Dès qu'Olivier remet le capteur superficiel en ligne, la tuile se remplit seule.
 
 ## Détails techniques
 
-- `supabase/functions/iot-webhook-brad/index.ts` : table de normalisation des profondeurs (`0cm|5cm → 0.05`), trace dans `_lfdv.normalized`.
-- Migration de données : `update iot_mesures set profondeur_m = 0.05 where profondeur_m = 0 and grandeur like 'soil_%'`.
-- `src/lib/iot/grandeurs.ts` : profondeurs attendues dérivées du nom de sonde, avec repli sur les profondeurs observées.
-- `src/components/iot/HourMesuresWidget.tsx` et `SensorObservatory.tsx` : fusion mesures reçues × grille attendue, rendu « non transmise ».
+- `supabase/functions/iot-webhook-brad/index.ts` : table de normalisation (`0cm|5cm → 0.05`), trace dans `_lfdv.normalized`.
+- Migration : `update iot_mesures set profondeur_m = 0.05 where profondeur_m = 0 and grandeur like 'soil_%'`.
+- `src/lib/iot/grandeurs.ts` : profondeurs attendues dérivées du nom/modèle de sonde, repli sur les profondeurs observées.
+- `src/components/iot/HourMesuresWidget.tsx`, `SensorObservatory.tsx`, `SensorDrawer.tsx` : fusion mesures reçues × grille attendue, rendu « non transmise » et mention « série arrêtée » pour la capacitance.
 - Aucun changement de schéma ni de RLS.
