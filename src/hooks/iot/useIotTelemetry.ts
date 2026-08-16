@@ -42,7 +42,7 @@ export function useAllCapteurs() {
     queryFn: async () => {
       const { data, error } = await db
         .from('iot_capteurs')
-        .select('id, nom, serial_number, propriete_id, last_seen_at, actif, silence_alert_hours, type:iot_types_capteurs(modele, fournisseur_id, fournisseur:iot_fournisseurs(id, nom))')
+        .select('id, nom, serial_number, propriete_id, last_seen_at, actif, silence_alert_hours, type:iot_types_capteurs(modele, profondeurs_m, fournisseur_id, fournisseur:iot_fournisseurs(id, nom))')
         .order('nom');
       if (error) throw error;
       return (data ?? []).filter((c: any) => capteurInScope(c, scope));
