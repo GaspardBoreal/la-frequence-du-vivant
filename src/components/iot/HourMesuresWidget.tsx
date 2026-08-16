@@ -50,11 +50,8 @@ export const HourMesuresWidget: React.FC<HourMesuresWidgetProps> = ({ capteurId,
   const [idx, setIdx] = React.useState(0);
   React.useEffect(() => { setIdx(Math.max(0, trames.length - 1)); }, [trames.length]);
 
-  React.useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  // L'échappement est géré globalement par le poste de contrôle (plusieurs widgets possibles).
+
 
   const current = trames[Math.min(idx, Math.max(0, trames.length - 1))];
 
