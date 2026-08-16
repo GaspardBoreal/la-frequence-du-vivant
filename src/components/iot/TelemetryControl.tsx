@@ -161,6 +161,8 @@ export const TelemetryControl: React.FC = () => {
                 <HourMesuresWidget
                   capteurId={c.id}
                   capteurNom={c.nom}
+                  profondeursAttendues={(c as any).type?.profondeurs_m}
+
                   from={open.from}
                   to={open.to}
                   onClose={() => setOpenHours((prev) => {

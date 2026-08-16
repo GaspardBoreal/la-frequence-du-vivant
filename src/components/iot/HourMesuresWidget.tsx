@@ -1,7 +1,7 @@
 import React from 'react';
 import { Activity, CloudRain, Droplets, Gauge, Sun, Thermometer, X } from 'lucide-react';
 import { useMesuresInWindow } from '@/hooks/iot/useIotTelemetry';
-import { compareGrandeurs, fmtMesure, fmtProfondeur, grandeurMeta, moistureVerdict } from '@/lib/iot/grandeurs';
+import { compareGrandeurs, fmtMesure, fmtProfondeur, grandeurMeta, moistureVerdict, withExpectedSlots } from '@/lib/iot/grandeurs';
 
 const ICONS: Record<string, React.ElementType> = {
   soil_moisture: Droplets,
@@ -25,13 +25,16 @@ const fmtJour = (d: Date) =>
 export interface HourMesuresWidgetProps {
   capteurId: string;
   capteurNom?: string;
+  /** Profondeurs déclarées par le modèle de sonde (grille de lecture attendue). */
+  profondeursAttendues?: (number | string)[] | null;
   from: Date;
   to: Date;
   onClose: () => void;
 }
 
 /** Widget « heure ouverte » : les relevés réellement reçus dans le créneau cliqué. */
-export const HourMesuresWidget: React.FC<HourMesuresWidgetProps> = ({ capteurId, capteurNom, from, to, onClose }) => {
+export const HourMesuresWidget: React.FC<HourMesuresWidgetProps> = ({ capteurId, capteurNom, profondeursAttendues, from, to, onClose }) => {
+
   const { data: mesures = [], isLoading } = useMesuresInWindow(
     capteurId,
     from.toISOString(),
@@ -98,13 +101,29 @@ export const HourMesuresWidget: React.FC<HourMesuresWidgetProps> = ({ capteurId,
 
       {current && (
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-          {[...current[1]].sort(compareGrandeurs).map((m: any) => {
+          {withExpectedSlots(current[1] as any[], profondeursAttendues).map((m: any) => {
             const meta = grandeurMeta(m.grandeur);
             const Icon = ICONS[m.grandeur] ?? Activity;
-            const verdict = m.grandeur === 'soil_moisture' ? moistureVerdict(m.valeur) : null;
             const prof = fmtProfondeur(m.profondeur_m);
+            const key = `${m.grandeur}-${m.profondeur_m ?? 'x'}`;
+
+            if (m.missing) {
+              return (
+                <div key={key} className="rounded-lg border border-dashed border-border bg-muted/30 px-2.5 py-2 opacity-70">
+                  <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <Icon className="h-3 w-3" />
+                    <span className="truncate">{meta.label}</span>
+                    {prof && <span className="ml-auto shrink-0 rounded-full bg-muted px-1.5 py-0.5">{prof}</span>}
+                  </div>
+                  <div className="mt-0.5 text-lg font-semibold tabular-nums text-muted-foreground">—</div>
+                  <div className="mt-1 text-[10px] italic text-muted-foreground">non transmise</div>
+                </div>
+              );
+            }
+
+            const verdict = m.grandeur === 'soil_moisture' ? moistureVerdict(m.valeur) : null;
             return (
-              <div key={`${m.grandeur}-${m.profondeur_m ?? 'x'}`} className="rounded-lg border border-border bg-card px-2.5 py-2">
+              <div key={key} className="rounded-lg border border-border bg-card px-2.5 py-2">
                 <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
                   <Icon className="h-3 w-3" style={{ color: meta.color }} />
                   <span className="truncate">{meta.label}</span>
@@ -131,6 +150,7 @@ export const HourMesuresWidget: React.FC<HourMesuresWidgetProps> = ({ capteurId,
           })}
         </div>
       )}
+
     </div>
   );
 };
