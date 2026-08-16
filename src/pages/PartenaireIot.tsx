@@ -79,6 +79,15 @@ const PartenaireIot: React.FC = () => {
 
       <header className="border-b border-border/60 bg-card/40">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-6 py-5">
+          <button
+            type="button"
+            onClick={goBack}
+            aria-label={tab === 'accueil' ? 'Retour à Mon Espace' : "Retour à l'accueil partenaire"}
+            title={tab === 'accueil' ? 'Retour à Mon Espace' : "Retour à l'accueil partenaire"}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
           <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-primary/10">
             {fournisseur.logo_url ? (
               <img src={fournisseur.logo_url} alt={`Logo ${fournisseur.nom}`} className="h-full w-full object-cover" />
