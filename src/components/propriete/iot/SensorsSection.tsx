@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Radio, Plus, Battery, MapPin, AlertTriangle, CheckCircle2, Wifi, Send, Sparkles } from 'lucide-react';
 import { useIotCapteurs, useLatestMesures, useWebhookDeliveries, type IotCapteur } from '@/hooks/iot/useIot';
-import { sensorHealth, HEALTH_COLOR, fmtHorodatage, fmtMesure, fmtProfondeur, grandeurMeta } from '@/lib/iot/grandeurs';
+import { sensorHealth, HEALTH_COLOR, fmtHorodatage, fmtMesure, fmtProfondeur, grandeurMeta, compareGrandeurs } from '@/lib/iot/grandeurs';
 import SensorFormDialog from './SensorFormDialog';
 import SensorDrawer from './SensorDrawer';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
