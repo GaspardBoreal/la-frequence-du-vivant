@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
 import { useMesureSeriesRange } from '@/hooks/iot/useIotTelemetry';
-import { grandeurMeta, fmtProfondeur, fmtHorodatage } from '@/lib/iot/grandeurs';
+import { grandeurMeta, fmtProfondeur, fmtHorodatage, compareGrandeurs } from '@/lib/iot/grandeurs';
 
 type PresetKey = '24h' | '7j' | '30j' | '90j' | '1an' | 'perso';
 
@@ -67,7 +67,7 @@ export const SensorObservatory: React.FC<Props> = ({ capteur, onClose }) => {
     });
 
     return [...byGrandeur.entries()]
-      .sort((a, b) => grandeurMeta(a[0]).label.localeCompare(grandeurMeta(b[0]).label))
+      .sort((a, b) => compareGrandeurs({ grandeur: a[0] }, { grandeur: b[0] }))
       .map(([grandeur, list]) => {
         const depths = Array.from(new Set(list.map((r: any) => r.profondeur_m ?? -1))).sort((a, b) => a - b);
         const byTime = new Map<number, any>();

@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Battery, Radio, Signal, MapPin, Sparkles, History, Trash2, Pencil, Check, X } from 'lucide-react';
 import type { IotCapteur, IotMesure } from '@/hooks/iot/useIot';
 import { useMesureSeries, useCapteurMutation } from '@/hooks/iot/useIot';
-import { sensorHealth, HEALTH_COLOR, fmtHorodatage, grandeurMeta, fmtProfondeur, moistureVerdict } from '@/lib/iot/grandeurs';
+import { sensorHealth, HEALTH_COLOR, fmtHorodatage, grandeurMeta, fmtProfondeur, moistureVerdict, compareGrandeurs } from '@/lib/iot/grandeurs';
 import MesureTile from './MesureTile';
 import SensorPhotoStrip from './SensorPhotoStrip';
 import { Input } from '@/components/ui/input';
@@ -157,7 +157,7 @@ export const SensorDrawer: React.FC<Props> = ({ capteur, latest, onClose, onLoca
         <h3 className="mt-5 text-[10px] font-bold uppercase tracking-[0.24em] text-[hsl(var(--ds-forest))]">Dernières mesures</h3>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           {latest.length === 0 && <p className="text-xs italic opacity-60">Aucune mesure reçue.</p>}
-          {latest.map((m, i) => (
+          {[...latest].sort(compareGrandeurs).map((m, i) => (
             <MesureTile key={m.id} m={m} index={i} />
           ))}
         </div>
@@ -172,7 +172,7 @@ export const SensorDrawer: React.FC<Props> = ({ capteur, latest, onClose, onLoca
 
         <h3 className="mt-5 text-[10px] font-bold uppercase tracking-[0.24em] text-[hsl(var(--ds-forest))]">30 derniers jours</h3>
         <div className="mt-2 space-y-2">
-          {[...groups.entries()].map(([k, rows]) => {
+          {[...groups.entries()].sort((a, b) => compareGrandeurs(a[1][0], b[1][0])).map(([k, rows]) => {
             const meta = grandeurMeta(rows[0].grandeur);
             const prof = fmtProfondeur(rows[0].profondeur_m);
             return (

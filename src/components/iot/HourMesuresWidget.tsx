@@ -1,7 +1,7 @@
 import React from 'react';
 import { Activity, CloudRain, Droplets, Gauge, Sun, Thermometer, X } from 'lucide-react';
 import { useMesuresInWindow } from '@/hooks/iot/useIotTelemetry';
-import { fmtMesure, fmtProfondeur, grandeurMeta, moistureVerdict } from '@/lib/iot/grandeurs';
+import { compareGrandeurs, fmtMesure, fmtProfondeur, grandeurMeta, moistureVerdict } from '@/lib/iot/grandeurs';
 
 const ICONS: Record<string, React.ElementType> = {
   soil_moisture: Droplets,
@@ -98,7 +98,7 @@ export const HourMesuresWidget: React.FC<HourMesuresWidgetProps> = ({ capteurId,
 
       {current && (
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-          {current[1].map((m: any) => {
+          {[...current[1]].sort(compareGrandeurs).map((m: any) => {
             const meta = grandeurMeta(m.grandeur);
             const Icon = ICONS[m.grandeur] ?? Activity;
             const verdict = m.grandeur === 'soil_moisture' ? moistureVerdict(m.valeur) : null;

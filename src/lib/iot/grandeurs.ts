@@ -49,6 +49,29 @@ export const GRANDEURS: Record<string, GrandeurMeta> = {
 export const grandeurMeta = (g: string): GrandeurMeta =>
   GRANDEURS[g] ?? { label: g, unite: '', digits: 1, color: '#6b7f6b' };
 
+/** Ordre de lecture canonique : sol → air → ciel → sonde. */
+export const GRANDEUR_ORDER = Object.keys(GRANDEURS);
+const orderIndex = (g: string) => {
+  const i = GRANDEUR_ORDER.indexOf(g);
+  return i === -1 ? Number.POSITIVE_INFINITY : i;
+};
+
+/**
+ * Comparateur unique pour toutes les listes de grandeurs : d'une sonde à
+ * l'autre, les vignettes se lisent toujours à la même place.
+ */
+export const compareGrandeurs = (
+  a: { grandeur: string; profondeur_m?: number | null },
+  b: { grandeur: string; profondeur_m?: number | null },
+) => {
+  const ia = orderIndex(a.grandeur);
+  const ib = orderIndex(b.grandeur);
+  if (ia !== ib) return ia - ib;
+  if (a.grandeur !== b.grandeur) return grandeurMeta(a.grandeur).label.localeCompare(grandeurMeta(b.grandeur).label);
+  return (a.profondeur_m ?? -1) - (b.profondeur_m ?? -1);
+};
+
+
 export const fmtMesure = (valeur: number, grandeur: string, unite?: string | null) => {
   const meta = grandeurMeta(grandeur);
   const u = unite ?? meta.unite;

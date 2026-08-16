@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Radio, Plus, Battery, MapPin, AlertTriangle, CheckCircle2, Wifi, Send, Sparkles } from 'lucide-react';
 import { useIotCapteurs, useLatestMesures, useWebhookDeliveries, type IotCapteur } from '@/hooks/iot/useIot';
-import { sensorHealth, HEALTH_COLOR, fmtHorodatage, fmtMesure, fmtProfondeur, grandeurMeta } from '@/lib/iot/grandeurs';
+import { sensorHealth, HEALTH_COLOR, fmtHorodatage, fmtMesure, fmtProfondeur, grandeurMeta, compareGrandeurs } from '@/lib/iot/grandeurs';
 import SensorFormDialog from './SensorFormDialog';
 import SensorDrawer from './SensorDrawer';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
@@ -174,7 +174,7 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
               </div>
 
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {rows.slice(0, 4).map((m) => (
+                {[...rows].sort(compareGrandeurs).slice(0, 4).map((m) => (
                   <span
                     key={m.id}
                     className="rounded-full border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-0.5 text-[10px] text-[hsl(var(--ds-forest-deep))]"
