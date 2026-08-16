@@ -1,10 +1,12 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Lock, Radio } from 'lucide-react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Lock, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIotFournisseurs } from '@/hooks/iot/useIot';
 import { useCanOpenIotConsole } from '@/hooks/iot/useIotPartner';
+import { useCommunityAuth } from '@/hooks/useCommunityAuth';
+import AppSwitcher from '@/components/community/AppSwitcher';
 import { IotConsoleProvider } from '@/components/iot/console/IotConsoleContext';
 import { IotConsolePanel, IotConsoleAi } from '@/components/iot/console/IotConsole';
 import IotPartnerHome from '@/components/iot/console/IotPartnerHome';
@@ -36,6 +38,8 @@ const PartenaireIot: React.FC = () => {
     [fournisseurs, slug],
   );
   const { allowed, isLoading } = useCanOpenIotConsole(fournisseur?.id ?? null);
+  const { user } = useCommunityAuth();
+  const navigate = useNavigate();
 
   const loginHref = `/marches-du-vivant/connexion?next=${encodeURIComponent(`/partenaire-iot/${slug}?tab=${tab}`)}`;
 
@@ -43,6 +47,12 @@ const PartenaireIot: React.FC = () => {
     const next = new URLSearchParams(params);
     next.set('tab', k);
     setParams(next, { replace: true });
+  };
+
+  /** Depuis un onglet, on revient à l'accueil partenaire ; depuis l'accueil, on sort vers Mon Espace. */
+  const goBack = () => {
+    if (tab !== 'accueil') setTab('accueil');
+    else navigate('/marches-du-vivant/mon-espace');
   };
 
   if (loadingF || isLoading) {
@@ -69,6 +79,15 @@ const PartenaireIot: React.FC = () => {
 
       <header className="border-b border-border/60 bg-card/40">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-6 py-5">
+          <button
+            type="button"
+            onClick={goBack}
+            aria-label={tab === 'accueil' ? 'Retour à Mon Espace' : "Retour à l'accueil partenaire"}
+            title={tab === 'accueil' ? 'Retour à Mon Espace' : "Retour à l'accueil partenaire"}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
           <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-primary/10">
             {fournisseur.logo_url ? (
               <img src={fournisseur.logo_url} alt={`Logo ${fournisseur.nom}`} className="h-full w-full object-cover" />
@@ -93,6 +112,7 @@ const PartenaireIot: React.FC = () => {
               </button>
             ))}
           </div>
+          <AppSwitcher userId={user?.id} currentContext={slug} />
         </div>
       </header>
 
