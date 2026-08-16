@@ -1,36 +1,30 @@
-# Humidité du sol à faible profondeur — sonde Potager d'Été
+# Profondeurs de sol — se rendre insensible au correctif Brad
 
-## Constat vérifié (livraisons de ce soir)
+Olivier confirme : `_0cm` = 5 cm, et « 5/15 » / « 5/30 » sont bien des combinaisons de profondeurs. Il bascule b26s001 en `_5cm` et regarde b26s002 sous 30–45 min.
 
-Ce n'est pas un problème d'affichage : la valeur n'arrive pas.
+Attendre 45 min n'est pas nécessaire pour avancer : le webhook doit accepter **les deux étiquettes** de toute façon, sinon la bascule d'Olivier cassera la lecture juste avant la démo. On pose le filet maintenant, et sa correction arrive dans un système déjà prêt.
 
-- **Potager d'Hiver (b26s001, « 5/30 »)** — payload 20h45 : `soilMoisture_0cm`, `soilMoisture_30cm`, `soilTemperature_0cm`, `soilTemperature_30cm` (+ un `soilMoisture` « à plat » doublon du 0 cm, écarté proprement).
-- **Potager d'Été (b26s002, « 5/15 »)** — payload 20h57 : uniquement `soilMoisture_15cm` et `soilTemperature_15cm` (+ le doublon à plat). **Aucune clé de faible profondeur n'est émise.**
+## 1. Normalisation des profondeurs (à faire tout de suite)
 
-Deux anomalies côté Brad, pas côté nous :
-1. la sonde 5/15 n'envoie pas son capteur superficiel ;
-2. sur la 5/30, le capteur superficiel est étiqueté `_0cm` alors que la sonde s'appelle « 5/30 » — il devrait vraisemblablement être `_5cm`.
+- `_0cm` et `_5cm` sont lus comme **0,05 m** : la bascule d'Olivier devient un non-événement, et l'historique déjà stocké à 0 m reste lisible sous la même étiquette « 5 cm ».
+- Toute profondeur inconnue reste enregistrée telle quelle — rien n'est jeté.
+- Le journal des livraisons trace « profondeur normalisée 0 cm → 5 cm » pour garder la traçabilité.
+- Migration légère : les relevés de sol existants à `profondeur_m = 0` passent à `0.05` (uniquement pour les sondes Brad), pour que les courbes 5 cm soient continues avant/après le correctif.
 
-## Ce qu'on fait de notre côté
+## 2. Grille de lecture attendue par modèle
 
-### 1. Rendre l'absence lisible plutôt que silencieuse
-Dans le widget horaire et la fiche sonde, afficher les profondeurs **attendues** d'après le modèle de la sonde (« 5/15 » → 5 cm et 15 cm ; « 5/30 » → 5 cm et 30 cm). Une profondeur attendue sans donnée s'affiche en tuile grisée « — · non transmise », au lieu de disparaître. On voit immédiatement que la sonde d'Été est muette à faible profondeur, et les deux sondes retrouvent une grille comparable.
+- Le modèle de la sonde (`5/15`, `5/30`) donne les profondeurs attendues.
+- Une profondeur attendue sans donnée s'affiche en tuile grisée « — · non transmise » au lieu de disparaître : la sonde d'Été montre clairement son trou à 5 cm, et les deux sondes se lisent enfin sur la même grille.
+- Dès qu'Olivier remet le capteur superficiel de b26s002 en ligne, la tuile se remplit toute seule, sans nouvelle intervention.
 
-### 2. Normaliser l'étiquette 0 cm → 5 cm
-Quand le modèle de sonde annonce une profondeur superficielle de 5 cm et que la trame porte `_0cm`, l'enregistrer à 0,05 m avec la mention « profondeur normalisée » dans le journal des livraisons. Les relevés déjà stockés à 0 m restent tels quels (aucune réécriture d'historique), la bascule vaut pour les nouvelles trames.
+## 3. Ce qu'on attend d'Olivier (les 45 min)
 
-Si vous préférez ne rien réinterpréter avant confirmation d'Olivier, on garde `0 cm` tel quel et on se limite au point 1.
-
-### 3. Bandeau de cohérence dans le poste de contrôle
-Sous la frise de chaque sonde, une ligne discrète : « Grandeurs attendues : 6 · reçues : 5 · manquante : humidité du sol 5 cm depuis 3 j ». C'est la preuve à montrer demain, et le déclencheur naturel du message au fournisseur.
+Rien de bloquant : seulement la réponse sur b26s002 (capteur superficiel absent du payload ou capteur muet). On vérifiera à réception que la trame contient bien `soilMoisture_5cm` / `soilTemperature_5cm`, et la démo affichera 5 cm et 15 cm côte à côte.
 
 ## Détails techniques
 
-- `src/lib/iot/grandeurs.ts` : petite table modèle → profondeurs attendues, dérivée du nom de sonde (`5/15`, `5/30`) avec repli sur les profondeurs déjà observées en base.
-- `src/components/iot/HourMesuresWidget.tsx` et `SensorObservatory.tsx` : fusion des mesures reçues avec la grille attendue, rendu « non transmise ».
-- `supabase/functions/iot-webhook-brad/index.ts` : normalisation optionnelle `_0cm` → 0,05 m, tracée dans `_lfdv.normalized`.
-- Aucune migration : les colonnes `profondeur_m`, `interpretation`, `rejected` suffisent.
-
-## Message à Olivier (Brad)
-
-> Sur b26s002 (« 5/15 »), seules les clés `soilMoisture_15cm` / `soilTemperature_15cm` arrivent : le capteur superficiel n'émet rien. Sur b26s001 (« 5/30 »), le capteur superficiel est étiqueté `_0cm` — doit-on le lire comme 5 cm ? Peux-tu confirmer la nomenclature de profondeur attendue pour les deux modèles ?
+- `supabase/functions/iot-webhook-brad/index.ts` : table de normalisation des profondeurs (`0cm|5cm → 0.05`), trace dans `_lfdv.normalized`.
+- Migration de données : `update iot_mesures set profondeur_m = 0.05 where profondeur_m = 0 and grandeur like 'soil_%'`.
+- `src/lib/iot/grandeurs.ts` : profondeurs attendues dérivées du nom de sonde, avec repli sur les profondeurs observées.
+- `src/components/iot/HourMesuresWidget.tsx` et `SensorObservatory.tsx` : fusion mesures reçues × grille attendue, rendu « non transmise ».
+- Aucun changement de schéma ni de RLS.
