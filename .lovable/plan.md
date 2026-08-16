@@ -1,91 +1,41 @@
-# Prompt complet pour lt@bziiit.com — projet « Onboarding Fréquence Jardin »
+# Sondes Brad — remise à niveau avant la démo
 
-Nouveauté par rapport à la version précédente : le parcours démarre **directement sur la page d'accueil** du projet dérivé. Plus besoin d'aller chercher `/jardin/demarrer`.
+Les réponses d'Olivier sont vérifiables dans les livraisons reçues : voici ce qu'elles montrent et ce qu'on corrige côté Fréquence Jardin.
 
-Copie tout le bloc ci-dessous dans le chat du projet dérivé.
+## Constat vérifié
 
----
+1. **Station météo b26w002 refusée.** Toutes ses livraisons (encore à 17h43) sont signées et valides, mais rejetées avec « Capteur inconnu : b26w002 » → elle n'existe pas dans la table des capteurs. Le payload arrive bien (`event: weather_station.telemetry.updated`, mesures température + humidité, plot « Potager d'Hiver »).
+2. **Mesures de sol par profondeur perdues.** Brad envoie `soilMoisture_15cm`, `soilTemperature_30cm`, etc. Notre lecteur de clés ne reconnaît pas le tiret bas : ces clés sont **silencieusement ignorées**. C'est exactement pourquoi les deux sondes n'affichent pas les mêmes indicateurs : Potager d'Été a une clé `soilMoisture` « à plat » (donc affichée), Potager d'Hiver n'en avait pas pendant plusieurs heures — seulement les variantes par profondeur, jetées.
+3. **Le fameux 450 %.** En base, l'humidité de sol « sans profondeur » monte jusqu'à **455 %** (241 relevés), alors que les mesures par profondeur restent entre 0 et 35 %. Ce sont d'anciennes valeurs, avant la correction annoncée par Brad. Aucun garde-fou ne les a bloquées.
+4. **Capacitance retirée** par Brad : on a 645 relevés historiques `soil_capacitance` qui vont s'arrêter net.
+5. **Nouveauté utile** : chaque mesure porte désormais une clé `interpretation` (« Confort hydrique », « Point de flétrissement », « Canicule »…) qu'on n'exploite pas encore.
 
-Construis l'application **Onboarding Fréquence Jardin** : un parcours mobile-first, plein écran, une question par écran, qui amène un nouveau jardinier de « je ne sais pas par où commencer » à « voilà mon jardin et mes trois premiers gestes ».
+## Ce qu'on fait
 
-## Page d'accueil = le parcours
+### 1. Accepter la station météo (bloquant démo)
+Enregistrer `b26w002` comme capteur de type station météo, rattaché à Jardin Monde Deviat, positionné près du Potager d'Hiver. Ses relevés (température, humidité, et plus tard pluie/pression/vent) rejoignent la console au même titre que les sondes de sol, avec une icône et un libellé « Station météo ».
 
-La route `/` de ce projet doit ouvrir l'onboarding, sans page marketing intermédiaire.
+### 2. Lire correctement les profondeurs
+Le webhook reconnaîtra `soilMoisture_15cm`, `soilTemperature_30cm`, `soilMoisture15`, avec ou sans tiret bas. Règle anti-doublon : quand une grandeur existe à la fois « à plat » et par profondeur, on ne garde que les versions par profondeur. Résultat : les deux sondes exposent enfin les mêmes indicateurs, l'une à 0/30 cm, l'autre à 15 cm.
 
-- Remplace le contenu de la route `/` par l'écran d'accueil de l'onboarding : titre court, une phrase de promesse, un bouton unique « Commencer » plein largeur en bas d'écran (zone du pouce), et un lien discret « J'ai déjà un jardin » / « Rejoindre avec un code ».
-- Garde `/jardin/demarrer` fonctionnel : il redirige vers `/` ou rend le même composant, pour ne casser aucun lien existant.
-- Si un parcours est en cours (état repris depuis `localStorage`), l'accueil propose « Reprendre où j'en étais » en action principale.
-- Si l'utilisateur est déjà connecté et possède une propriété, l'accueil propose d'ouvrir son jardin plutôt que de recommencer.
-- Retire de la navigation du projet dérivé tout ce qui n'est pas jardin : pas de liens vers marches, CRM, IoT, admin.
+### 3. Garde-fou de plausibilité
+Toute valeur hors bornes physiques (humidité hors 0–100 %, température hors -40/+80 °C, UV hors 0–20…) est refusée à l'entrée, tracée dans le journal des livraisons comme « valeur aberrante », et **jamais** écrite en base. Puis nettoyage : les relevés d'humidité de sol > 100 % déjà stockés sont archivés hors des courbes pour que le graphe redevienne lisible.
 
-## Exigence de design
+### 4. Répondre 422 au lieu de 404
+Sur capteur inconnu, le webhook renverra **422 Unprocessable Entity** (avec le numéro de série en clair) — 404 restera réservé à « endpoint inexistant », comme Olivier le demande. Idem pour un payload invalide.
 
-Hyper soignée, inspirante, immédiatement compréhensible. Le pouce suffit.
+### 5. Afficher les interprétations Brad
+L'interprétation fournie par la sonde s'affiche en sous-titre des tuiles de mesure (widget horaire, carte, observatoire), en complément — pas en remplacement — de nos propres verdicts agronomiques. Elle est aussi transmise à l'IA de jardin comme signal de terrain.
 
-- Une question par écran, plein écran, sans scroll sur iPhone SE. Le desktop garde la même colonne centrée, jamais élargie.
-- Barre de progression fine en haut, retour discret en haut à gauche, rien d'autre. Pas de barre d'onglets pendant le parcours.
-- Choix en cartes aquarelle : coins généreux, ombres basses, une seule couleur d'accent par écran, pictogrammes sobres.
-- Micro-animations : apparition en cascade des choix, pulsation légère au tap, transition latérale entre questions, respiration sur l'écran de bilan.
-- Thèmes existants respectés : Papier Crème en clair, Forêt Émeraude en sombre. Uniquement des tokens sémantiques, jamais de couleur en dur.
+### 6. Journal des livraisons lisible pour la démo
+Ajout, dans le journal admin IoT, d'une ligne de synthèse par livraison : capteur, nombre de mesures retenues, mesures ignorées et motif (clé inconnue, valeur aberrante, capteur non enregistré). C'est la preuve de bonne foi à montrer demain.
 
-## A — Questionnaire d'initialisation
+## Détails techniques
 
-Premier écran après « Commencer » : « Où jardinez-vous ? » → balcon / terrain nu / jardin déjà en route / propriété de plaisir / entreprise / collectivité. La réponse règle les unités (m² ou bacs), les surfaces proposées et les paliers de budget pour toute la suite.
+- `supabase/functions/iot-webhook-brad/index.ts` : regex `^([a-zA-Z]+)_?(\d+)(cm)?$`, dédoublonnage plat/profondeur, table de bornes de plausibilité, codes retour 422, stockage de `interpretation` dans `raw` + colonne dédiée `interpretation text` sur `iot_mesures`.
+- Migration : ajout de `interpretation` sur `iot_mesures`, colonne `rejected boolean default false` (ou table `iot_mesures_rejetees`) pour l'archivage des valeurs aberrantes, insertion du capteur `b26w002` (type station météo créé si absent), GRANTs conservés.
+- Front : `src/lib/iot/grandeurs.ts` (métadonnées station météo + affichage interprétation), `HourMesuresWidget.tsx`, `SensorObservatory.tsx`, `SensorsMapTab.tsx`, journal des livraisons dans `AdminIot`.
+- Aucune modification du secret HMAC ni de l'URL du webhook : rien à changer côté Brad hormis ce qu'Olivier a déjà fait.
 
-```text
-1. Priorité         → fruits peu exigeants / légumes pour la famille / autonomie / beau jardin
-     └─ si « légumes pour la famille » :
-          1a. période de récolte (toute l'année / été seulement / hors été)
-          1b. panier d'envies — grille d'images à cocher (légumes, fruits, fleurs, aromatiques),
-              filtrable par saison, avec recherche
-2. Temps disponible → curseur, formulé en gestes ("un samedi matin par semaine")
-3. Surface & eau    → surface totale, surface encore libre, « pouvez-vous irriguer ? »
-4. Style de jardin  → galerie plein écran, choix par image, pas de libellé abstrait
-5. Espaces désirés  → mare, carré potager, espace de beauté, serre (multi-choix)
-6. Budget           → 50 € / 500 € / 5 000 € / sans limite tant que cela me correspond
-7. Bilan            → « Voilà ce que vous allez pouvoir faire »
-```
-
-### Le bilan
-
-Écran de récompense, pas de récapitulatif administratif : un verdict en une phrase, trois à cinq gestes réalisables classés par effort, une estimation de temps et de budget, puis le bouton « Ouvrir mon jardin » qui crée la propriété via la RPC `onboard_create_propriete` et verse les réponses dans la colonne de préférences.
-
-La création de compte n'est demandée qu'à cet instant précis, jamais avant : on ne bloque pas l'entrée du parcours par un mur d'authentification.
-
-### Galerie de styles
-
-Génère les visuels du choix 4 et du panier d'envies et range-les dans `src/assets/onboarding/`. Six styles : potager nourricier ordonné, jardin foisonnant naturaliste, jardin aquatique, verger-prairie, jardin de ville en bacs, jardin de beauté fleuri. Photographies lumineuses, cohérentes entre elles, format portrait, sans texte incrusté.
-
-## B — Atelier de conception (niveau 2)
-
-Accessible après le bilan : croquis de surface avec assolement, temps de mise en œuvre et gain estimé ; diagnostic de sol ; dessin sur cadastre ; chat expert.
-
-## C — Implantation et suivi (niveau 3)
-
-Diagnostic de sol actualisé, atelier cadastre, reconnaissance et suivi des maladies, chat expert.
-
-Les niveaux B et C ne sont pas réécrits : ils pointent vers les onglets existants J'analyse, Portrait · Cadastre, Clinique du vivant et l'IA de jardin.
-
-## Contraintes techniques strictes
-
-- Routage : `/` rend l'onboarding, `/jardin/demarrer` reste valide. Nouveaux composants sous `src/components/onboarding/`.
-- État du questionnaire dans un réducteur unique, persisté en `localStorage` pour permettre l'abandon puis la reprise, puis versé en une seule fois à la création de la propriété.
-- Les réponses sont stockées dans `proprietes.onboarding_preferences` (`jsonb`), déjà créée côté base — ne crée ni table ni colonne.
-- **N'écris jamais** dans `supabase/functions/**` et ne lance **aucune migration** : la base et les Edge Functions sont partagées avec le projet central, toute écriture ici écraserait la production.
-- Périmètre autorisé : `src/App.tsx` (routage uniquement), `src/pages/JardinDemarrer.tsx`, `src/components/onboarding/**`, `src/components/propriete/**`, `src/hooks/propriete/**`, `src/assets/onboarding/**`. Ne touche pas au CRM, à l'IoT, aux marches ni à `/admin/*`.
-- Réutilise les composants existants (`RichMap`, IA de jardin, TabAnalyze) sans les dupliquer.
-- Métadonnées de page : titre et description propres à l'onboarding jardin, pas les valeurs du site central.
-
-## Ordre de réalisation
-
-1. Route `/` + coquille mobile-first + moteur de questionnaire (état, branchements, progression, reprise).
-2. Génération des visuels, puis écrans A1 à A7.
-3. Écran bilan, création de compte au dernier moment, création du jardin.
-4. Ponts vers les niveaux B et C.
-5. Vérification sur appareil réel, thème clair et sombre, 375 px.
-
----
-
-## Ce que je fais de mon côté (projet central)
-
-Rien à changer : la colonne `onboarding_preferences` (`jsonb`) et les RPC `onboard_create_propriete` / `onboard_join_propriete` sont déjà en place. Restent les secrets, traités demain.
+## Message de retour à Olivier (à envoyer après mise en place)
+Confirmation que b26w002 est enregistré, que les clés `_XXcm` sont désormais consommées, que le 404 devient 422, et demande de confirmation sur les grandeurs attendues de la station (pluie, pression, vent, rayonnement) pour préparer les affichages.
