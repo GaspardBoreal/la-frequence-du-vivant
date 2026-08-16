@@ -99,9 +99,14 @@ const json = (body: unknown, status = 200) =>
  */
 export function normalizeMeasures(
   measures: Record<string, any>,
-): { kept: any[]; ignored: { key: string; reason: string; value?: unknown }[] } {
+): {
+  kept: any[];
+  ignored: { key: string; reason: string; value?: unknown }[];
+  normalized: { key: string; from: number; to: number }[];
+} {
   const kept: any[] = [];
   const ignored: { key: string; reason: string; value?: unknown }[] = [];
+  const normalized: { key: string; from: number; to: number }[] = [];
 
   const parsed = Object.entries(measures ?? {}).map(([key, m]) => ({ key, m, ...parseKey(key) }));
   const withDepth = new Set(parsed.filter((p) => p.depth != null && MAP[p.base]).map((p) => p.base));
@@ -128,16 +133,20 @@ export function normalizeMeasures(
       ignored.push({ key, reason: `valeur aberrante (hors ${b[0]}–${b[1]} ${norm.unite})`, value: converted });
       continue;
     }
+    const rawDepth = (typeof m?.depth === 'number' ? m.depth : depth) ?? null;
+    const { depth: finalDepth, alias } = normalizeDepth(rawDepth ?? undefined);
+    if (alias) normalized.push({ key, from: alias.from, to: alias.to });
     kept.push({
       grandeur: norm.grandeur,
       valeur: converted,
       unite: norm.unite,
-      profondeur_m: (typeof m?.depth === 'number' ? m.depth : depth) ?? null,
+      profondeur_m: finalDepth ?? null,
       interpretation: typeof m?.interpretation === 'string' ? m.interpretation : null,
       raw: { key, ...(typeof m === 'object' && m ? m : { value }) },
     });
   }
-  return { kept, ignored };
+  return { kept, ignored, normalized };
+
 }
 
 Deno.serve(async (req) => {
