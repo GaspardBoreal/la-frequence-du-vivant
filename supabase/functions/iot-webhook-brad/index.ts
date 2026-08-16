@@ -259,10 +259,11 @@ Deno.serve(async (req) => {
     capteur_id: capteur.id,
     mesures_count: rows.length,
     error: null,
-    payload: { ...(payload as any), _lfdv: { kept: rows.length, ignored } },
+    payload: { ...(payload as any), _lfdv: { kept: rows.length, ignored, normalized } },
   });
 
-  return json({ ok: true, inserted: rows.length, ignored });
+  return json({ ok: true, inserted: rows.length, ignored, normalized });
+
 });
 
 function safeParse(raw: string): unknown {
