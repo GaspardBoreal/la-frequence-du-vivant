@@ -174,7 +174,7 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
               </div>
 
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {rows.slice(0, 4).map((m) => (
+                {[...rows].sort(compareGrandeurs).slice(0, 4).map((m) => (
                   <span
                     key={m.id}
                     className="rounded-full border border-[hsl(var(--ds-line))] bg-white/70 px-2 py-0.5 text-[10px] text-[hsl(var(--ds-forest-deep))]"
