@@ -6,7 +6,7 @@ import {
   Sprout, KeyRound, MapPin, Star, ArrowRight, Loader2, Crosshair, Copy, Check, Share2,
 } from 'lucide-react';
 
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useUserAppsAccess } from '@/hooks/useUserAppsAccess';
 import {
   useCreatePropriete, useJoinPropriete, useCreateInvitation, type InvitationRole,
