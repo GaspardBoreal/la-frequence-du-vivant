@@ -30,7 +30,7 @@ const ROLE_LABELS: Record<InvitationRole, string> = {
  */
 export default function JardinDemarrer() {
   const navigate = useNavigate();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuthContext();
   const { data: access, isLoading: accessLoading } = useUserAppsAccess(user?.id);
 
   useEffect(() => {
