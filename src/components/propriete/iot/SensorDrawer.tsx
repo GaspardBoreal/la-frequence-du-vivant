@@ -157,9 +157,26 @@ export const SensorDrawer: React.FC<Props> = ({ capteur, latest, onClose, onLoca
         <h3 className="mt-5 text-[10px] font-bold uppercase tracking-[0.24em] text-[hsl(var(--ds-forest))]">Dernières mesures</h3>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           {latest.length === 0 && <p className="text-xs italic opacity-60">Aucune mesure reçue.</p>}
-          {[...latest].sort(compareGrandeurs).map((m, i) => (
-            <MesureTile key={m.id} m={m} index={i} />
-          ))}
+          {withExpectedSlots(latest as any[], (capteur as any).type?.profondeurs_m).map((m: any, i) =>
+            m.missing ? (
+              <div
+                key={`missing-${m.grandeur}-${m.profondeur_m}`}
+                className="rounded-2xl border border-dashed border-[hsl(var(--ds-line))] bg-white/40 p-3 opacity-70"
+              >
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-[hsl(var(--ds-forest))]/70">
+                  <span className="truncate">{grandeurMeta(m.grandeur).label}</span>
+                  <span className="ml-auto shrink-0 rounded-full bg-[hsl(var(--ds-forest))]/10 px-1.5 py-0.5">
+                    {fmtProfondeur(m.profondeur_m)}
+                  </span>
+                </div>
+                <div className="mt-1 font-serif text-2xl text-[hsl(var(--ds-forest-deep))]/50">—</div>
+                <div className="mt-1 text-[10px] italic opacity-70">non transmise</div>
+              </div>
+            ) : (
+              <MesureTile key={m.id} m={m} index={i} />
+            ),
+          )}
+
         </div>
 
         {lecture && (
