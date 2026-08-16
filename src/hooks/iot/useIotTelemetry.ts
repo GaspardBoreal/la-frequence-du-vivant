@@ -86,6 +86,7 @@ export function useTelemetryPings(hours = 48, capteurIds?: string[]) {
       let q = db
         .from('iot_mesures')
         .select('capteur_id, mesure_at, source')
+        .eq('rejected', false)
         .gte('mesure_at', since)
         .order('mesure_at', { ascending: false })
         .limit(4000);
@@ -355,6 +356,7 @@ export function useMesureSeriesRange(capteurId?: string, fromISO?: string, toISO
         .from('iot_mesures')
         .select('*')
         .eq('capteur_id', capteurId)
+        .eq('rejected', false)
         .neq('source', 'webhook_test')
         .gte('mesure_at', fromISO)
         .lte('mesure_at', toISO)
@@ -381,8 +383,9 @@ export function useMesuresWindow(capteurIds: string[], days: number) {
       const since = new Date(Date.now() - days * 86_400_000).toISOString();
       const { data, error } = await db
         .from('iot_mesures')
-        .select('capteur_id, grandeur, valeur, unite, profondeur_m, mesure_at')
+        .select('capteur_id, grandeur, valeur, unite, profondeur_m, mesure_at, interpretation')
         .in('capteur_id', ids)
+        .eq('rejected', false)
         .neq('source', 'webhook_test')
         .gte('mesure_at', since)
         .order('mesure_at', { ascending: true })
@@ -411,6 +414,7 @@ export function useMesuresInWindow(capteurId?: string | null, fromISO?: string |
         .from('iot_mesures')
         .select('*')
         .eq('capteur_id', capteurId)
+        .eq('rejected', false)
         .gte('mesure_at', fromISO)
         .lt('mesure_at', toISO)
         .order('mesure_at', { ascending: true })

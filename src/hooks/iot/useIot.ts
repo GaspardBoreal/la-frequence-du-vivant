@@ -218,6 +218,7 @@ export function useLatestMesures(capteurIds: string[]) {
         .from('iot_mesures')
         .select('*')
         .in('capteur_id', ids)
+        .eq('rejected', false)
         .order('mesure_at', { ascending: false })
         .limit(1500);
       if (error) throw error;
@@ -253,6 +254,7 @@ export function useMesureSeries(capteurId?: string, days = 30) {
         .from('iot_mesures')
         .select('*')
         .eq('capteur_id', capteurId)
+        .eq('rejected', false)
         .neq('source', 'webhook_test')
         .gte('mesure_at', since)
         .order('mesure_at', { ascending: true })
