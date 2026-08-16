@@ -2,6 +2,7 @@ import React from 'react';
 import { Activity, AlertTriangle, CheckCircle2, Inbox, MoonStar, Radio, Send, ShieldX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
+import HourMesuresWidget from '@/components/iot/HourMesuresWidget';
 import DeliveryJournal from '@/components/iot/DeliveryJournal';
 import {
   useAllCapteurs, useTelemetryCounters, useTelemetryDeliveries, useTelemetryLive, useTelemetryPings, useTestDelivery,
@@ -36,6 +37,10 @@ export const TelemetryControl: React.FC = () => {
   const { lastLiveAt, live } = useTelemetryLive();
   const counters = useTelemetryCounters(deliveries, capteurs);
   const test = useTestDelivery();
+
+  const [openHour, setOpenHour] = React.useState<
+    { capteurId: string; index: number; from: Date; to: Date } | null
+  >(null);
 
 
   const pingsByCapteur = React.useMemo(() => {
@@ -106,9 +111,30 @@ export const TelemetryControl: React.FC = () => {
                 )}
 
               </div>
-              <VitalityStrip timestamps={pingsByCapteur[c.id] ?? []} hours={48} showScale />
+              <VitalityStrip
+                timestamps={pingsByCapteur[c.id] ?? []}
+                hours={48}
+                showScale
+                selectedIndex={openHour?.capteurId === c.id ? openHour.index : null}
+                onSelectHour={(index, from, to) =>
+                  setOpenHour((prev) =>
+                    prev && prev.capteurId === c.id && prev.index === index
+                      ? null
+                      : { capteurId: c.id, index, from, to })
+                }
+              />
+              {openHour?.capteurId === c.id && (
+                <HourMesuresWidget
+                  capteurId={c.id}
+                  capteurNom={c.nom}
+                  from={openHour.from}
+                  to={openHour.to}
+                  onClose={() => setOpenHour(null)}
+                />
+              )}
             </div>
           ))}
+
           {capteurs.length === 0 && (
             <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">Aucune sonde déclarée pour l’instant.</p>
           )}
