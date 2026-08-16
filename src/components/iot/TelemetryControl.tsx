@@ -103,13 +103,29 @@ export const TelemetryControl: React.FC = () => {
 
       {/* Vitalité par sonde */}
       <section className="space-y-2">
-        <h3 className="flex items-center gap-2 text-sm font-semibold"><Activity className="h-4 w-4 text-emerald-600" /> Vitalité des sondes · 48 dernières heures</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="flex items-center gap-2 text-sm font-semibold"><Activity className="h-4 w-4 text-emerald-600" /> Vitalité des sondes · 48 dernières heures</h3>
+          {openCount > 0 && (
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={closeAll}>
+              Tout refermer ({openCount})
+            </Button>
+          )}
+        </div>
         <div className="grid gap-2">
-          {capteurs.map((c: any) => (
+          {capteurs.map((c: any) => {
+            const open = openHours[c.id];
+            return (
             <div key={c.id} className="rounded-xl border border-border bg-card p-3">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{c.nom}</div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="truncate text-sm font-medium">{c.nom}</span>
+                    {open && (
+                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-emerald-700">
+                        {fmtCreneau(open.from, open.to)}
+                      </span>
+                    )}
+                  </div>
                   <div className="truncate text-xs text-muted-foreground">
                     {c.serial_number} · {c.type?.modele ?? '—'} · vue {fmtAgo(c.last_seen_at)}
                   </div>
@@ -130,23 +146,34 @@ export const TelemetryControl: React.FC = () => {
                 timestamps={pingsByCapteur[c.id] ?? []}
                 hours={48}
                 showScale
-                selectedIndex={openHour?.capteurId === c.id ? openHour.index : null}
+                selectedIndex={open ? open.index : null}
                 onSelectHour={(index, from, to) =>
-                  setOpenHour((prev) =>
-                    prev && prev.capteurId === c.id && prev.index === index
-                      ? null
-                      : { capteurId: c.id, index, from, to })
+                  setOpenHours((prev) => {
+                    const cur = prev[c.id];
+                    const next = { ...prev };
+                    if (cur && cur.index === index) delete next[c.id];
+                    else next[c.id] = { index, from, to };
+                    return next;
+                  })
                 }
               />
-              {openHour?.capteurId === c.id && (
+              {open && (
                 <HourMesuresWidget
                   capteurId={c.id}
                   capteurNom={c.nom}
-                  from={openHour.from}
-                  to={openHour.to}
-                  onClose={() => setOpenHour(null)}
+                  from={open.from}
+                  to={open.to}
+                  onClose={() => setOpenHours((prev) => {
+                    const next = { ...prev };
+                    delete next[c.id];
+                    return next;
+                  })}
                 />
               )}
+            </div>
+            );
+          })}
+
             </div>
           ))}
 
