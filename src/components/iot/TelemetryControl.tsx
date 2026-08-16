@@ -38,6 +38,10 @@ export const TelemetryControl: React.FC = () => {
   const counters = useTelemetryCounters(deliveries, capteurs);
   const test = useTestDelivery();
 
+  const [openHour, setOpenHour] = React.useState<
+    { capteurId: string; index: number; from: Date; to: Date } | null
+  >(null);
+
 
   const pingsByCapteur = React.useMemo(() => {
     const m: Record<string, string[]> = {};
