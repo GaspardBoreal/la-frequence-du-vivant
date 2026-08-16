@@ -161,7 +161,7 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
           })}
         </div>
 
-        <p className="text-xs text-emerald-200/50 mt-2 text-center">
+        <p className="shrink-0 text-xs text-emerald-200/50 mt-2 text-center">
           Vous pourrez changer d'espace à tout moment depuis le sélecteur en haut de page.
         </p>
       </DialogContent>
