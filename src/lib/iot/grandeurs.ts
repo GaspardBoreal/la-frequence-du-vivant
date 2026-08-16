@@ -71,6 +71,39 @@ export const compareGrandeurs = (
   return (a.profondeur_m ?? -1) - (b.profondeur_m ?? -1);
 };
 
+/* ── Grille de lecture attendue par modèle de sonde ───────────────────── */
+
+/** Grandeurs qui se lisent par profondeur : le modèle en annonce la grille. */
+export const DEPTH_GRANDEURS = ['soil_moisture', 'soil_temperature'] as const;
+
+export interface ExpectedSlot {
+  grandeur: string;
+  profondeur_m: number;
+}
+
+/** Cases attendues d'après les profondeurs déclarées du type de capteur. */
+export const expectedSlots = (profondeurs?: (number | string)[] | null): ExpectedSlot[] => {
+  const list = (profondeurs ?? []).map(Number).filter((n) => Number.isFinite(n));
+  return DEPTH_GRANDEURS.flatMap((g) => list.map((p) => ({ grandeur: g, profondeur_m: p })));
+};
+
+const sameDepth = (a?: number | null, b?: number | null) =>
+  a != null && b != null && Math.abs(Number(a) - Number(b)) < 1e-6;
+
+/**
+ * Fusionne les mesures reçues avec la grille attendue : une case attendue mais
+ * absente reste visible, marquée « non transmise », plutôt que de disparaître.
+ */
+export function withExpectedSlots<T extends { grandeur: string; profondeur_m?: number | null }>(
+  mesures: T[],
+  profondeurs?: (number | string)[] | null,
+): (T | (ExpectedSlot & { missing: true }))[] {
+  const manquantes = expectedSlots(profondeurs).filter(
+    (s) => !mesures.some((m) => m.grandeur === s.grandeur && sameDepth(m.profondeur_m, s.profondeur_m)),
+  );
+  return [...mesures, ...manquantes.map((s) => ({ ...s, missing: true as const }))].sort(compareGrandeurs);
+}
+
 
 export const fmtMesure = (valeur: number, grandeur: string, unite?: string | null) => {
   const meta = grandeurMeta(grandeur);
