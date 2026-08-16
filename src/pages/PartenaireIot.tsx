@@ -1,10 +1,12 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Lock, Radio } from 'lucide-react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Lock, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIotFournisseurs } from '@/hooks/iot/useIot';
 import { useCanOpenIotConsole } from '@/hooks/iot/useIotPartner';
+import { useCommunityAuth } from '@/hooks/useCommunityAuth';
+import AppSwitcher from '@/components/community/AppSwitcher';
 import { IotConsoleProvider } from '@/components/iot/console/IotConsoleContext';
 import { IotConsolePanel, IotConsoleAi } from '@/components/iot/console/IotConsole';
 import IotPartnerHome from '@/components/iot/console/IotPartnerHome';
