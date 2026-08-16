@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Battery, Radio, Signal, MapPin, Sparkles, History, Trash2, Pencil, Check, X } from 'lucide-react';
 import type { IotCapteur, IotMesure } from '@/hooks/iot/useIot';
 import { useMesureSeries, useCapteurMutation } from '@/hooks/iot/useIot';
-import { sensorHealth, HEALTH_COLOR, fmtHorodatage, grandeurMeta, fmtProfondeur, moistureVerdict } from '@/lib/iot/grandeurs';
+import { sensorHealth, HEALTH_COLOR, fmtHorodatage, grandeurMeta, fmtProfondeur, moistureVerdict, compareGrandeurs } from '@/lib/iot/grandeurs';
 import MesureTile from './MesureTile';
 import SensorPhotoStrip from './SensorPhotoStrip';
 import { Input } from '@/components/ui/input';
