@@ -365,6 +365,7 @@ function App() {
             <Route path="/roadmap/:audience" element={<RoadmapPublic />} />
 
             <Route path="/propriete/:slug" element={<ProprieteEspace />} />
+            <Route path="/jardin/demarrer" element={<JardinDemarrer />} />
 
             <Route path="/admin/outils" element={
               <AdminAuth>
