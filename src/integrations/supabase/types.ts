@@ -7075,6 +7075,50 @@ export type Database = {
           },
         ]
       }
+      propriete_invitations: {
+        Row: {
+          code: string
+          consumed_at: string | null
+          consumed_by: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          propriete_id: string
+          role: Database["public"]["Enums"]["role_propriete"]
+        }
+        Insert: {
+          code: string
+          consumed_at?: string | null
+          consumed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          propriete_id: string
+          role?: Database["public"]["Enums"]["role_propriete"]
+        }
+        Update: {
+          code?: string
+          consumed_at?: string | null
+          consumed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          propriete_id?: string
+          role?: Database["public"]["Enums"]["role_propriete"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_invitations_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_marche_events: {
         Row: {
           created_at: string
@@ -9378,6 +9422,13 @@ export type Database = {
             }
             Returns: undefined
           }
+      create_propriete_invitation: {
+        Args: {
+          _propriete_id: string
+          _role?: Database["public"]["Enums"]["role_propriete"]
+        }
+        Returns: Json
+      }
       delete_exploration_page: { Args: { page_id: string }; Returns: undefined }
       delete_marcheur_species_tag: {
         Args: { _tag_id: string }
@@ -9399,6 +9450,7 @@ export type Database = {
         Returns: string
       }
       f_unaccent: { Args: { "": string }; Returns: string }
+      gen_invitation_code: { Args: never; Returns: string }
       generate_community_affiliate_link: {
         Args: {
           _channel: string
@@ -10308,6 +10360,17 @@ export type Database = {
         Returns: undefined
       }
       normalize_species_alias_key: { Args: { p_name: string }; Returns: string }
+      onboard_create_propriete: {
+        Args: {
+          _code_postal?: string
+          _latitude?: number
+          _longitude?: number
+          _nom: string
+          _ville?: string
+        }
+        Returns: Json
+      }
+      onboard_join_propriete: { Args: { _code: string }; Returns: Json }
       peek_event_invitation: { Args: { _token: string }; Returns: Json }
       reattribute_media:
         | {
