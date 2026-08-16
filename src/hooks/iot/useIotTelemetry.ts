@@ -396,3 +396,31 @@ export function useMesuresWindow(capteurIds: string[], days: number) {
     },
   });
 }
+
+/**
+ * Relevés d'une sonde sur une fenêtre courte (une heure de la frise).
+ * Requête à la demande : `enabled` seulement quand une heure est sélectionnée.
+ */
+export function useMesuresInWindow(capteurId?: string | null, fromISO?: string | null, toISO?: string | null) {
+  return useQuery<any[]>({
+    queryKey: ['iot-mesures', 'hour', capteurId, fromISO, toISO],
+    enabled: !!capteurId && !!fromISO && !!toISO,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from('iot_mesures')
+        .select('*')
+        .eq('capteur_id', capteurId)
+        .gte('mesure_at', fromISO)
+        .lt('mesure_at', toISO)
+        .order('mesure_at', { ascending: true })
+        .limit(500);
+      if (error) throw error;
+      return (data ?? []).map((m: any) => ({
+        ...m,
+        valeur: Number(m.valeur),
+        profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),
+      }));
+    },
+  });
+}
