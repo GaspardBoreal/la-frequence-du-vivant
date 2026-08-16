@@ -121,6 +121,11 @@ export const HourMesuresWidget: React.FC<HourMesuresWidgetProps> = ({ capteurId,
                     {verdict.label}
                   </div>
                 )}
+                {m.interpretation && (
+                  <div className="mt-1 text-[10px] italic text-muted-foreground">
+                    Sonde : {m.interpretation}
+                  </div>
+                )}
               </div>
             );
           })}
