@@ -106,9 +106,30 @@ export const TelemetryControl: React.FC = () => {
                 )}
 
               </div>
-              <VitalityStrip timestamps={pingsByCapteur[c.id] ?? []} hours={48} showScale />
+              <VitalityStrip
+                timestamps={pingsByCapteur[c.id] ?? []}
+                hours={48}
+                showScale
+                selectedIndex={openHour?.capteurId === c.id ? openHour.index : null}
+                onSelectHour={(index, from, to) =>
+                  setOpenHour((prev) =>
+                    prev && prev.capteurId === c.id && prev.index === index
+                      ? null
+                      : { capteurId: c.id, index, from, to })
+                }
+              />
+              {openHour?.capteurId === c.id && (
+                <HourMesuresWidget
+                  capteurId={c.id}
+                  capteurNom={c.nom}
+                  from={openHour.from}
+                  to={openHour.to}
+                  onClose={() => setOpenHour(null)}
+                />
+              )}
             </div>
           ))}
+
           {capteurs.length === 0 && (
             <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">Aucune sonde déclarée pour l’instant.</p>
           )}
