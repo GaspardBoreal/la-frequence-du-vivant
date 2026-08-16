@@ -112,6 +112,7 @@ const PartenaireIot: React.FC = () => {
               </button>
             ))}
           </div>
+          <AppSwitcher userId={user?.id} currentContext={slug} />
         </div>
       </header>
 
