@@ -4282,9 +4282,12 @@ export type Database = {
           created_at: string
           grandeur: string
           id: string
+          interpretation: string | null
           mesure_at: string
           profondeur_m: number | null
           raw: Json | null
+          reject_reason: string | null
+          rejected: boolean
           source: string
           unite: string
           valeur: number
@@ -4294,9 +4297,12 @@ export type Database = {
           created_at?: string
           grandeur: string
           id?: string
+          interpretation?: string | null
           mesure_at: string
           profondeur_m?: number | null
           raw?: Json | null
+          reject_reason?: string | null
+          rejected?: boolean
           source?: string
           unite: string
           valeur: number
@@ -4306,9 +4312,12 @@ export type Database = {
           created_at?: string
           grandeur?: string
           id?: string
+          interpretation?: string | null
           mesure_at?: string
           profondeur_m?: number | null
           raw?: Json | null
+          reject_reason?: string | null
+          rejected?: boolean
           source?: string
           unite?: string
           valeur?: number
