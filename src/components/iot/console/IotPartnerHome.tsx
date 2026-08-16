@@ -7,6 +7,20 @@ import { useIotConsole } from './IotConsoleContext';
 const minutesSince = (iso?: string | null) =>
   iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000)) : null;
 
+/** État lisible d'une sonde à partir de sa fraîcheur (en minutes). */
+export const sensorStatus = (minutes: number | null, silenceAlertHours?: number | null) => {
+  if (minutes == null) {
+    return { label: 'Jamais vue', className: 'border-border/60 text-muted-foreground' };
+  }
+  if (minutes > (silenceAlertHours ?? 24) * 60) {
+    return { label: 'Silencieuse', className: 'border-destructive/40 text-destructive' };
+  }
+  if (minutes > 120) {
+    return { label: 'En veille', className: 'border-amber-500/40 text-amber-500' };
+  }
+  return { label: 'En ligne', className: 'border-emerald-500/40 text-emerald-500' };
+};
+
 const Kpi: React.FC<{ icon: React.ElementType; value: string; label: string; hint?: string }> = ({
   icon: Icon, value, label, hint,
 }) => (
