@@ -1,46 +1,54 @@
-# Nettoyage du projet dérivé « Onboarding Fréquence Jardin »
+# Onboarding Fréquence Jardin — prochaines étapes
 
-Objectif : après le remix, réduire le projet de Laurent TRIPIED au strict périmètre onboarding + espace Jardin, sans toucher au projet central ni à la base partagée.
+Le projet dérivé est en place, l'écran `/admin/parametrage` inventorie les 10 secrets et la Search Console est reliée. Voici la suite, par ordre de priorité.
 
-## Principe de sécurité
+## Point de vigilance à traiter en premier
 
-Le projet dérivé partage la même base Supabase que le projet central. Tout ce qui est retiré côté dérivé n'est qu'un retrait de routes et d'écrans : **aucune migration, aucune suppression de table, aucune modification de RLS ou d'Edge Function** ne doit être faite depuis ce projet. Les règles d'accès continuent d'être portées par la base (RLS + RPC `SECURITY DEFINER`), donc retirer une page ne retire aucun droit et laisser une page ne donne aucun droit supplémentaire.
+Les deux projets partagent la même base Supabase. Les secrets d'Edge Functions ne vivent pas dans le projet Lovable mais dans le projet Supabase partagé : **créer un secret depuis le projet dérivé le crée pour tout le monde, et déployer une Edge Function depuis le dérivé écrase celle du projet central**. Conséquence directe sur la répartition du travail :
 
-## Périmètre conservé dans le projet dérivé
+- Les valeurs de secrets se posent **une seule fois**, depuis le projet central.
+- Laurent ne doit jamais créer, modifier ni redéployer de fichier sous `supabase/functions/**` ni lancer de migration depuis le projet dérivé.
+- L'écran `/admin/parametrage` reste un tableau de bord de lecture : il affiche l'état, il ne pose pas les valeurs.
 
-- `/jardin/demarrer` — l'onboarding autonome (ouvrir / créer / rejoindre un jardin, génération de codes d'invitation)
-- `/propriete/:slug` — l'espace Jardin complet (J'observe, J'analyse, J'identifie, Le tri, Palette végétale, Chantier, Clinique, IA de jardin)
-- `/jardin/:slug` — la fiche jardin publique
-- `/marches-du-vivant/connexion` — l'écran de connexion partagé
-- L'écran d'accueil multi-espaces après connexion
-- `/` — page d'accueil, à simplifier ensuite vers une entrée « Fréquence Jardin »
+## Étape 1 — Poser les 10 valeurs de secrets (projet central)
 
-## Périmètre retiré dans le projet dérivé
+Depuis le projet central, créer les valeurs via le formulaire sécurisé, dans cet ordre de dépendance fonctionnelle :
 
-Familles de routes à supprimer de `src/App.tsx` (et imports associés) :
+1. SMTP (envoi des invitations et des mails de compte) — c'est le bloc bloquant pour l'onboarding
+2. Clés IA (IA de jardin, résumés éditoriaux, reconnaissance photo)
+3. Secrets partagés de webhooks (IoT Brad, backfill iNaturalist)
 
-1. **Administration** : toutes les routes `/admin/*` y compris `/admin/login`, `/admin/crm/*`, `/admin/iot`, `/admin/outils/*`, `/admin/roadmap`, `/admin/adhesions`, plus `/access-admin-gb2025`
-2. **CRM & partenaires** : `/partenaires/*`, `/partenaire-iot/:slug`, `/trust-in-frequence-vivant*`, `/audit-frugal/:slug`, `/offre-vdt-mdv`, `/interreg-sudoe-mdv`
-3. **Marches du vivant & communauté** : `/marches-du-vivant/*` sauf `connexion`, `/marche/:slug`, `/m/:slug`, `/apprendre/:slug`, `/marcheur/:slug/carnet`, `/adhesion`
-4. **Explorations & livre vivant** : `/explorations*`, `/galerie-fleuve*`, `/lecteurs/*`, `/epub/*`, `/dordonia`, `/bioacoustique*`, `/traversees`
-5. **Divers** : `/roadmap*`, `/etude-de-sol`, `/api-mcp`, `/meteo-historique`, `/atlas-climatique`, `/presentation`, `/formations/*`, `/partage/:id`, `/test-ebird`, `/favicon-test`, `/materiel-pedagogique`
+Après chaque bloc, vérifier une fonction représentative par un appel réel et lire ses logs, plutôt que de se fier au statut affiché.
 
-## Ordre d'exécution
+## Étape 2 — Verrouiller le périmètre d'écriture de Laurent
 
-1. **Vérifier le remix** : ouvrir le projet dérivé, confirmer que `/jardin/demarrer` et `/propriete/:slug` fonctionnent et que la connexion se fait bien sur la base partagée.
-2. **Élaguer les routes** dans `src/App.tsx`, famille par famille dans l'ordre ci-dessus, en vérifiant le build après chaque famille.
-3. **Supprimer les fichiers de pages devenus orphelins** (uniquement ceux qui ne sont plus référencés), en laissant intacts les composants partagés de `src/components/propriete/`, `src/hooks/propriete/`, les cartes et le chat.
-4. **Simplifier l'accueil** `/` : une entrée unique « Démarrer mon jardin » + « Me connecter ».
-5. **Adapter le `<head>`** : titre et description propres au produit Onboarding Fréquence Jardin.
-6. **Vérifier** : parcours complet créer un jardin → ouvrir l'espace → une étape d'analyse → IA de jardin, en tant que compte non-admin.
+Poser la règle dans le projet dérivé, en clair dans le README du projet :
+
+- Autorisé : `src/pages/JardinDemarrer.tsx`, `src/components/propriete/**`, `src/hooks/propriete/**`, l'accueil et le paramétrage
+- Interdit : `supabase/**`, tout `/admin/*` hors `/admin/parametrage`, tout ce qui touche au CRM, à l'IoT et aux marches
+
+## Étape 3 — Terminer l'élagage des routes
+
+Reprendre le plan de nettoyage déjà validé, avec l'exception `/admin/parametrage` (et `AdminAuth` + sa carte d'accès conservés). Familles restantes à retirer : explorations et livre vivant, marches du vivant hors connexion, partenaires et IoT, roadmap et pages publiques annexes. Build vérifié après chaque famille.
+
+## Étape 4 — Éprouver le parcours d'onboarding de bout en bout
+
+Avec un compte neuf non-admin, sur le projet dérivé :
+
+1. Créer un compte, recevoir le mail (dépend de l'étape 1)
+2. `/jardin/demarrer` → créer un jardin, vérifier le slug et le rôle `proprietaire`
+3. Ouvrir l'espace, faire une étape J'observe et une étape J'analyse
+4. Générer un code d'invitation, le consommer depuis un second compte, vérifier le rôle `prestataire`
+5. Poser une question à l'IA de jardin
+
+Chaque échec est consigné avec la fonction concernée, pas seulement le message d'écran.
+
+## Étape 5 — Boucle de remontée vers le projet central
+
+Définir le rythme : Laurent signale ses lots terminés, on compare les trois dossiers autorisés et on reporte les changements dans le projet central. Rien ne remonte automatiquement.
 
 ## Détails techniques
 
-- Le fallback `*` (NotFound) doit rester en dernière position après l'élagage.
-- Les imports `lazyWithRetry` des pages retirées doivent être supprimés en même temps que leurs routes, sinon le bundle continue de les embarquer.
-- `AdminAuth` et les hooks admin peuvent rester dans le dépôt sans risque ; ils ne sont plus atteignables sans route. Les supprimer est optionnel, à faire seulement une fois les routes retirées et le build vert.
-- La remontée du travail de Laurent vers le projet central se fera par comparaison manuelle des fichiers de `src/pages/JardinDemarrer.tsx`, `src/components/propriete/` et `src/hooks/propriete/` — ce sont les seuls dossiers qu'il doit modifier.
-
-## Règle de collaboration à poser dès le départ
-
-Laurent modifie uniquement : `src/pages/JardinDemarrer.tsx`, `src/components/propriete/**`, `src/hooks/propriete/**`, et l'accueil du projet dérivé. Toute demande de changement de base de données remonte au projet central.
+- Les Edge Functions à surveiller après la pose des secrets : `send-smtp-email`, `elevenlabs-tts`, `audio-transcription`, `marche-editorial-summary`, `recognize-marcheur-photos`, `iot-webhook-brad`, `backfill-marcheur-inat-batch`.
+- Les deux secrets partagés générés par `openssl rand -hex 32` doivent avoir la même valeur des deux côtés de l'appel (émetteur du webhook et fonction réceptrice) : les créer une fois, puis les transmettre aux partenaires par un canal privé.
+- Le fallback `*` (NotFound) reste en dernière position de `src/App.tsx` après l'élagage, et les imports `lazyWithRetry` des pages retirées partent avec leurs routes.
