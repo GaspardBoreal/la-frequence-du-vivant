@@ -172,7 +172,7 @@ export const SensorDrawer: React.FC<Props> = ({ capteur, latest, onClose, onLoca
 
         <h3 className="mt-5 text-[10px] font-bold uppercase tracking-[0.24em] text-[hsl(var(--ds-forest))]">30 derniers jours</h3>
         <div className="mt-2 space-y-2">
-          {[...groups.entries()].map(([k, rows]) => {
+          {[...groups.entries()].sort((a, b) => compareGrandeurs(a[1][0], b[1][0])).map(([k, rows]) => {
             const meta = grandeurMeta(rows[0].grandeur);
             const prof = fmtProfondeur(rows[0].profondeur_m);
             return (
