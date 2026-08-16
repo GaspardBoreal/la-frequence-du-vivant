@@ -25,13 +25,16 @@ const fmtJour = (d: Date) =>
 export interface HourMesuresWidgetProps {
   capteurId: string;
   capteurNom?: string;
+  /** Profondeurs déclarées par le modèle de sonde (grille de lecture attendue). */
+  profondeursAttendues?: (number | string)[] | null;
   from: Date;
   to: Date;
   onClose: () => void;
 }
 
 /** Widget « heure ouverte » : les relevés réellement reçus dans le créneau cliqué. */
-export const HourMesuresWidget: React.FC<HourMesuresWidgetProps> = ({ capteurId, capteurNom, from, to, onClose }) => {
+export const HourMesuresWidget: React.FC<HourMesuresWidgetProps> = ({ capteurId, capteurNom, profondeursAttendues, from, to, onClose }) => {
+
   const { data: mesures = [], isLoading } = useMesuresInWindow(
     capteurId,
     from.toISOString(),
