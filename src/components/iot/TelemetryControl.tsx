@@ -38,9 +38,24 @@ export const TelemetryControl: React.FC = () => {
   const counters = useTelemetryCounters(deliveries, capteurs);
   const test = useTestDelivery();
 
-  const [openHour, setOpenHour] = React.useState<
-    { capteurId: string; index: number; from: Date; to: Date } | null
-  >(null);
+  type OpenHour = { index: number; from: Date; to: Date };
+  const [openHours, setOpenHours] = React.useState<Record<string, OpenHour>>({});
+  const openCount = Object.keys(openHours).length;
+  const closeAll = React.useCallback(() => setOpenHours({}), []);
+
+  React.useEffect(() => {
+    if (!openCount) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeAll(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [openCount, closeAll]);
+
+  const fmtCreneau = (from: Date, to: Date) => {
+    const f = (d: Date) => new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).format(d);
+    return `${f(from)} → ${f(to)}`;
+  };
+
+
 
 
   const pingsByCapteur = React.useMemo(() => {
