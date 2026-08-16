@@ -174,8 +174,7 @@ export const TelemetryControl: React.FC = () => {
             );
           })}
 
-            </div>
-          ))}
+
 
           {capteurs.length === 0 && (
             <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">Aucune sonde déclarée pour l’instant.</p>
