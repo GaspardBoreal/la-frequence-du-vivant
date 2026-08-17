@@ -1,11 +1,12 @@
 import React from 'react';
 import TelemetryControl from '@/components/iot/TelemetryControl';
 import SensorsMapTab from '@/components/iot/SensorsMapTab';
+import AnalysesTab from '@/components/iot/analyses/AnalysesTab';
 import IotChatBotMount from '@/components/iot/chatbot/IotChatBotMount';
 import { useIotAiCredit } from '@/hooks/iot/useIotAiCredit';
 import { useIotConsole } from './IotConsoleContext';
 
-export type IotConsoleView = 'controle' | 'carte';
+export type IotConsoleView = 'controle' | 'carte' | 'analyses';
 
 /**
  * Panneau unique de la console des sondes, réutilisé tel quel par le poste de
@@ -13,7 +14,7 @@ export type IotConsoleView = 'controle' | 'carte';
  * Seul le périmètre change — cf. `IotConsoleProvider`.
  */
 export const IotConsolePanel: React.FC<{ view: IotConsoleView }> = ({ view }) =>
-  view === 'carte' ? <SensorsMapTab /> : <TelemetryControl />;
+  view === 'analyses' ? <AnalysesTab /> : view === 'carte' ? <SensorsMapTab /> : <TelemetryControl />;
 
 /**
  * IA de Jardin cadrée sur le périmètre de la console.

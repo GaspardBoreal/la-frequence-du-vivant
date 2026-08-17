@@ -15,6 +15,7 @@ const TABS = [
   { key: 'accueil', label: 'Accueil' },
   { key: 'controle', label: 'Poste de contrôle' },
   { key: 'carte', label: 'Carte des sondes' },
+  { key: 'analyses', label: 'Analyses' },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
 
@@ -30,7 +31,8 @@ const PartenaireIot: React.FC = () => {
   const { slug = '' } = useParams();
   const [params, setParams] = useSearchParams();
   const tabParam = params.get('tab');
-  const tab: TabKey = tabParam === 'controle' || tabParam === 'carte' ? tabParam : 'accueil';
+  const tab: TabKey =
+    tabParam === 'controle' || tabParam === 'carte' || tabParam === 'analyses' ? tabParam : 'accueil';
 
   const { data: fournisseurs = [], isLoading: loadingF } = useIotFournisseurs();
   const fournisseur = React.useMemo(
@@ -127,7 +129,11 @@ const PartenaireIot: React.FC = () => {
             chrome="partenaire"
             label={`Parc ${fournisseur.nom}`}
           >
-            {tab === 'accueil' ? <IotPartnerHome /> : <IotConsolePanel view={tab === 'carte' ? 'carte' : 'controle'} />}
+            {tab === 'accueil' ? (
+              <IotPartnerHome />
+            ) : (
+              <IotConsolePanel view={tab === 'carte' ? 'carte' : tab === 'analyses' ? 'analyses' : 'controle'} />
+            )}
             <IotConsoleAi />
           </IotConsoleProvider>
         ) : (
