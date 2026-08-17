@@ -98,9 +98,10 @@ export const ficheLogos: FicheLogo[] = [
   {
     slug: 'feuille-signal-la-frequence-du-vivant',
     name: 'Feuille-signal — La Fréquence du Vivant',
-    family: 'jardin',
+    family: 'lfdv',
     intention:
-      "La même Feuille-signal, mot pour mot dans son dessin, mais signée « La Fréquence du Vivant ». C'est la version marque ombrelle : elle porte l'association plutôt que le seul espace Jardin, et s'utilise en en-tête de document, en signature et en fiche d'annuaire.",
+      "La Feuille-signal signée « La Fréquence du Vivant » : une feuille dont la nervure devient une onde. C'est le logo de la marque ombrelle — l'association qui abrite Les Marches du Vivant et Fréquence Jardin. Il s'emploie en en-tête de document, en signature et en fiche d'annuaire, les identités applicatives venant en second niveau.",
+
     src: logoFeuilleSignalLfdv.url,
     alt: 'Logo La Fréquence du Vivant — Feuille-signal : une feuille dont la nervure devient une onde, marque de l’association La Fréquence du Vivant',
     width: 1024,
