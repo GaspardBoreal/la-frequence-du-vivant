@@ -69,6 +69,23 @@ const AdminIot: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="catalogue" className="space-y-8">
+        {/* Vignettes des photos de capteurs */}
+        <section className="rounded-xl border border-border bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold">Vignettes des photos de sondes</div>
+              <p className="text-xs text-muted-foreground">
+                Génère les miniatures manquantes pour que les cartes et les listes s'affichent instantanément.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" disabled={thumbs.busy} onClick={thumbs.run}>
+              {thumbs.busy
+                ? `Génération… ${thumbs.done}/${thumbs.total}`
+                : 'Générer les vignettes'}
+            </Button>
+          </div>
+        </section>
+
         {/* Fournisseurs */}
         <section>
           <header className="mb-3 flex items-center gap-2">
