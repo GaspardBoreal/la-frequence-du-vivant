@@ -34,12 +34,21 @@ const SensorDeepRead: React.FC<{
       </div>
     );
   }
+  if (analysis.profile.isWeather) {
+    return (
+      <div className="space-y-4">
+        <ClimateCard capteur={capteur} analysis={analysis} />
+        <RhythmPanel analysis={analysis} />
+      </div>
+    );
+  }
   return <AgronomicDossier analysis={analysis} fit={fit} />;
 };
 
 /** Niveau 1 : une carte par sonde, avec ses trois espèces suggérées. */
 const SimpleRow: React.FC<{ capteur: any; analysis: SensorAnalysis }> = ({ capteur, analysis }) => {
   const fit = usePaletteFit(capteur?.propriete_id ?? undefined, analysis);
+  if (analysis.profile.isWeather) return <ClimateCard capteur={capteur} analysis={analysis} />;
   return <SimpleVerdictCard capteur={capteur} analysis={analysis} suggestions={fit?.rows ?? []} />;
 };
 
@@ -52,13 +61,14 @@ const AnalysesTab: React.FC = () => {
   const [level, setLevel] = React.useState<LevelKey>('simple');
   const [selected, setSelected] = React.useState<string | null>(null);
 
-  const { capteurs, byCapteur, isLoading, mesureCount } = useIotAnalyses(windowDays);
+  const { capteurs, excluded, byCapteur, isLoading, mesureCount } = useIotAnalyses(windowDays);
 
   const capteur = React.useMemo(
     () => capteurs.find((c) => c.id === selected) ?? capteurs[0] ?? null,
     [capteurs, selected],
   );
   const analysis = capteur ? byCapteur.get(capteur.id) ?? null : null;
+
 
   return (
     <div className="space-y-5">
