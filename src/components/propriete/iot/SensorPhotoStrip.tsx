@@ -39,8 +39,16 @@ const Thumb: React.FC<{
       className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-[hsl(var(--ds-line))] bg-white/60"
     >
       <button type="button" onClick={onOpen} className="block h-full w-full">
-        {photo.url ? (
-          <img src={photo.url} alt={photo.caption ?? 'Capteur en situation'} loading="lazy" className="h-full w-full object-cover" />
+        {photo.thumbUrl || photo.url ? (
+          <img
+            src={photo.thumbUrl ?? photo.url}
+            alt={photo.caption ?? 'Capteur en situation'}
+            loading="lazy"
+            decoding="async"
+            width={96}
+            height={96}
+            className="h-full w-full object-cover"
+          />
         ) : (
           <span className="flex h-full w-full items-center justify-center text-[10px] opacity-50">…</span>
         )}

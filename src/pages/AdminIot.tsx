@@ -18,6 +18,7 @@ import TelemetryControl from '@/components/iot/TelemetryControl';
 import SensorsMapTab from '@/components/iot/SensorsMapTab';
 import IotChatBotMount from '@/components/iot/chatbot/IotChatBotMount';
 import IotPartnersTab from '@/components/iot/IotPartnersTab';
+import { useThumbnailBackfill } from '@/hooks/iot/useCapteurPhotos';
 
 const FAMILLES = ['sol', 'meteo', 'eau', 'air', 'autre'];
 
@@ -25,6 +26,7 @@ const FAMILLES = ['sol', 'meteo', 'eau', 'air', 'autre'];
 const AdminIot: React.FC = () => {
   const { data: fournisseurs = [] } = useIotFournisseurs();
   const { data: types = [] } = useIotTypes();
+  const thumbs = useThumbnailBackfill();
   const fMut = useFournisseurMutation();
   const tMut = useTypeMutation();
 
@@ -69,6 +71,23 @@ const AdminIot: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="catalogue" className="space-y-8">
+        {/* Vignettes des photos de capteurs */}
+        <section className="rounded-xl border border-border bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold">Vignettes des photos de sondes</div>
+              <p className="text-xs text-muted-foreground">
+                Génère les miniatures manquantes pour que les cartes et les listes s'affichent instantanément.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" disabled={thumbs.busy} onClick={thumbs.run}>
+              {thumbs.busy
+                ? `Génération… ${thumbs.done}/${thumbs.total}`
+                : 'Générer les vignettes'}
+            </Button>
+          </div>
+        </section>
+
         {/* Fournisseurs */}
         <section>
           <header className="mb-3 flex items-center gap-2">

@@ -4102,6 +4102,7 @@ export type Database = {
           size_bytes: number | null
           storage_path: string
           taken_at: string | null
+          thumb_path: string | null
           updated_at: string
           uploaded_by: string | null
           width: number | null
@@ -4120,6 +4121,7 @@ export type Database = {
           size_bytes?: number | null
           storage_path: string
           taken_at?: string | null
+          thumb_path?: string | null
           updated_at?: string
           uploaded_by?: string | null
           width?: number | null
@@ -4138,6 +4140,7 @@ export type Database = {
           size_bytes?: number | null
           storage_path?: string
           taken_at?: string | null
+          thumb_path?: string | null
           updated_at?: string
           uploaded_by?: string | null
           width?: number | null

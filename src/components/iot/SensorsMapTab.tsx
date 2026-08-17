@@ -184,6 +184,10 @@ export const SensorsMapTab: React.FC = () => {
                     <img
                       src={covers[c.id]!.url}
                       alt={`${c.nom} en situation`}
+                      loading="lazy"
+                      decoding="async"
+                      width={36}
+                      height={36}
                       className="h-9 w-9 shrink-0 rounded-full object-cover"
                       style={{ border: `2px solid ${HEALTH_COLOR[h.status]}` }}
                     />
@@ -275,6 +279,8 @@ export const SensorsMapTab: React.FC = () => {
                 <img
                   src={covers[selected.id]!.url}
                   alt={`${selected.nom} en situation`}
+                  decoding="async"
+                  fetchPriority="high"
                   className="mt-3 h-28 w-full rounded-xl object-cover"
                 />
               )}
