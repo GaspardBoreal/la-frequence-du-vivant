@@ -34,6 +34,10 @@ export interface IotCapteur {
   lat: number | null;
   lng: number | null;
   actif: boolean;
+  /** État de service déclaré : 'service' | 'maintenance' | 'retire'. */
+  etat?: string | null;
+  etat_motif?: string | null;
+  etat_depuis?: string | null;
   open_data: boolean;
   battery_pct: number | null;
   rssi: number | null;
@@ -203,6 +207,35 @@ export function useMoveCapteur(proprieteId?: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['iot-capteurs', proprieteId] }),
   });
 }
+
+/**
+ * Change l'état de service d'une sonde : en service, en maintenance, retirée.
+ * Une sonde hors service cesse d'alerter et sort des analyses agronomiques.
+ */
+export function useSetCapteurEtat() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, etat, motif }: { id: string; etat: 'service' | 'maintenance' | 'retire'; motif?: string | null }) => {
+      const { error } = await db
+        .from('iot_capteurs')
+        .update({
+          etat,
+          etat_motif: etat === 'service' ? null : (motif?.trim() || null),
+          etat_depuis: etat === 'service' ? null : new Date().toISOString(),
+        })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['iot-capteurs'] });
+      toast.success(
+        v.etat === 'service' ? 'Sonde remise en service' : v.etat === 'maintenance' ? 'Sonde déclarée en maintenance' : 'Sonde retirée du terrain',
+      );
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'État non enregistré'),
+  });
+}
+
 
 /* ── Mesures ──────────────────────────────────────────────────────────── */
 

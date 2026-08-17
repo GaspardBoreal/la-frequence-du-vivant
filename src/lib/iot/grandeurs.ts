@@ -71,20 +71,65 @@ export const compareGrandeurs = (
   return (a.profondeur_m ?? -1) - (b.profondeur_m ?? -1);
 };
 
-/* ── Grille de lecture attendue par modèle de sonde ───────────────────── */
+/* ── Profil de lecture d'un modèle de sonde ───────────────────────────── */
 
 /** Grandeurs qui se lisent par profondeur : le modèle en annonce la grille. */
 export const DEPTH_GRANDEURS = ['soil_moisture', 'soil_temperature'] as const;
+
+export type SensorFamille = 'sol' | 'meteo' | 'autre';
+
+export interface SensorProfile {
+  famille: SensorFamille;
+  /** Grandeurs réellement déclarées au catalogue pour ce modèle. */
+  expected: string[];
+  profondeurs: number[];
+  isSoil: boolean;
+  isWeather: boolean;
+  label: string;
+}
+
+/**
+ * Ce qu'une sonde promet de mesurer, lu dans le catalogue (`iot_types_capteurs`).
+ * Toute lecture s'y adosse : on ne réclame jamais une grandeur jamais promise.
+ */
+export function sensorProfile(type?: {
+  famille?: string | null;
+  grandeurs?: string[] | null;
+  profondeurs_m?: (number | string)[] | null;
+} | null): SensorProfile {
+  const raw = (type?.famille ?? '').toLowerCase();
+  const expected = (type?.grandeurs ?? []).filter(Boolean) as string[];
+  const profondeurs = (type?.profondeurs_m ?? []).map(Number).filter((n) => Number.isFinite(n));
+  const famille: SensorFamille =
+    raw === 'sol' ? 'sol' : raw === 'meteo' || raw === 'météo' ? 'meteo' : profondeurs.length ? 'sol' : 'autre';
+  return {
+    famille,
+    expected,
+    profondeurs,
+    isSoil: famille === 'sol',
+    isWeather: famille === 'meteo',
+    label: famille === 'sol' ? 'Sonde de sol' : famille === 'meteo' ? 'Station météo' : 'Sonde',
+  };
+}
 
 export interface ExpectedSlot {
   grandeur: string;
   profondeur_m: number;
 }
 
-/** Cases attendues d'après les profondeurs déclarées du type de capteur. */
-export const expectedSlots = (profondeurs?: (number | string)[] | null): ExpectedSlot[] => {
+/**
+ * Cases attendues d'après les profondeurs déclarées du type de capteur,
+ * restreintes aux grandeurs que le modèle annonce réellement.
+ */
+export const expectedSlots = (
+  profondeurs?: (number | string)[] | null,
+  grandeursDeclarees?: string[] | null,
+): ExpectedSlot[] => {
   const list = (profondeurs ?? []).map(Number).filter((n) => Number.isFinite(n));
-  return DEPTH_GRANDEURS.flatMap((g) => list.map((p) => ({ grandeur: g, profondeur_m: p })));
+  const allowed = DEPTH_GRANDEURS.filter(
+    (g) => !grandeursDeclarees || grandeursDeclarees.length === 0 || grandeursDeclarees.includes(g),
+  );
+  return allowed.flatMap((g) => list.map((p) => ({ grandeur: g, profondeur_m: p })));
 };
 
 const sameDepth = (a?: number | null, b?: number | null) =>
@@ -97,12 +142,14 @@ const sameDepth = (a?: number | null, b?: number | null) =>
 export function withExpectedSlots<T extends { grandeur: string; profondeur_m?: number | null }>(
   mesures: T[],
   profondeurs?: (number | string)[] | null,
+  grandeursDeclarees?: string[] | null,
 ): (T | (ExpectedSlot & { missing: true }))[] {
-  const manquantes = expectedSlots(profondeurs).filter(
+  const manquantes = expectedSlots(profondeurs, grandeursDeclarees).filter(
     (s) => !mesures.some((m) => m.grandeur === s.grandeur && sameDepth(m.profondeur_m, s.profondeur_m)),
   );
   return [...mesures, ...manquantes.map((s) => ({ ...s, missing: true as const }))].sort(compareGrandeurs);
 }
+
 
 
 export const fmtMesure = (valeur: number, grandeur: string, unite?: string | null) => {
@@ -153,10 +200,35 @@ export const moistureVerdict = (pct: number): { key: MoistureVerdict; label: str
 
 /* ── Santé d'un capteur ───────────────────────────────────────────────── */
 
-export type SensorHealth = 'green' | 'amber' | 'red' | 'unknown';
+export type SensorHealth = 'green' | 'amber' | 'red' | 'unknown' | 'paused';
+
+/* ── État de vie d'une sonde, déclaré par l'exploitant ────────────────── */
+
+export type CapteurEtat = 'service' | 'maintenance' | 'retire';
+
+export const CAPTEUR_ETATS: Array<{ key: CapteurEtat; label: string; hint: string; color: string }> = [
+  { key: 'service', label: 'En service', hint: 'La sonde est lue et analysée normalement.', color: '#3f7f52' },
+  {
+    key: 'maintenance',
+    label: 'En maintenance',
+    hint: 'Silence attendu : plus d’alerte, plus de verdict agronomique.',
+    color: '#8a6fb0',
+  },
+  { key: 'retire', label: 'Retirée', hint: 'Sortie du terrain : masquée du plan et des analyses.', color: '#8a8f85' },
+];
+
+export const capteurEtat = (c?: { etat?: string | null } | null): CapteurEtat => {
+  const e = (c?.etat ?? 'service') as CapteurEtat;
+  return e === 'maintenance' || e === 'retire' ? e : 'service';
+};
+
+export const etatMeta = (e: CapteurEtat) => CAPTEUR_ETATS.find((x) => x.key === e)!;
 
 export interface HealthInput {
   actif: boolean;
+  etat?: string | null;
+  etat_motif?: string | null;
+  etat_depuis?: string | null;
   last_seen_at?: string | null;
   battery_pct?: number | null;
   silence_alert_hours: number;
@@ -172,6 +244,22 @@ export interface HealthResult {
 
 export function sensorHealth(c: HealthInput, now = Date.now()): HealthResult {
   const reasons: string[] = [];
+  const etat = capteurEtat(c);
+
+  // Une sonde déclarée en maintenance ou retirée n'alerte plus : son silence est attendu.
+  if (etat !== 'service') {
+    const meta = etatMeta(etat);
+    const depuis = c.etat_depuis
+      ? ` depuis le ${new Date(c.etat_depuis).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' })}`
+      : '';
+    return {
+      status: 'paused',
+      label: meta.label,
+      reasons: [`${meta.label}${depuis}${c.etat_motif ? ` — ${c.etat_motif}` : ''}`],
+      hoursSilent: c.last_seen_at ? (now - new Date(c.last_seen_at).getTime()) / 3_600_000 : null,
+    };
+  }
+
   if (!c.actif) return { status: 'unknown', label: 'Hors service', reasons: ['Capteur désactivé'], hoursSilent: null };
 
   const hours = c.last_seen_at ? (now - new Date(c.last_seen_at).getTime()) / 3_600_000 : null;
@@ -210,7 +298,9 @@ export const HEALTH_COLOR: Record<SensorHealth, string> = {
   amber: '#c9a24a',
   red: '#b4553a',
   unknown: '#8a8f85',
+  paused: '#8a6fb0',
 };
+
 
 export function fmtDuree(hours: number): string {
   if (hours < 1) return `${Math.max(1, Math.round(hours * 60))} min`;

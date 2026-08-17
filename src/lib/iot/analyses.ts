@@ -7,7 +7,14 @@
  * le résultat le dit explicitement (`missing`), il ne se tait pas.
  */
 
-import { GRANDEURS, expectedSlots, fmtProfondeur, grandeurMeta } from './grandeurs';
+import {
+  GRANDEURS,
+  expectedSlots,
+  fmtProfondeur,
+  grandeurMeta,
+  sensorProfile,
+  type SensorProfile,
+} from './grandeurs';
 
 export interface Mesure {
   capteur_id: string;
@@ -155,7 +162,7 @@ export function assessQuality(
   mesures: Mesure[],
   series: SerieStats[],
   windowDays: number,
-  profondeurs?: (number | string)[] | null,
+  profile?: SensorProfile | null,
 ): DataQuality {
   const notes: QualityNote[] = [];
   if (mesures.length === 0) {
@@ -199,7 +206,7 @@ export function assessQuality(
   });
 
   // Cases attendues par le modèle mais jamais transmises.
-  const attendues = expectedSlots(profondeurs ?? null);
+  const attendues = expectedSlots(profile?.profondeurs ?? null, profile?.expected ?? null);
   attendues.forEach((slot) => {
     const has = series.some(
       (s) => s.grandeur === slot.grandeur && s.profondeur_m != null && Math.abs(s.profondeur_m - slot.profondeur_m) < 1e-6,
@@ -211,6 +218,7 @@ export function assessQuality(
       });
     }
   });
+
 
   return { cadenceMin, gaps, coverage, notes };
 }
@@ -540,14 +548,103 @@ export function moistureCarpet(series: SerieStats[], maxDays = 21): CarpetRow[] 
   });
 }
 
+/* ── Lecture d'une station météo : le climat, jamais la plantation ────── */
+
+export interface ClimateSummary {
+  air: SerieStats | null;
+  humidity: SerieStats | null;
+  dew: SerieStats | null;
+  /** Amplitude jour-nuit moyenne de l'air, °C. */
+  amplitude: number | null;
+  frostDays: number;
+  hotDays: number;
+  days: number;
+}
+
+export function climateSummary(series: SerieStats[]): ClimateSummary {
+  const air = pick(series, 'air_temperature')[0] ?? null;
+  const humidity = pick(series, 'air_humidity')[0] ?? null;
+  const dew = pick(series, 'dew_point')[0] ?? null;
+
+  let frostDays = 0;
+  let hotDays = 0;
+  let days = 0;
+  if (air) {
+    const byDay = new Map<string, { min: number; max: number }>();
+    air.points.forEach((p) => {
+      const k = dayKey(p.t);
+      const cur = byDay.get(k);
+      if (!cur) byDay.set(k, { min: p.v, max: p.v });
+      else {
+        cur.min = Math.min(cur.min, p.v);
+        cur.max = Math.max(cur.max, p.v);
+      }
+    });
+    days = byDay.size;
+    byDay.forEach((d) => {
+      if (d.min <= 0) frostDays += 1;
+      if (d.max >= 30) hotDays += 1;
+    });
+  }
+
+  return { air, humidity, dew, amplitude: air?.dailyAmplitude ?? null, frostDays, hotDays, days };
+}
+
+/** Verdict d'une station météo : on parle de l'air, jamais du sol. */
+export function weatherVerdict(series: SerieStats[], climate: ClimateSummary): SimpleVerdict {
+  const missing: string[] = [];
+  if (!climate.air) missing.push("température de l'air");
+  if (!climate.humidity) missing.push("humidité de l'air");
+  if (!pick(series, 'rainfall')[0]) missing.push('pluviométrie (non transmise par cette station)');
+
+  if (!climate.air && !climate.humidity) {
+    return {
+      key: 'inconnu',
+      title: 'Station silencieuse',
+      detail: "Cette station n'a transmis ni température ni humidité de l'air sur la fenêtre choisie.",
+      action: 'Vérifier la station ou élargir la fenêtre',
+      color: '#6b7f8f',
+      missing,
+    };
+  }
+
+  const t = climate.air?.mean ?? null;
+  const h = climate.humidity?.mean ?? null;
+  const doux = t == null ? '' : t >= 22 ? 'Air chaud' : t >= 12 ? 'Air doux' : t >= 4 ? 'Air frais' : 'Air froid';
+  const hum = h == null ? '' : h >= 75 ? 'et humide' : h >= 50 ? 'et modérément humide' : 'et sec';
+  const amp =
+    climate.amplitude == null
+      ? ''
+      : climate.amplitude > 12
+        ? ' Forte amplitude jour-nuit : site ouvert, gelées tardives à surveiller.'
+        : ' Amplitude jour-nuit modérée : ambiance tamponnée.';
+
+  return {
+    key: 'planter',
+    title: [doux, hum].filter(Boolean).join(' ') || 'Climat du lieu',
+    detail:
+      `${t != null ? `Moyenne ${t.toFixed(1)} °C (min ${climate.air!.min} / max ${climate.air!.max})` : ''}` +
+      `${h != null ? `${t != null ? ' · ' : ''}humidité de l'air ${h.toFixed(0)} %` : ''}` +
+      `${climate.days ? ` sur ${climate.days} jours` : ''}.` +
+      `${climate.frostDays ? ` ${climate.frostDays} jour(s) de gel.` : ''}` +
+      `${climate.hotDays ? ` ${climate.hotDays} jour(s) ≥ 30 °C.` : ''}` +
+      amp,
+    action: 'Climat de référence du lieu — le choix des espèces se décide sonde de sol par sonde de sol',
+    color: '#5b8fa0',
+    missing,
+  };
+}
+
 /* ── Analyse complète d'une sonde ─────────────────────────────────────── */
 
 export interface SensorAnalysis {
   capteurId: string;
   windowDays: number;
+  profile: SensorProfile;
   series: SerieStats[];
   quality: DataQuality;
   verdict: SimpleVerdict;
+  climate: ClimateSummary | null;
   light: LightReading | null;
   water: WaterBudget;
   gdd: { total: number; source: string; days: number } | null;
@@ -559,28 +656,34 @@ export function analyseSensor(
   capteurId: string,
   mesures: Mesure[],
   windowDays: number,
-  profondeurs?: (number | string)[] | null,
+  profileOrType?: SensorProfile | Parameters<typeof sensorProfile>[0],
 ): SensorAnalysis {
-  const series = buildSeries(mesures.filter((m) => m.capteur_id === capteurId));
-  const quality = assessQuality(
-    mesures.filter((m) => m.capteur_id === capteurId),
-    series,
-    windowDays,
-    profondeurs,
-  );
+  const profile: SensorProfile =
+    profileOrType && 'famille' in (profileOrType as any) && 'isSoil' in (profileOrType as any)
+      ? (profileOrType as SensorProfile)
+      : sensorProfile(profileOrType as any);
+
+  const own = mesures.filter((m) => m.capteur_id === capteurId);
+  const series = buildSeries(own);
+  const quality = assessQuality(own, series, windowDays, profile);
+  const climate = profile.isWeather ? climateSummary(series) : null;
+
   return {
     capteurId,
     windowDays,
+    profile,
     series,
     quality,
-    verdict: simpleVerdict(series, quality),
+    verdict: climate ? weatherVerdict(series, climate) : simpleVerdict(series, quality),
+    climate,
     light: lightReading(series),
     water: waterBudget(series),
     gdd: growingDegreeDays(series),
-    windows: plantingWindows(series),
-    carpet: moistureCarpet(series),
+    windows: profile.isWeather ? [] : plantingWindows(series),
+    carpet: profile.isWeather ? [] : moistureCarpet(series),
   };
 }
+
 
 /* ── Pont vers la palette végétale ────────────────────────────────────── */
 

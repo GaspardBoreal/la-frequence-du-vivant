@@ -3,7 +3,7 @@ import { TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Link } from 'react-router-dom';
-import { BarChart3, Battery, ExternalLink, MapPin, Radio, Search, Signal, Sparkles } from 'lucide-react';
+import { BarChart3, Battery, ExternalLink, MapPin, Radio, Search, Signal, Sparkles, Wrench } from 'lucide-react';
 import SafeMapContainer from '@/components/maps/SafeMapContainer';
 import IotLayer from '@/components/propriete/iot/map/IotLayer';
 import SensorObservatory from '@/components/iot/SensorObservatory';
@@ -11,9 +11,9 @@ import { VitalityStrip } from '@/components/iot/VitalityStrip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAllCapteursGeo, useTelemetryLive, useTelemetryPings, type CapteurGeo } from '@/hooks/iot/useIotTelemetry';
-import { useLatestMesures } from '@/hooks/iot/useIot';
+import { useLatestMesures, useSetCapteurEtat } from '@/hooks/iot/useIot';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
-import { HEALTH_COLOR, fmtHorodatage, fmtMesure, fmtProfondeur, sensorHealth } from '@/lib/iot/grandeurs';
+import { CAPTEUR_ETATS, HEALTH_COLOR, capteurEtat, fmtHorodatage, fmtMesure, fmtProfondeur, sensorHealth } from '@/lib/iot/grandeurs';
 import { iotChatFocus, openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import { useIotConsole } from '@/components/iot/console/IotConsoleContext';
 
@@ -49,6 +49,7 @@ export const SensorsMapTab: React.FC = () => {
   const ids = React.useMemo(() => capteurs.map((c) => c.id), [capteurs]);
   const { data: latest = {} } = useLatestMesures(ids);
   const { data: covers = {} } = useCapteurCovers(ids);
+  const setService = useSetCapteurEtat();
   const { data: pings = [] } = useTelemetryPings(48, ids);
 
   const { live, lastLiveAt } = useTelemetryLive();
@@ -273,6 +274,50 @@ export const SensorsMapTab: React.FC = () => {
                   {sensorHealth(selected as any).label}
                 </span>
                 <span className="text-muted-foreground">{fmtHorodatage(selected.last_seen_at)}</span>
+              </div>
+
+              <div className="mt-3 rounded-xl border border-border/60 bg-background/60 p-2">
+                <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Wrench className="h-3 w-3" /> État de service
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {CAPTEUR_ETATS.map((e) => {
+                    const active = capteurEtat(selected as any) === e.key;
+                    return (
+                      <button
+                        key={e.key}
+                        type="button"
+                        title={e.hint}
+                        disabled={setService.isPending}
+                        onClick={() =>
+                          setService.mutate({
+                            id: selected.id,
+                            etat: e.key,
+                            motif:
+                              e.key === 'service'
+                                ? null
+                                : window.prompt(`Motif — ${e.label} (facultatif)`, (selected as any).etat_motif ?? '') ??
+                                  null,
+                          })
+                        }
+                        className="rounded-full border px-2 py-0.5 text-[10px] transition disabled:opacity-50"
+                        style={
+                          active
+                            ? { background: e.color, borderColor: e.color, color: '#fff' }
+                            : { borderColor: 'hsl(var(--border))' }
+                        }
+                      >
+                        {e.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {capteurEtat(selected as any) !== 'service' && (
+                  <p className="mt-1.5 text-[10px] text-muted-foreground">
+                    {(selected as any).etat_motif || 'Sans motif renseigné'} — sonde écartée des alertes et des
+                    analyses.
+                  </p>
+                )}
               </div>
 
               {covers[selected.id]?.url && (
