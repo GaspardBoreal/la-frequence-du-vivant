@@ -32,9 +32,9 @@ const s = StyleSheet.create({
   itemName: { fontSize: 10.5, fontFamily: 'Helvetica-Bold', color: C.ink, marginBottom: 3 },
   itemDesc: { fontSize: 9.5, lineHeight: 1.55, color: C.soft },
   section: { marginBottom: 20 },
-  logoRow: { flexDirection: 'row', gap: 14, marginTop: 6 },
-  logoCard: { flex: 1, alignItems: 'center' },
-  logoImg: { width: 118, height: 118, borderRadius: 10, marginBottom: 6 },
+  logoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 6 },
+  logoCard: { width: 112, alignItems: 'center', marginBottom: 8 },
+  logoImg: { width: 96, height: 96, borderRadius: 10, marginBottom: 5 },
   logoName: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: C.ink, textAlign: 'center' },
   footer: {
     position: 'absolute', bottom: 26, left: 44, right: 44,
