@@ -121,6 +121,14 @@ const AnalysesTab: React.FC = () => {
         </div>
       </header>
 
+      {truncated && (
+        <div className="rounded-2xl border border-dashed border-amber-500/50 bg-amber-500/10 p-3 text-xs text-muted-foreground">
+          Lecture partielle : {mesureCount} relevés lus sur cette fenêtre, les plus anciens ne sont pas pris en compte.
+          Les verdicts portent sur la période effectivement lue, indiquée sous chaque sonde.
+        </div>
+      )}
+
+
       {excluded.length > 0 && (
         <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-3">
           <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -153,7 +161,7 @@ const AnalysesTab: React.FC = () => {
         <div className="grid gap-4 xl:grid-cols-2">
           {capteurs.map((c) => {
             const a = byCapteur.get(c.id);
-            return a ? <SimpleRow key={c.id} capteur={c} analysis={a} /> : null;
+            return a ? <SimpleRow key={c.id} capteur={c} analysis={a} span={spans[c.id] ?? null} /> : null;
           })}
         </div>
       ) : (
@@ -206,6 +214,7 @@ const AnalysesTab: React.FC = () => {
                 analysis={analysis}
                 capteurs={capteurs}
                 byCapteur={byCapteur}
+                span={spans[capteur.id] ?? null}
               />
             </>
           ) : null}
