@@ -49,6 +49,7 @@ export const SensorsMapTab: React.FC = () => {
   const ids = React.useMemo(() => capteurs.map((c) => c.id), [capteurs]);
   const { data: latest = {} } = useLatestMesures(ids);
   const { data: covers = {} } = useCapteurCovers(ids);
+  const setService = useSetCapteurEtat();
   const { data: pings = [] } = useTelemetryPings(48, ids);
 
   const { live, lastLiveAt } = useTelemetryLive();
