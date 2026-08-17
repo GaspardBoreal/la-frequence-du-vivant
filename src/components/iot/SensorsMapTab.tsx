@@ -279,6 +279,8 @@ export const SensorsMapTab: React.FC = () => {
                 <img
                   src={covers[selected.id]!.url}
                   alt={`${selected.nom} en situation`}
+                  decoding="async"
+                  fetchPriority="high"
                   className="mt-3 h-28 w-full rounded-xl object-cover"
                 />
               )}
