@@ -256,6 +256,21 @@ export function useCapteurPhotoUpload(capteurId?: string, proprieteId?: string) 
           patch(key, { status: 'uploading', size: processed.size, sent: 0 });
           await putSigned(signed.signedUrl, processed, (sent) => patch(key, { sent }));
 
+          // Vignette : fabriquée après l'original, jamais bloquante.
+          let thumbPath: string | null = null;
+          try {
+            const thumb = await makeThumbnail(processed);
+            if (thumb) {
+              const tp = thumbPathFor(path, thumb.type.includes('webp') ? 'webp' : 'jpg');
+              const { error: tErr } = await supabase.storage
+                .from(IOT_PHOTO_BUCKET)
+                .upload(tp, thumb, { contentType: thumb.type, upsert: true });
+              if (!tErr) thumbPath = tp;
+            }
+          } catch {
+            /* la photo reste utilisable sans vignette */
+          }
+
           patch(key, { status: 'saving' });
           await insertWithStorageRollback({
             bucket: IOT_PHOTO_BUCKET,
@@ -266,6 +281,7 @@ export function useCapteurPhotoUpload(capteurId?: string, proprieteId?: string) 
                 capteur_id: capteurId,
                 propriete_id: proprieteId,
                 storage_path: path,
+                thumb_path: thumbPath,
                 mime: processed.type || null,
                 size_bytes: processed.size,
                 width: prepared.metadata.dimensions?.width ?? null,
