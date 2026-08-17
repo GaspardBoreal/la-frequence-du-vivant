@@ -4169,6 +4169,9 @@ export type Database = {
           battery_pct: number | null
           created_at: string
           emplacement: string | null
+          etat: string
+          etat_depuis: string | null
+          etat_motif: string | null
           id: string
           last_seen_at: string | null
           lat: number | null
@@ -4190,6 +4193,9 @@ export type Database = {
           battery_pct?: number | null
           created_at?: string
           emplacement?: string | null
+          etat?: string
+          etat_depuis?: string | null
+          etat_motif?: string | null
           id?: string
           last_seen_at?: string | null
           lat?: number | null
@@ -4211,6 +4217,9 @@ export type Database = {
           battery_pct?: number | null
           created_at?: string
           emplacement?: string | null
+          etat?: string
+          etat_depuis?: string | null
+          etat_motif?: string | null
           id?: string
           last_seen_at?: string | null
           lat?: number | null
