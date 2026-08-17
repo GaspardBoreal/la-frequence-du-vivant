@@ -16,6 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TelemetryControl from '@/components/iot/TelemetryControl';
 import SensorsMapTab from '@/components/iot/SensorsMapTab';
+import AnalysesTab from '@/components/iot/analyses/AnalysesTab';
 import IotChatBotMount from '@/components/iot/chatbot/IotChatBotMount';
 import IotPartnersTab from '@/components/iot/IotPartnersTab';
 import { useThumbnailBackfill } from '@/hooks/iot/useCapteurPhotos';
@@ -54,6 +55,7 @@ const AdminIot: React.FC = () => {
           <TabsList className="mb-4">
             <TabsTrigger value="telemetrie">Poste de contrôle</TabsTrigger>
             <TabsTrigger value="carte">Carte des sondes</TabsTrigger>
+            <TabsTrigger value="analyses">Analyses</TabsTrigger>
             <TabsTrigger value="partenaires">Partenaires</TabsTrigger>
             <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
           </TabsList>
@@ -64,6 +66,10 @@ const AdminIot: React.FC = () => {
 
           <TabsContent value="carte">
             <SensorsMapTab />
+          </TabsContent>
+
+          <TabsContent value="analyses">
+            <AnalysesTab />
           </TabsContent>
 
           <TabsContent value="partenaires">
