@@ -68,7 +68,7 @@ const AnalysesTab: React.FC = () => {
   const [level, setLevel] = React.useState<LevelKey>('simple');
   const [selected, setSelected] = React.useState<string | null>(null);
 
-  const { capteurs, excluded, byCapteur, isLoading, mesureCount } = useIotAnalyses(windowDays);
+  const { capteurs, excluded, byCapteur, isLoading, mesureCount, spans, truncated } = useIotAnalyses(windowDays);
 
   const capteur = React.useMemo(
     () => capteurs.find((c) => c.id === selected) ?? capteurs[0] ?? null,
