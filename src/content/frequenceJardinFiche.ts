@@ -26,7 +26,6 @@ export const SITE_URL = 'https://la-frequence-du-vivant.com';
 export const FICHE_URL = `${SITE_URL}/roadmap/frequence-jardin`;
 
 import logoGermination from '@/assets/brand/frequence-jardin/logos/logo-germination.png.asset.json';
-import logoFeuilleSignal from '@/assets/brand/frequence-jardin/logos/logo-feuille-signal.png.asset.json';
 import logoJardinOndulant from '@/assets/brand/frequence-jardin/logos/logo-jardin-ondulant.png.asset.json';
 import logoFeuilleSignalLfdv from '@/assets/brand/lfdv/logo-feuille-signal-lfdv.png.asset.json';
 import logoSentier from '@/assets/brand/marches-du-vivant/logo-sentier-frequence.png.asset.json';
