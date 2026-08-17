@@ -115,6 +115,28 @@ const AnalysesTab: React.FC = () => {
         </div>
       </header>
 
+      {excluded.length > 0 && (
+        <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-3">
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <Wrench className="h-3.5 w-3.5" />
+            Sondes écartées des analyses
+          </div>
+          <ul className="mt-2 space-y-1">
+            {excluded.map((e) => (
+              <li key={e.id} className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">{e.nom}</span> — {e.label}
+                {e.motif ? ` · ${e.motif}` : ''}
+                {e.depuis ? ` · depuis le ${new Date(e.depuis).toLocaleDateString('fr-FR')}` : ''}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Leur silence est attendu : elles ne produisent ni verdict ni alerte tant qu’elles ne sont pas remises en
+            service.
+          </p>
+        </div>
+      )}
+
       {capteurs.length === 0 && !isLoading && (
         <div className="rounded-2xl border border-border/60 bg-card/40 p-6 text-center text-sm text-muted-foreground">
           Aucune sonde dans ce périmètre.
