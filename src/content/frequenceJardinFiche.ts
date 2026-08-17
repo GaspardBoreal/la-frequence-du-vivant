@@ -36,7 +36,7 @@ import logoGerminationCercle from '@/assets/brand/frequence-jardin/logos/logo-ge
 import logoGerminationNervure from '@/assets/brand/frequence-jardin/logos/logo-germination-nervure.png.asset.json';
 import logoGerminationSolLu from '@/assets/brand/frequence-jardin/logos/logo-germination-sol-lu.png.asset.json';
 
-export type FicheLogoFamily = 'jardin' | 'marches';
+export type FicheLogoFamily = 'lfdv' | 'jardin' | 'marches';
 
 export interface FicheLogo {
   slug: string;
@@ -52,10 +52,10 @@ export interface FicheLogo {
 
 export const logoFamilies: { id: FicheLogoFamily; title: string; intro: string }[] = [
   {
-    id: 'jardin',
-    title: 'Fréquence Jardin',
+    id: 'lfdv',
+    title: 'La Fréquence du Vivant',
     intro:
-      "Sept directions de logo pour l'espace Jardin, non encore arbitrées. Quatre d'entre elles déclinent le motif fondateur de la graine en germination ; une décline la Feuille-signal en marque ombrelle « La Fréquence du Vivant ».",
+      "La marque ombrelle : l'association qui porte l'ensemble des espaces. C'est elle qui signe les documents, les en-têtes et les fiches d'annuaire ; les deux familles suivantes en sont des déclinaisons applicatives.",
   },
   {
     id: 'marches',
@@ -63,7 +63,14 @@ export const logoFamilies: { id: FicheLogoFamily; title: string; intro: string }
     intro:
       "Trois directions pour l'application des marcheurs, dans la même écriture botanique poétique, orientée chemin, pas et itinéraire.",
   },
+  {
+    id: 'jardin',
+    title: 'Fréquence Jardin',
+    intro:
+      "Six directions de logo pour l'espace Jardin, non encore arbitrées. Quatre d'entre elles déclinent le motif fondateur de la graine en germination.",
+  },
 ];
+
 
 export const ficheLogos: FicheLogo[] = [
   {
@@ -91,9 +98,10 @@ export const ficheLogos: FicheLogo[] = [
   {
     slug: 'feuille-signal-la-frequence-du-vivant',
     name: 'Feuille-signal — La Fréquence du Vivant',
-    family: 'jardin',
+    family: 'lfdv',
     intention:
-      "La même Feuille-signal, mot pour mot dans son dessin, mais signée « La Fréquence du Vivant ». C'est la version marque ombrelle : elle porte l'association plutôt que le seul espace Jardin, et s'utilise en en-tête de document, en signature et en fiche d'annuaire.",
+      "La Feuille-signal signée « La Fréquence du Vivant » : une feuille dont la nervure devient une onde. C'est le logo de la marque ombrelle — l'association qui abrite Les Marches du Vivant et Fréquence Jardin. Il s'emploie en en-tête de document, en signature et en fiche d'annuaire, les identités applicatives venant en second niveau.",
+
     src: logoFeuilleSignalLfdv.url,
     alt: 'Logo La Fréquence du Vivant — Feuille-signal : une feuille dont la nervure devient une onde, marque de l’association La Fréquence du Vivant',
     width: 1024,
