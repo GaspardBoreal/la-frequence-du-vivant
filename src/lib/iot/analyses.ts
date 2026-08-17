@@ -162,7 +162,7 @@ export function assessQuality(
   mesures: Mesure[],
   series: SerieStats[],
   windowDays: number,
-  profondeurs?: (number | string)[] | null,
+  profile?: SensorProfile | null,
 ): DataQuality {
   const notes: QualityNote[] = [];
   if (mesures.length === 0) {
