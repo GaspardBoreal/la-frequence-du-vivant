@@ -305,6 +305,10 @@ export interface CapteurGeo {
   lat: number | null;
   lng: number | null;
   actif: boolean;
+  /** État de service déclaré : service | maintenance | retire. */
+  etat: string | null;
+  etat_motif: string | null;
+  etat_depuis: string | null;
   battery_pct: number | null;
   rssi: number | null;
   snr: number | null;
