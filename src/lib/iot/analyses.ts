@@ -7,7 +7,14 @@
  * le résultat le dit explicitement (`missing`), il ne se tait pas.
  */
 
-import { GRANDEURS, expectedSlots, fmtProfondeur, grandeurMeta } from './grandeurs';
+import {
+  GRANDEURS,
+  expectedSlots,
+  fmtProfondeur,
+  grandeurMeta,
+  sensorProfile,
+  type SensorProfile,
+} from './grandeurs';
 
 export interface Mesure {
   capteur_id: string;
