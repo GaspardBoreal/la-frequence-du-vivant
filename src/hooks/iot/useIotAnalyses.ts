@@ -4,10 +4,12 @@ import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
 import { buildSiteProfile, scoreSpecies, AXIS_LABEL, type SiteProfile } from '@/lib/paletteEngine';
 import { PALETTE_KB } from '@/lib/plantPaletteKb';
+import { capteurEtat, etatMeta, sensorProfile, type CapteurEtat } from '@/lib/iot/grandeurs';
 import {
   analyseSensor,
   measuredExposure,
   measuredHumidity,
+  type ClimateSummary,
   type Mesure,
   type SensorAnalysis,
 } from '@/lib/iot/analyses';
@@ -18,28 +20,73 @@ export const WINDOWS = [
   { days: 90, label: '90 jours' },
 ] as const;
 
+export interface ExcludedSensor {
+  id: string;
+  nom: string;
+  etat: CapteurEtat;
+  label: string;
+  motif: string | null;
+  depuis: string | null;
+}
+
 /**
- * Analyses de toutes les sondes du périmètre courant sur une fenêtre glissante.
- * Une seule requête de mesures, tous les calculs en mémoire.
+ * Analyses des sondes en service du périmètre courant sur une fenêtre glissante.
+ * Une seule requête de mesures, tous les calculs en mémoire. Les sondes déclarées
+ * en maintenance ou retirées sont écartées — et nommées, jamais escamotées.
  */
 export function useIotAnalyses(windowDays: number) {
-  const { data: capteurs = [], isLoading: loadingC } = useAllCapteursGeo();
+  const { data: all = [], isLoading: loadingC } = useAllCapteursGeo();
+
+  const capteurs = React.useMemo(() => all.filter((c) => capteurEtat(c as any) === 'service'), [all]);
+  const excluded = React.useMemo<ExcludedSensor[]>(
+    () =>
+      all
+        .filter((c) => capteurEtat(c as any) !== 'service')
+        .map((c) => {
+          const etat = capteurEtat(c as any);
+          return {
+            id: c.id,
+            nom: c.nom,
+            etat,
+            label: etatMeta(etat).label,
+            motif: (c as any).etat_motif ?? null,
+            depuis: (c as any).etat_depuis ?? null,
+          };
+        }),
+    [all],
+  );
+
   const ids = React.useMemo(() => capteurs.map((c) => c.id), [capteurs]);
   const { data: mesures = [], isLoading: loadingM } = useMesuresWindow(ids, windowDays);
 
   const byCapteur = React.useMemo(() => {
     const map = new Map<string, SensorAnalysis>();
     capteurs.forEach((c) => {
-      map.set(
-        c.id,
-        analyseSensor(c.id, mesures as Mesure[], windowDays, (c as any).type?.profondeurs_m ?? null),
-      );
+      map.set(c.id, analyseSensor(c.id, mesures as Mesure[], windowDays, sensorProfile((c as any).type)));
     });
     return map;
   }, [capteurs, mesures, windowDays]);
 
-  return { capteurs, byCapteur, isLoading: loadingC || loadingM, mesureCount: mesures.length };
+  /** Climat de référence par propriété, issu des stations météo du périmètre. */
+  const climateByPropriete = React.useMemo(() => {
+    const map = new Map<string, { nom: string; climate: ClimateSummary }>();
+    capteurs.forEach((c) => {
+      const a = byCapteur.get(c.id);
+      if (a?.climate && c.propriete_id) map.set(c.propriete_id, { nom: c.nom, climate: a.climate });
+    });
+    return map;
+  }, [capteurs, byCapteur]);
+
+  return {
+    capteurs,
+    excluded,
+    byCapteur,
+    climateByPropriete,
+    isLoading: loadingC || loadingM,
+    mesureCount: mesures.length,
+  };
 }
+
 
 export interface PaletteFitRow {
   id: string;
