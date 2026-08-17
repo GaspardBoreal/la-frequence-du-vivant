@@ -347,7 +347,9 @@ export function useCapteurPhotoMutations(capteurId?: string) {
     mutationFn: async (photo: CapteurPhoto) => {
       const { error } = await db.from('iot_capteur_photos').delete().eq('id', photo.id);
       if (error) throw error;
-      await supabase.storage.from(IOT_PHOTO_BUCKET).remove([photo.storage_path]);
+      await supabase.storage
+        .from(IOT_PHOTO_BUCKET)
+        .remove([photo.storage_path, ...(photo.thumb_path ? [photo.thumb_path] : [])]);
     },
     onSuccess: () => {
       toast.success('Photo retirée');
