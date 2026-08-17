@@ -206,7 +206,7 @@ export function assessQuality(
   });
 
   // Cases attendues par le modèle mais jamais transmises.
-  const attendues = expectedSlots(profondeurs ?? null);
+  const attendues = expectedSlots(profile?.profondeurs ?? null, profile?.expected ?? null);
   attendues.forEach((slot) => {
     const has = series.some(
       (s) => s.grandeur === slot.grandeur && s.profondeur_m != null && Math.abs(s.profondeur_m - slot.profondeur_m) < 1e-6,
@@ -218,6 +218,7 @@ export function assessQuality(
       });
     }
   });
+
 
   return { cadenceMin, gaps, coverage, notes };
 }
