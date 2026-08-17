@@ -3,7 +3,7 @@ import { TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Link } from 'react-router-dom';
-import { BarChart3, Battery, ExternalLink, MapPin, Radio, Search, Signal, Sparkles } from 'lucide-react';
+import { BarChart3, Battery, ExternalLink, MapPin, Radio, Search, Signal, Sparkles, Wrench } from 'lucide-react';
 import SafeMapContainer from '@/components/maps/SafeMapContainer';
 import IotLayer from '@/components/propriete/iot/map/IotLayer';
 import SensorObservatory from '@/components/iot/SensorObservatory';
@@ -11,9 +11,9 @@ import { VitalityStrip } from '@/components/iot/VitalityStrip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAllCapteursGeo, useTelemetryLive, useTelemetryPings, type CapteurGeo } from '@/hooks/iot/useIotTelemetry';
-import { useLatestMesures } from '@/hooks/iot/useIot';
+import { useLatestMesures, useSetCapteurEtat } from '@/hooks/iot/useIot';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
-import { HEALTH_COLOR, fmtHorodatage, fmtMesure, fmtProfondeur, sensorHealth } from '@/lib/iot/grandeurs';
+import { CAPTEUR_ETATS, HEALTH_COLOR, capteurEtat, fmtHorodatage, fmtMesure, fmtProfondeur, sensorHealth } from '@/lib/iot/grandeurs';
 import { iotChatFocus, openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import { useIotConsole } from '@/components/iot/console/IotConsoleContext';
 
@@ -287,9 +287,9 @@ export const SensorsMapTab: React.FC = () => {
                         key={e.key}
                         type="button"
                         title={e.hint}
-                        disabled={setEtat.isPending}
+                        disabled={setService.isPending}
                         onClick={() =>
-                          setEtat.mutate({
+                          setService.mutate({
                             id: selected.id,
                             etat: e.key,
                             motif:
