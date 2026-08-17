@@ -26,7 +26,6 @@ export const SITE_URL = 'https://la-frequence-du-vivant.com';
 export const FICHE_URL = `${SITE_URL}/roadmap/frequence-jardin`;
 
 import logoGermination from '@/assets/brand/frequence-jardin/logos/logo-germination.png.asset.json';
-import logoFeuilleSignal from '@/assets/brand/frequence-jardin/logos/logo-feuille-signal.png.asset.json';
 import logoJardinOndulant from '@/assets/brand/frequence-jardin/logos/logo-jardin-ondulant.png.asset.json';
 import logoFeuilleSignalLfdv from '@/assets/brand/lfdv/logo-feuille-signal-lfdv.png.asset.json';
 import logoSentier from '@/assets/brand/marches-du-vivant/logo-sentier-frequence.png.asset.json';
@@ -56,7 +55,7 @@ export const logoFamilies: { id: FicheLogoFamily; title: string; intro: string }
     id: 'jardin',
     title: 'Fréquence Jardin',
     intro:
-      "Huit directions de logo pour l'espace Jardin, non encore arbitrées. Quatre d'entre elles déclinent le motif fondateur de la graine en germination ; une décline la Feuille-signal en marque ombrelle « La Fréquence du Vivant ».",
+      "Sept directions de logo pour l'espace Jardin, non encore arbitrées. Quatre d'entre elles déclinent le motif fondateur de la graine en germination ; une décline la Feuille-signal en marque ombrelle « La Fréquence du Vivant ».",
   },
   {
     id: 'marches',
@@ -75,17 +74,6 @@ export const ficheLogos: FicheLogo[] = [
       "Une graine en train de germer, dont la tige devient une onde. Le logo dit le commencement : ce qui lève dans un sol lu, et l'écoute qui l'accompagne. C'est la proposition la plus narrative des trois.",
     src: logoGermination.url,
     alt: "Logo Fréquence Jardin — Germination en fréquence : une graine germant en onde, identité visuelle de l'espace Jardin de La Fréquence du Vivant",
-    width: 1024,
-    height: 1024,
-  },
-  {
-    slug: 'feuille-signal',
-    name: 'Feuille-signal',
-    family: 'jardin',
-    intention:
-      "Une feuille dont la nervure centrale se transforme en signal. Le plus minimaliste et contemporain des trois : lisible en très petit, idéal en favicon, en signature ou en pastille d'annuaire.",
-    src: logoFeuilleSignal.url,
-    alt: 'Logo Fréquence Jardin — Feuille-signal : une feuille dont la nervure devient une onde, marque de La Fréquence du Vivant',
     width: 1024,
     height: 1024,
   },
