@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, Radio, Sparkles } from 'lucide-react';
+import { Layers, Radio, Sparkles, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import { useIotAnalyses, usePaletteFit, WINDOWS } from '@/hooks/iot/useIotAnalyses';
