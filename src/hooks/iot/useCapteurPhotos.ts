@@ -3,15 +3,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { preparePhotoForUpload, insertWithStorageRollback } from '@/utils/uploadWithMetadata';
+import { makeThumbnail, thumbPathFor } from '@/lib/iot/thumbnail';
 
 /** Bucket privé déjà en place pour les médias de propriété. */
 export const IOT_PHOTO_BUCKET = 'propriete-tests';
+
+/** Les URL signées vivent 4 h : on évite de resigner à chaque montage de carte. */
+const SIGN_TTL = 4 * 3600;
 
 export interface CapteurPhoto {
   id: string;
   capteur_id: string;
   propriete_id: string;
   storage_path: string;
+  /** Miniature WebP (~40 ko) — absente pour les photos d'avant la vignette. */
+  thumb_path: string | null;
   mime: string | null;
   size_bytes: number | null;
   width: number | null;
@@ -23,24 +29,51 @@ export interface CapteurPhoto {
   order_index: number;
   uploaded_by: string | null;
   created_at: string;
-  /** URL signée résolue côté client (1 h). */
+  /** URL signée de l'original. */
   url?: string;
+  /** URL signée de la vignette (retombe sur l'original si absente). */
+  thumbUrl?: string;
 }
 
 const db = supabase as any;
 const KEY = (capteurId?: string) => ['iot-capteur-photos', capteurId];
 const COVERS_KEY = (ids: string[]) => ['iot-capteur-covers', [...ids].sort().join(',')];
 
-const signAll = async (rows: CapteurPhoto[]): Promise<CapteurPhoto[]> => {
-  if (rows.length === 0) return [];
+const signPaths = async (paths: string[]): Promise<Map<string, string>> => {
+  const byPath = new Map<string, string>();
+  const unique = [...new Set(paths.filter(Boolean))];
+  if (unique.length === 0) return byPath;
   const { data: signed } = await supabase.storage
     .from(IOT_PHOTO_BUCKET)
-    .createSignedUrls(rows.map((r) => r.storage_path), 3600);
-  const byPath = new Map<string, string>();
+    .createSignedUrls(unique, SIGN_TTL);
   (signed ?? []).forEach((s: any) => {
     if (s?.path && s?.signedUrl) byPath.set(s.path, s.signedUrl);
   });
-  return rows.map((r) => ({ ...r, url: byPath.get(r.storage_path) }));
+  return byPath;
+};
+
+/** Signe l'original ET la vignette de chaque ligne. */
+const signAll = async (rows: CapteurPhoto[]): Promise<CapteurPhoto[]> => {
+  if (rows.length === 0) return [];
+  const byPath = await signPaths([
+    ...rows.map((r) => r.storage_path),
+    ...rows.map((r) => r.thumb_path).filter(Boolean) as string[],
+  ]);
+  return rows.map((r) => {
+    const url = byPath.get(r.storage_path);
+    return { ...r, url, thumbUrl: (r.thumb_path ? byPath.get(r.thumb_path) : undefined) ?? url };
+  });
+};
+
+/** Ne signe que ce qui est nécessaire à une vignette (léger). */
+const signThumbsOnly = async (rows: CapteurPhoto[]): Promise<Map<string, string>> => {
+  const byPath = await signPaths(rows.map((r) => r.thumb_path || r.storage_path));
+  const out = new Map<string, string>();
+  rows.forEach((r) => {
+    const u = byPath.get(r.thumb_path || r.storage_path);
+    if (u) out.set(r.capteur_id, u);
+  });
+  return out;
 };
 
 /** Le reportage photo d'un capteur, dans l'ordre voulu. */
@@ -48,7 +81,8 @@ export function useCapteurPhotos(capteurId?: string) {
   return useQuery<CapteurPhoto[]>({
     queryKey: KEY(capteurId),
     enabled: !!capteurId,
-    staleTime: 30_000,
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
     queryFn: async () => {
       const { data, error } = await db
         .from('iot_capteur_photos')
@@ -67,11 +101,12 @@ export function useCapteurCovers(capteurIds: string[]) {
   return useQuery<Record<string, { url?: string; count: number }>>({
     queryKey: COVERS_KEY(capteurIds),
     enabled: capteurIds.length > 0,
-    staleTime: 60_000,
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
     queryFn: async () => {
       const { data, error } = await db
         .from('iot_capteur_photos')
-        .select('id,capteur_id,storage_path,order_index,created_at')
+        .select('id,capteur_id,storage_path,thumb_path,order_index,created_at')
         .in('capteur_id', capteurIds)
         .order('order_index', { ascending: true })
         .order('created_at', { ascending: true });
@@ -83,14 +118,79 @@ export function useCapteurCovers(capteurIds: string[]) {
         counts[r.capteur_id] = (counts[r.capteur_id] ?? 0) + 1;
         if (!first.has(r.capteur_id)) first.set(r.capteur_id, r);
       });
-      const signedRows = await signAll([...first.values()]);
+      const urls = await signThumbsOnly([...first.values()]);
       const out: Record<string, { url?: string; count: number }> = {};
       Object.keys(counts).forEach((id) => {
-        out[id] = { count: counts[id], url: signedRows.find((r) => r.capteur_id === id)?.url };
+        out[id] = { count: counts[id], url: urls.get(id) };
       });
       return out;
     },
   });
+}
+
+/**
+ * Rattrapage : fabrique les vignettes manquantes des photos déjà en ligne.
+ * Le travail se fait dans le navigateur (canvas), la fonction est idempotente.
+ */
+export function useThumbnailBackfill() {
+  const qc = useQueryClient();
+  const [state, setState] = React.useState<{ busy: boolean; done: number; total: number }>({
+    busy: false, done: 0, total: 0,
+  });
+
+  const run = React.useCallback(async () => {
+    setState({ busy: true, done: 0, total: 0 });
+    try {
+      const { data, error } = await db
+        .from('iot_capteur_photos')
+        .select('id,propriete_id,capteur_id,storage_path')
+        .is('thumb_path', null);
+      if (error) throw error;
+      const rows = (data ?? []) as CapteurPhoto[];
+      setState({ busy: true, done: 0, total: rows.length });
+      if (rows.length === 0) {
+        toast.success('Toutes les vignettes sont déjà en place.');
+        return;
+      }
+
+      let ok = 0;
+      for (const row of rows) {
+        try {
+          const { data: signed } = await supabase.storage
+            .from(IOT_PHOTO_BUCKET)
+            .createSignedUrl(row.storage_path, 600);
+          if (!signed?.signedUrl) throw new Error('Original illisible.');
+          const blob = await (await fetch(signed.signedUrl)).blob();
+          const thumb = await makeThumbnail(blob);
+          if (!thumb) throw new Error('Vignette non générée.');
+          const path = thumbPathFor(row.storage_path, thumb.type.includes('webp') ? 'webp' : 'jpg');
+          const { error: upErr } = await supabase.storage
+            .from(IOT_PHOTO_BUCKET)
+            .upload(path, thumb, { contentType: thumb.type, upsert: true });
+          if (upErr) throw upErr;
+          const { error: updErr } = await db
+            .from('iot_capteur_photos')
+            .update({ thumb_path: path })
+            .eq('id', row.id);
+          if (updErr) throw updErr;
+          ok += 1;
+        } catch {
+          /* on continue : le rattrapage est relançable */
+        }
+        setState((s) => ({ ...s, done: s.done + 1 }));
+      }
+
+      qc.invalidateQueries({ queryKey: ['iot-capteur-covers'] });
+      qc.invalidateQueries({ queryKey: ['iot-capteur-photos'] });
+      toast.success(`${ok} vignette${ok > 1 ? 's' : ''} générée${ok > 1 ? 's' : ''} sur ${rows.length}.`);
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Rattrapage impossible.');
+    } finally {
+      setState((s) => ({ ...s, busy: false }));
+    }
+  }, [qc]);
+
+  return { ...state, run };
 }
 
 export interface PhotoUploadItem {
