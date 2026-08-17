@@ -1,0 +1,1 @@
+alter table public.iot_capteur_photos add column if not exists thumb_path text;
