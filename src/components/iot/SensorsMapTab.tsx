@@ -184,6 +184,10 @@ export const SensorsMapTab: React.FC = () => {
                     <img
                       src={covers[c.id]!.url}
                       alt={`${c.nom} en situation`}
+                      loading="lazy"
+                      decoding="async"
+                      width={36}
+                      height={36}
                       className="h-9 w-9 shrink-0 rounded-full object-cover"
                       style={{ border: `2px solid ${HEALTH_COLOR[h.status]}` }}
                     />
