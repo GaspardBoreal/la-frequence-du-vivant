@@ -377,32 +377,99 @@ export function useMesureSeriesRange(capteurId?: string, fromISO?: string, toISO
 }
 
 /** Séries de plusieurs sondes sur une fenêtre glissante (agrégats IA). */
+export interface SensorSpan {
+  capteur_id: string;
+  count: number;
+  firstAt: string | null;
+  lastAt: string | null;
+  truncated: boolean;
+}
+
+export interface MesuresWindow {
+  rows: any[];
+  /** Vrai si au moins une sonde a atteint le plafond de lecture. */
+  truncated: boolean;
+  spans: Record<string, SensorSpan>;
+}
+
+const PAGE = 1000;
+/** Plafond par sonde : au-delà, on garde le plus récent et on le dit. */
+const MAX_ROWS_PER_SENSOR = 8000;
+
+const EMPTY_WINDOW: MesuresWindow = { rows: [], truncated: false, spans: {} };
+
+/**
+ * Mesures d'une fenêtre glissante, lues sonde par sonde et page par page.
+ *
+ * L'API plafonne toute réponse à 1 000 lignes : une requête globale triée du
+ * plus ancien au plus récent amputait silencieusement les jours récents (et
+ * rendait muettes les sondes installées en fin de fenêtre). On pagine donc du
+ * plus récent vers le plus ancien, puis on remet la série dans l'ordre.
+ */
 export function useMesuresWindow(capteurIds: string[], days: number) {
   const ids = [...capteurIds].sort();
-  return useQuery<any[]>({
+  return useQuery<MesuresWindow>({
     queryKey: ['iot-mesures', 'window', ids.join(','), days],
     enabled: ids.length > 0,
     staleTime: 120_000,
+    initialData: EMPTY_WINDOW,
     queryFn: async () => {
       const since = new Date(Date.now() - days * 86_400_000).toISOString();
-      const { data, error } = await db
-        .from('iot_mesures')
-        .select('capteur_id, grandeur, valeur, unite, profondeur_m, mesure_at, interpretation')
-        .in('capteur_id', ids)
-        .eq('rejected', false)
-        .neq('source', 'webhook_test')
-        .gte('mesure_at', since)
-        .order('mesure_at', { ascending: true })
-        .limit(20000);
-      if (error) throw error;
-      return (data ?? []).map((m: any) => ({
-        ...m,
-        valeur: Number(m.valeur),
-        profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),
-      }));
+
+      const perSensor = await Promise.all(
+        ids.map(async (id) => {
+          const rows: any[] = [];
+          let truncated = false;
+          for (let offset = 0; ; offset += PAGE) {
+            const { data, error } = await db
+              .from('iot_mesures')
+              .select('capteur_id, grandeur, valeur, unite, profondeur_m, mesure_at, interpretation')
+              .eq('capteur_id', id)
+              .eq('rejected', false)
+              .neq('source', 'webhook_test')
+              .gte('mesure_at', since)
+              .order('mesure_at', { ascending: false })
+              .range(offset, offset + PAGE - 1);
+            if (error) throw error;
+            const page = data ?? [];
+            rows.push(...page);
+            if (page.length < PAGE) break;
+            if (rows.length >= MAX_ROWS_PER_SENSOR) {
+              truncated = true;
+              break;
+            }
+          }
+          rows.reverse();
+          const mapped = rows.map((m: any) => ({
+            ...m,
+            valeur: Number(m.valeur),
+            profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),
+          }));
+          const span: SensorSpan = {
+            capteur_id: id,
+            count: mapped.length,
+            firstAt: mapped[0]?.mesure_at ?? null,
+            lastAt: mapped[mapped.length - 1]?.mesure_at ?? null,
+            truncated,
+          };
+          return { mapped, span };
+        }),
+      );
+
+      const spans: Record<string, SensorSpan> = {};
+      perSensor.forEach(({ span }) => {
+        spans[span.capteur_id] = span;
+      });
+
+      return {
+        rows: perSensor.flatMap((p) => p.mapped),
+        truncated: perSensor.some((p) => p.span.truncated),
+        spans,
+      };
     },
   });
 }
+
 
 /**
  * Relevés d'une sonde sur une fenêtre courte (une heure de la frise).

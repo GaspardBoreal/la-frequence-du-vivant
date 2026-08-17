@@ -9,6 +9,7 @@ import SensorCompare from './SensorCompare';
 import AgronomicDossier from './AgronomicDossier';
 import ClimateCard from './ClimateCard';
 import type { SensorAnalysis } from '@/lib/iot/analyses';
+import type { SensorSpan } from '@/hooks/iot/useIotTelemetry';
 
 const LEVELS = [
   { key: 'simple', label: 'Simple', hint: 'Que planter ici, maintenant ?' },
@@ -24,7 +25,8 @@ const SensorDeepRead: React.FC<{
   analysis: SensorAnalysis;
   capteurs: any[];
   byCapteur: Map<string, SensorAnalysis>;
-}> = ({ level, capteur, analysis, capteurs, byCapteur }) => {
+  span?: SensorSpan | null;
+}> = ({ level, capteur, analysis, capteurs, byCapteur, span }) => {
   const fit = usePaletteFit(capteur?.propriete_id ?? undefined, analysis);
 
   if (level === 'intermediaire') {
@@ -38,7 +40,7 @@ const SensorDeepRead: React.FC<{
   if (analysis.profile.isWeather) {
     return (
       <div className="space-y-4">
-        <ClimateCard capteur={capteur} analysis={analysis} />
+        <ClimateCard capteur={capteur} analysis={analysis} span={span} />
         <RhythmPanel analysis={analysis} />
       </div>
     );
@@ -47,10 +49,14 @@ const SensorDeepRead: React.FC<{
 };
 
 /** Niveau 1 : une carte par sonde, avec ses trois espèces suggérées. */
-const SimpleRow: React.FC<{ capteur: any; analysis: SensorAnalysis }> = ({ capteur, analysis }) => {
+const SimpleRow: React.FC<{ capteur: any; analysis: SensorAnalysis; span?: SensorSpan | null }> = ({
+  capteur,
+  analysis,
+  span,
+}) => {
   const fit = usePaletteFit(capteur?.propriete_id ?? undefined, analysis);
-  if (analysis.profile.isWeather) return <ClimateCard capteur={capteur} analysis={analysis} />;
-  return <SimpleVerdictCard capteur={capteur} analysis={analysis} suggestions={fit?.rows ?? []} />;
+  if (analysis.profile.isWeather) return <ClimateCard capteur={capteur} analysis={analysis} span={span} />;
+  return <SimpleVerdictCard capteur={capteur} analysis={analysis} suggestions={fit?.rows ?? []} span={span} />;
 };
 
 /**
@@ -62,7 +68,7 @@ const AnalysesTab: React.FC = () => {
   const [level, setLevel] = React.useState<LevelKey>('simple');
   const [selected, setSelected] = React.useState<string | null>(null);
 
-  const { capteurs, excluded, byCapteur, isLoading, mesureCount } = useIotAnalyses(windowDays);
+  const { capteurs, excluded, byCapteur, isLoading, mesureCount, spans, truncated } = useIotAnalyses(windowDays);
 
   const capteur = React.useMemo(
     () => capteurs.find((c) => c.id === selected) ?? capteurs[0] ?? null,
@@ -115,6 +121,14 @@ const AnalysesTab: React.FC = () => {
         </div>
       </header>
 
+      {truncated && (
+        <div className="rounded-2xl border border-dashed border-amber-500/50 bg-amber-500/10 p-3 text-xs text-muted-foreground">
+          Lecture partielle : {mesureCount} relevés lus sur cette fenêtre, les plus anciens ne sont pas pris en compte.
+          Les verdicts portent sur la période effectivement lue, indiquée sous chaque sonde.
+        </div>
+      )}
+
+
       {excluded.length > 0 && (
         <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-3">
           <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -147,7 +161,7 @@ const AnalysesTab: React.FC = () => {
         <div className="grid gap-4 xl:grid-cols-2">
           {capteurs.map((c) => {
             const a = byCapteur.get(c.id);
-            return a ? <SimpleRow key={c.id} capteur={c} analysis={a} /> : null;
+            return a ? <SimpleRow key={c.id} capteur={c} analysis={a} span={spans[c.id] ?? null} /> : null;
           })}
         </div>
       ) : (
@@ -200,6 +214,7 @@ const AnalysesTab: React.FC = () => {
                 analysis={analysis}
                 capteurs={capteurs}
                 byCapteur={byCapteur}
+                span={spans[capteur.id] ?? null}
               />
             </>
           ) : null}

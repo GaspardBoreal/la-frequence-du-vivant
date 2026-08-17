@@ -57,7 +57,9 @@ export function useIotAnalyses(windowDays: number) {
   );
 
   const ids = React.useMemo(() => capteurs.map((c) => c.id), [capteurs]);
-  const { data: mesures = [], isLoading: loadingM } = useMesuresWindow(ids, windowDays);
+  const { data: win, isLoading: loadingM } = useMesuresWindow(ids, windowDays);
+  const mesures = win?.rows ?? [];
+  const spans = win?.spans ?? {};
 
   const byCapteur = React.useMemo(() => {
     const map = new Map<string, SensorAnalysis>();
@@ -82,10 +84,13 @@ export function useIotAnalyses(windowDays: number) {
     excluded,
     byCapteur,
     climateByPropriete,
+    spans,
+    truncated: win?.truncated ?? false,
     isLoading: loadingC || loadingM,
     mesureCount: mesures.length,
   };
 }
+
 
 
 export interface PaletteFitRow {

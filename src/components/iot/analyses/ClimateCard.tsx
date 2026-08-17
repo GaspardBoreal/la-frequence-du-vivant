@@ -3,6 +3,8 @@ import { CloudSun, Snowflake, Sun, Thermometer, Droplets, Sparkles } from 'lucid
 import { Button } from '@/components/ui/button';
 import { openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import type { SensorAnalysis } from '@/lib/iot/analyses';
+import type { SensorSpan } from '@/hooks/iot/useIotTelemetry';
+import CoverageLine from './CoverageLine';
 
 const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?: string }> = ({
   icon,
@@ -24,7 +26,11 @@ const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?
  * Lecture d'une station météo : le climat du lieu, sans verdict de plantation.
  * Une station ne voit pas le sol — elle donne le cadre, pas la décision.
  */
-const ClimateCard: React.FC<{ capteur: any; analysis: SensorAnalysis }> = ({ capteur, analysis }) => {
+const ClimateCard: React.FC<{ capteur: any; analysis: SensorAnalysis; span?: SensorSpan | null }> = ({
+  capteur,
+  analysis,
+  span,
+}) => {
   const c = analysis.climate;
   if (!c) return null;
   const v = analysis.verdict;
@@ -80,6 +86,10 @@ const ClimateCard: React.FC<{ capteur: any; analysis: SensorAnalysis }> = ({ cap
           sub={`jours sur ${c.days || 0}`}
         />
       </div>
+
+      <CoverageLine span={span} windowDays={analysis.windowDays} />
+
+
 
       {v.missing.length > 0 && (
         <p className="mt-3 rounded-xl border border-dashed border-border/60 bg-background/40 p-2 text-[11px] text-muted-foreground">
