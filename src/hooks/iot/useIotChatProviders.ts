@@ -101,7 +101,8 @@ export function useIotChatProviders(): {
   const focus = useIotChatFocus();
   const scope = useIotScope();
   const { data: latest = {} } = useLatestMesures(scope.capteurIds);
-  const { data: windowRows = [] } = useMesuresWindow(scope.capteurIds, focus.windowDays);
+  const { data: mesuresWindow } = useMesuresWindow(scope.capteurIds, focus.windowDays);
+  const windowRows = mesuresWindow?.rows ?? [];
   const { state: soil } = usePropertySoil(scope.proprieteId ?? undefined, { readOnly: true });
 
   /* ── 📡 Santé du réseau ────────────────────────────────────────────── */
