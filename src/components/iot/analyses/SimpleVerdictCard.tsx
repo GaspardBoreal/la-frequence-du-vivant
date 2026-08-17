@@ -148,6 +148,8 @@ const SimpleVerdictCard: React.FC<{
           Pour aller plus loin, il manque : {v.missing.join(' · ')}.
         </p>
       )}
+
+      <CoverageLine span={span} windowDays={analysis.windowDays} />
     </section>
   );
 };
