@@ -10,15 +10,16 @@ const sensorIcon = (c: IotCapteur, opts: { placing?: boolean } = {}) => {
   const size = 30;
   const r = size / 2;
   const beat = h.status === 'green';
+  const paused = h.status === 'paused';
   return L.divIcon({
     className: 'ds-iot-marker',
     iconSize: [size, size],
     iconAnchor: [r, r],
     html: `
-      <div style="position:relative;width:${size}px;height:${size}px;">
+      <div style="position:relative;width:${size}px;height:${size}px;${paused ? 'opacity:.7;' : ''}">
         ${beat ? `<span style="position:absolute;inset:-6px;border-radius:999px;border:2px solid ${color};opacity:.5;animation:dsIotPulse 2.6s ease-out infinite;"></span>` : ''}
-        <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="position:absolute;inset:0;filter:drop-shadow(0 2px 6px rgba(20,30,15,.45));">
-          <circle cx="${r}" cy="${r}" r="${r - 5}" fill="${color}" fill-opacity=".95" stroke="#f7f2e6" stroke-width="2"/>
+        <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="position:absolute;inset:0;filter:drop-shadow(0 2px 6px rgba(20,30,15,.45));${paused ? 'filter:grayscale(.35) drop-shadow(0 2px 4px rgba(20,30,15,.35));' : ''}">
+          <circle cx="${r}" cy="${r}" r="${r - 5}" fill="${color}" fill-opacity="${paused ? '.35' : '.95'}" stroke="#f7f2e6" stroke-width="2" ${paused ? 'stroke-dasharray="3 3"' : ''}/>
           <path d="M${r - 5} ${r + 4} L${r} ${r - 6} L${r + 5} ${r + 4}" fill="none" stroke="#f7f2e6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           <circle cx="${r}" cy="${r + 5}" r="1.6" fill="#f7f2e6"/>
         </svg>
@@ -26,6 +27,7 @@ const sensorIcon = (c: IotCapteur, opts: { placing?: boolean } = {}) => {
       <style>@keyframes dsIotPulse{0%{transform:scale(.85);opacity:.55}70%{transform:scale(1.6);opacity:0}100%{opacity:0}}</style>`,
   });
 };
+
 
 const PlaceCatcher: React.FC<{ onPick: (lat: number, lng: number) => void }> = ({ onPick }) => {
   useMapEvents({ click: (e) => onPick(e.latlng.lat, e.latlng.lng) });
