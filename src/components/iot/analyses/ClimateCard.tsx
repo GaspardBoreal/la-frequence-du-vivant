@@ -87,6 +87,10 @@ const ClimateCard: React.FC<{ capteur: any; analysis: SensorAnalysis; span?: Sen
         />
       </div>
 
+      <CoverageLine span={span} windowDays={analysis.windowDays} />
+
+
+
       {v.missing.length > 0 && (
         <p className="mt-3 rounded-xl border border-dashed border-border/60 bg-background/40 p-2 text-[11px] text-muted-foreground">
           Non mesuré par cette station : {v.missing.join(' · ')}. Les décisions de plantation se lisent sur les sondes

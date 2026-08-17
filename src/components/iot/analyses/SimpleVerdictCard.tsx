@@ -43,7 +43,8 @@ const SimpleVerdictCard: React.FC<{
   capteur: any;
   analysis: SensorAnalysis;
   suggestions: PaletteFitRow[];
-}> = ({ capteur, analysis, suggestions }) => {
+  span?: SensorSpan | null;
+}> = ({ capteur, analysis, suggestions, span }) => {
   const { surface, deep } = moistureLayers(analysis.series);
   const soilT = analysis.series.find((s) => s.grandeur === 'soil_temperature') ?? null;
   const v = analysis.verdict;
