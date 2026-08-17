@@ -275,6 +275,50 @@ export const SensorsMapTab: React.FC = () => {
                 <span className="text-muted-foreground">{fmtHorodatage(selected.last_seen_at)}</span>
               </div>
 
+              <div className="mt-3 rounded-xl border border-border/60 bg-background/60 p-2">
+                <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Wrench className="h-3 w-3" /> État de service
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {CAPTEUR_ETATS.map((e) => {
+                    const active = capteurEtat(selected as any) === e.key;
+                    return (
+                      <button
+                        key={e.key}
+                        type="button"
+                        title={e.hint}
+                        disabled={setEtat.isPending}
+                        onClick={() =>
+                          setEtat.mutate({
+                            id: selected.id,
+                            etat: e.key,
+                            motif:
+                              e.key === 'service'
+                                ? null
+                                : window.prompt(`Motif — ${e.label} (facultatif)`, (selected as any).etat_motif ?? '') ??
+                                  null,
+                          })
+                        }
+                        className="rounded-full border px-2 py-0.5 text-[10px] transition disabled:opacity-50"
+                        style={
+                          active
+                            ? { background: e.color, borderColor: e.color, color: '#fff' }
+                            : { borderColor: 'hsl(var(--border))' }
+                        }
+                      >
+                        {e.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {capteurEtat(selected as any) !== 'service' && (
+                  <p className="mt-1.5 text-[10px] text-muted-foreground">
+                    {(selected as any).etat_motif || 'Sans motif renseigné'} — sonde écartée des alertes et des
+                    analyses.
+                  </p>
+                )}
+              </div>
+
               {covers[selected.id]?.url && (
                 <img
                   src={covers[selected.id]!.url}
