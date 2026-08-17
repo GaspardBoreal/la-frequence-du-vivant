@@ -3,6 +3,8 @@ import { CloudSun, Snowflake, Sun, Thermometer, Droplets, Sparkles } from 'lucid
 import { Button } from '@/components/ui/button';
 import { openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import type { SensorAnalysis } from '@/lib/iot/analyses';
+import type { SensorSpan } from '@/hooks/iot/useIotTelemetry';
+import CoverageLine from './CoverageLine';
 
 const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?: string }> = ({
   icon,
