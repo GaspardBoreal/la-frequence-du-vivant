@@ -18,6 +18,7 @@ import TelemetryControl from '@/components/iot/TelemetryControl';
 import SensorsMapTab from '@/components/iot/SensorsMapTab';
 import IotChatBotMount from '@/components/iot/chatbot/IotChatBotMount';
 import IotPartnersTab from '@/components/iot/IotPartnersTab';
+import { useThumbnailBackfill } from '@/hooks/iot/useCapteurPhotos';
 
 const FAMILLES = ['sol', 'meteo', 'eau', 'air', 'autre'];
 
