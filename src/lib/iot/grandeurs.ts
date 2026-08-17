@@ -71,20 +71,65 @@ export const compareGrandeurs = (
   return (a.profondeur_m ?? -1) - (b.profondeur_m ?? -1);
 };
 
-/* ── Grille de lecture attendue par modèle de sonde ───────────────────── */
+/* ── Profil de lecture d'un modèle de sonde ───────────────────────────── */
 
 /** Grandeurs qui se lisent par profondeur : le modèle en annonce la grille. */
 export const DEPTH_GRANDEURS = ['soil_moisture', 'soil_temperature'] as const;
+
+export type SensorFamille = 'sol' | 'meteo' | 'autre';
+
+export interface SensorProfile {
+  famille: SensorFamille;
+  /** Grandeurs réellement déclarées au catalogue pour ce modèle. */
+  expected: string[];
+  profondeurs: number[];
+  isSoil: boolean;
+  isWeather: boolean;
+  label: string;
+}
+
+/**
+ * Ce qu'une sonde promet de mesurer, lu dans le catalogue (`iot_types_capteurs`).
+ * Toute lecture s'y adosse : on ne réclame jamais une grandeur jamais promise.
+ */
+export function sensorProfile(type?: {
+  famille?: string | null;
+  grandeurs?: string[] | null;
+  profondeurs_m?: (number | string)[] | null;
+} | null): SensorProfile {
+  const raw = (type?.famille ?? '').toLowerCase();
+  const expected = (type?.grandeurs ?? []).filter(Boolean) as string[];
+  const profondeurs = (type?.profondeurs_m ?? []).map(Number).filter((n) => Number.isFinite(n));
+  const famille: SensorFamille =
+    raw === 'sol' ? 'sol' : raw === 'meteo' || raw === 'météo' ? 'meteo' : profondeurs.length ? 'sol' : 'autre';
+  return {
+    famille,
+    expected,
+    profondeurs,
+    isSoil: famille === 'sol',
+    isWeather: famille === 'meteo',
+    label: famille === 'sol' ? 'Sonde de sol' : famille === 'meteo' ? 'Station météo' : 'Sonde',
+  };
+}
 
 export interface ExpectedSlot {
   grandeur: string;
   profondeur_m: number;
 }
 
-/** Cases attendues d'après les profondeurs déclarées du type de capteur. */
-export const expectedSlots = (profondeurs?: (number | string)[] | null): ExpectedSlot[] => {
+/**
+ * Cases attendues d'après les profondeurs déclarées du type de capteur,
+ * restreintes aux grandeurs que le modèle annonce réellement.
+ */
+export const expectedSlots = (
+  profondeurs?: (number | string)[] | null,
+  grandeursDeclarees?: string[] | null,
+): ExpectedSlot[] => {
   const list = (profondeurs ?? []).map(Number).filter((n) => Number.isFinite(n));
-  return DEPTH_GRANDEURS.flatMap((g) => list.map((p) => ({ grandeur: g, profondeur_m: p })));
+  const allowed = DEPTH_GRANDEURS.filter(
+    (g) => !grandeursDeclarees || grandeursDeclarees.length === 0 || grandeursDeclarees.includes(g),
+  );
+  return allowed.flatMap((g) => list.map((p) => ({ grandeur: g, profondeur_m: p })));
 };
 
 const sameDepth = (a?: number | null, b?: number | null) =>
@@ -97,12 +142,14 @@ const sameDepth = (a?: number | null, b?: number | null) =>
 export function withExpectedSlots<T extends { grandeur: string; profondeur_m?: number | null }>(
   mesures: T[],
   profondeurs?: (number | string)[] | null,
+  grandeursDeclarees?: string[] | null,
 ): (T | (ExpectedSlot & { missing: true }))[] {
-  const manquantes = expectedSlots(profondeurs).filter(
+  const manquantes = expectedSlots(profondeurs, grandeursDeclarees).filter(
     (s) => !mesures.some((m) => m.grandeur === s.grandeur && sameDepth(m.profondeur_m, s.profondeur_m)),
   );
   return [...mesures, ...manquantes.map((s) => ({ ...s, missing: true as const }))].sort(compareGrandeurs);
 }
+
 
 
 export const fmtMesure = (valeur: number, grandeur: string, unite?: string | null) => {
