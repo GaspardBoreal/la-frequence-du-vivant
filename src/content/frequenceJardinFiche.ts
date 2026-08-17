@@ -79,17 +79,6 @@ export const ficheLogos: FicheLogo[] = [
     height: 1024,
   },
   {
-    slug: 'feuille-signal',
-    name: 'Feuille-signal',
-    family: 'jardin',
-    intention:
-      "Une feuille dont la nervure centrale se transforme en signal. Le plus minimaliste et contemporain des trois : lisible en très petit, idéal en favicon, en signature ou en pastille d'annuaire.",
-    src: logoFeuilleSignal.url,
-    alt: 'Logo Fréquence Jardin — Feuille-signal : une feuille dont la nervure devient une onde, marque de La Fréquence du Vivant',
-    width: 1024,
-    height: 1024,
-  },
-  {
     slug: 'jardin-ondulant',
     name: 'Jardin ondulant',
     family: 'jardin',
