@@ -32,6 +32,10 @@ import logoFeuilleSignalLfdv from '@/assets/brand/lfdv/logo-feuille-signal-lfdv.
 import logoSentier from '@/assets/brand/marches-du-vivant/logo-sentier-frequence.png.asset.json';
 import logoEmpreinte from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante.png.asset.json';
 import logoHorizon from '@/assets/brand/marches-du-vivant/logo-horizon-marche.png.asset.json';
+import logoGerminationOndePleine from '@/assets/brand/frequence-jardin/logos/logo-germination-onde-pleine.png.asset.json';
+import logoGerminationCercle from '@/assets/brand/frequence-jardin/logos/logo-germination-cercle.png.asset.json';
+import logoGerminationNervure from '@/assets/brand/frequence-jardin/logos/logo-germination-nervure.png.asset.json';
+import logoGerminationSolLu from '@/assets/brand/frequence-jardin/logos/logo-germination-sol-lu.png.asset.json';
 
 export type FicheLogoFamily = 'jardin' | 'marches';
 
