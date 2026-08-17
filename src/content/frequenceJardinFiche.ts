@@ -56,7 +56,7 @@ export const logoFamilies: { id: FicheLogoFamily; title: string; intro: string }
     id: 'jardin',
     title: 'Fréquence Jardin',
     intro:
-      "Quatre directions de logo pour l'espace Jardin, non encore arbitrées. La dernière décline la Feuille-signal en marque ombrelle « La Fréquence du Vivant ».",
+      "Huit directions de logo pour l'espace Jardin, non encore arbitrées. Quatre d'entre elles déclinent le motif fondateur de la graine en germination ; une décline la Feuille-signal en marque ombrelle « La Fréquence du Vivant ».",
   },
   {
     id: 'marches',
