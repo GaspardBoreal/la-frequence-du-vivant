@@ -7,6 +7,7 @@ import SimpleVerdictCard from './SimpleVerdictCard';
 import RhythmPanel from './RhythmPanel';
 import SensorCompare from './SensorCompare';
 import AgronomicDossier from './AgronomicDossier';
+import ClimateCard from './ClimateCard';
 import type { SensorAnalysis } from '@/lib/iot/analyses';
 
 const LEVELS = [
