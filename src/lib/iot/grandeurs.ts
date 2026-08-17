@@ -200,10 +200,35 @@ export const moistureVerdict = (pct: number): { key: MoistureVerdict; label: str
 
 /* ── Santé d'un capteur ───────────────────────────────────────────────── */
 
-export type SensorHealth = 'green' | 'amber' | 'red' | 'unknown';
+export type SensorHealth = 'green' | 'amber' | 'red' | 'unknown' | 'paused';
+
+/* ── État de vie d'une sonde, déclaré par l'exploitant ────────────────── */
+
+export type CapteurEtat = 'service' | 'maintenance' | 'retire';
+
+export const CAPTEUR_ETATS: Array<{ key: CapteurEtat; label: string; hint: string; color: string }> = [
+  { key: 'service', label: 'En service', hint: 'La sonde est lue et analysée normalement.', color: '#3f7f52' },
+  {
+    key: 'maintenance',
+    label: 'En maintenance',
+    hint: 'Silence attendu : plus d’alerte, plus de verdict agronomique.',
+    color: '#8a6fb0',
+  },
+  { key: 'retire', label: 'Retirée', hint: 'Sortie du terrain : masquée du plan et des analyses.', color: '#8a8f85' },
+];
+
+export const capteurEtat = (c?: { etat?: string | null } | null): CapteurEtat => {
+  const e = (c?.etat ?? 'service') as CapteurEtat;
+  return e === 'maintenance' || e === 'retire' ? e : 'service';
+};
+
+export const etatMeta = (e: CapteurEtat) => CAPTEUR_ETATS.find((x) => x.key === e)!;
 
 export interface HealthInput {
   actif: boolean;
+  etat?: string | null;
+  etat_motif?: string | null;
+  etat_depuis?: string | null;
   last_seen_at?: string | null;
   battery_pct?: number | null;
   silence_alert_hours: number;
@@ -219,6 +244,22 @@ export interface HealthResult {
 
 export function sensorHealth(c: HealthInput, now = Date.now()): HealthResult {
   const reasons: string[] = [];
+  const etat = capteurEtat(c);
+
+  // Une sonde déclarée en maintenance ou retirée n'alerte plus : son silence est attendu.
+  if (etat !== 'service') {
+    const meta = etatMeta(etat);
+    const depuis = c.etat_depuis
+      ? ` depuis le ${new Date(c.etat_depuis).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' })}`
+      : '';
+    return {
+      status: 'paused',
+      label: meta.label,
+      reasons: [`${meta.label}${depuis}${c.etat_motif ? ` — ${c.etat_motif}` : ''}`],
+      hoursSilent: c.last_seen_at ? (now - new Date(c.last_seen_at).getTime()) / 3_600_000 : null,
+    };
+  }
+
   if (!c.actif) return { status: 'unknown', label: 'Hors service', reasons: ['Capteur désactivé'], hoursSilent: null };
 
   const hours = c.last_seen_at ? (now - new Date(c.last_seen_at).getTime()) / 3_600_000 : null;
@@ -257,7 +298,9 @@ export const HEALTH_COLOR: Record<SensorHealth, string> = {
   amber: '#c9a24a',
   red: '#b4553a',
   unknown: '#8a8f85',
+  paused: '#8a6fb0',
 };
+
 
 export function fmtDuree(hours: number): string {
   if (hours < 1) return `${Math.max(1, Math.round(hours * 60))} min`;
