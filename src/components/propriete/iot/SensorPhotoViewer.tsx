@@ -68,8 +68,23 @@ export const SensorPhotoViewer: React.FC<{
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-5xl"
           >
-            <div className="overflow-hidden rounded-2xl bg-black shadow-2xl">
-              <img src={photo.url} alt={photo.caption ?? 'Capteur en situation'} className="max-h-[76vh] w-full object-contain" />
+            <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl">
+              {photo.thumbUrl && photo.thumbUrl !== photo.url && (
+                <img
+                  src={photo.thumbUrl}
+                  alt=""
+                  aria-hidden
+                  className="absolute inset-0 h-full w-full scale-105 object-contain blur-sm"
+                />
+              )}
+              <img
+                src={photo.url}
+                alt={photo.caption ?? 'Capteur en situation'}
+                decoding="async"
+                fetchPriority="high"
+                onLoad={(e) => e.currentTarget.classList.remove('opacity-0')}
+                className="relative max-h-[76vh] w-full object-contain opacity-0 transition-opacity duration-300"
+              />
             </div>
             <div className="mt-3 text-center text-sm text-white/80">
               {photo.caption && <div className="font-medium text-white">{photo.caption}</div>}
