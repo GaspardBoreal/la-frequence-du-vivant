@@ -112,6 +112,50 @@ export const ficheLogos: FicheLogo[] = [
     height: 1024,
   },
   {
+    slug: 'germination-onde-pleine',
+    name: 'Germination — onde pleine',
+    family: 'jardin',
+    intention:
+      "La graine germe au centre d'une onde qui traverse tout le cadre, d'un bord à l'autre. Les racines descendent sous la ligne de signal : le sol écoute autant que l'air. La plus horizontale des variations, faite pour les en-têtes et les bandeaux.",
+    src: logoGerminationOndePleine.url,
+    alt: 'Logo Fréquence Jardin — Germination onde pleine : une graine en germination traversée par une onde sonore dorée, identité de La Fréquence du Vivant',
+    width: 1024,
+    height: 1024,
+  },
+  {
+    slug: 'germination-cercle',
+    name: 'Germination — cercle',
+    family: 'jardin',
+    intention:
+      "Le germe inscrit dans un sceau d'ondes concentriques. Compacte et refermée sur elle-même, cette variation reste lisible en très petit : favicon, pastille d'annuaire, tampon de document.",
+    src: logoGerminationCercle.url,
+    alt: 'Logo Fréquence Jardin — Germination cercle : une graine germant au centre d’un sceau d’ondes concentriques dorées, identité de La Fréquence du Vivant',
+    width: 1024,
+    height: 1024,
+  },
+  {
+    slug: 'germination-nervure',
+    name: 'Germination — nervure',
+    family: 'jardin',
+    intention:
+      "La tige elle-même devient onde : elle monte de la graine jusqu'aux cotylédons en oscillant. La plus verticale et la plus élancée, elle tient les formats portrait, les couvertures et les colonnes étroites.",
+    src: logoGerminationNervure.url,
+    alt: 'Logo Fréquence Jardin — Germination nervure : une graine dont la tige monte en onde dorée vers deux cotylédons, identité de La Fréquence du Vivant',
+    width: 1024,
+    height: 1024,
+  },
+  {
+    slug: 'germination-sol-lu',
+    name: 'Germination — sol lu',
+    family: 'jardin',
+    intention:
+      "Le germe posé sur un sol stratifié, dont les horizons portent l'onde. Ici le signal court dans la terre et non dans l'air : c'est la variation la plus fidèle à la méthode — on lit le sol avant de planter.",
+    src: logoGerminationSolLu.url,
+    alt: 'Logo Fréquence Jardin — Germination sol lu : une graine germant sur des horizons de sol traversés par une onde dorée, identité de La Fréquence du Vivant',
+    width: 1024,
+    height: 1024,
+  },
+  {
     slug: 'sentier-frequence',
     name: 'Sentier en fréquence',
     family: 'marches',
