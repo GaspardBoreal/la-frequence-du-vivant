@@ -26,7 +26,11 @@ const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?
  * Lecture d'une station météo : le climat du lieu, sans verdict de plantation.
  * Une station ne voit pas le sol — elle donne le cadre, pas la décision.
  */
-const ClimateCard: React.FC<{ capteur: any; analysis: SensorAnalysis }> = ({ capteur, analysis }) => {
+const ClimateCard: React.FC<{ capteur: any; analysis: SensorAnalysis; span?: SensorSpan | null }> = ({
+  capteur,
+  analysis,
+  span,
+}) => {
   const c = analysis.climate;
   if (!c) return null;
   const v = analysis.verdict;

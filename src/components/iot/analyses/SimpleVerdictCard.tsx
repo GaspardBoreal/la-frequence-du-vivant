@@ -5,6 +5,8 @@ import { openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import { fmtMesure } from '@/lib/iot/grandeurs';
 import { moistureLayers, type SensorAnalysis } from '@/lib/iot/analyses';
 import type { PaletteFitRow } from '@/hooks/iot/useIotAnalyses';
+import type { SensorSpan } from '@/hooks/iot/useIotTelemetry';
+import CoverageLine from './CoverageLine';
 
 const TrendIcon: React.FC<{ trend: string }> = ({ trend }) =>
   trend === 'up' ? (
