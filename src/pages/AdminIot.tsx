@@ -25,6 +25,7 @@ const FAMILLES = ['sol', 'meteo', 'eau', 'air', 'autre'];
 const AdminIot: React.FC = () => {
   const { data: fournisseurs = [] } = useIotFournisseurs();
   const { data: types = [] } = useIotTypes();
+  const thumbs = useThumbnailBackfill();
   const fMut = useFournisseurMutation();
   const tMut = useTypeMutation();
 
