@@ -66,6 +66,11 @@ interface ExplorationCarteTabProps {
   marcheEventTitle?: string;
   marcheEventDate?: string | null;
   marcheEventLieu?: string | null;
+  /** Coordonnées du point de rendez-vous de l'événement (fallback carte). */
+  eventLatitude?: number | null;
+  eventLongitude?: number | null;
+  /** Avant-première : tout se regarde, rien ne se saisit. */
+  previewMode?: boolean;
   userLevel?: string;
   isAdmin?: boolean;
   onSelectStep?: (index: number) => void;
