@@ -28,6 +28,14 @@ const TYPE_MARCHE_OPTIONS: { value: string; label: string; hint: string }[] = [
   { value: 'autre', label: '✨ Autre', hint: 'précisez votre intention ci-dessous' },
 ];
 
+/**
+ * Espace marcheur d'un événement : la route attend soit un identifiant
+ * d'exploration, soit un identifiant d'événement préfixé `event-`.
+ * Les RPC d'inscription/invitation renvoient un identifiant d'ÉVÉNEMENT.
+ */
+const explorationPathForEvent = (eventId: string) =>
+  `/marches-du-vivant/mon-espace/exploration/event-${eventId}`;
+
 const MarchesDuVivantConnexion = () => {
   const navigate = useNavigate();
   const { signUp, signIn, resetPassword, checkEmailExists } = useCommunityAuth();
@@ -148,7 +156,7 @@ const MarchesDuVivantConnexion = () => {
       const registered = await consumeEventLinkIfAny('reminder');
       if (registered?.success && registered.event_id) {
         toast.success('Vous êtes pré-inscrit·e à la marche 🌿');
-        navigate(`/marches-du-vivant/mon-espace/exploration/${registered.event_id}`);
+        navigate(explorationPathForEvent(registered.event_id));
       }
     });
     return () => { alive = false; };
@@ -204,14 +212,14 @@ const MarchesDuVivantConnexion = () => {
       const registered = await consumeEventLinkIfAny('reminder');
       if (registered?.success && registered.event_id) {
         toast.success('Vous êtes pré-inscrit·e à la marche 🌿');
-        navigate(`/marches-du-vivant/mon-espace/exploration/${registered.event_id}`);
+        navigate(explorationPathForEvent(registered.event_id));
         return;
       }
 
       const consumed = await consumeInvitationIfAny();
       if (consumed?.success && consumed.event_id) {
         toast.success('Vous êtes rattaché·e à l\'événement comme Lecteur invité 📖');
-        navigate(`/marches-du-vivant/mon-espace/exploration/${consumed.event_id}`);
+        navigate(explorationPathForEvent(consumed.event_id));
         return;
       }
 
@@ -307,7 +315,7 @@ const MarchesDuVivantConnexion = () => {
           const registered = await consumeEventLinkIfAny('immediate');
           if (registered?.success && registered.event_id) {
             toast.success('Inscription réussie ! Vous êtes pré-inscrit·e à la marche 🌿');
-            navigate(`/marches-du-vivant/mon-espace/exploration/${registered.event_id}`);
+            navigate(explorationPathForEvent(registered.event_id));
             return;
           }
         } catch {
@@ -323,7 +331,7 @@ const MarchesDuVivantConnexion = () => {
           const consumed = await consumeInvitationIfAny();
           if (consumed?.success && consumed.event_id) {
             toast.success('Inscription réussie ! Vous découvrez l\'événement comme Lecteur invité 📖');
-            navigate(`/marches-du-vivant/mon-espace/exploration/${consumed.event_id}`);
+            navigate(explorationPathForEvent(consumed.event_id));
             return;
           }
         } catch {
