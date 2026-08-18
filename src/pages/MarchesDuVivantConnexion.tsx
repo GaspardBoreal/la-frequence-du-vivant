@@ -184,12 +184,20 @@ const MarchesDuVivantConnexion = () => {
         return;
       }
 
+      const registered = await consumeEventLinkIfAny('reminder');
+      if (registered?.success && registered.event_id) {
+        toast.success('Vous êtes pré-inscrit·e à la marche 🌿');
+        navigate(`/marches-du-vivant/mon-espace/exploration/${registered.event_id}`);
+        return;
+      }
+
       const consumed = await consumeInvitationIfAny();
       if (consumed?.success && consumed.event_id) {
         toast.success('Vous êtes rattaché·e à l\'événement comme Lecteur invité 📖');
         navigate(`/marches-du-vivant/mon-espace/exploration/${consumed.event_id}`);
         return;
       }
+
       // App choice : si l'utilisateur a accès à Mon Espace + une ou plusieurs propriétés,
       // on lui laisse le choix (dialogue). Une préférence localStorage court-circuite le dialogue.
       try {
