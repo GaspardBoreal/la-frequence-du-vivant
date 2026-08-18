@@ -802,7 +802,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
 
           <div className="absolute bottom-3 right-3 z-[1000] flex flex-col gap-2">
             <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} position="inline" compact />
-            <GeolocateButton active={!!userLocation} loading={geoLoading} onClick={handleGeolocate} />
+            <GeolocateButton active={!!userLocation} loading={geoLoading} isTracking={isTracking} onClick={handleGeolocate} />
           </div>
         </motion.div>
       );
