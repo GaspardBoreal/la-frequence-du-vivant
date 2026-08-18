@@ -165,7 +165,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   });
 
   // Fetch marche_events for this exploration (or use direct event)
-  const { data: marcheEvent } = useQuery({
+  const { data: marcheEvent, isLoading: isLoadingEvent } = useQuery({
     queryKey: ['exploration-marche-event', effectiveExplorationId, directMarcheEventId],
     queryFn: async () => {
       const columns =
@@ -355,7 +355,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   }, [activeGlobalTab, globalTabLabel, sensoryLabel, marcheursSubLabel]);
 
   const explorationLabel = useMemo(() => {
-    const title = exploration?.name || marcheEvent?.title || 'Exploration';
+    const title = exploration?.name || marcheEvent?.title || 'Marche du vivant';
     const lieu = marcheEvent?.lieu ? ` · ${marcheEvent.lieu}` : '';
     const dateStr = marcheEvent?.date_marche
       ? ` (${format(new Date(marcheEvent.date_marche), 'dd MMMM yyyy', { locale: fr })})`
@@ -387,7 +387,7 @@ const ExplorationMarcheurPage: React.FC = () => {
   }
 
   // Loading state
-  if (isLoadingExploration) {
+  if (isLoadingExploration || isLoadingEvent) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 pt-6">
@@ -396,6 +396,31 @@ const ExplorationMarcheurPage: React.FC = () => {
             <div className="h-4 bg-muted rounded w-32" />
             <MediaSkeletonGrid count={6} mode="immersion" />
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Cul-de-sac : ni exploration ni événement résolus — on le dit, on ne laisse
+  // plus une page sans titre avec des onglets vides.
+  if (!exploration && !marcheEvent) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="max-w-sm text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-muted">
+            <MapPin className="h-7 w-7 text-muted-foreground" />
+          </div>
+          <h1 className="text-sm font-semibold text-foreground">Cette marche est introuvable</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Le lien ne pointe plus vers une marche accessible. Retrouvez toutes vos marches dans
+            votre espace.
+          </p>
+          <button
+            onClick={() => navigate('/marches-du-vivant/mon-espace?tab=marches')}
+            className="mt-4 rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground"
+          >
+            Voir mes marches
+          </button>
         </div>
       </div>
     );
@@ -417,7 +442,7 @@ const ExplorationMarcheurPage: React.FC = () => {
             </button>
             <div className="flex-1 min-w-0">
               <h1 className="text-foreground text-sm font-semibold truncate">
-                {exploration?.name || marcheEvent?.title || 'Exploration'}
+                {exploration?.name || marcheEvent?.title || 'Marche du vivant'}
               </h1>
               <div className="flex items-center gap-2 text-muted-foreground text-[11px]">
                 {marcheEvent?.date_marche && (
@@ -676,6 +701,9 @@ const ExplorationMarcheurPage: React.FC = () => {
                 marcheEventTitle={marcheEvent?.title}
                 marcheEventDate={marcheEvent?.date_marche || null}
                 marcheEventLieu={marcheEvent?.lieu || null}
+                eventLatitude={(marcheEvent as any)?.latitude ?? null}
+                eventLongitude={(marcheEvent as any)?.longitude ?? null}
+                previewMode={isPreview}
                 userLevel={userLevel}
                 isAdmin={isAdmin}
                 marches={(explorationMarches || []).map((m, i) => ({
