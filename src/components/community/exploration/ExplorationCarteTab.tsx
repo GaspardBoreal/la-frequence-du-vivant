@@ -782,7 +782,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
               radius={400}
               pathOptions={{ color: '#10b981', weight: 1, fillOpacity: 0.08 }}
             />
-            <Marker position={rdv} icon={createNumberedIcon(1, false, mapStyle)}>
+            <Marker position={rdv} icon={createNumberedIcon(1, true, 0)}>
               <Popup>
                 <div className="text-xs">
                   <strong>{marcheEventTitle || 'Point de rendez-vous'}</strong>
@@ -801,8 +801,8 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           </div>
 
           <div className="absolute bottom-3 right-3 z-[1000] flex flex-col gap-2">
-            <MapStyleToggle value={mapStyle} onChange={setMapStyle} />
-            <GeolocateButton onClick={handleGeolocate} isLoading={geoLoading} mapStyle={mapStyle} />
+            <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} position="inline" compact />
+            <GeolocateButton active={!!userLocation} loading={geoLoading} onClick={handleGeolocate} />
           </div>
         </motion.div>
       );
