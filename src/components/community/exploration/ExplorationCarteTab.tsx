@@ -406,7 +406,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
     });
   }, [pendingWaypoint, marcheEventId, createWaypoint, isLoop]);
 
-  const userCanCreate = canCreateMarche(userLevel, isAdmin);
+  const userCanCreate = !previewMode && canCreateMarche(userLevel, isAdmin);
   const { data: canEditGps = false } = useCanCurateAudio();
 
   // GPS edit (Cadastre mode) state
