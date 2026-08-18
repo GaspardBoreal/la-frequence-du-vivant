@@ -28,6 +28,9 @@ import NewMarcheurDialog from '@/components/admin/community/NewMarcheurDialog';
 import UnvalidatedRegistrationsTab from '@/components/admin/community/UnvalidatedRegistrationsTab';
 import RecherchesPanel from '@/components/admin/community/RecherchesPanel';
 import UsageDashboard from '@/components/admin/community/usage/UsageDashboard';
+import DeleteMarcheurDialog, { type DeletableMarcheur } from '@/components/admin/community/DeleteMarcheurDialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { Trash2 } from 'lucide-react';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   marcheur_en_devenir: { label: 'En devenir', icon: Footprints, color: 'text-muted-foreground' },
@@ -46,6 +49,9 @@ const CommunityProfilesAdmin: React.FC = () => {
   const [editing, setEditing] = useState<EditableProfile | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [reconciling, setReconciling] = useState(false);
+  const { isAdmin: isCurrentUserAdmin } = useAuth();
+  const [deleting, setDeleting] = useState<DeletableMarcheur | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const openEditor = (p: EditableProfile) => { setEditing(p); setEditOpen(true); };
 
@@ -387,10 +393,31 @@ const CommunityProfilesAdmin: React.FC = () => {
                             </Button>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button size="sm" variant="ghost" onClick={() => openEditor(profile as unknown as EditableProfile)}>
-                              <Pencil className="h-3.5 w-3.5 mr-1" />
-                              Éditer
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button size="sm" variant="ghost" onClick={() => openEditor(profile as unknown as EditableProfile)}>
+                                <Pencil className="h-3.5 w-3.5 mr-1" />
+                                Éditer
+                              </Button>
+                              {isCurrentUserAdmin && !adminUserIds?.has(profile.user_id) && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  title="Supprimer ce marcheur et toutes ses données"
+                                  onClick={() => {
+                                    setDeleting({
+                                      id: profile.id,
+                                      user_id: profile.user_id,
+                                      prenom: profile.prenom,
+                                      nom: profile.nom,
+                                    });
+                                    setDeleteOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
