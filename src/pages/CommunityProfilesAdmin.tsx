@@ -659,6 +659,7 @@ const CommunityProfilesAdmin: React.FC = () => {
       </div>
 
       <MarcheurEditSheet profile={editing} open={editOpen} onOpenChange={setEditOpen} />
+      <DeleteMarcheurDialog marcheur={deleting} open={deleteOpen} onOpenChange={setDeleteOpen} />
     </div>
   );
 };
