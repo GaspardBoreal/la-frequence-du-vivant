@@ -57,7 +57,19 @@ const MarchesDuVivantConnexion = () => {
   const [resendingEmail, setResendingEmail] = useState(false);
   const [appChoice, setAppChoice] = useState<{ open: boolean; prenom?: string; proprietes: ProprieteAccess[]; partenaires: PartenaireIotAccess[] }>({ open: false, proprietes: [], partenaires: [] });
 
+  // QR code d'inscription à un événement
+  const [eventCode, setEventCode] = useState<string | null>(null);
+  const [eventInfo, setEventInfo] = useState<{
+    valid: boolean;
+    reason?: string;
+    event_id?: string;
+    title?: string;
+    date_marche?: string | null;
+    lieu?: string | null;
+  } | null>(null);
+
   // Invitation Lecteur invité
+
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
   const [invitationInfo, setInvitationInfo] = useState<{
     valid: boolean;
