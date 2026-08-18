@@ -103,11 +103,36 @@ const MarchesDuVivantConnexion = () => {
     }
   }, [searchParams]);
 
+  // QR code d'inscription à un événement (?event=CODE)
+  useEffect(() => {
+    const code = searchParams.get('event');
+    if (!code) return;
+    setEventCode(code);
+    setMode('register');
+    supabase.rpc('peek_event_signup_link', { _code: code }).then(({ data }: any) => {
+      if (data) setEventInfo(data);
+    });
+  }, [searchParams]);
+
+  /** Pré-inscrit le marcheur connecté puis déclenche son email de bienvenue. */
+  const consumeEventLinkIfAny = async (kind: 'immediate' | 'reminder') => {
+    if (!eventCode) return null;
+    const { data } = await supabase.rpc('consume_event_signup_link', { _code: eventCode });
+    const res = data as { success: boolean; event_id?: string; already_registered?: boolean } | null;
+    if (res?.success) {
+      try {
+        await supabase.functions.invoke('event-signup-welcome', { body: { code: eventCode, kind } });
+      } catch { /* email non bloquant */ }
+    }
+    return res;
+  };
+
   const consumeInvitationIfAny = async () => {
     if (!invitationToken) return null;
     const { data } = await supabase.rpc('consume_event_invitation', { _token: invitationToken });
     return data as { success: boolean; event_id?: string; error?: string } | null;
   };
+
 
   /** Redirection interne demandée (?next=/chemin) — validée same-origin. */
   const nextParam = (() => {
