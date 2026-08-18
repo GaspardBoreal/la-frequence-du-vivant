@@ -757,6 +757,57 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   }, [isCadastreTapMode]);
 
   if (geoMarches.length === 0) {
+    // Aucune étape géolocalisée : si l'événement a un point de rendez-vous,
+    // on montre le lieu plutôt qu'un écran vide.
+    if (eventLatitude != null && eventLongitude != null) {
+      const rdv: [number, number] = [eventLatitude, eventLongitude];
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="relative rounded-2xl overflow-hidden border border-border"
+          style={{ height: 'calc(100vh - 200px)', minHeight: 400 }}
+        >
+          <MapContainer
+            center={rdv}
+            zoom={15}
+            className="w-full h-full z-0"
+            style={{ background: '#1a1a2e' }}
+            zoomControl={false}
+          >
+            <DynamicTileLayer mapStyle={mapStyle} />
+            <ZoomControls mapStyle={mapStyle} />
+            <Circle
+              center={rdv}
+              radius={400}
+              pathOptions={{ color: '#10b981', weight: 1, fillOpacity: 0.08 }}
+            />
+            <Marker position={rdv} icon={createNumberedIcon(1, false, mapStyle)}>
+              <Popup>
+                <div className="text-xs">
+                  <strong>{marcheEventTitle || 'Point de rendez-vous'}</strong>
+                  {marcheEventLieu && <div>{marcheEventLieu}</div>}
+                </div>
+              </Popup>
+            </Marker>
+            {userLocation && <UserLocationMarker position={userLocation} accuracy={userAccuracy} />}
+          </MapContainer>
+
+          <div className="absolute top-3 left-3 right-3 z-[1000] rounded-xl border border-border bg-background/90 backdrop-blur px-3 py-2">
+            <p className="text-[11px] font-semibold text-foreground">Point de rendez-vous</p>
+            <p className="text-[11px] text-muted-foreground">
+              Les étapes de la marche seront tracées sur le terrain.
+            </p>
+          </div>
+
+          <div className="absolute bottom-3 right-3 z-[1000] flex flex-col gap-2">
+            <MapStyleToggle value={mapStyle} onChange={setMapStyle} />
+            <GeolocateButton onClick={handleGeolocate} isLoading={geoLoading} mapStyle={mapStyle} />
+          </div>
+        </motion.div>
+      );
+    }
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -766,9 +817,9 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-amber-500/5 border border-emerald-500/15 flex items-center justify-center mb-4">
           <MapPin className="w-7 h-7 text-emerald-400/60" />
         </div>
-        <h3 className="text-foreground text-sm font-semibold mb-1">Aucune coordonnée GPS</h3>
+        <h3 className="text-foreground text-sm font-semibold mb-1">Le tracé arrive bientôt</h3>
         <p className="text-muted-foreground text-xs max-w-xs">
-          Les marches de cette exploration n'ont pas encore de coordonnées géographiques.
+          Cette marche n'a pas encore de point géolocalisé. Il sera ajouté avant le jour J.
         </p>
       </motion.div>
     );
