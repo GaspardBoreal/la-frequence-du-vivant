@@ -57,7 +57,19 @@ const MarchesDuVivantConnexion = () => {
   const [resendingEmail, setResendingEmail] = useState(false);
   const [appChoice, setAppChoice] = useState<{ open: boolean; prenom?: string; proprietes: ProprieteAccess[]; partenaires: PartenaireIotAccess[] }>({ open: false, proprietes: [], partenaires: [] });
 
+  // QR code d'inscription à un événement
+  const [eventCode, setEventCode] = useState<string | null>(null);
+  const [eventInfo, setEventInfo] = useState<{
+    valid: boolean;
+    reason?: string;
+    event_id?: string;
+    title?: string;
+    date_marche?: string | null;
+    lieu?: string | null;
+  } | null>(null);
+
   // Invitation Lecteur invité
+
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
   const [invitationInfo, setInvitationInfo] = useState<{
     valid: boolean;
@@ -103,11 +115,53 @@ const MarchesDuVivantConnexion = () => {
     }
   }, [searchParams]);
 
+  // QR code d'inscription à un événement (?event=CODE)
+  useEffect(() => {
+    const code = searchParams.get('event');
+    if (!code) return;
+    setEventCode(code);
+    setMode('register');
+    supabase.rpc('peek_event_signup_link', { _code: code }).then(({ data }: any) => {
+      if (data) setEventInfo(data);
+    });
+  }, [searchParams]);
+
+  /** Pré-inscrit le marcheur connecté puis déclenche son email de bienvenue. */
+  const consumeEventLinkIfAny = async (kind: 'immediate' | 'reminder') => {
+    if (!eventCode) return null;
+    const { data } = await supabase.rpc('consume_event_signup_link', { _code: eventCode });
+    const res = data as { success: boolean; event_id?: string; already_registered?: boolean } | null;
+    if (res?.success) {
+      try {
+        await supabase.functions.invoke('event-signup-welcome', { body: { code: eventCode, kind } });
+      } catch { /* email non bloquant */ }
+    }
+    return res;
+  };
+
+  // Retour du lien de confirmation email : la session existe déjà, on rattache.
+  useEffect(() => {
+    if (!eventCode || !eventInfo?.valid) return;
+    let alive = true;
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!alive || !data.session) return;
+      const registered = await consumeEventLinkIfAny('reminder');
+      if (registered?.success && registered.event_id) {
+        toast.success('Vous êtes pré-inscrit·e à la marche 🌿');
+        navigate(`/marches-du-vivant/mon-espace/exploration/${registered.event_id}`);
+      }
+    });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventCode, eventInfo?.valid]);
+
+
   const consumeInvitationIfAny = async () => {
     if (!invitationToken) return null;
     const { data } = await supabase.rpc('consume_event_invitation', { _token: invitationToken });
     return data as { success: boolean; event_id?: string; error?: string } | null;
   };
+
 
   /** Redirection interne demandée (?next=/chemin) — validée same-origin. */
   const nextParam = (() => {
@@ -147,12 +201,20 @@ const MarchesDuVivantConnexion = () => {
         return;
       }
 
+      const registered = await consumeEventLinkIfAny('reminder');
+      if (registered?.success && registered.event_id) {
+        toast.success('Vous êtes pré-inscrit·e à la marche 🌿');
+        navigate(`/marches-du-vivant/mon-espace/exploration/${registered.event_id}`);
+        return;
+      }
+
       const consumed = await consumeInvitationIfAny();
       if (consumed?.success && consumed.event_id) {
         toast.success('Vous êtes rattaché·e à l\'événement comme Lecteur invité 📖');
         navigate(`/marches-du-vivant/mon-espace/exploration/${consumed.event_id}`);
         return;
       }
+
       // App choice : si l'utilisateur a accès à Mon Espace + une ou plusieurs propriétés,
       // on lui laisse le choix (dialogue). Une préférence localStorage court-circuite le dialogue.
       try {
@@ -225,11 +287,32 @@ const MarchesDuVivantConnexion = () => {
         recherche_prioritaire: recherchePrioritaire.trim() || undefined,
         consentement_analyse: consentementAnalyse,
         affiliateToken,
-        emailRedirectTo: nextParam ? absoluteUrlForPath(nextParam) : undefined,
+        emailRedirectTo: nextParam
+          ? absoluteUrlForPath(nextParam)
+          : eventCode
+            ? absoluteUrlForPath(`/marches-du-vivant/connexion?event=${encodeURIComponent(eventCode)}`)
+            : undefined,
       });
 
       if (affiliateToken) {
         clearStoredAffiliateToken();
+      }
+
+      // QR événement : si la session est déjà active, on pré-inscrit tout de suite
+      // et on envoie l'email de confirmation paramétré.
+      if (eventCode) {
+        try {
+          const { data: sess } = await supabase.auth.getSession();
+          if (!sess.session) await signIn(email, password);
+          const registered = await consumeEventLinkIfAny('immediate');
+          if (registered?.success && registered.event_id) {
+            toast.success('Inscription réussie ! Vous êtes pré-inscrit·e à la marche 🌿');
+            navigate(`/marches-du-vivant/mon-espace/exploration/${registered.event_id}`);
+            return;
+          }
+        } catch {
+          // confirmation email requise : le rattachement se fera au retour du lien
+        }
       }
 
       // If invitation present and user is now signed in (auto-login), consume immediately
@@ -247,6 +330,7 @@ const MarchesDuVivantConnexion = () => {
           // confirmation requise — l'utilisateur consommera après confirmation email
         }
       }
+
 
       setEmailConfirmDialog({ open: true, email });
     } catch (error: any) {
@@ -325,7 +409,38 @@ const MarchesDuVivantConnexion = () => {
               </p>
             </div>
 
+            {/* Bandeau QR code événement */}
+            {eventInfo && (
+              <div className={`mb-4 rounded-xl border p-4 backdrop-blur-md ${
+                eventInfo.valid
+                  ? 'bg-emerald-500/15 border-emerald-300/30 text-emerald-50'
+                  : 'bg-amber-500/15 border-amber-300/30 text-amber-50'
+              }`}>
+                {eventInfo.valid ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">
+                      🌿 Inscription à « {eventInfo.title} »
+                      {eventInfo.date_marche
+                        ? ` — ${new Date(eventInfo.date_marche).toLocaleDateString('fr-FR', { dateStyle: 'long' })}`
+                        : ''}
+                    </p>
+                    <p className="text-xs opacity-80">
+                      Créez votre compte : vous serez automatiquement <strong>pré-inscrit·e</strong> à cette marche
+                      (présence validée sur place) et recevrez un email de confirmation.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm">
+                    {eventInfo.reason === 'expired' && '⏳ Ce QR code a expiré.'}
+                    {eventInfo.reason === 'inactive' && '⚠️ Ce QR code n\'est plus actif.'}
+                    {eventInfo.reason === 'invalid_code' && '⚠️ QR code d\'inscription invalide.'}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Bandeau invitation Lecteur invité */}
+
             {invitationInfo && (
               <div className={`mb-4 rounded-xl border p-4 backdrop-blur-md ${
                 invitationInfo.valid

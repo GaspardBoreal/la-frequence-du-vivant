@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import EventQrTab from '@/components/admin/adhesion/EventQrTab';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -263,8 +264,14 @@ const AdhesionAdmin: React.FC = () => {
         <Tabs defaultValue="qr">
           <TabsList>
             <TabsTrigger value="qr">QR & Campagnes</TabsTrigger>
+            <TabsTrigger value="event-qr">QR événement</TabsTrigger>
             <TabsTrigger value="requests">Demandes ({stats.total})</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="event-qr" className="mt-4">
+            <EventQrTab />
+          </TabsContent>
+
 
           <TabsContent value="qr" className="space-y-6 mt-4">
             <Card className="p-5 grid md:grid-cols-2 gap-6">

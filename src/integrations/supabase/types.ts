@@ -2781,6 +2781,91 @@ export type Database = {
           },
         ]
       }
+      event_signup_emails: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          link_id: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          link_id: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          link_id?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_signup_emails_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "event_signup_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_signup_links: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          email_html: string | null
+          email_subject: string | null
+          event_id: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          label: string | null
+          updated_at: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          email_html?: string | null
+          email_subject?: string | null
+          event_id: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          email_html?: string | null
+          email_subject?: string | null
+          event_id?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_signup_links_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_testimonies: {
         Row: {
           author_name: string
@@ -9403,6 +9488,7 @@ export type Database = {
       }
       confirm_admin_email: { Args: { target_email: string }; Returns: boolean }
       consume_event_invitation: { Args: { _token: string }; Returns: Json }
+      consume_event_signup_link: { Args: { _code: string }; Returns: Json }
       consume_iot_ai_credit: {
         Args: { _fournisseur_id: string }
         Returns: Json
@@ -10396,6 +10482,7 @@ export type Database = {
       }
       onboard_join_propriete: { Args: { _code: string }; Returns: Json }
       peek_event_invitation: { Args: { _token: string }; Returns: Json }
+      peek_event_signup_link: { Args: { _code: string }; Returns: Json }
       reattribute_media:
         | {
             Args: { _marcheur_id: string; _media_id: string; _source: string }
