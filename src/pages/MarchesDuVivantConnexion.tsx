@@ -139,6 +139,23 @@ const MarchesDuVivantConnexion = () => {
     return res;
   };
 
+  // Retour du lien de confirmation email : la session existe déjà, on rattache.
+  useEffect(() => {
+    if (!eventCode || !eventInfo?.valid) return;
+    let alive = true;
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!alive || !data.session) return;
+      const registered = await consumeEventLinkIfAny('reminder');
+      if (registered?.success && registered.event_id) {
+        toast.success('Vous êtes pré-inscrit·e à la marche 🌿');
+        navigate(`/marches-du-vivant/mon-espace/exploration/${registered.event_id}`);
+      }
+    });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventCode, eventInfo?.valid]);
+
+
   const consumeInvitationIfAny = async () => {
     if (!invitationToken) return null;
     const { data } = await supabase.rpc('consume_event_invitation', { _token: invitationToken });
