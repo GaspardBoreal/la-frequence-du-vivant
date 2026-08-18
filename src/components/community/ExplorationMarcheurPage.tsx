@@ -128,7 +128,7 @@ const ExplorationMarcheurPage: React.FC = () => {
         .from('marche_events')
         .select('exploration_id')
         .eq('id', directMarcheEventId!)
-        .single();
+        .maybeSingle();
       return data?.exploration_id || null;
     },
     enabled: !!directMarcheEventId,
@@ -155,7 +155,7 @@ const ExplorationMarcheurPage: React.FC = () => {
         .from('explorations')
         .select('id, name, description, slug')
         .eq('id', effectiveExplorationId!)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!effectiveExplorationId,
@@ -165,21 +165,23 @@ const ExplorationMarcheurPage: React.FC = () => {
   const { data: marcheEvent } = useQuery({
     queryKey: ['exploration-marche-event', effectiveExplorationId, directMarcheEventId],
     queryFn: async () => {
+      const columns =
+        'id, title, date_marche, lieu, event_type, is_public, public_slug, latitude, longitude, cover_image_url';
       if (directMarcheEventId) {
         const { data } = await supabase
           .from('marche_events')
-          .select('id, title, date_marche, lieu, event_type, is_public, public_slug')
+          .select(columns)
           .eq('id', directMarcheEventId)
-          .single();
+          .maybeSingle();
         return data;
       }
       const { data } = await supabase
         .from('marche_events')
-        .select('id, title, date_marche, lieu, event_type, is_public, public_slug')
+        .select(columns)
         .eq('exploration_id', effectiveExplorationId!)
         .order('date_marche', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!effectiveExplorationId || !!directMarcheEventId,
