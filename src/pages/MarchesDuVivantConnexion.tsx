@@ -409,7 +409,38 @@ const MarchesDuVivantConnexion = () => {
               </p>
             </div>
 
+            {/* Bandeau QR code événement */}
+            {eventInfo && (
+              <div className={`mb-4 rounded-xl border p-4 backdrop-blur-md ${
+                eventInfo.valid
+                  ? 'bg-emerald-500/15 border-emerald-300/30 text-emerald-50'
+                  : 'bg-amber-500/15 border-amber-300/30 text-amber-50'
+              }`}>
+                {eventInfo.valid ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">
+                      🌿 Inscription à « {eventInfo.title} »
+                      {eventInfo.date_marche
+                        ? ` — ${new Date(eventInfo.date_marche).toLocaleDateString('fr-FR', { dateStyle: 'long' })}`
+                        : ''}
+                    </p>
+                    <p className="text-xs opacity-80">
+                      Créez votre compte : vous serez automatiquement <strong>pré-inscrit·e</strong> à cette marche
+                      (présence validée sur place) et recevrez un email de confirmation.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm">
+                    {eventInfo.reason === 'expired' && '⏳ Ce QR code a expiré.'}
+                    {eventInfo.reason === 'inactive' && '⚠️ Ce QR code n\'est plus actif.'}
+                    {eventInfo.reason === 'invalid_code' && '⚠️ QR code d\'inscription invalide.'}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Bandeau invitation Lecteur invité */}
+
             {invitationInfo && (
               <div className={`mb-4 rounded-xl border p-4 backdrop-blur-md ${
                 invitationInfo.valid
