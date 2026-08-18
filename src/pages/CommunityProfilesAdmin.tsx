@@ -29,7 +29,7 @@ import UnvalidatedRegistrationsTab from '@/components/admin/community/Unvalidate
 import RecherchesPanel from '@/components/admin/community/RecherchesPanel';
 import UsageDashboard from '@/components/admin/community/usage/UsageDashboard';
 import DeleteMarcheurDialog, { type DeletableMarcheur } from '@/components/admin/community/DeleteMarcheurDialog';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { Trash2 } from 'lucide-react';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
@@ -49,7 +49,7 @@ const CommunityProfilesAdmin: React.FC = () => {
   const [editing, setEditing] = useState<EditableProfile | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [reconciling, setReconciling] = useState(false);
-  const { isAdmin: isCurrentUserAdmin } = useAuth();
+  const { isAdmin: isCurrentUserAdmin } = useAuthContext();
   const [deleting, setDeleting] = useState<DeletableMarcheur | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
