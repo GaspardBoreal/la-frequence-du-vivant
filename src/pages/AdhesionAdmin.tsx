@@ -263,8 +263,14 @@ const AdhesionAdmin: React.FC = () => {
         <Tabs defaultValue="qr">
           <TabsList>
             <TabsTrigger value="qr">QR & Campagnes</TabsTrigger>
+            <TabsTrigger value="event-qr">QR événement</TabsTrigger>
             <TabsTrigger value="requests">Demandes ({stats.total})</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="event-qr" className="mt-4">
+            <EventQrTab />
+          </TabsContent>
+
 
           <TabsContent value="qr" className="space-y-6 mt-4">
             <Card className="p-5 grid md:grid-cols-2 gap-6">
