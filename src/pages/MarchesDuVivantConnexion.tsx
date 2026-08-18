@@ -270,11 +270,32 @@ const MarchesDuVivantConnexion = () => {
         recherche_prioritaire: recherchePrioritaire.trim() || undefined,
         consentement_analyse: consentementAnalyse,
         affiliateToken,
-        emailRedirectTo: nextParam ? absoluteUrlForPath(nextParam) : undefined,
+        emailRedirectTo: nextParam
+          ? absoluteUrlForPath(nextParam)
+          : eventCode
+            ? absoluteUrlForPath(`/marches-du-vivant/connexion?event=${encodeURIComponent(eventCode)}`)
+            : undefined,
       });
 
       if (affiliateToken) {
         clearStoredAffiliateToken();
+      }
+
+      // QR événement : si la session est déjà active, on pré-inscrit tout de suite
+      // et on envoie l'email de confirmation paramétré.
+      if (eventCode) {
+        try {
+          const { data: sess } = await supabase.auth.getSession();
+          if (!sess.session) await signIn(email, password);
+          const registered = await consumeEventLinkIfAny('immediate');
+          if (registered?.success && registered.event_id) {
+            toast.success('Inscription réussie ! Vous êtes pré-inscrit·e à la marche 🌿');
+            navigate(`/marches-du-vivant/mon-espace/exploration/${registered.event_id}`);
+            return;
+          }
+        } catch {
+          // confirmation email requise : le rattachement se fera au retour du lien
+        }
       }
 
       // If invitation present and user is now signed in (auto-login), consume immediately
@@ -292,6 +313,7 @@ const MarchesDuVivantConnexion = () => {
           // confirmation requise — l'utilisateur consommera après confirmation email
         }
       }
+
 
       setEmailConfirmDialog({ open: true, email });
     } catch (error: any) {
