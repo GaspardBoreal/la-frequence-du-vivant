@@ -517,6 +517,23 @@ const ExplorationMarcheurPage: React.FC = () => {
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-4">
+        {isPreview && marcheEvent && (
+          <AvantPremiereBanner
+            title={marcheEvent.title || exploration?.name || 'Marche du vivant'}
+            dateISO={marcheEvent.date_marche}
+            lieu={marcheEvent.lieu}
+            isRegistered={participation?.isRegistered ?? false}
+            isValidated={participation?.isValidated ?? false}
+            speciesCount={speciesCount?.total}
+            eventType={marcheEvent.event_type}
+            explorationId={effectiveExplorationId}
+            hasOwnPhotos={(stats?.totalMedias || 0) > 0}
+            isAdmin={isAdmin}
+            coverMissing={!(marcheEvent as any)?.cover_image_url}
+            onOpenApprendre={() => setActiveGlobalTab('apprendre')}
+            onOpenBiodiversite={() => setActiveGlobalTab('biodiversite')}
+          />
+        )}
         <AnimatePresence mode="wait">
           {activeGlobalTab === 'marches' && (
             <motion.div
