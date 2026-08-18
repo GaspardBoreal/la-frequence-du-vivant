@@ -31,6 +31,9 @@ import HeaderSearchTrigger from '@/components/search/HeaderSearchTrigger';
 import { useFocusFromUrl } from '@/hooks/useFocusFromUrl';
 import FocusHalo from '@/components/search/FocusHalo';
 import { dispatchFocus } from '@/lib/focusBus';
+import { useParticipationStatus } from '@/hooks/useAvantPremiere';
+import { useExplorationSpeciesCount } from '@/hooks/useExplorationSpeciesCount';
+import AvantPremiereBanner from './exploration/AvantPremiere/AvantPremiereBanner';
 
 // Import tab components from MarcheDetailModal
 import { VoirTab, EcouterTab, LireTab, VivantTab, StepSelector } from './MarcheDetailModal';
@@ -215,6 +218,14 @@ const ExplorationMarcheurPage: React.FC = () => {
   const activeMarche = explorationMarches?.[activeStepIndex];
   const activeMarcheSlug = activeMarche ? createSlug(activeMarche.nom_marche || activeMarche.ville, activeMarche.ville) : undefined;
   const marcheEventId = marcheEvent?.id || '';
+
+  // ─── Avant-première : tout se regarde, rien ne se saisit ───
+  const { data: participation } = useParticipationStatus(marcheEventId || null, userId || null);
+  const { data: speciesCount } = useExplorationSpeciesCount(effectiveExplorationId);
+  const eventDate = marcheEvent?.date_marche ? new Date(marcheEvent.date_marche) : null;
+  const isUpcoming = !!eventDate && eventDate.getTime() > Date.now();
+  const isPreview = !!marcheEvent && (isUpcoming || participation?.isValidated === false);
+
 
   // ─── Téléportation depuis la recherche : applique tab + step + halo ───
   // Robustesse : on attend que les prérequis soient prêts AVANT de consommer
