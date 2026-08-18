@@ -151,8 +151,9 @@ Deno.serve(async (req) => {
         })),
       });
     } finally {
-      await client.close().catch(() => {});
+      try { await client.close(); } catch (_) { /* ignore */ }
     }
+
 
     console.log('[send-smtp-email] sent', { to: recipients, subject: p.subject, by: userData.user.id });
     return new Response(JSON.stringify({ success: true }),
