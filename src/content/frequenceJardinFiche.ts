@@ -38,6 +38,9 @@ import logoGerminationSolLu from '@/assets/brand/frequence-jardin/logos/logo-ger
 
 export type FicheLogoFamily = 'lfdv' | 'jardin' | 'marches';
 
+/** Statut d'arbitrage d'une proposition de logo. */
+export type FicheLogoStatus = 'retenu' | 'variante' | 'ecarte';
+
 export interface FicheLogo {
   slug: string;
   name: string;
@@ -48,7 +51,18 @@ export interface FicheLogo {
   alt: string;
   width: number;
   height: number;
+  /** Arbitrage : logo retenu pour la famille, variante d'emploi, ou écarté. */
+  status?: FicheLogoStatus;
+  /** Règle d'emploi associée au statut (affichée sur la fiche et la page logo). */
+  usage?: string;
 }
+
+export const logoStatusLabels: Record<FicheLogoStatus, string> = {
+  retenu: 'Retenu',
+  variante: 'Variante d’emploi',
+  ecarte: 'Écarté',
+};
+
 
 export const logoFamilies: { id: FicheLogoFamily; title: string; intro: string }[] = [
   {
@@ -106,6 +120,9 @@ export const ficheLogos: FicheLogo[] = [
     alt: 'Logo La Fréquence du Vivant — Feuille-signal : une feuille dont la nervure devient une onde, marque de l’association La Fréquence du Vivant',
     width: 1024,
     height: 1024,
+    status: 'retenu',
+    usage:
+      "Marque ombrelle : signature de l'association, en-tête de document, fiche d'annuaire. Les logos applicatifs viennent en second niveau.",
   },
   {
     slug: 'germination-onde-pleine',
@@ -161,6 +178,9 @@ export const ficheLogos: FicheLogo[] = [
     alt: 'Logo Les Marches du Vivant — Sentier en fréquence : un chemin qui devient une onde parmi les graminées, identité de La Fréquence du Vivant',
     width: 1024,
     height: 1024,
+    status: 'ecarte',
+    usage:
+      'Conservé comme illustration éditoriale (articles, pages de contenu), pas comme logo.',
   },
   {
     slug: 'empreinte-vivante',
@@ -172,6 +192,9 @@ export const ficheLogos: FicheLogo[] = [
     alt: 'Logo Les Marches du Vivant — Empreinte vivante : une empreinte de pas remplie de feuillages entourée d’ondes, identité de La Fréquence du Vivant',
     width: 1024,
     height: 1024,
+    status: 'retenu',
+    usage:
+      "Logo de l'application Les Marches du Vivant : interface, favicon, avatar, pastille d'annuaire, en-tête d'export. Forme compacte, lisible en très petit et en monochrome.",
   },
   {
     slug: 'horizon-marche',
@@ -183,17 +206,42 @@ export const ficheLogos: FicheLogo[] = [
     alt: 'Logo Les Marches du Vivant — Horizon marché : des collines et haies en courbes traversées par un signal, identité de La Fréquence du Vivant',
     width: 1024,
     height: 1024,
+    status: 'variante',
+    usage:
+      'Motif de bandeau et de couverture (hero, image de partage, en-tête de rapport). Ne remplace jamais le logo retenu.',
   },
+
 ];
 
 export const logosByFamily = (family: FicheLogoFamily) =>
-  ficheLogos.filter((l) => l.family === family);
+  ficheLogos
+    .filter((l) => l.family === family)
+    .sort((a, b) => statusRank(a.status) - statusRank(b.status));
+
+const statusRank = (s?: FicheLogoStatus) =>
+  s === 'retenu' ? 0 : s === 'variante' ? 1 : s === 'ecarte' ? 3 : 2;
+
+/** Logo arbitré comme retenu pour une famille de marque, s'il existe. */
+export const retainedLogo = (family: FicheLogoFamily) =>
+  ficheLogos.find((l) => l.family === family && l.status === 'retenu');
 
 /** URL absolue d'une image de logo (utilisable dans un annuaire externe). */
 export const logoImageUrl = (l: FicheLogo) => `${SITE_URL}${l.src}`;
 /** URL absolue de la page dédiée d'un logo. */
 export const logoPageUrl = (l: FicheLogo) => `${FICHE_URL}/logo/${l.slug}`;
 export const findLogo = (slug?: string) => ficheLogos.find((l) => l.slug === slug);
+
+/** Règles d'emploi issues de l'arbitrage des logos. */
+export const logoArbitrage = {
+  date: '19.08.2026',
+  rules: [
+    "La Feuille-signal « La Fréquence du Vivant » signe l'association : en-tête de document, signature, fiche d'annuaire.",
+    "« Empreinte vivante » est le logo de l'application Les Marches du Vivant : interface, favicon, avatar, en-tête d'export.",
+    "« Horizon marché » reste un motif paysager réservé aux bandeaux, couvertures et images de partage — jamais en logo.",
+    "Fréquence Jardin n'est pas encore arbitré : les six directions restent ouvertes.",
+  ],
+};
+
 
 
 export const fiche = {

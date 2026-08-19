@@ -12,6 +12,7 @@ import {
   findLogo,
   logoImageUrl,
   logoPageUrl,
+  logoStatusLabels,
   FICHE_URL,
   SITE_URL,
 } from '@/content/frequenceJardinFiche';
@@ -115,16 +116,36 @@ const FrequenceJardinLogo: React.FC = () => {
         </Link>
 
         <header className="mt-6">
-          <p className="text-xs uppercase tracking-[0.18em] text-primary">
-            Identité visuelle — proposition
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-xs uppercase tracking-[0.18em] text-primary">
+              Identité visuelle — proposition
+            </p>
+            {logo.status && (
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide ${
+                  logo.status === 'retenu'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'border border-border/60 text-muted-foreground'
+                }`}
+              >
+                {logoStatusLabels[logo.status]}
+              </span>
+            )}
+          </div>
           <h1 className="mt-3 text-3xl font-semibold text-foreground sm:text-4xl">
             {logo.name} — logo Fréquence Jardin
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
             {logo.intention}
           </p>
+          {logo.usage && (
+            <p className="mt-3 max-w-2xl rounded-xl border border-border/60 bg-card/50 p-4 text-sm leading-relaxed text-foreground/85">
+              <span className="font-medium">Emploi : </span>
+              {logo.usage}
+            </p>
+          )}
         </header>
+
 
         <figure className="mt-10 overflow-hidden rounded-3xl border border-border/60 bg-card/40 p-6 sm:p-10">
           <img
