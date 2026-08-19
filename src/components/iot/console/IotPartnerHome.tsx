@@ -302,13 +302,18 @@ export const IotPartnerHome: React.FC = () => {
         capabilities={capabilities}
         onClose={() => setPeekId(null)}
         onObservatory={(c) => { setPeekId(null); setObservatory(c as CapteurGeo); }}
-        onAskAi={(c) =>
-          openIotAi({
-            capteurId: c.id,
-            proprieteId: c.propriete_id,
-            prefill: `Cette sonde « ${c.nom} » est-elle fiable ? Que dit-elle du sol ${c.emplacement ? `au ${c.emplacement}` : ''} ?`,
-          })
-        }
+        onAskAi={(c) => {
+          // La fiche Radix et le chatbot partagent le même niveau de portail.
+          // Démonter d'abord la fiche (et son focus trap), puis ouvrir l'IA.
+          setPeekId(null);
+          window.setTimeout(() => {
+            openIotAi({
+              capteurId: c.id,
+              proprieteId: c.propriete_id,
+              prefill: `Cette sonde « ${c.nom} » est-elle fiable ? Que dit-elle du sol ${c.emplacement ? `au ${c.emplacement}` : ''} ?`,
+            });
+          }, 0);
+        }}
       />
 
       {observatory && <SensorObservatory capteur={observatory} onClose={() => setObservatory(null)} />}
