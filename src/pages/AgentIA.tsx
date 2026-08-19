@@ -9,8 +9,10 @@ import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
 import {
   BRAND_LOGO_ALT,
   BRAND_LOGO_CAPTION,
+  BRAND_LOGO_DARK,
   BRAND_LOGO_HEIGHT,
   BRAND_LOGO_ID,
+  BRAND_LOGO_MARK,
   BRAND_LOGO_PATH,
   BRAND_LOGO_TITLE,
   BRAND_LOGO_URL,
@@ -18,8 +20,16 @@ import {
   brandLogoImageObject,
 } from '@/content/brandLogo';
 
-/** Logo retenu pour Les Marches du Vivant : « Empreinte vivante ». */
-const LOGO_SRC = BRAND_LOGO_PATH;
+/**
+ * Logo retenu : « Empreinte vivante ».
+ * Dans l'interface on affiche la marque seule et on compose le nom en HTML :
+ * un texte réellement rendu reste net à toute taille, suit le thème clair/sombre
+ * et se lit par les lecteurs d'écran, ce que le wordmark gravé dans le PNG ne fait pas.
+ */
+const LOGO_SRC = BRAND_LOGO_MARK.path;
+/** Lock-up complet (texte inclus) réservé aux contextes hors interface : partage social, annuaires. */
+const LOGO_SHARE_SRC = BRAND_LOGO_DARK.url;
+
 
 
 
