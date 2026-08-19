@@ -1,9 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Compass, Leaf, Check, ChevronDown, Radio } from 'lucide-react';
+import { Compass, Leaf, Check, ChevronDown, Radio, Star } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useUserAppsAccess, ProprieteAccess, PartenaireIotAccess } from '@/hooks/useUserAppsAccess';
 import { ProprieteTile } from '@/components/community/ProprieteTile';
+import { AppChoiceDialog, getDefaultAppTarget } from '@/components/community/AppChoiceDialog';
 import { cn } from '@/lib/utils';
 
 interface AppSwitcherProps {
@@ -17,6 +18,12 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
   const { data } = useUserAppsAccess(userId);
   const proprietes = data?.proprietesAccessibles ?? [];
   const partenaires = data?.partenairesIot ?? [];
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [defaultTarget, setDefaultTarget] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setDefaultTarget(getDefaultAppTarget());
+  }, [settingsOpen]);
 
   // Only show switcher if user has at least one other espace
   if (proprietes.length === 0 && partenaires.length === 0) return null;
@@ -29,6 +36,11 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
         'Espace';
 
   const go = (path: string) => navigate(path);
+
+  const DefaultStar = () => (
+    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 flex-shrink-0" aria-label="Ouverture automatique" />
+  );
+
 
   return (
     <Popover>
