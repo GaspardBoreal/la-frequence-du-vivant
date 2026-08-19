@@ -338,13 +338,19 @@ const AgentIA: React.FC = () => {
           <Sparkles className="h-6 w-6 text-primary" />
           <h2 className="text-3xl md:text-4xl font-bold">À l'origine de l'agent</h2>
         </div>
-        <p className="text-muted-foreground mb-8 max-w-3xl">
+        <p className="text-muted-foreground mb-4 max-w-3xl">
           L'agent <strong>Les Marches du Vivant</strong> est édité par l'association{' '}
           <Link to="/marches-du-vivant/association" className="text-primary underline underline-offset-4">
             La Fréquence du Vivant
           </Link>
           . Il est né de la rencontre de deux contributeurs.
         </p>
+        <Card className="p-5 mb-8 border-primary/20 bg-primary/5 max-w-3xl">
+          <div className="text-xs uppercase tracking-widest text-primary mb-2">Origine terrain</div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Le projet a débuté en <strong>août 2025</strong> lors du projet <strong>« Fréquence de la rivière Dordogne »</strong> : Gaspard Boréal a remonté le fleuve de l'<strong>estuaire de Bec d'Ambès</strong> jusqu'aux <strong>pentes du Puy de Sancy</strong> (Puy-de-Dôme), à <strong>1 370 mètres d'altitude</strong>.
+          </p>
+        </Card>
         <div className="grid md:grid-cols-2 gap-6">
           {contributeurs.map((c) => (
             <Card key={c.nom} className="p-6 border-primary/20">
