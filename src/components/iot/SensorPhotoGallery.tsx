@@ -8,6 +8,8 @@ interface Props {
   nom?: string;
   /** Couverture déjà signée par la liste/carte : sert d'affichage immédiat. */
   coverUrl?: string;
+  /** Incrémenter cette valeur ferme la visionneuse plein écran (ex. ouverture de l'IA). */
+  closeSignal?: number;
 }
 
 /**
