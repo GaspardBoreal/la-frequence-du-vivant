@@ -77,8 +77,10 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
             <div className="text-sm font-medium text-foreground">Mon Espace</div>
             <div className="text-[11px] text-muted-foreground">Marches du Vivant</div>
           </div>
+          {defaultTarget === 'mon-espace' && <DefaultStar />}
           {currentContext === 'mdv' && <Check className="w-4 h-4 text-primary" />}
         </button>
+
 
         {proprietes.length > 0 && (
           <div className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 pt-3 pb-1">
