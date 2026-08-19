@@ -558,6 +558,18 @@ const AgentIA: React.FC = () => {
 
           la-frequence-du-vivant.com&nbsp;
 
+          <span className="text-[11px]">
+            Référencé sur le portail{' '}
+            <a
+              href={PILOTERRA_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-primary transition-colors"
+            >
+              PiloTerra
+            </a>
+          </span>
+
 
         </div>
       </section>
