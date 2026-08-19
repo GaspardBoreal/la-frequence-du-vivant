@@ -412,7 +412,12 @@ export function useMesuresWindow(capteurIds: string[], days: number) {
     queryKey: ['iot-mesures', 'window', ids.join(','), days],
     enabled: ids.length > 0,
     staleTime: 120_000,
-    initialData: EMPTY_WINDOW,
+    // Pas d'`initialData` ici : une fenêtre vide serait considérée comme une
+    // donnée fraîche et la requête ne partirait jamais (0 relevé affiché alors
+    // que les sondes émettent). On conserve simplement l'ancienne fenêtre
+    // pendant un changement de période.
+    placeholderData: (prev: MesuresWindow | undefined) => prev,
+
     queryFn: async () => {
       const since = new Date(Date.now() - days * 86_400_000).toISOString();
 
