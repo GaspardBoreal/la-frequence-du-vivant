@@ -53,7 +53,10 @@ export const SensorObservatory: React.FC<Props> = ({ capteur, onClose }) => {
     return { from: new Date(Date.now() - h * 3_600_000).toISOString(), to: new Date().toISOString() };
   }, [preset, customFrom, customTo]);
 
-  const { data: rows = [], isLoading } = useMesureSeriesRange(capteur?.id, from, to);
+  const { data: serie, isLoading } = useMesureSeriesRange(capteur?.id, from, to);
+  const rows = serie?.rows ?? [];
+  const truncated = serie?.truncated ?? false;
+
 
   const hoursSpan = Math.max(1, Math.round((new Date(to).getTime() - new Date(from).getTime()) / 3_600_000));
 
