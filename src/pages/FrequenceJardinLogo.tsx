@@ -16,6 +16,8 @@ import {
   FICHE_URL,
   SITE_URL,
 } from '@/content/frequenceJardinFiche';
+import { BRAND_LOGO_VARIANTS, brandLogoImageObject } from '@/content/brandLogo';
+
 
 /** Page dédiée à un logo Fréquence Jardin — URL stable, indexable en recherche d'images. */
 const FrequenceJardinLogo: React.FC = () => {
@@ -193,6 +195,64 @@ const FrequenceJardinLogo: React.FC = () => {
 
           </figcaption>
         </figure>
+
+        {logo.slug === 'empreinte-vivante' && (
+          <section className="mt-10 rounded-2xl border border-border/60 bg-card/50 p-6">
+            <h2 className="text-lg font-semibold text-foreground">Déclinaisons</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              Le nom gravé dans le fichier d'origine est trop fin et trop sombre pour rester lisible
+              en petite taille ou sur fond sombre. Trois fichiers le remplacent : la marque seule
+              pour l'interface, et deux lock-ups au nom épaissi selon le fond.
+            </p>
+            <div className="mt-6 grid gap-5 sm:grid-cols-3">
+              {BRAND_LOGO_VARIANTS.map((v) => (
+                <figure
+                  key={v.key}
+                  className="m-0 flex flex-col overflow-hidden rounded-xl border border-border/50 bg-background/40"
+                >
+                  <img
+                    src={v.path}
+                    alt={v.alt}
+                    title={`${v.label} — logo Les Marches du Vivant`}
+                    width={v.width}
+                    height={v.height}
+                    loading="lazy"
+                    decoding="async"
+                    className={`h-auto w-full ${v.key === 'dark' ? 'bg-[#10251c]' : 'bg-background'}`}
+                  />
+                  <figcaption className="flex flex-1 flex-col gap-2 p-4">
+                    <span className="text-sm font-semibold text-foreground">{v.label}</span>
+                    <span className="text-xs leading-relaxed text-muted-foreground">{v.usage}</span>
+                    <div className="mt-auto flex flex-wrap gap-2 pt-2">
+                      <Button variant="outline" size="sm" onClick={() => copy(v.url, `var-${v.key}`)}>
+                        {copied === `var-${v.key}` ? (
+                          <Check className="mr-2 h-4 w-4" />
+                        ) : (
+                          <Copy className="mr-2 h-4 w-4" />
+                        )}
+                        Copier l'URL
+                      </Button>
+                      <Button asChild variant="secondary" size="sm">
+                        <a href={v.path} download={`marches-du-vivant-logo-${v.key}.png`}>
+                          <Download className="mr-2 h-4 w-4" /> PNG
+                        </a>
+                      </Button>
+                    </div>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify(
+                  BRAND_LOGO_VARIANTS.map((v) => brandLogoImageObject(pageUrl, false, v)),
+                ),
+              }}
+            />
+          </section>
+        )}
+
 
         <section className="mt-10 rounded-2xl border border-border/60 bg-card/50 p-6">
           <h2 className="text-lg font-semibold text-foreground">URL directes</h2>

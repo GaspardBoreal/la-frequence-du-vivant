@@ -11,6 +11,7 @@ import {
   BRAND_LOGO_CAPTION,
   BRAND_LOGO_HEIGHT,
   BRAND_LOGO_ID,
+  BRAND_LOGO_MARK,
   BRAND_LOGO_PATH,
   BRAND_LOGO_TITLE,
   BRAND_LOGO_URL,
@@ -18,8 +19,14 @@ import {
   brandLogoImageObject,
 } from '@/content/brandLogo';
 
-/** Logo retenu pour Les Marches du Vivant : « Empreinte vivante ». */
-const LOGO_SRC = BRAND_LOGO_PATH;
+/**
+ * Logo retenu : « Empreinte vivante ».
+ * Dans l'interface on affiche la marque seule et on compose le nom en HTML :
+ * un texte réellement rendu reste net à toute taille, suit le thème clair/sombre
+ * et se lit par les lecteurs d'écran, ce que le wordmark gravé dans le PNG ne fait pas.
+ */
+const LOGO_SRC = BRAND_LOGO_MARK.path;
+
 
 
 
@@ -269,7 +276,7 @@ const AgentIA: React.FC = () => {
       {/* Hero */}
       <section className="container mx-auto px-4 pt-12 pb-20 max-w-5xl">
         <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-12">
-          {/* Signature visuelle — logo retenu « Empreinte vivante » */}
+          {/* Signature visuelle — marque seule + nom composé en HTML (lisible à toute taille) */}
           <figure className="relative shrink-0 self-start md:self-center m-0 flex flex-col items-center">
             <div
               className="absolute -inset-4 rounded-full blur-2xl opacity-60"
@@ -286,10 +293,21 @@ const AgentIA: React.FC = () => {
               loading="eager"
               decoding="async"
             />
-            <figcaption className="relative mt-3 max-w-[11rem] text-center text-[11px] leading-snug text-muted-foreground">
-              Logo « Empreinte vivante » — Les Marches du Vivant
+            <figcaption className="relative mt-4 flex flex-col items-center gap-2">
+              <span className="text-center text-[13px] md:text-sm font-semibold uppercase tracking-[0.16em] text-foreground">
+                Les Marches du Vivant
+              </span>
+              <span className="flex items-center gap-2" aria-hidden>
+                <span className="h-px w-8 bg-primary/40" />
+                <span className="h-1 w-1 rounded-full bg-primary/60" />
+                <span className="h-px w-8 bg-primary/40" />
+              </span>
+              <span className="text-center text-[11px] leading-snug text-muted-foreground">
+                Logo « Empreinte vivante »
+              </span>
             </figcaption>
           </figure>
+
 
 
           <div className="min-w-0">
@@ -516,7 +534,7 @@ const AgentIA: React.FC = () => {
             </a>
           </Button>
         </div>
-        <div className="mt-12 flex flex-col items-center gap-3 text-xs text-muted-foreground">
+        <div className="mt-12 flex flex-col items-center gap-2 text-xs text-muted-foreground">
           <img
             src={LOGO_SRC}
             alt={BRAND_LOGO_ALT}
@@ -526,8 +544,12 @@ const AgentIA: React.FC = () => {
             height={48}
             loading="lazy"
           />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground/80">
+            Les Marches du Vivant
+          </span>
 
           la-frequence-du-vivant.com&nbsp;
+
 
         </div>
       </section>
