@@ -232,11 +232,13 @@ const AgentIA: React.FC = () => {
           <ArrowLeft className="h-4 w-4 shrink-0" />
           <img
             src={LOGO_SRC}
-            alt="Logo Les Marches du Vivant — Empreinte vivante"
+            alt={BRAND_LOGO_ALT}
+            title={BRAND_LOGO_TITLE}
             className="h-8 w-8 rounded-full object-cover ring-1 ring-primary/25 shrink-0"
             width={32}
             height={32}
           />
+
           <span className="truncate">Accueil</span>
         </Link>
         <Button asChild size="sm" variant="default">
