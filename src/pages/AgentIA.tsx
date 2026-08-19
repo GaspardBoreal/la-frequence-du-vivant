@@ -220,9 +220,26 @@ const AgentIA: React.FC = () => {
         <meta property="og:type" content="website" />
         <meta property="og:url" content={AGENT_URL} />
         <meta property="og:image" content={AGENT_IMAGE} />
+        <meta property="og:image:alt" content={BRAND_LOGO_ALT} />
+        <meta property="og:logo" content={BRAND_LOGO_URL} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content={AGENT_IMAGE} />
+        <meta name="twitter:image:alt" content={BRAND_LOGO_ALT} />
+        {/* Signaux recherche d'images : le logo de marque, ses dimensions et sa légende */}
+        <meta itemProp="image" content={BRAND_LOGO_URL} />
+        <meta name="thumbnail" content={BRAND_LOGO_URL} />
+        <link rel="image_src" href={BRAND_LOGO_URL} />
+        <link
+          rel="preload"
+          as="image"
+          href={LOGO_SRC}
+          imageSrcSet={`${LOGO_SRC} ${BRAND_LOGO_WIDTH}w`}
+        />
+        <meta name="image:width" content={String(BRAND_LOGO_WIDTH)} />
+        <meta name="image:height" content={String(BRAND_LOGO_HEIGHT)} />
+        <meta name="image:caption" content={BRAND_LOGO_CAPTION} />
         <script type="application/ld+json">{JSON.stringify(AGENT_JSONLD)}</script>
+
       </Helmet>
 
 
