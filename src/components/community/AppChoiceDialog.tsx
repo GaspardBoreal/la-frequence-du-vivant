@@ -248,7 +248,7 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
 
           <div
             ref={listRef}
-            className="h-full overflow-y-auto overscroll-contain -mx-1 px-1 pb-2 space-y-1"
+            className="h-full overflow-y-auto overscroll-contain -mx-1 px-1 pb-6 space-y-1"
           >
             {flat.length === 0 && (
               <div className="py-10 text-center text-sm text-emerald-100/55">
