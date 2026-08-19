@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { BarChart3, Battery, Signal, Sparkles, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
+import SensorPhotoGallery from '@/components/iot/SensorPhotoGallery';
+
 import { useSetCapteurEtat } from '@/hooks/iot/useIot';
 import type { IotMesure } from '@/hooks/iot/useIot';
 import {
@@ -108,15 +110,8 @@ export const SensorCardBody: React.FC<Props> = ({
         )}
       </div>
 
-      {coverUrl && (
-        <img
-          src={coverUrl}
-          alt={`${capteur.nom} en situation`}
-          decoding="async"
-          fetchPriority="high"
-          className="mt-3 h-28 w-full rounded-xl object-cover"
-        />
-      )}
+      <SensorPhotoGallery capteurId={capteur.id} nom={capteur.nom} coverUrl={coverUrl} />
+
 
       <dl className="mt-3 space-y-1 text-[11px]">
         <div className="flex justify-between gap-2">
