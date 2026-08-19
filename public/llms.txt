@@ -39,7 +39,7 @@ La Fréquence du Vivant relie poésie contemporaine, bioacoustique et science ci
 - [Dordonia](/dordonia): Constitution poétique d'un bassin-versant.
 - [Matériel pédagogique](/materiel-pedagogique): Ressources pour éducateurs.
 - [Galerie Fleuve](/galerie-fleuve): Livre vivant et traversées.
-- [Agent IA « Les Marches du Vivant »](/agent-ia): fiche de l'agent IA « Les Marches du Vivant », édité par l'association La Fréquence du Vivant. Agent de mesure collaborative de la biodiversité : collecte multimodale géolocalisée (photos, sons, témoignages, GPX), identification des espèces par vision et bioacoustique, indice « Fréquence du Vivant », détection des zones blanches, exports ouverts (PDF, Excel, CSV, GeoJSON, KML), API et serveur MCP. Open source (MIT), RGPD, hébergement UE. Fiche PDF : /agent-ia/fiche.
+- [Agent IA « Les Marches du Vivant »](/agent-ia): fiche de l'agent IA « Les Marches du Vivant », édité par l'association La Fréquence du Vivant. Contributeurs à l'origine de l'agent : Laurent Tripied (CEO bziiit - PiloTerra, direction technologique et cadre d'IA responsable) et Gaspard Boréal (auteur du recueil « La Fréquence du Vivant », créateur des Marches du Vivant, protocole de marche et bioacoustique). Agent de mesure collaborative de la biodiversité : collecte multimodale géolocalisée (photos, sons, témoignages, GPX), identification des espèces par vision et bioacoustique, indice « Fréquence du Vivant », détection des zones blanches, exports ouverts (PDF, Excel, CSV, GeoJSON, KML), API et serveur MCP. Open source (MIT), RGPD, hébergement UE. Fiche PDF : /agent-ia/fiche.
 
 ## Optional
 
