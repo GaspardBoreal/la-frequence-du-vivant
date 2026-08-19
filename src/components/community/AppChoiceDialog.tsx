@@ -160,7 +160,7 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
           'bg-black/25 backdrop-blur-sm ring-1 ring-white/10',
           isDefault
             ? 'opacity-100 text-amber-300'
-            : 'opacity-0 group-hover:opacity-100 focus:opacity-100 text-emerald-100/70 hover:text-amber-200',
+            : 'opacity-100 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 text-emerald-100/70 hover:text-amber-200',
         ].join(' ')}
       >
         <Star className={`w-3.5 h-3.5 ${isDefault ? 'fill-amber-300' : ''}`} />
