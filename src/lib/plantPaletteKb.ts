@@ -39,7 +39,16 @@ export interface PaletteSpecies {
   service: string;
   /** Déconseillée : motif éditorial (invasive, allergène majeur, hors sol…). */
   caution?: string;
+  /** Familles d'usage (nourricier / potager / ornemental) — dérivées, jamais saisies deux fois. */
+  usages: PaletteUsage[];
+  /**
+   * Fenêtre thermique de mise en place, uniquement pour le potager :
+   * température de sol minimale de semis et température d'air au-delà de
+   * laquelle la culture décroche.
+   */
+  sowing?: { soilMinC: number; airMaxC: number; window: string };
 }
+
 
 type Row = [
   string, // id
