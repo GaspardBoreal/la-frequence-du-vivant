@@ -24,9 +24,40 @@ Sous la liste, une ligne d'échelle du type `Humidité du sol : 18 % → 41 % su
 
 Sondes hors service (maintenance / retirée) : valeurs en gris, exclues du calcul min/max du parc pour ne pas fausser l'échelle.
 
-### Mobile
+### Mobile first : la liste est pensée d'abord pour le téléphone
 
-En dessous de `sm`, la ligne se replie en deux étages : identité + état en haut, les deux valeurs côte à côte en bas, barres pleine largeur.
+Le format de référence est l'écran de téléphone tenu à une main ; le bureau n'est qu'un élargissement de cette carte.
+
+Sur mobile, chaque sonde devient une **carte empilée en trois étages**, sans aucun défilement horizontal :
+
+```text
+┌──────────────────────────────────────┐
+│ ● En ligne        Sonde Potager d'Été│
+│ b26s002 · Jardin Monde DEVIAT        │
+├──────────────────────────────────────┤
+│ Humidité sol 15 cm     Temp. sol     │
+│      39 %                25,5 °C     │
+│  ▓▓▓▓▓▓░░░░░ ▲          ░░▓▓▓▓▓▓ ▲   │
+│  le plus humide                      │
+├──────────────────────────────────────┤
+│ vue il y a 13 min · Batterie 83 %    │
+└──────────────────────────────────────┘
+```
+
+Règles mobiles :
+
+- **Deux valeurs côte à côte** (grille 2 colonnes), jamais empilées : c'est la comparaison qui porte le sens.
+- Chiffre en `text-2xl` tabulaire pour rester lisible à bout de bras ; unité en petit à côté, jamais rognée.
+- Les barres de position gardent la **même échelle de parc** que sur bureau, donc en faisant défiler la liste au pouce, les curseurs dessinent naturellement la comparaison entre sondes.
+- Zone tactile pleine carte, hauteur minimale 56 px, retour visuel à l'appui (`active:`), et pas de lien imbriqué qui volerait le clic.
+- Métadonnées secondaires (série, fraîcheur, batterie) en pied de carte, en petit et atténué — jamais entre les deux valeurs.
+- Aucun texte tronqué : le nom de la sonde peut passer sur deux lignes plutôt que se couper.
+- La ligne d'échelle du parc et la légende d'états restent affichées, repliées en deux lignes compactes.
+
+À partir de `sm`, les trois étages se recomposent en une ligne unique : identité à gauche, colonnes de comparaison alignées au centre, fraîcheur et batterie à droite.
+
+La popup fiche capteur suit la même logique : plein écran en bas d'écran sur mobile (feuille glissante, poignée de fermeture, défilement interne), dialogue centré à partir de `sm`.
+
 
 ## 2. Clic sur une ligne = fiche capteur en popup
 
