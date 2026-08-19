@@ -8,7 +8,7 @@ import {
   useIotFournisseurs, useIotTypes, useFournisseurMutation, useTypeMutation,
   type IotFournisseur, type IotTypeCapteur,
 } from '@/hooks/iot/useIot';
-import { GRANDEURS } from '@/lib/iot/grandeurs';
+import { GRANDEURS, estGrandeurLisible } from '@/lib/iot/grandeurs';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -215,7 +215,7 @@ const AdminIot: React.FC = () => {
               <div className="grid gap-1 sm:col-span-2">
                 <Label className="text-xs">Grandeurs mesurées</Label>
                 <div className="flex flex-wrap gap-1.5">
-                  {Object.entries(GRANDEURS).map(([k, meta]) => {
+                  {Object.entries(GRANDEURS).filter(([k]) => estGrandeurLisible(k)).map(([k, meta]) => {
                     const on = (tDraft.grandeurs ?? []).includes(k);
                     return (
                       <button

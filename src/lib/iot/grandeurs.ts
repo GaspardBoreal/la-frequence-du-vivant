@@ -112,7 +112,7 @@ export function sensorProfile(type?: {
   profondeurs_m?: (number | string)[] | null;
 } | null): SensorProfile {
   const raw = (type?.famille ?? '').toLowerCase();
-  const expected = (type?.grandeurs ?? []).filter(Boolean) as string[];
+  const expected = ((type?.grandeurs ?? []).filter(Boolean) as string[]).filter(estGrandeurLisible);
   const profondeurs = (type?.profondeurs_m ?? []).map(Number).filter((n) => Number.isFinite(n));
   const famille: SensorFamille =
     raw === 'sol' ? 'sol' : raw === 'meteo' || raw === 'météo' ? 'meteo' : profondeurs.length ? 'sol' : 'autre';
@@ -140,8 +140,9 @@ export const expectedSlots = (
   grandeursDeclarees?: string[] | null,
 ): ExpectedSlot[] => {
   const list = (profondeurs ?? []).map(Number).filter((n) => Number.isFinite(n));
+  const declarees = (grandeursDeclarees ?? []).filter(estGrandeurLisible);
   const allowed = DEPTH_GRANDEURS.filter(
-    (g) => !grandeursDeclarees || grandeursDeclarees.length === 0 || grandeursDeclarees.includes(g),
+    (g) => estGrandeurLisible(g) && (declarees.length === 0 || declarees.includes(g)),
   );
   return allowed.flatMap((g) => list.map((p) => ({ grandeur: g, profondeur_m: p })));
 };
