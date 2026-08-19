@@ -351,32 +351,58 @@ export function useAllCapteursGeo() {
 }
 
 
-/** Série temporelle d'une sonde sur une plage libre (observatoire). */
+export interface MesureRangeResult {
+  rows: any[];
+  /** Vrai si le plafond de lecture a été atteint (les plus anciens manquent). */
+  truncated: boolean;
+}
+
+const RANGE_PAGE = 1000;
+const RANGE_MAX_ROWS = 20000;
+
+/**
+ * Série temporelle d'une sonde sur une plage libre (observatoire).
+ * Lecture paginée du plus récent vers le plus ancien : PostgREST plafonne à
+ * 1000 lignes par requête, donc un tri ascendant amputait systématiquement
+ * les jours récents (dont le jour en cours) sur 7 j / 30 j / 90 j / 1 an.
+ */
 export function useMesureSeriesRange(capteurId?: string, fromISO?: string, toISO?: string) {
-  return useQuery<any[]>({
+  return useQuery<MesureRangeResult>({
     queryKey: ['iot-mesures', 'range', capteurId, fromISO, toISO],
     enabled: !!capteurId && !!fromISO && !!toISO,
     queryFn: async () => {
-      const { data, error } = await db
-        .from('iot_mesures')
-        .select('*')
-        .eq('capteur_id', capteurId)
-        .eq('rejected', false)
-        .not('grandeur', 'in', '("soil_capacitance")')
-        .neq('source', 'webhook_test')
-        .gte('mesure_at', fromISO)
-        .lte('mesure_at', toISO)
-        .order('mesure_at', { ascending: true })
-        .limit(20000);
-      if (error) throw error;
-      return filtrerMesuresLisibles(data ?? []).map((m: any) => ({
-        ...m,
-        valeur: Number(m.valeur),
-        profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),
-      }));
+      const collected: any[] = [];
+      let truncated = false;
+      for (let offset = 0; offset < RANGE_MAX_ROWS; offset += RANGE_PAGE) {
+        const { data, error } = await db
+          .from('iot_mesures')
+          .select('*')
+          .eq('capteur_id', capteurId)
+          .eq('rejected', false)
+          .not('grandeur', 'in', '("soil_capacitance")')
+          .neq('source', 'webhook_test')
+          .gte('mesure_at', fromISO)
+          .lte('mesure_at', toISO)
+          .order('mesure_at', { ascending: false })
+          .range(offset, offset + RANGE_PAGE - 1);
+        if (error) throw error;
+        const page = data ?? [];
+        collected.push(...page);
+        if (page.length < RANGE_PAGE) break;
+        if (offset + RANGE_PAGE >= RANGE_MAX_ROWS) truncated = true;
+      }
+      const rows = filtrerMesuresLisibles(collected)
+        .map((m: any) => ({
+          ...m,
+          valeur: Number(m.valeur),
+          profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),
+        }))
+        .sort((a: any, b: any) => new Date(a.mesure_at).getTime() - new Date(b.mesure_at).getTime());
+      return { rows, truncated };
     },
   });
 }
+
 
 /** Séries de plusieurs sondes sur une fenêtre glissante (agrégats IA). */
 export interface SensorSpan {
