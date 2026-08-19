@@ -1,9 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Compass, Leaf, Check, ChevronDown, Radio } from 'lucide-react';
+import { Compass, Leaf, Check, ChevronDown, Radio, Star } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useUserAppsAccess, ProprieteAccess, PartenaireIotAccess } from '@/hooks/useUserAppsAccess';
 import { ProprieteTile } from '@/components/community/ProprieteTile';
+import { AppChoiceDialog, getDefaultAppTarget } from '@/components/community/AppChoiceDialog';
 import { cn } from '@/lib/utils';
 
 interface AppSwitcherProps {
@@ -17,6 +18,12 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
   const { data } = useUserAppsAccess(userId);
   const proprietes = data?.proprietesAccessibles ?? [];
   const partenaires = data?.partenairesIot ?? [];
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [defaultTarget, setDefaultTarget] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setDefaultTarget(getDefaultAppTarget());
+  }, [settingsOpen]);
 
   // Only show switcher if user has at least one other espace
   if (proprietes.length === 0 && partenaires.length === 0) return null;
@@ -30,8 +37,15 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
 
   const go = (path: string) => navigate(path);
 
+  const DefaultStar = () => (
+    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 flex-shrink-0" aria-label="Ouverture automatique" />
+  );
+
+
   return (
+    <>
     <Popover>
+
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -63,8 +77,10 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
             <div className="text-sm font-medium text-foreground">Mon Espace</div>
             <div className="text-[11px] text-muted-foreground">Marches du Vivant</div>
           </div>
+          {defaultTarget === 'mon-espace' && <DefaultStar />}
           {currentContext === 'mdv' && <Check className="w-4 h-4 text-primary" />}
         </button>
+
 
         {proprietes.length > 0 && (
           <div className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 pt-3 pb-1">
@@ -99,7 +115,9 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
                     {p.ville ?? '—'} · {p.role}
                   </div>
                 </div>
+                {defaultTarget === `propriete:${p.slug}` && <DefaultStar />}
                 {active && <Check className="w-4 h-4 text-primary" />}
+
               </button>
             );
           })}
@@ -135,6 +153,7 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
                         {f.capteurs_count} sonde{f.capteurs_count > 1 ? 's' : ''} · partenaire IoT
                       </div>
                     </div>
+                    {defaultTarget === `partenaire-iot:${f.slug}` && <DefaultStar />}
                     {active && <Check className="w-4 h-4 text-primary" />}
                   </button>
                 );
@@ -142,9 +161,30 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
             </div>
           </>
         )}
+
+        <div className="mt-2 pt-2 border-t border-border/60">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="w-full flex items-center gap-2 rounded-lg px-2 py-2 text-left text-[12px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+          >
+            <Star className="w-3.5 h-3.5 text-amber-500" />
+            Choisir mon espace de démarrage…
+          </button>
+        </div>
       </PopoverContent>
     </Popover>
+
+    <AppChoiceDialog
+      open={settingsOpen}
+      onOpenChange={setSettingsOpen}
+      proprietes={proprietes}
+      partenaires={partenaires}
+      mode="settings"
+    />
+    </>
   );
 };
+
 
 export default AppSwitcher;

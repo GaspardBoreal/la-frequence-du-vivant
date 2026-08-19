@@ -16,9 +16,16 @@ interface Props {
   partenaires?: PartenaireIotAccess[];
   /** Appelé si le dialogue est fermé sans qu'aucun espace n'ait été choisi. */
   onDismiss?: () => void;
+  /**
+   * `launch` (défaut) : dialogue de bienvenue à la connexion.
+   * `settings` : réglage de l'espace de démarrage depuis le sélecteur d'espaces.
+   */
+  mode?: 'launch' | 'settings';
 }
 
-export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, partenaires = [], onDismiss }: Props) {
+export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, partenaires = [], onDismiss, mode = 'launch' }: Props) {
+  const isSettings = mode === 'settings';
+
   const navigate = useNavigate();
   const chosenRef = useRef(false);
   const [defaultTarget, setDefaultTarget] = useState<string | null>(null);
@@ -86,8 +93,13 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
           <span className="shrink-0">{icon}</span>
           <span className="flex-1 min-w-0">
             <span className="block font-semibold text-white text-sm truncate">{title}</span>
-            {subtitle && <span className="block text-xs text-emerald-100/70 truncate">{subtitle}</span>}
+            {isDefault ? (
+              <span className="block text-xs text-amber-200/90 truncate">Ouverture automatique</span>
+            ) : (
+              subtitle && <span className="block text-xs text-emerald-100/70 truncate">{subtitle}</span>
+            )}
           </span>
+
         </button>
         <button
           type="button"
@@ -113,12 +125,15 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
       >
         <DialogHeader>
           <DialogTitle className="text-xl text-white">
-            Bienvenue {prenom ? `${prenom} ` : ''}🌿
+            {isSettings ? 'Espace de démarrage' : `Bienvenue ${prenom ? `${prenom} ` : ''}🌿`}
           </DialogTitle>
           <DialogDescription className="text-emerald-100/75">
-            {totalSpaces} espaces disponibles. Où souhaitez-vous aller ?
+            {isSettings
+              ? 'Touchez l’étoile pour choisir l’espace ouvert automatiquement à la connexion, ou pour la retirer et retrouver ce choix à chaque fois.'
+              : `${totalSpaces} espaces disponibles. Où souhaitez-vous aller ?`}
           </DialogDescription>
         </DialogHeader>
+
 
         <div className="space-y-2">
           <Row
@@ -200,6 +215,11 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
 export function getDefaultAppTarget(): string | null {
   try { return localStorage.getItem(DEFAULT_KEY); } catch { return null; }
 }
+
+export function setDefaultAppTarget(target: string) {
+  try { localStorage.setItem(DEFAULT_KEY, target); } catch { /* stockage indisponible */ }
+}
+
 
 export function clearDefaultAppTarget() {
   try { localStorage.removeItem(DEFAULT_KEY); } catch { /* stockage indisponible */ }
