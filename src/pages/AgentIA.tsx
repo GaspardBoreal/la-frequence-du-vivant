@@ -52,6 +52,71 @@ const steps = [
   { when: 'Jour 14',   title: 'Premier Pack Vivant',desc: 'Bilan publiable (PDF + page /m/:slug), Fréquence calculée, zones blanches identifiées.' },
 ];
 
+const SITE = 'https://la-frequence-du-vivant.com';
+const AGENT_URL = `${SITE}/agent-ia`;
+const AGENT_IMAGE = `${SITE}/agent-ia-marches-du-vivant.png`;
+
+/** Faits courts, autonomes et citables — pensés pour les moteurs et les modèles de langage. */
+const enBref = [
+  "Nom de l'agent : Les Marches du Vivant.",
+  "Éditeur : La Fréquence du Vivant, association loi 1901 (Charente, Nouvelle-Aquitaine).",
+  "Fonction : mesurer collectivement la biodiversité d'un lieu pendant une marche de terrain.",
+  "Entrées : photos géolocalisées, enregistrements sonores, témoignages, traces GPX, données iNaturalist, Pl@ntNet et GBIF.",
+  "Sorties : indice « Fréquence du Vivant », liste d'espèces enrichie, zones blanches à explorer, Pack Vivant (PDF, Excel, CSV, GeoJSON, KML).",
+  "Usage : collectivités et parcs naturels, domaines agricoles, entreprises (RSE / CSRD), associations et écoles.",
+  "Cadre : open source (MIT), RGPD, hébergement en Union européenne, données non revendues, flou GPS sur les espèces sensibles.",
+];
+
+const AGENT_JSONLD = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${SITE}/#organization`,
+      name: 'La Fréquence du Vivant',
+      url: `${SITE}/`,
+      description:
+        "Association loi 1901 : bioacoustique, science participative et transition agroécologique. Éditrice de l'agent IA Les Marches du Vivant.",
+      sameAs: [`${SITE}/marches-du-vivant`, `${SITE}/marches-du-vivant/association`],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${AGENT_URL}#software`,
+      name: 'Les Marches du Vivant',
+      alternateName: 'Agent IA Les Marches du Vivant',
+      applicationCategory: 'BusinessApplication',
+      applicationSubCategory: 'Agent IA — biodiversité, agriculture, science participative',
+      operatingSystem: 'Web (navigateur, mobile-first)',
+      url: AGENT_URL,
+      image: AGENT_IMAGE,
+      inLanguage: 'fr',
+      datePublished: '2026-08-19',
+      softwareVersion: '1.3',
+      license: 'https://opensource.org/licenses/MIT',
+      isAccessibleForFree: true,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+      areaServed: { '@type': 'Country', name: 'France' },
+      publisher: { '@id': `${SITE}/#organization` },
+      author: { '@id': `${SITE}/#organization` },
+      description:
+        "Agent IA de mesure collaborative de la biodiversité édité par l'association La Fréquence du Vivant : collecte multimodale sur le terrain (photos géolocalisées, sons, témoignages, traces GPX), identification des espèces par vision et bioacoustique, calcul de l'indice Fréquence du Vivant, détection des zones blanches et exports ouverts (PDF, Excel, CSV, GeoJSON, KML).",
+      featureList: [
+        'Collecte multimodale géolocalisée (photo, audio, texte, GPX)',
+        "Identification d'espèces par vision et bioacoustique",
+        'Résolution des noms français et classification écologique (12 fonctions)',
+        'Calcul de la Fréquence du Vivant et détection des zones blanches',
+        'Chatbot contextuel pour élus, agriculteurs et scientifiques',
+        'Exports ouverts : PDF, Excel, CSV, GeoJSON, KML',
+        'API et serveur MCP (Model Context Protocol)',
+      ],
+      keywords:
+        'biodiversité, agriculture, agroécologie, science participative, sol vivant, collectivités, RSE, CSRD, données géospatiales, bioacoustique',
+      sameAs: [`${SITE}/marches-du-vivant`, `${SITE}/roadmap/frequence-jardin`],
+    },
+  ],
+};
+
+
 const AgentIA: React.FC = () => {
   const { data: live } = usePublicGlobalStats();
   const stats = [
@@ -81,9 +146,18 @@ const AgentIA: React.FC = () => {
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
         <title>Agent IA · Les Marches du Vivant — Mesure collaborative de la biodiversité</title>
-        <meta name="description" content="Fiche Agent IA — Les Marches du Vivant : agent IA collaboratif de mesure de la biodiversité en domaine agricole. Open source, IA responsable, données souveraines." />
+        <meta name="description" content="Les Marches du Vivant, agent IA de mesure collaborative de la biodiversité édité par l'association La Fréquence du Vivant : collecte multimodale, identification des espèces, indice Fréquence du Vivant, exports ouverts." />
         <link rel="canonical" href="https://la-frequence-du-vivant.com/agent-ia" />
+        <meta property="og:title" content="Les Marches du Vivant — Agent IA de mesure collaborative de la biodiversité" />
+        <meta property="og:description" content="Agent IA édité par l'association La Fréquence du Vivant : collecte multimodale sur le terrain, identification des espèces, indice Fréquence du Vivant, exports PDF / CSV / GeoJSON / KML." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={AGENT_URL} />
+        <meta property="og:image" content={AGENT_IMAGE} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={AGENT_IMAGE} />
+        <script type="application/ld+json">{JSON.stringify(AGENT_JSONLD)}</script>
       </Helmet>
+
 
       {/* Nav */}
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -118,6 +192,23 @@ const AgentIA: React.FC = () => {
           <Badge variant="outline">Open Source · MIT</Badge>
         </div>
       </section>
+
+      {/* En bref — faits courts et citables (SEO / GEO) */}
+      <section className="container mx-auto px-4 pb-4 max-w-5xl">
+        <Card className="p-6 md:p-8 border-primary/20 bg-primary/5">
+          <h2 className="text-sm uppercase tracking-widest text-primary mb-4">En bref</h2>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {enBref.map((fact) => (
+              <li key={fact} className="flex items-start gap-2 text-sm leading-relaxed">
+                <Leaf className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <span>{fact}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </section>
+
+
 
       {/* Mission */}
       <section className="container mx-auto px-4 py-16 max-w-5xl">
