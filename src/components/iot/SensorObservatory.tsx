@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
 import { useMesureSeriesRange } from '@/hooks/iot/useIotTelemetry';
 import { grandeurMeta, fmtProfondeur, fmtHorodatage, compareGrandeurs } from '@/lib/iot/grandeurs';
+import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
+
 
 type PresetKey = '24h' | '7j' | '30j' | '90j' | '1an' | 'perso';
 
@@ -41,6 +43,14 @@ export const SensorObservatory: React.FC<Props> = ({ capteur, onClose }) => {
   const [preset, setPreset] = React.useState<PresetKey>('7j');
   const [customFrom, setCustomFrom] = React.useState(dayKey(new Date(Date.now() - 7 * 86_400_000)));
   const [customTo, setCustomTo] = React.useState(dayKey(new Date()));
+
+  // Surface plein écran (z-3000) : le chatbot doit passer devant, sinon
+  // « IA de Jardin » ouvre une fenêtre invisible derrière l'observatoire.
+  React.useEffect(() => {
+    fullscreenSurfaces.push();
+    return () => fullscreenSurfaces.pop();
+  }, []);
+
 
   const { from, to } = React.useMemo(() => {
     if (preset === 'perso') {
