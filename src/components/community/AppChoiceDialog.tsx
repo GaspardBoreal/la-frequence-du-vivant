@@ -193,11 +193,6 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
     );
   };
 
-  const Kbd = ({ children }: { children: React.ReactNode }) => (
-    <kbd className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded border border-white/15 bg-white/[0.07] text-[10px] font-medium text-emerald-100/80">
-      {children}
-    </kbd>
-  );
 
   let idx = -1;
   const nextIndex = () => ++idx;
@@ -340,7 +335,7 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
             {partenaireEntries.length > 0 && (
               <>
                 <SectionTitle count={partenaireEntries.length}>Vos espaces partenaires</SectionTitle>
-                <div className="grid gap-2 pb-1">
+                <div className="relative z-0 grid gap-2 pt-1 pb-1">
                   {partenaireEntries.map((entry) => {
                     if (entry.kind !== 'partenaire') return null;
                     const f = entry.f;
@@ -385,11 +380,26 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
                           <div className="font-semibold text-white text-[15px] leading-snug line-clamp-2 mt-0.5">
                             {f.nom}
                           </div>
-                          <div className="mt-1 inline-flex items-center gap-1.5 text-[13px] text-emerald-50/85">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)] shrink-0" />
-                            <span className="tabular-nums font-semibold text-white">{f.capteurs_count}</span>
-                            sonde{f.capteurs_count > 1 ? 's' : ''} active{f.capteurs_count > 1 ? 's' : ''}
-                          </div>
+                          {(() => {
+                            const maint = f.capteurs_maintenance ?? 0;
+                            const actives = f.capteurs_actifs ?? Math.max(f.capteurs_count - maint, 0);
+                            return (
+                              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
+                                <span className="inline-flex items-center gap-1.5 text-emerald-50/90">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)] shrink-0" />
+                                  <span className="tabular-nums font-semibold text-white">{actives}</span>
+                                  sonde{actives > 1 ? 's' : ''} active{actives > 1 ? 's' : ''}
+                                </span>
+                                {maint > 0 && (
+                                  <span className="inline-flex items-center gap-1.5 text-amber-200/90">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                                    <span className="tabular-nums font-semibold">{maint}</span>
+                                    en maintenance
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                         <ArrowRight className="hidden sm:block w-4 h-4 self-center text-sky-300 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all shrink-0" />
                       </button>
@@ -402,18 +412,6 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
         </div>
 
         <div className="shrink-0 mt-2 pt-2.5 border-t border-white/10 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
-          {showSearch && (
-            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-emerald-200/70">
-              <Kbd>↑</Kbd>
-              <Kbd>↓</Kbd>
-              <span className="mx-0.5">naviguer</span>
-              <Kbd>Entrée</Kbd>
-              <span>ouvrir</span>
-            </span>
-          )}
-          <p className="text-xs text-emerald-200/60">
-            Changement d'espace possible depuis le sélecteur en haut de page.
-          </p>
           {defaultTarget && (
             <button
               type="button"

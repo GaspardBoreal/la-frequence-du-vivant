@@ -18,6 +18,10 @@ export interface PartenaireIotAccess {
   slug: string;
   logo_url: string | null;
   capteurs_count: number;
+  /** Sondes en service (hors maintenance). */
+  capteurs_actifs?: number;
+  /** Sondes déclarées en maintenance. */
+  capteurs_maintenance?: number;
 }
 
 export interface UserAppsAccess {
