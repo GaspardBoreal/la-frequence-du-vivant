@@ -82,7 +82,6 @@ export const GRANDEUR_LABELS: Record<string, string> = {
   air_humidity: "Humidité de l'air",
   luminosity: 'Luminosité',
   uv_index: 'Indice UV',
-  soil_capacitance: 'Capacitance de sol',
   soil_moisture: 'Humidité de sol (par horizon)',
   soil_temperature: 'Température de sol',
   dew_point: 'Point de rosée',
@@ -96,7 +95,6 @@ const ATTENDUES = [
   'air_humidity',
   'luminosity',
   'uv_index',
-  'soil_capacitance',
   'soil_moisture',
 ] as const;
 
@@ -179,7 +177,7 @@ export function anomalies(r: TrustReport): Anomalie[] {
       titre: 'Humidité de sol par profondeur absente',
       detail:
         humiditeSol === 0
-          ? "Seule la capacitance brute arrive, sans profondeur associée. Les sondes sont pourtant des 5/15, 5/30 et 30/60 : il manque l'humidité volumique par horizon, ou à défaut la table de conversion tension → humidité."
+          ? "Aucune humidité de sol par horizon n'est transmise. Les sondes sont pourtant des 5/15, 5/30 et 30/60 : il manque l'humidité volumique par profondeur."
           : `${humiditeSol} relevés d'humidité de sol reçus, dont ${avecProfondeur} avec une profondeur explicite.`,
       impact: 'Registre de sol incomplet — donnée agronomique clé',
       resolu: humiditeSol > 0 && avecProfondeur > 0,
@@ -196,7 +194,6 @@ export const DEMANDES = [
 ];
 
 export const QUESTIONS_OUVERTES = [
-  'La capacitance en volts peut-elle être convertie en humidité volumique ? Si oui, avec quelle table par type de sonde (5/15, 5/30, 30/60) ?',
   'Chaque horizon de la sonde peut-il être publié comme une mesure distincte portant sa profondeur en centimètres ?',
   'batteryPercentage provient-il du module radio ou de la sonde ? Peut-il être omis tant qu’il n’est pas fiable ?',
   'Quelle cadence de publication recommandez-vous pour un suivi agronomique quotidien, en tenant compte de l’autonomie ?',
