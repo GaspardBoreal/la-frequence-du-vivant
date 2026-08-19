@@ -43,7 +43,9 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
 
 
   return (
+    <>
     <Popover>
+
       <PopoverTrigger asChild>
         <button
           type="button"
