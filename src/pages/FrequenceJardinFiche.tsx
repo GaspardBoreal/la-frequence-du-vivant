@@ -14,6 +14,9 @@ import {
   logosByFamily,
   logoImageUrl,
   logoPageUrl,
+  logoArbitrage,
+  logoStatusLabels,
+
 
 } from '@/content/frequenceJardinFiche';
 
