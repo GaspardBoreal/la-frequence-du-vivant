@@ -396,7 +396,7 @@ const PAGE = 1000;
 /** Plafond par sonde : au-delà, on garde le plus récent et on le dit. */
 const MAX_ROWS_PER_SENSOR = 8000;
 
-const EMPTY_WINDOW: MesuresWindow = { rows: [], truncated: false, spans: {} };
+export const EMPTY_WINDOW: MesuresWindow = { rows: [], truncated: false, spans: {} };
 
 /**
  * Mesures d'une fenêtre glissante, lues sonde par sonde et page par page.
@@ -412,7 +412,12 @@ export function useMesuresWindow(capteurIds: string[], days: number) {
     queryKey: ['iot-mesures', 'window', ids.join(','), days],
     enabled: ids.length > 0,
     staleTime: 120_000,
-    initialData: EMPTY_WINDOW,
+    // Pas d'`initialData` ici : une fenêtre vide serait considérée comme une
+    // donnée fraîche et la requête ne partirait jamais (0 relevé affiché alors
+    // que les sondes émettent). On conserve simplement l'ancienne fenêtre
+    // pendant un changement de période.
+    placeholderData: (prev: MesuresWindow | undefined) => prev,
+
     queryFn: async () => {
       const since = new Date(Date.now() - days * 86_400_000).toISOString();
 

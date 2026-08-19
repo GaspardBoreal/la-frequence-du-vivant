@@ -68,7 +68,8 @@ const AnalysesTab: React.FC = () => {
   const [level, setLevel] = React.useState<LevelKey>('simple');
   const [selected, setSelected] = React.useState<string | null>(null);
 
-  const { capteurs, excluded, byCapteur, isLoading, mesureCount, spans, truncated } = useIotAnalyses(windowDays);
+  const { capteurs, excluded, byCapteur, isLoading, isFetching, error, isEmpty, mesureCount, spans, truncated } =
+    useIotAnalyses(windowDays);
 
   const capteur = React.useMemo(
     () => capteurs.find((c) => c.id === selected) ?? capteurs[0] ?? null,
@@ -76,6 +77,9 @@ const AnalysesTab: React.FC = () => {
   );
   const analysis = capteur ? byCapteur.get(capteur.id) ?? null : null;
 
+  /** Tant que la lecture n'est pas finie, aucun verdict n'est prononcé. */
+  const reading = isLoading || (isFetching && mesureCount === 0);
+  const showVerdicts = !reading && !error && mesureCount > 0;
 
   return (
     <div className="space-y-5">
@@ -84,11 +88,16 @@ const AnalysesTab: React.FC = () => {
         <div className="min-w-0">
           <div className="text-sm font-semibold">Analyses</div>
           <p className="text-[11px] text-muted-foreground">
-            {isLoading
+            {reading
               ? 'Lecture des mesures…'
-              : `${capteurs.length} sonde${capteurs.length > 1 ? 's' : ''} · ${mesureCount} relevés sur ${windowDays} jours`}
+              : error
+                ? 'Lecture des mesures indisponible'
+                : `${capteurs.length} sonde${capteurs.length > 1 ? 's' : ''} · ${mesureCount} relevé${
+                    mesureCount > 1 ? 's' : ''
+                  } sur ${windowDays} jours${isFetching ? ' · actualisation…' : ''}`}
           </p>
         </div>
+
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <div className="flex rounded-full border border-border/60 bg-background p-1">
@@ -157,7 +166,28 @@ const AnalysesTab: React.FC = () => {
         </div>
       )}
 
-      {level === 'simple' ? (
+      {error && (
+        <div className="rounded-2xl border border-dashed border-destructive/50 bg-destructive/10 p-4 text-sm text-muted-foreground">
+          Les mesures n’ont pas pu être lues sur cette fenêtre. Ce n’est pas un silence des sondes : réessayez dans un
+          instant ou choisissez une fenêtre plus courte.
+        </div>
+      )}
+
+      {reading && capteurs.length > 0 && (
+        <div className="rounded-2xl border border-border/60 bg-card/40 p-6 text-center text-sm text-muted-foreground">
+          Lecture des mesures sur {windowDays} jours…
+        </div>
+      )}
+
+      {isEmpty && capteurs.length > 0 && (
+        <div className="rounded-2xl border border-dashed border-border/60 bg-card/40 p-6 text-center text-sm text-muted-foreground">
+          Aucun relevé sur les {windowDays} derniers jours pour ces sondes. Élargissez la fenêtre pour retrouver leurs
+          dernières transmissions.
+        </div>
+      )}
+
+      {!showVerdicts ? null : level === 'simple' ? (
+
         <div className="grid gap-4 xl:grid-cols-2">
           {capteurs.map((c) => {
             const a = byCapteur.get(c.id);
