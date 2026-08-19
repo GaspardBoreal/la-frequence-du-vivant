@@ -16,6 +16,8 @@ import {
   FICHE_URL,
   SITE_URL,
 } from '@/content/frequenceJardinFiche';
+import { BRAND_LOGO_VARIANTS, brandLogoImageObject } from '@/content/brandLogo';
+
 
 /** Page dédiée à un logo Fréquence Jardin — URL stable, indexable en recherche d'images. */
 const FrequenceJardinLogo: React.FC = () => {
