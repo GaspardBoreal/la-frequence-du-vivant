@@ -331,7 +331,40 @@ const AgentIA: React.FC = () => {
         </div>
       </section>
 
+      {/* À l'origine de l'agent */}
+      <section className="container mx-auto px-4 py-16 max-w-5xl">
+        <div className="flex items-center gap-3 mb-3">
+          <Sparkles className="h-6 w-6 text-primary" />
+          <h2 className="text-3xl md:text-4xl font-bold">À l'origine de l'agent</h2>
+        </div>
+        <p className="text-muted-foreground mb-8 max-w-3xl">
+          L'agent <strong>Les Marches du Vivant</strong> est édité par l'association{' '}
+          <Link to="/marches-du-vivant/association" className="text-primary underline underline-offset-4">
+            La Fréquence du Vivant
+          </Link>
+          . Il est né de la rencontre de deux contributeurs.
+        </p>
+        <div className="grid md:grid-cols-2 gap-6">
+          {contributeurs.map((c) => (
+            <Card key={c.nom} className="p-6 border-primary/20">
+              <h3 className="font-bold text-lg">{c.nom}</h3>
+              <p className="text-sm text-primary font-medium mb-3">{c.role}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{c.apport}</p>
+              <a
+                href={c.lien}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 mt-4 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {c.lienLabel} →
+              </a>
+            </Card>
+          ))}
+        </div>
+      </section>
+
       {/* Pour qui */}
+
       <section className="container mx-auto px-4 py-16 max-w-6xl">
         <div className="flex items-center gap-3 mb-8">
           <Users className="h-6 w-6 text-primary" />
