@@ -252,6 +252,7 @@ export function useLatestMesures(capteurIds: string[]) {
         .select('*')
         .in('capteur_id', ids)
         .eq('rejected', false)
+        .not('grandeur', 'in', '("soil_capacitance")')
         .order('mesure_at', { ascending: false })
         .limit(1500);
       if (error) throw error;
@@ -288,6 +289,7 @@ export function useMesureSeries(capteurId?: string, days = 30) {
         .select('*')
         .eq('capteur_id', capteurId)
         .eq('rejected', false)
+        .not('grandeur', 'in', '("soil_capacitance")')
         .neq('source', 'webhook_test')
         .gte('mesure_at', since)
         .order('mesure_at', { ascending: true })
