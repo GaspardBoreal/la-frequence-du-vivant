@@ -70,7 +70,7 @@ const FrequenceJardinLogo: React.FC = () => {
         <title>{title.slice(0, 70)}</title>
         <meta name="description" content={description.slice(0, 158)} />
         <link rel="canonical" href={pageUrl} />
-        <meta property="og:title" content={`${logo.name} — logo Fréquence Jardin`} />
+        <meta property="og:title" content={`${logo.name} — logo ${famLabel}`} />
         <meta property="og:description" content={description} />
         <meta property="og:url" content={pageUrl} />
         <meta property="og:type" content="article" />
@@ -150,7 +150,7 @@ const FrequenceJardinLogo: React.FC = () => {
             )}
           </div>
           <h1 className="mt-3 text-3xl font-semibold text-foreground sm:text-4xl">
-            {logo.name} — logo Fréquence Jardin
+            {logo.name} — logo ${famLabel}
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
             {logo.intention}
@@ -168,7 +168,7 @@ const FrequenceJardinLogo: React.FC = () => {
           <img
             src={logo.src}
             alt={logo.alt}
-            title={`${logo.name} — logo Fréquence Jardin, La Fréquence du Vivant`}
+            title={`${logo.name} — logo ${famLabel}, La Fréquence du Vivant`}
             width={logo.width}
             height={logo.height}
             loading="eager"
