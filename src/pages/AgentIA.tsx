@@ -6,10 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
-import logoEmpreinte from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante.png.asset.json';
+import {
+  BRAND_LOGO_ALT,
+  BRAND_LOGO_CAPTION,
+  BRAND_LOGO_HEIGHT,
+  BRAND_LOGO_ID,
+  BRAND_LOGO_PATH,
+  BRAND_LOGO_TITLE,
+  BRAND_LOGO_URL,
+  BRAND_LOGO_WIDTH,
+  brandLogoImageObject,
+} from '@/content/brandLogo';
 
 /** Logo retenu pour Les Marches du Vivant : « Empreinte vivante ». */
-const LOGO_SRC = logoEmpreinte.url;
+const LOGO_SRC = BRAND_LOGO_PATH;
+
 
 
 
@@ -100,17 +111,19 @@ const PERSON_GB = `${AGENT_URL}#gaspard-boreal`;
 const AGENT_JSONLD = {
   '@context': 'https://schema.org',
   '@graph': [
+    brandLogoImageObject(AGENT_URL, false),
     {
       '@type': 'Organization',
       '@id': `${SITE}/#organization`,
       name: 'La Fréquence du Vivant',
       url: `${SITE}/`,
-      logo: `${SITE}${LOGO_SRC}`,
-
+      logo: { '@id': BRAND_LOGO_ID },
+      image: { '@id': BRAND_LOGO_ID },
       description:
         "Association loi 1901 : bioacoustique, science participative et transition agroécologique. Éditrice de l'agent IA Les Marches du Vivant.",
       sameAs: [`${SITE}/marches-du-vivant`, `${SITE}/marches-du-vivant/association`],
     },
+
     {
       '@type': 'Person',
       '@id': PERSON_LT,
@@ -207,9 +220,26 @@ const AgentIA: React.FC = () => {
         <meta property="og:type" content="website" />
         <meta property="og:url" content={AGENT_URL} />
         <meta property="og:image" content={AGENT_IMAGE} />
+        <meta property="og:image:alt" content={BRAND_LOGO_ALT} />
+        <meta property="og:logo" content={BRAND_LOGO_URL} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content={AGENT_IMAGE} />
+        <meta name="twitter:image:alt" content={BRAND_LOGO_ALT} />
+        {/* Signaux recherche d'images : le logo de marque, ses dimensions et sa légende */}
+        <meta itemProp="image" content={BRAND_LOGO_URL} />
+        <meta name="thumbnail" content={BRAND_LOGO_URL} />
+        <link rel="image_src" href={BRAND_LOGO_URL} />
+        <link
+          rel="preload"
+          as="image"
+          href={LOGO_SRC}
+          imageSrcSet={`${LOGO_SRC} ${BRAND_LOGO_WIDTH}w`}
+        />
+        <meta name="image:width" content={String(BRAND_LOGO_WIDTH)} />
+        <meta name="image:height" content={String(BRAND_LOGO_HEIGHT)} />
+        <meta name="image:caption" content={BRAND_LOGO_CAPTION} />
         <script type="application/ld+json">{JSON.stringify(AGENT_JSONLD)}</script>
+
       </Helmet>
 
 
@@ -219,11 +249,13 @@ const AgentIA: React.FC = () => {
           <ArrowLeft className="h-4 w-4 shrink-0" />
           <img
             src={LOGO_SRC}
-            alt="Logo Les Marches du Vivant — Empreinte vivante"
+            alt={BRAND_LOGO_ALT}
+            title={BRAND_LOGO_TITLE}
             className="h-8 w-8 rounded-full object-cover ring-1 ring-primary/25 shrink-0"
             width={32}
             height={32}
           />
+
           <span className="truncate">Accueil</span>
         </Link>
         <Button asChild size="sm" variant="default">
@@ -238,7 +270,7 @@ const AgentIA: React.FC = () => {
       <section className="container mx-auto px-4 pt-12 pb-20 max-w-5xl">
         <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-12">
           {/* Signature visuelle — logo retenu « Empreinte vivante » */}
-          <div className="relative shrink-0 self-start md:self-center">
+          <figure className="relative shrink-0 self-start md:self-center m-0 flex flex-col items-center">
             <div
               className="absolute -inset-4 rounded-full blur-2xl opacity-60"
               style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.25), transparent 70%)' }}
@@ -246,13 +278,19 @@ const AgentIA: React.FC = () => {
             />
             <img
               src={LOGO_SRC}
-              alt="Logo Les Marches du Vivant — Empreinte vivante"
+              alt={BRAND_LOGO_ALT}
+              title={BRAND_LOGO_TITLE}
               className="relative h-28 w-28 md:h-44 md:w-44 rounded-full object-cover ring-1 ring-primary/25 shadow-2xl"
               width={176}
               height={176}
               loading="eager"
+              decoding="async"
             />
-          </div>
+            <figcaption className="relative mt-3 max-w-[11rem] text-center text-[11px] leading-snug text-muted-foreground">
+              Logo « Empreinte vivante » — Les Marches du Vivant
+            </figcaption>
+          </figure>
+
 
           <div className="min-w-0">
             <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-primary mb-6">
@@ -481,12 +519,14 @@ const AgentIA: React.FC = () => {
         <div className="mt-12 flex flex-col items-center gap-3 text-xs text-muted-foreground">
           <img
             src={LOGO_SRC}
-            alt="Logo Les Marches du Vivant"
+            alt={BRAND_LOGO_ALT}
+            title={BRAND_LOGO_TITLE}
             className="h-12 w-12 rounded-full object-cover ring-1 ring-primary/20 opacity-90"
             width={48}
             height={48}
             loading="lazy"
           />
+
           la-frequence-du-vivant.com&nbsp;
 
         </div>
