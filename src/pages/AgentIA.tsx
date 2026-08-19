@@ -6,6 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
+import logoEmpreinte from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante.png.asset.json';
+
+/** Logo retenu pour Les Marches du Vivant : « Empreinte vivante ». */
+const LOGO_SRC = logoEmpreinte.url;
+
 
 
 const sections = [
