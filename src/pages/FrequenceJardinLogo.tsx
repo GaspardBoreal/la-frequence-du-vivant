@@ -12,6 +12,7 @@ import {
   findLogo,
   logoImageUrl,
   logoPageUrl,
+  logoStatusLabels,
   FICHE_URL,
   SITE_URL,
 } from '@/content/frequenceJardinFiche';
