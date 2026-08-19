@@ -115,7 +115,9 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
                     {p.ville ?? '—'} · {p.role}
                   </div>
                 </div>
+                {defaultTarget === `propriete:${p.slug}` && <DefaultStar />}
                 {active && <Check className="w-4 h-4 text-primary" />}
+
               </button>
             );
           })}
