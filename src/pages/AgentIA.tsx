@@ -193,6 +193,23 @@ const AgentIA: React.FC = () => {
         </div>
       </section>
 
+      {/* En bref — faits courts et citables (SEO / GEO) */}
+      <section className="container mx-auto px-4 pb-4 max-w-5xl">
+        <Card className="p-6 md:p-8 border-primary/20 bg-primary/5">
+          <h2 className="text-sm uppercase tracking-widest text-primary mb-4">En bref</h2>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {enBref.map((fact) => (
+              <li key={fact} className="flex items-start gap-2 text-sm leading-relaxed">
+                <Leaf className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <span>{fact}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </section>
+
+
+
       {/* Mission */}
       <section className="container mx-auto px-4 py-16 max-w-5xl">
         <Card className="p-8 md:p-12 border-primary/20 bg-card/50 backdrop-blur">
