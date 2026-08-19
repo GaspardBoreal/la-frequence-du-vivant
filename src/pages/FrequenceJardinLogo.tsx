@@ -150,7 +150,8 @@ const FrequenceJardinLogo: React.FC = () => {
             )}
           </div>
           <h1 className="mt-3 text-3xl font-semibold text-foreground sm:text-4xl">
-            {logo.name} — logo ${famLabel}
+            {logo.name} — logo {famLabel}
+
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
             {logo.intention}
