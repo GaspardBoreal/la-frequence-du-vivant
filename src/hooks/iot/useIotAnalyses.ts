@@ -57,9 +57,10 @@ export function useIotAnalyses(windowDays: number) {
   );
 
   const ids = React.useMemo(() => capteurs.map((c) => c.id), [capteurs]);
-  const { data: win, isLoading: loadingM } = useMesuresWindow(ids, windowDays);
+  const { data: win, isLoading: loadingM, isFetching: fetchingM, error: errorM } = useMesuresWindow(ids, windowDays);
   const mesures = win?.rows ?? [];
   const spans = win?.spans ?? {};
+
 
   const byCapteur = React.useMemo(() => {
     const map = new Map<string, SensorAnalysis>();
