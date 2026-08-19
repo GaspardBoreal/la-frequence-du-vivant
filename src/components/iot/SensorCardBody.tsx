@@ -108,15 +108,8 @@ export const SensorCardBody: React.FC<Props> = ({
         )}
       </div>
 
-      {coverUrl && (
-        <img
-          src={coverUrl}
-          alt={`${capteur.nom} en situation`}
-          decoding="async"
-          fetchPriority="high"
-          className="mt-3 h-28 w-full rounded-xl object-cover"
-        />
-      )}
+      <SensorPhotoGallery capteurId={capteur.id} nom={capteur.nom} coverUrl={coverUrl} />
+
 
       <dl className="mt-3 space-y-1 text-[11px]">
         <div className="flex justify-between gap-2">
