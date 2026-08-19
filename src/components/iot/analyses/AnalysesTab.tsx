@@ -83,7 +83,7 @@ const AnalysesTab: React.FC = () => {
   const showVerdicts = !reading && !error && mesureCount > 0;
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto w-full max-w-[1400px] space-y-5">
       <header className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/60 bg-card/40 p-3">
         <Layers className="h-4 w-4 text-primary" />
         <div className="min-w-0">
@@ -189,7 +189,7 @@ const AnalysesTab: React.FC = () => {
 
       {!showVerdicts ? null : level === 'simple' ? (
 
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="space-y-4">
           {capteurs.map((c) => {
             const a = byCapteur.get(c.id);
             return a ? <SimpleRow key={c.id} capteur={c} analysis={a} span={spans[c.id] ?? null} /> : null;
