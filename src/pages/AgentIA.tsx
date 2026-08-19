@@ -100,17 +100,19 @@ const PERSON_GB = `${AGENT_URL}#gaspard-boreal`;
 const AGENT_JSONLD = {
   '@context': 'https://schema.org',
   '@graph': [
+    brandLogoImageObject(AGENT_URL, false),
     {
       '@type': 'Organization',
       '@id': `${SITE}/#organization`,
       name: 'La Fréquence du Vivant',
       url: `${SITE}/`,
-      logo: `${SITE}${LOGO_SRC}`,
-
+      logo: { '@id': BRAND_LOGO_ID },
+      image: { '@id': BRAND_LOGO_ID },
       description:
         "Association loi 1901 : bioacoustique, science participative et transition agroécologique. Éditrice de l'agent IA Les Marches du Vivant.",
       sameAs: [`${SITE}/marches-du-vivant`, `${SITE}/marches-du-vivant/association`],
     },
+
     {
       '@type': 'Person',
       '@id': PERSON_LT,
