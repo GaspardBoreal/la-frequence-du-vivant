@@ -193,8 +193,15 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
     );
   };
 
+  const Kbd = ({ children }: { children: React.ReactNode }) => (
+    <kbd className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded border border-white/15 bg-white/[0.07] text-[10px] font-medium text-emerald-100/80">
+      {children}
+    </kbd>
+  );
+
   let idx = -1;
   const nextIndex = () => ++idx;
+
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
