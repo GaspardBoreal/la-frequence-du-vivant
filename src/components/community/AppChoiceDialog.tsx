@@ -340,7 +340,7 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
             {partenaireEntries.length > 0 && (
               <>
                 <SectionTitle count={partenaireEntries.length}>Vos espaces partenaires</SectionTitle>
-                <div className="grid gap-2 pb-1">
+                <div className="relative z-0 grid gap-2 pt-1 pb-1">
                   {partenaireEntries.map((entry) => {
                     if (entry.kind !== 'partenaire') return null;
                     const f = entry.f;
