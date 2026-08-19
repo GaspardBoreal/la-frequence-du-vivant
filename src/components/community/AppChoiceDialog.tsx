@@ -244,11 +244,11 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
         <div className="relative flex-1 min-h-0 mt-2">
           {/* Fondus haut / bas */}
           <div className="pointer-events-none absolute top-0 inset-x-0 h-5 bg-gradient-to-b from-emerald-950/90 to-transparent z-30" />
-          <div className="pointer-events-none absolute bottom-0 inset-x-0 h-6 bg-gradient-to-t from-emerald-950/90 to-transparent z-30" />
+          <div className="pointer-events-none absolute bottom-0 inset-x-0 h-3 bg-gradient-to-t from-emerald-950/80 to-transparent z-30" />
 
           <div
             ref={listRef}
-            className="h-full overflow-y-auto overscroll-contain -mx-1 px-1 pb-6 space-y-1"
+            className="h-full overflow-y-auto overscroll-contain -mx-1 px-1 pb-10 space-y-1"
           >
             {flat.length === 0 && (
               <div className="py-10 text-center text-sm text-emerald-100/55">
