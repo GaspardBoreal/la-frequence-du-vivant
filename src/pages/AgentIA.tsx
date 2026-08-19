@@ -502,12 +502,14 @@ const AgentIA: React.FC = () => {
         <div className="mt-12 flex flex-col items-center gap-3 text-xs text-muted-foreground">
           <img
             src={LOGO_SRC}
-            alt="Logo Les Marches du Vivant"
+            alt={BRAND_LOGO_ALT}
+            title={BRAND_LOGO_TITLE}
             className="h-12 w-12 rounded-full object-cover ring-1 ring-primary/20 opacity-90"
             width={48}
             height={48}
             loading="lazy"
           />
+
           la-frequence-du-vivant.com&nbsp;
 
         </div>
