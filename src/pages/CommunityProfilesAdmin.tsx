@@ -88,13 +88,13 @@ const CommunityProfilesAdmin: React.FC = () => {
   const { data: adminUserIds } = useQuery({
     queryKey: ['community-admins-set'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select('user_id');
+      // RLS sur admin_users ne laisse voir que sa propre ligne : passer par la RPC sécurisée
+      const { data, error } = await supabase.rpc('get_admin_list_safe');
       if (error) throw error;
       return new Set((data || []).map((r: any) => r.user_id as string));
     },
   });
+
 
   const { data: affiliateStats } = useQuery({
     queryKey: ['community-affiliate-admin-stats'],
