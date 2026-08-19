@@ -53,7 +53,10 @@ export const SensorObservatory: React.FC<Props> = ({ capteur, onClose }) => {
     return { from: new Date(Date.now() - h * 3_600_000).toISOString(), to: new Date().toISOString() };
   }, [preset, customFrom, customTo]);
 
-  const { data: rows = [], isLoading } = useMesureSeriesRange(capteur?.id, from, to);
+  const { data: serie, isLoading } = useMesureSeriesRange(capteur?.id, from, to);
+  const rows = serie?.rows ?? [];
+  const truncated = serie?.truncated ?? false;
+
 
   const hoursSpan = Math.max(1, Math.round((new Date(to).getTime() - new Date(from).getTime()) / 3_600_000));
 
@@ -196,7 +199,9 @@ export const SensorObservatory: React.FC<Props> = ({ capteur, onClose }) => {
           )}
           <span className="ml-auto text-xs text-muted-foreground">
             {rows.length} relevés · {charts.length} grandeur{charts.length > 1 ? 's' : ''}
+            {truncated ? ' · lecture plafonnée : les relevés les plus anciens ne sont pas pris en compte' : ''}
           </span>
+
         </div>
 
         {/* Vitalité de transmission */}
