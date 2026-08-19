@@ -125,12 +125,15 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
       >
         <DialogHeader>
           <DialogTitle className="text-xl text-white">
-            Bienvenue {prenom ? `${prenom} ` : ''}🌿
+            {isSettings ? 'Espace de démarrage' : `Bienvenue ${prenom ? `${prenom} ` : ''}🌿`}
           </DialogTitle>
           <DialogDescription className="text-emerald-100/75">
-            {totalSpaces} espaces disponibles. Où souhaitez-vous aller ?
+            {isSettings
+              ? 'Touchez l’étoile pour choisir l’espace ouvert automatiquement à la connexion, ou pour la retirer et retrouver ce choix à chaque fois.'
+              : `${totalSpaces} espaces disponibles. Où souhaitez-vous aller ?`}
           </DialogDescription>
         </DialogHeader>
+
 
         <div className="space-y-2">
           <Row
