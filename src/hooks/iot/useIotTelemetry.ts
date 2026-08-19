@@ -87,7 +87,6 @@ export function useTelemetryPings(hours = 48, capteurIds?: string[]) {
         .from('iot_mesures')
         .select('capteur_id, mesure_at, source')
         .eq('rejected', false)
-        .not('grandeur', 'in', '("soil_capacitance")')
         .gte('mesure_at', since)
         .order('mesure_at', { ascending: false })
         .limit(4000);
