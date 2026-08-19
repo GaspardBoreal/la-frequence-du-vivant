@@ -124,25 +124,7 @@ const SimpleVerdictCard: React.FC<{
         <div className="text-sm font-medium">{v.action}</div>
       </div>
 
-      {suggestions.length > 0 && (
-        <div className="mt-4">
-          <div className="mb-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-            Trois espèces qui aiment ce coin
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {suggestions.slice(0, 3).map((s) => (
-              <div key={s.id} className="rounded-2xl border border-border/60 bg-background/60 p-3">
-                <div className="flex items-baseline justify-between gap-2">
-                  <div className="truncate text-sm font-medium">{s.fr}</div>
-                  <div className="text-xs text-muted-foreground">{s.score}/100</div>
-                </div>
-                <div className="truncate text-[11px] italic text-muted-foreground">{s.latin}</div>
-                <p className="mt-1 text-[11px] text-muted-foreground">{s.reason}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {fit && <SpeciesTriptych fit={fit} proprieteId={capteur?.propriete_id ?? undefined} />}
 
       {v.missing.length > 0 && (
         <p className="mt-3 text-[11px] text-muted-foreground">
