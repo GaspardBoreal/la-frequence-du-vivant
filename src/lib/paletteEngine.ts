@@ -11,7 +11,9 @@ import {
   PALETTE_BLACKLIST,
   STRATE_ORDER,
   type PaletteSpecies,
+  POTAGER_KB,
   type PaletteStrate,
+  type PaletteUsage,
 } from './plantPaletteKb';
 import type { SoilLite, PoleScore } from './plantIndicatorKb';
 
@@ -350,8 +352,6 @@ export function buildImplementation(profile: SiteProfile, zoneCount: number): Im
 }
 
 /* ── Triptyque d'usage ────────────────────────────────────────────────────── */
-
-import { POTAGER_KB, type PaletteUsage } from './plantPaletteKb';
 
 export interface UsagePick extends ScoredSpecies {
   /** Note ajustée : pour le potager, la fenêtre thermique mesurée compte aussi. */
