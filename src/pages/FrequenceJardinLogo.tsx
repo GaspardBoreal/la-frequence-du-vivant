@@ -102,8 +102,6 @@ const FrequenceJardinLogo: React.FC = () => {
             isPartOf: { '@type': 'WebPage', name: 'Fréquence Jardin — fiche application', url: FICHE_URL },
           })}
         </script>
-
-        </script>
         <script type="application/ld+json">
           {JSON.stringify({
             '@context': 'https://schema.org',
