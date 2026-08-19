@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { filtrerMesuresLisibles } from '@/lib/iot/grandeurs';
 import { capteurInScope, useIotConsole } from '@/components/iot/console/IotConsoleContext';
 
 /**
@@ -361,13 +362,14 @@ export function useMesureSeriesRange(capteurId?: string, fromISO?: string, toISO
         .select('*')
         .eq('capteur_id', capteurId)
         .eq('rejected', false)
+        .not('grandeur', 'in', '("soil_capacitance")')
         .neq('source', 'webhook_test')
         .gte('mesure_at', fromISO)
         .lte('mesure_at', toISO)
         .order('mesure_at', { ascending: true })
         .limit(20000);
       if (error) throw error;
-      return (data ?? []).map((m: any) => ({
+      return filtrerMesuresLisibles(data ?? []).map((m: any) => ({
         ...m,
         valeur: Number(m.valeur),
         profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),
@@ -431,6 +433,7 @@ export function useMesuresWindow(capteurIds: string[], days: number) {
               .select('capteur_id, grandeur, valeur, unite, profondeur_m, mesure_at, interpretation')
               .eq('capteur_id', id)
               .eq('rejected', false)
+        .not('grandeur', 'in', '("soil_capacitance")')
               .neq('source', 'webhook_test')
               .gte('mesure_at', since)
               .order('mesure_at', { ascending: false })
@@ -445,7 +448,7 @@ export function useMesuresWindow(capteurIds: string[], days: number) {
             }
           }
           rows.reverse();
-          const mapped = rows.map((m: any) => ({
+          const mapped = filtrerMesuresLisibles(rows).map((m: any) => ({
             ...m,
             valeur: Number(m.valeur),
             profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),
@@ -491,12 +494,13 @@ export function useMesuresInWindow(capteurId?: string | null, fromISO?: string |
         .select('*')
         .eq('capteur_id', capteurId)
         .eq('rejected', false)
+        .not('grandeur', 'in', '("soil_capacitance")')
         .gte('mesure_at', fromISO)
         .lt('mesure_at', toISO)
         .order('mesure_at', { ascending: true })
         .limit(500);
       if (error) throw error;
-      return (data ?? []).map((m: any) => ({
+      return filtrerMesuresLisibles(data ?? []).map((m: any) => ({
         ...m,
         valeur: Number(m.valeur),
         profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),

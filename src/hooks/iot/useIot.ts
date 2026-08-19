@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { filtrerMesuresLisibles } from '@/lib/iot/grandeurs';
 
 /* ── Types ────────────────────────────────────────────────────────────── */
 
@@ -252,12 +253,13 @@ export function useLatestMesures(capteurIds: string[]) {
         .select('*')
         .in('capteur_id', ids)
         .eq('rejected', false)
+        .not('grandeur', 'in', '("soil_capacitance")')
         .order('mesure_at', { ascending: false })
         .limit(1500);
       if (error) throw error;
       const out: Record<string, IotMesure[]> = {};
       const seen = new Set<string>();
-      (data ?? []).forEach((m: any) => {
+      filtrerMesuresLisibles(data ?? []).forEach((m: any) => {
         const k = `${m.capteur_id}|${m.grandeur}|${m.profondeur_m ?? ''}`;
         if (seen.has(k)) return;
         seen.add(k);
@@ -288,12 +290,13 @@ export function useMesureSeries(capteurId?: string, days = 30) {
         .select('*')
         .eq('capteur_id', capteurId)
         .eq('rejected', false)
+        .not('grandeur', 'in', '("soil_capacitance")')
         .neq('source', 'webhook_test')
         .gte('mesure_at', since)
         .order('mesure_at', { ascending: true })
         .limit(3000);
       if (error) throw error;
-      return (data ?? []).map((m: any) => ({
+      return filtrerMesuresLisibles(data ?? []).map((m: any) => ({
         ...m,
         valeur: Number(m.valeur),
         profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),

@@ -49,8 +49,22 @@ export const GRANDEURS: Record<string, GrandeurMeta> = {
 export const grandeurMeta = (g: string): GrandeurMeta =>
   GRANDEURS[g] ?? { label: g, unite: '', digits: 1, color: '#6b7f6b' };
 
+/**
+ * Grandeurs volontairement retirées de toute lecture : la donnée existe en base
+ * (historique conservé, ingestion inchangée) mais n'est pas exploitable, donc
+ * jamais affichée, ni tracée, ni transmise à l'IA.
+ */
+export const GRANDEURS_MASQUEES: readonly string[] = ['soil_capacitance'];
+
+/** Vrai si la grandeur peut être présentée à l'écran. */
+export const estGrandeurLisible = (g: string) => !GRANDEURS_MASQUEES.includes(g);
+
+/** Filtre commun à toutes les listes de mesures. */
+export const filtrerMesuresLisibles = <T extends { grandeur: string }>(rows: T[]): T[] =>
+  rows.filter((r) => estGrandeurLisible(r.grandeur));
+
 /** Ordre de lecture canonique : sol → air → ciel → sonde. */
-export const GRANDEUR_ORDER = Object.keys(GRANDEURS);
+export const GRANDEUR_ORDER = Object.keys(GRANDEURS).filter(estGrandeurLisible);
 const orderIndex = (g: string) => {
   const i = GRANDEUR_ORDER.indexOf(g);
   return i === -1 ? Number.POSITIVE_INFINITY : i;
@@ -98,7 +112,7 @@ export function sensorProfile(type?: {
   profondeurs_m?: (number | string)[] | null;
 } | null): SensorProfile {
   const raw = (type?.famille ?? '').toLowerCase();
-  const expected = (type?.grandeurs ?? []).filter(Boolean) as string[];
+  const expected = ((type?.grandeurs ?? []).filter(Boolean) as string[]).filter(estGrandeurLisible);
   const profondeurs = (type?.profondeurs_m ?? []).map(Number).filter((n) => Number.isFinite(n));
   const famille: SensorFamille =
     raw === 'sol' ? 'sol' : raw === 'meteo' || raw === 'météo' ? 'meteo' : profondeurs.length ? 'sol' : 'autre';
@@ -126,8 +140,9 @@ export const expectedSlots = (
   grandeursDeclarees?: string[] | null,
 ): ExpectedSlot[] => {
   const list = (profondeurs ?? []).map(Number).filter((n) => Number.isFinite(n));
+  const declarees = (grandeursDeclarees ?? []).filter(estGrandeurLisible);
   const allowed = DEPTH_GRANDEURS.filter(
-    (g) => !grandeursDeclarees || grandeursDeclarees.length === 0 || grandeursDeclarees.includes(g),
+    (g) => estGrandeurLisible(g) && (declarees.length === 0 || declarees.includes(g)),
   );
   return allowed.flatMap((g) => list.map((p) => ({ grandeur: g, profondeur_m: p })));
 };

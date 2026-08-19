@@ -12,6 +12,7 @@ import {
   expectedSlots,
   fmtProfondeur,
   grandeurMeta,
+  estGrandeurLisible,
   sensorProfile,
   type SensorProfile,
 } from './grandeurs';
@@ -101,6 +102,8 @@ export function buildSeries(mesures: Mesure[]): SerieStats[] {
   const groups = new Map<string, Mesure[]>();
   mesures.forEach((m) => {
     if (!Number.isFinite(m.valeur)) return;
+    // Garde-fou : une grandeur masquée ne construit aucune série.
+    if (!estGrandeurLisible(m.grandeur)) return;
     const k = serieKey(m.grandeur, m.profondeur_m);
     const arr = groups.get(k);
     if (arr) arr.push(m);
