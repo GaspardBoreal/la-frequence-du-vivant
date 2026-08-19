@@ -45,14 +45,23 @@ export function useCommunityFeed(userId: string | undefined) {
   return useQuery<CommunityFeedResponse>({
     queryKey: ['community-feed', userId],
     queryFn: async () => {
+      const empty: CommunityFeedResponse = { main: [], discovery: [] };
+      // Pas de session valide → on n'appelle pas la fonction (évite un 401)
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session?.access_token) return empty;
+
       const { data, error } = await supabase.functions.invoke('feed-community-new-items', {
         body: {},
       });
-      if (error) throw error;
-      return (data as CommunityFeedResponse) || { main: [], discovery: [] };
+      if (error) {
+        console.warn('[useCommunityFeed] feed indisponible:', error.message);
+        return empty;
+      }
+      return (data as CommunityFeedResponse) || empty;
     },
     enabled: !!userId,
     staleTime: 60_000,
+    retry: false,
     refetchOnWindowFocus: false,
   });
 }
