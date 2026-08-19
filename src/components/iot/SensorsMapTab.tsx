@@ -7,6 +7,8 @@ import { BarChart3, Battery, ExternalLink, MapPin, Radio, Search, Signal, Sparkl
 import SafeMapContainer from '@/components/maps/SafeMapContainer';
 import IotLayer from '@/components/propriete/iot/map/IotLayer';
 import SensorObservatory from '@/components/iot/SensorObservatory';
+import SensorCardBody from '@/components/iot/SensorCardBody';
+
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
