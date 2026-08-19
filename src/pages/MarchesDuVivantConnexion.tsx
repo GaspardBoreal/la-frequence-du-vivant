@@ -231,28 +231,49 @@ const MarchesDuVivantConnexion = () => {
         const partners: PartenaireIotAccess[] = ((apps as any)?.partenairesIot ?? []) as PartenaireIotAccess[];
 
         if (list.length >= 1 || partners.length >= 1) {
-          // Préférence mémorisée (« Toujours ouvrir cet espace ») : on court-circuite.
-          const pref = getDefaultAppTarget();
+          // Préférence mémorisée (« Toujours ouvrir cet espace ») : on court-circuite,
+          // sauf si l'utilisateur demande explicitement le choix (?choix=1).
+          const forceChoice = searchParams.get('choix') === '1';
+          const pref = forceChoice ? null : getDefaultAppTarget();
+          /** Rappel non bloquant : on explique la redirection et on offre la sortie. */
+          const notifyAuto = (label: string) => {
+            toast(`Ouvert automatiquement sur ${label}`, {
+              description: 'Vous pouvez changer d’espace de démarrage à tout moment.',
+              action: {
+                label: 'Changer',
+                onClick: () => {
+                  clearDefaultAppTarget();
+                  toast.success('Ouverture automatique désactivée — le choix vous sera redemandé.');
+                },
+              },
+            });
+          };
           if (pref === 'mon-espace') {
             navigate('/marches-du-vivant/mon-espace');
+            notifyAuto('Mon Espace Marcheur');
             return;
           }
           if (pref?.startsWith('propriete:')) {
             const slug = pref.slice('propriete:'.length);
-            if (list.some((p) => p.slug === slug)) {
+            const found = list.find((p) => p.slug === slug);
+            if (found) {
               navigate(`/propriete/${slug}`);
+              notifyAuto(found.nom);
               return;
             }
             clearDefaultAppTarget();
           }
           if (pref?.startsWith('partenaire-iot:')) {
             const slug = pref.slice('partenaire-iot:'.length);
-            if (partners.some((f) => f.slug === slug)) {
+            const found = partners.find((f) => f.slug === slug);
+            if (found) {
               navigate(`/partenaire-iot/${slug}`);
+              notifyAuto(found.nom);
               return;
             }
             clearDefaultAppTarget();
           }
+
           // Récupère le prénom pour personnaliser le dialogue.
           const { data: prof } = await supabase
             .from('community_profiles')
