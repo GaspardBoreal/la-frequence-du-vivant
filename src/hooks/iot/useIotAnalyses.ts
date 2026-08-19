@@ -2,8 +2,9 @@ import React from 'react';
 import { useAllCapteursGeo, useMesuresWindow } from './useIotTelemetry';
 import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
-import { buildSiteProfile, scoreSpecies, AXIS_LABEL, type SiteProfile } from '@/lib/paletteEngine';
-import { PALETTE_KB } from '@/lib/plantPaletteKb';
+import { buildSiteProfile, scoreSpecies, topByUsage, AXIS_LABEL, type SiteProfile } from '@/lib/paletteEngine';
+import { PALETTE_KB, type PaletteUsage } from '@/lib/plantPaletteKb';
+import { buildClimateProfile, referenceTemperature } from '@/lib/iot/climateProfile';
 import { capteurEtat, etatMeta, sensorProfile, type CapteurEtat } from '@/lib/iot/grandeurs';
 import {
   analyseSensor,
