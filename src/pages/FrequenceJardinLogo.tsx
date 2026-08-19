@@ -73,25 +73,36 @@ const FrequenceJardinLogo: React.FC = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content={imageUrl} />
         <meta name="twitter:image:alt" content={logo.alt} />
+        <meta itemProp="image" content={imageUrl} />
+        <link rel="image_src" href={imageUrl} />
         <script type="application/ld+json">
           {JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'ImageObject',
-            name: `${logo.name} — logo Fréquence Jardin`,
+            name: `${logo.name} — logo ${famLabel}`,
             alternateName: logo.alt,
             description: logo.intention,
             caption: logo.alt,
             contentUrl: imageUrl,
             url: pageUrl,
+            thumbnailUrl: imageUrl,
             width: logo.width,
             height: logo.height,
             encodingFormat: 'image/png',
             inLanguage: 'fr',
+            representativeOfPage: true,
             creditText: 'La Fréquence du Vivant',
             creator: { '@type': 'Organization', name: 'La Fréquence du Vivant', url: SITE_URL },
+            copyrightHolder: { '@type': 'Organization', name: 'La Fréquence du Vivant', url: SITE_URL },
             copyrightNotice: fiche.imprint.association,
+            license: 'https://creativecommons.org/licenses/by-nd/4.0/',
+            acquireLicensePage: pageUrl,
+            keywords: [`logo ${famLabel}`, famLabel, logo.name, 'La Fréquence du Vivant'],
+            mainEntityOfPage: pageUrl,
             isPartOf: { '@type': 'WebPage', name: 'Fréquence Jardin — fiche application', url: FICHE_URL },
           })}
+        </script>
+
         </script>
         <script type="application/ld+json">
           {JSON.stringify({
