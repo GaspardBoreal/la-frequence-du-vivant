@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
 import { useMesureSeriesRange } from '@/hooks/iot/useIotTelemetry';
 import { grandeurMeta, fmtProfondeur, fmtHorodatage, compareGrandeurs } from '@/lib/iot/grandeurs';
+import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
+
 
 type PresetKey = '24h' | '7j' | '30j' | '90j' | '1an' | 'perso';
 
