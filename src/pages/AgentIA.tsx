@@ -111,7 +111,7 @@ const enBref = [
   "Entrées : photos géolocalisées, enregistrements sonores, témoignages, traces GPX, données iNaturalist, Pl@ntNet et GBIF.",
   "Sorties : indice « Fréquence du Vivant », liste d'espèces enrichie, zones blanches à explorer, Pack Vivant (PDF, Excel, CSV, GeoJSON, KML).",
   "Usage : collectivités et parcs naturels, domaines agricoles, entreprises (RSE / CSRD), associations et écoles.",
-  "Origine terrain : première marche en août 2025 sur la Dordogne — Gaspard Boréal remonte le fleuve de Bec d'Ambès jusqu'aux pentes du Puy de Sancy (1 370 m d'altitude).",
+  "Origine terrain : première marche en août 2025 sur la Dordogne.",
   "Cadre : open source (MIT), RGPD, hébergement en Union européenne, données non revendues, flou GPS sur les espèces sensibles.",
 ];
 
