@@ -38,6 +38,9 @@ import logoGerminationSolLu from '@/assets/brand/frequence-jardin/logos/logo-ger
 
 export type FicheLogoFamily = 'lfdv' | 'jardin' | 'marches';
 
+/** Statut d'arbitrage d'une proposition de logo. */
+export type FicheLogoStatus = 'retenu' | 'variante' | 'ecarte';
+
 export interface FicheLogo {
   slug: string;
   name: string;
@@ -48,7 +51,18 @@ export interface FicheLogo {
   alt: string;
   width: number;
   height: number;
+  /** Arbitrage : logo retenu pour la famille, variante d'emploi, ou écarté. */
+  status?: FicheLogoStatus;
+  /** Règle d'emploi associée au statut (affichée sur la fiche et la page logo). */
+  usage?: string;
 }
+
+export const logoStatusLabels: Record<FicheLogoStatus, string> = {
+  retenu: 'Retenu',
+  variante: 'Variante d’emploi',
+  ecarte: 'Écarté',
+};
+
 
 export const logoFamilies: { id: FicheLogoFamily; title: string; intro: string }[] = [
   {
