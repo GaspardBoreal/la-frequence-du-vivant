@@ -27,6 +27,9 @@ import {
  */
 const LOGO_SRC = BRAND_LOGO_MARK.path;
 
+/** Fiche de l'agent sur le portail partenaire PiloTerra (lien d'entité réciproque). */
+const PILOTERRA_URL = 'https://piloterra.fr/agents/les-marches-du-vivant';
+
 
 
 
