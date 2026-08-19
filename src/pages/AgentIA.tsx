@@ -128,7 +128,11 @@ const AGENT_JSONLD = {
       image: { '@id': BRAND_LOGO_ID },
       description:
         "Association loi 1901 : bioacoustique, science participative et transition agroécologique. Éditrice de l'agent IA Les Marches du Vivant.",
-      sameAs: [`${SITE}/marches-du-vivant`, `${SITE}/marches-du-vivant/association`],
+      sameAs: [
+        `${SITE}/marches-du-vivant`,
+        `${SITE}/marches-du-vivant/association`,
+        PILOTERRA_URL,
+      ],
     },
 
     {
