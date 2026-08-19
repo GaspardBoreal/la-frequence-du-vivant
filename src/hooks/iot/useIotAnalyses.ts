@@ -114,18 +114,48 @@ export interface PaletteFitRow {
   vegetalLocal: boolean;
 }
 
+export interface UsageRow extends PaletteFitRow {
+  /** Note ajustée (fenêtre thermique prise en compte pour le potager). */
+  fit: number;
+  /** Justification affichée sous le nom. */
+  why: string;
+}
+
 export interface PaletteFit {
   profile: SiteProfile;
   rows: PaletteFitRow[];
+  /** Triptyque : nourriciers ligneux, légumes, ornementaux. */
+  groups: Record<PaletteUsage, UsageRow[]>;
   /** Ce qui vient de la sonde, ce qui vient du registre de sol. */
   basis: string[];
   missing: string[];
+  /** Vrai quand le profil vient d'une station météo (lecture indirecte). */
+  fromClimate: boolean;
+  /** Température de référence utilisée pour la fenêtre potagère. */
+  referenceTempC: number | null;
 }
+
+const toRow = (s: ReturnType<typeof scoreSpecies>): PaletteFitRow => ({
+  id: s.species.id,
+  fr: s.species.fr,
+  latin: s.species.latin,
+  strate: s.species.strate,
+  score: s.score,
+  worstAxis: s.worstAxis,
+  worstLabel: AXIS_LABEL[s.worstAxis],
+  reason: s.species.reason,
+  service: s.species.service,
+  vegetalLocal: s.species.vegetalLocal,
+});
 
 /**
  * Concordance entre le micro-climat mesuré autour d'une sonde et la palette
  * végétale : profil de site reconstruit depuis les mesures + le registre de sol
  * de la propriété (lecture seule), puis scoring du référentiel existant.
+ *
+ * Les stations météo, qui ne voient pas le sol, passent par un profil climat
+ * explicitement annoncé comme indirect — elles proposent quand même leur
+ * triptyque, à confirmer par une sonde de sol.
  */
 export function usePaletteFit(
   proprieteId: string | undefined,
@@ -136,42 +166,62 @@ export function usePaletteFit(
   return React.useMemo(() => {
     if (!analysis) return null;
     const soil = soilLiteFromState(soilState);
-    const humidity = measuredHumidity(analysis);
-    const exposure = measuredExposure(analysis);
+    const isWeather = !!analysis.profile.isWeather;
 
+    let profile: SiteProfile;
     const basis: string[] = [];
     const missing: string[] = [];
-    if (humidity) basis.push(`humidité du sol mesurée (${humidity})`);
-    else missing.push('humidité du sol non transmise par cette sonde');
-    if (exposure) basis.push(`exposition déduite de la luminosité mesurée (${exposure.replace('_', '-')})`);
-    else missing.push('luminosité non transmise : exposition inconnue');
-    if (soil.texture) basis.push('texture du registre de sol');
-    else missing.push('texture du sol non renseignée dans le registre');
-    if (soil.ph != null) basis.push(`pH ${Number(soil.ph).toFixed(1)} du registre de sol`);
-    else missing.push('pH non renseigné dans le registre');
 
-    const profile = buildSiteProfile({
-      soil,
-      exposure: exposure === 'soleil' ? 'soleil' : exposure === 'ombre' ? 'ombre' : exposure ? 'mi_ombre' : null,
-      humidity,
-    });
+    if (isWeather) {
+      const c = buildClimateProfile(analysis.climate, soil, analysis);
+      profile = c.profile;
+      basis.push(...c.basis);
+      missing.push(...c.missing);
+    } else {
+      const humidity = measuredHumidity(analysis);
+      const exposure = measuredExposure(analysis);
+      if (humidity) basis.push(`humidité du sol mesurée (${humidity})`);
+      else missing.push('humidité du sol non transmise par cette sonde');
+      if (exposure) basis.push(`exposition déduite de la luminosité mesurée (${exposure.replace('_', '-')})`);
+      else missing.push('luminosité non transmise : exposition inconnue');
+      if (soil.texture) basis.push('texture du registre de sol');
+      else missing.push('texture du sol non renseignée dans le registre');
+      if (soil.ph != null) basis.push(`pH ${Number(soil.ph).toFixed(1)} du registre de sol`);
+      else missing.push('pH non renseigné dans le registre');
+
+      profile = buildSiteProfile({
+        soil,
+        exposure: exposure === 'soleil' ? 'soleil' : exposure === 'ombre' ? 'ombre' : exposure ? 'mi_ombre' : null,
+        humidity,
+      });
+    }
 
     const rows = PALETTE_KB.filter((sp) => !sp.caution)
       .map((sp) => scoreSpecies(profile, sp))
       .sort((a, b) => b.score - a.score)
-      .map((s) => ({
-        id: s.species.id,
-        fr: s.species.fr,
-        latin: s.species.latin,
-        strate: s.species.strate,
-        score: s.score,
-        worstAxis: s.worstAxis,
-        worstLabel: AXIS_LABEL[s.worstAxis],
-        reason: s.species.reason,
-        service: s.species.service,
-        vegetalLocal: s.species.vegetalLocal,
+      .map(toRow);
+
+    const refTemp = referenceTemperature(analysis);
+    const pick = (usage: PaletteUsage): UsageRow[] =>
+      topByUsage(profile, usage, 5, { soilTempC: refTemp }).map((s) => ({
+        ...toRow(s),
+        fit: s.fit,
+        why: s.why,
       }));
 
-    return { profile, rows, basis, missing };
+    return {
+      profile,
+      rows,
+      groups: {
+        nourricier: pick('nourricier'),
+        potager: pick('potager'),
+        ornemental: pick('ornemental'),
+      },
+      basis,
+      missing,
+      fromClimate: isWeather,
+      referenceTempC: refTemp,
+    };
   }, [analysis, soilState]);
 }
+
