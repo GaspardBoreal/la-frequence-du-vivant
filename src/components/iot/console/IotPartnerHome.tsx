@@ -119,13 +119,17 @@ export const IotPartnerHome: React.FC = () => {
     return m == null || m > (c.silence_alert_hours ?? 24) * 60;
   }).length;
 
-  /** Lectures clés par sonde + échelles partagées (sondes en service uniquement). */
+  /** Lectures clés par sonde + échelles partagées (sondes en ligne uniquement). */
   const { readings, scaleH, scaleT, extremes } = React.useMemo(() => {
     const readings = new Map<string, ReturnType<typeof keyReadings>>();
     capteurs.forEach((c) => readings.set(c.id, keyReadings(c, (latest as any)[c.id] ?? [])));
-    const inService = capteurs.filter((c) => capteurEtat(c as any) === 'service');
+    const online = capteurs.filter(
+      (c) =>
+        capteurEtat(c as any) === 'service' &&
+        sensorStatus(minutesSince(c.last_seen_at), c.silence_alert_hours).label === 'En ligne',
+    );
     const collect = (axis: 'humidite' | 'temperature') =>
-      inService
+      online
         .map((c) => readings.get(c.id)?.[axis])
         .filter(Boolean)
         .map((r) => ({ valeur: r!.valeur, unite: r!.unite, digits: r!.digits }));
@@ -135,7 +139,7 @@ export const IotPartnerHome: React.FC = () => {
     const extremes = new Map<string, string>();
     const mark = (axis: 'humidite' | 'temperature', scale: AxisScale | null, lo: string, hi: string) => {
       if (!scale || scale.count < 2 || scale.max === scale.min) return;
-      inService.forEach((c) => {
+      online.forEach((c) => {
         const r = readings.get(c.id)?.[axis];
         if (!r) return;
         if (r.valeur === scale.max) extremes.set(`${c.id}|${axis}`, hi);
@@ -189,80 +193,90 @@ export const IotPartnerHome: React.FC = () => {
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-card/60 p-3 sm:p-4">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Sondes du parc</p>
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Sondes actives du parc</p>
 
         <ul className="mt-3 space-y-2 sm:space-y-0 sm:divide-y sm:divide-border/50">
-          {capteurs.map((c) => {
+          {capteurs
+            .filter((c) => {
+              const m = minutesSince(c.last_seen_at);
+              const statut = sensorStatus(m, c.silence_alert_hours);
+              return statut.label === 'En ligne';
+            })
+            .map((c) => {
+              const m = minutesSince(c.last_seen_at);
+              const statut = sensorStatus(m, c.silence_alert_hours);
+              const hors = capteurEtat(c as any) !== 'service';
+              const r = readings.get(c.id);
+              const batterie =
+                c.battery_pct != null && c.battery_pct > 0
+                  ? `Batterie ${Math.round(c.battery_pct)} %`
+                  : 'Batterie non transmise';
+              const fresh =
+                m == null ? 'jamais vue' : m < 60 ? `vue il y a ${m} min` : `vue il y a ${Math.round(m / 60)} h`;
+
+              return (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => setPeekId(c.id)}
+                    aria-label={`Ouvrir la fiche de ${c.nom}`}
+                    className="w-full rounded-2xl border border-border/50 bg-background/40 p-3 text-left transition active:scale-[0.995] hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-14 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-1 sm:py-3 sm:hover:bg-accent/30"
+                  >
+                    <div className="sm:flex sm:items-center sm:gap-4">
+                      {/* Identité */}
+                      <div className="min-w-0 sm:w-[34%]">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] ${statut.className}`}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                            {statut.label}
+                          </span>
+                          <span className="font-medium text-foreground">{c.nom}</span>
+                          {hors && (
+                            <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] text-muted-foreground">
+                              hors service
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-0.5 text-[11px] text-muted-foreground">
+                          {c.serial_number} · {c.propriete?.nom ?? '—'}
+                        </div>
+                      </div>
+
+                      {/* Colonnes de comparaison */}
+                      <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-0 sm:flex-1">
+                        <ReadingCell
+                          reading={r?.humidite ?? null}
+                          scale={scaleH}
+                          dimmed={hors}
+                          extreme={hors ? null : extremes.get(`${c.id}|humidite`) ?? null}
+                          fallbackLabel="Humidité"
+                        />
+                        <ReadingCell
+                          reading={r?.temperature ?? null}
+                          scale={scaleT}
+                          dimmed={hors}
+                          extreme={hors ? null : extremes.get(`${c.id}|temperature`) ?? null}
+                          fallbackLabel="Température"
+                        />
+                      </div>
+
+                      {/* Pied */}
+                      <div className="mt-2 text-[11px] text-muted-foreground sm:mt-0 sm:w-[22%] sm:text-right">
+                        {fresh}
+                        <span className="sm:block"> · </span>
+                        <span className={c.battery_pct != null && c.battery_pct > 0 ? '' : 'opacity-60'}>{batterie}</span>
+                      </div>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          {capteurs.filter((c) => {
             const m = minutesSince(c.last_seen_at);
             const statut = sensorStatus(m, c.silence_alert_hours);
-            const hors = capteurEtat(c as any) !== 'service';
-            const r = readings.get(c.id);
-            const batterie =
-              c.battery_pct != null && c.battery_pct > 0
-                ? `Batterie ${Math.round(c.battery_pct)} %`
-                : 'Batterie non transmise';
-            const fresh =
-              m == null ? 'jamais vue' : m < 60 ? `vue il y a ${m} min` : `vue il y a ${Math.round(m / 60)} h`;
-
-            return (
-              <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => setPeekId(c.id)}
-                  aria-label={`Ouvrir la fiche de ${c.nom}`}
-                  className="w-full rounded-2xl border border-border/50 bg-background/40 p-3 text-left transition active:scale-[0.995] hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-14 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-1 sm:py-3 sm:hover:bg-accent/30"
-                >
-                  <div className="sm:flex sm:items-center sm:gap-4">
-                    {/* Identité */}
-                    <div className="min-w-0 sm:w-[34%]">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] ${statut.className}`}>
-                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                          {statut.label}
-                        </span>
-                        <span className="font-medium text-foreground">{c.nom}</span>
-                        {hors && (
-                          <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] text-muted-foreground">
-                            hors service
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-0.5 text-[11px] text-muted-foreground">
-                        {c.serial_number} · {c.propriete?.nom ?? '—'}
-                      </div>
-                    </div>
-
-                    {/* Colonnes de comparaison */}
-                    <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-0 sm:flex-1">
-                      <ReadingCell
-                        reading={r?.humidite ?? null}
-                        scale={scaleH}
-                        dimmed={hors}
-                        extreme={hors ? null : extremes.get(`${c.id}|humidite`) ?? null}
-                        fallbackLabel="Humidité"
-                      />
-                      <ReadingCell
-                        reading={r?.temperature ?? null}
-                        scale={scaleT}
-                        dimmed={hors}
-                        extreme={hors ? null : extremes.get(`${c.id}|temperature`) ?? null}
-                        fallbackLabel="Température"
-                      />
-                    </div>
-
-                    {/* Pied */}
-                    <div className="mt-2 text-[11px] text-muted-foreground sm:mt-0 sm:w-[22%] sm:text-right">
-                      {fresh}
-                      <span className="sm:block"> · </span>
-                      <span className={c.battery_pct != null && c.battery_pct > 0 ? '' : 'opacity-60'}>{batterie}</span>
-                    </div>
-                  </div>
-                </button>
-              </li>
-            );
-          })}
-          {capteurs.length === 0 && (
-            <li className="py-6 text-center text-sm text-muted-foreground">Aucune sonde déclarée pour ce fabricant.</li>
+            return statut.label === 'En ligne';
+          }).length === 0 && (
+            <li className="py-6 text-center text-sm text-muted-foreground">Aucune sonde en ligne actuellement.</li>
           )}
         </ul>
 
