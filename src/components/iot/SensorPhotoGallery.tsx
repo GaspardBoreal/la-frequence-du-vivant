@@ -16,9 +16,15 @@ interface Props {
  * Photos « en situation » dans la fiche capteur : couverture cliquable,
  * bande de vignettes, et visionneuse plein écran (balayage mobile).
  */
-export const SensorPhotoGallery: React.FC<Props> = ({ capteurId, nom, coverUrl }) => {
+export const SensorPhotoGallery: React.FC<Props> = ({ capteurId, nom, coverUrl, closeSignal = 0 }) => {
   const { data: photos = [] } = useCapteurPhotos(capteurId);
   const [viewer, setViewer] = React.useState<number | null>(null);
+
+  // La visionneuse est plein écran (z-4400) : elle doit s'effacer dès qu'une
+  // surface prioritaire s'ouvre par-dessus la fiche (IA de Jardin, graphes…).
+  React.useEffect(() => {
+    if (closeSignal > 0) setViewer(null);
+  }, [closeSignal]);
 
   const cover = photos[0]?.thumbUrl ?? photos[0]?.url ?? coverUrl;
   if (!cover) return null;
