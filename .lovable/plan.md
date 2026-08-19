@@ -1,40 +1,45 @@
-# Arbitrer le logo « Les Marches du Vivant »
+# Métadonnées du logo pour Google Images / Bing Images
 
-## Où sont les propositions
+Objectif : que le logo « Empreinte vivante » remonte dans les résultats de recherche image sur les requêtes « logo Les Marches du Vivant », « Les Marches du Vivant », « La Fréquence du Vivant ».
 
-La galerie existe déjà : **/roadmap/frequence-jardin**, section « Logos » (10 propositions, 3 familles), chaque logo ayant sa page dédiée `/roadmap/frequence-jardin/logo/:slug`.
+Ce qui existe déjà (vérifié) : le logo est déclaré dans `sitemap.xml` sur la page `/roadmap/frequence-jardin/logo/empreinte-vivante` avec titre et légende, et la page `/agent-ia` a une entrée image (l'image sociale, pas le logo). Le logo n'a pour l'instant ni balisage `ImageObject`, ni licence déclarée, ni entrée sitemap sur `/agent-ia`.
 
-Famille **Les Marches du Vivant** — 3 directions :
-- `sentier-frequence` — Sentier en fréquence : un chemin qui devient onde, parmi graminées et ombelles.
-- `empreinte-vivante` — Empreinte vivante : une empreinte de pas remplie de feuillage, entourée d'ondes concentriques.
-- `horizon-marche` — Horizon marché : horizon de courbes traversé par un signal ambré.
+## Ce que je propose d'ajouter
 
-## Ma recommandation : « Empreinte vivante »
+1. **Texte alternatif et contexte éditorial (le signal n°1 pour Google Images)**
+   - `alt` descriptif et unique sur chaque occurrence du logo : « Logo Les Marches du Vivant — Empreinte vivante, agent IA de mesure de la biodiversité ».
+   - `title` sur l'image du hero, légende visible courte sous le logo de la page logo dédiée : Google lit le texte qui entoure l'image.
+   - Le nom de fichier `logo-empreinte-vivante.png` est déjà bon (mots-clés lisibles).
 
-Raisons, en tenant compte des ramifications (Fréquence Jardin, IoT/partenaires, Trust, Agent IA, exports PDF/Word) :
+2. **Balisage structuré `ImageObject` (JSON-LD)**
+   - Sur `/agent-ia` et sur la page logo dédiée, ajouter un nœud `ImageObject` : `contentUrl`, `name`, `caption`, `description`, `width`, `height`, `representativeOfPage`, `creditText`, `creator` (association La Fréquence du Vivant), `copyrightNotice`, `license` et `acquireLicensePage`.
+   - Rattacher ce nœud à l'`Organization` déjà présente via `logo` et `image`, pour que Google associe formellement l'image à la marque.
+   - Les champs licence activent le badge « Licensable » dans Google Images — un différenciateur visuel fort.
 
-1. **Système de marque cohérent.** L'ombrelle est la Feuille-signal (nervure = onde), Jardin part de la graine. L'empreinte + ondes concentriques complète la triade sans redite : une forme centrée, un motif d'onde partagé, un sujet propre (le pas).
-2. **Tenue en très petit.** Forme compacte et refermée : favicon, avatar QR/e-mail, pastille d'annuaire, en-tête d'export. Le Sentier et l'Horizon sont des compositions étirées qui se brouillent sous 32 px.
-3. **Portage du sens produit.** La trace du marcheur devient donnée qui se propage (observations → snapshots → Fréquence). C'est exactement la promesse de l'app, lisible sans légende.
-4. **Déclinabilité.** Monochrome, détouré, en filigrane de rapport, en tampon de certificat — l'empreinte résiste ; un paysage non.
+3. **Sitemap images enrichi**
+   - Ajouter l'entrée `image:image` du logo sur `/agent-ia` (aujourd'hui absente) et sur les autres pages qui l'affichent (`/marches-du-vivant`, `/`), avec titre et légende adaptés à chaque page.
+   - Mettre à jour les `lastmod` des URL touchées.
 
-À garder en second rôle : **Horizon marché** comme motif de bandeau/couverture (hero, OG image, en-tête de PDF), sans statut de logo. Le Sentier reste une illustration éditoriale.
+4. **Métadonnées embarquées dans le fichier PNG (IPTC / XMP)**
+   - Google lit les champs IPTC `Creator`, `Copyright Notice`, `Credit Line`, `Web Statement of Rights` directement dans le binaire.
+   - Le logo actuel est réencodé et réuploadé via le CDN avec ces champs renseignés, l'ancien pointeur d'asset restant intact si nécessaire.
+   - Bonus : le fichier fait 842 Ko pour un usage d'affichage à 176 px — une version optimisée (PNG compressé + variante WebP) améliore l'indexation et le Core Web Vitals.
 
-Pour Fréquence Jardin, la cohérence appelle **Germination — cercle** (même logique de sceau lisible en petit), avec « Germination — onde pleine » en bandeau.
+5. **Conditions techniques d'indexation**
+   - Vérifier que `robots.txt` n'exclut pas `/__l5e/` (chemin CDN des assets) — sinon Google ne peut pas explorer le logo.
+   - Ne pas mettre le logo du hero en `lazy` (déjà en `eager`), garder `width`/`height` explicites.
+   - Ajouter `og:image` alternatif ? Non : l'image sociale actuelle reste plus adaptée au partage.
 
-## Ce que je propose de faire ensuite (à ta validation)
-
-1. Ajouter un champ `status` aux entrées de logo (`retenu` | `variante` | `écarté`) dans `src/content/frequenceJardinFiche.ts`, et afficher un badge « Retenu » sur la fiche et la page logo.
-2. Marquer `empreinte-vivante` comme retenu pour la famille Marches, `feuille-signal-la-frequence-du-vivant` pour l'ombrelle, et laisser Jardin en attente ou marquer `germination-cercle` selon ton arbitrage.
-3. Ajouter sur la fiche un court bloc « Arbitrage » rappelant la règle d'emploi : ombrelle en signature, logo applicatif en interface, motif paysager réservé aux bandeaux.
-4. Optionnel (à confirmer) : brancher réellement le logo retenu dans l'interface — favicon, en-tête de l'app Marcheurs, en-têtes d'exports PDF/Word, images OG. C'est un chantier séparé, à faire seulement si tu le veux dans la foulée.
+6. **Cohérence de marque**
+   - Même `alt`, même légende, même `ImageObject` sur toutes les pages qui affichent le logo : la répétition cohérente d'un couple image + libellé est ce qui fait émerger un logo dans les résultats image.
 
 ## Détails techniques
 
-- Aucun changement de données : les logos sont des pointeurs `.asset.json` déjà en CDN, référencés dans `src/content/frequenceJardinFiche.ts`.
-- Le type `FicheLogo` gagne `status?: 'retenu' | 'variante'` ; `FrequenceJardinFiche.tsx` et `FrequenceJardinLogo.tsx` affichent le badge et une phrase d'emploi.
-- Les URL publiques des pages logo restent inchangées.
+- Fichiers touchés : `src/pages/AgentIA.tsx` (JSON-LD `ImageObject` + `alt`/`title`), `src/pages/FrequenceJardinLogo.tsx` (JSON-LD + légende visible), `public/sitemap.xml`, éventuellement `public/robots.txt`.
+- Un helper partagé `src/content/brandLogo.ts` exposera l'URL, les dimensions, l'`alt` canonique, la légende et le nœud `ImageObject`, pour éviter toute divergence entre pages.
+- Réencodage IPTC/XMP via `exiftool` dans le sandbox, puis réupload par le CLI d'assets et mise à jour du pointeur `.asset.json`.
+- Aucune modification de logique métier ni de base de données.
 
-## Question ouverte
+## Délai d'effet
 
-Veux-tu que je limite ce lot à l'arbitrage documenté (points 1–3), ou que j'enchaîne aussi le déploiement du logo dans l'app (point 4) ?
+L'indexation image est lente : compter 2 à 6 semaines après exploration. Une demande d'indexation manuelle des URL concernées dans Search Console accélère le premier passage.
