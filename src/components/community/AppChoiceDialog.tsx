@@ -93,8 +93,13 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
           <span className="shrink-0">{icon}</span>
           <span className="flex-1 min-w-0">
             <span className="block font-semibold text-white text-sm truncate">{title}</span>
-            {subtitle && <span className="block text-xs text-emerald-100/70 truncate">{subtitle}</span>}
+            {isDefault ? (
+              <span className="block text-xs text-amber-200/90 truncate">Ouverture automatique</span>
+            ) : (
+              subtitle && <span className="block text-xs text-emerald-100/70 truncate">{subtitle}</span>
+            )}
           </span>
+
         </button>
         <button
           type="button"
