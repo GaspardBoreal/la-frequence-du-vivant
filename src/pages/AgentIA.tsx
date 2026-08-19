@@ -253,7 +253,7 @@ const AgentIA: React.FC = () => {
       <section className="container mx-auto px-4 pt-12 pb-20 max-w-5xl">
         <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-12">
           {/* Signature visuelle — logo retenu « Empreinte vivante » */}
-          <div className="relative shrink-0 self-start md:self-center">
+          <figure className="relative shrink-0 self-start md:self-center m-0 flex flex-col items-center">
             <div
               className="absolute -inset-4 rounded-full blur-2xl opacity-60"
               style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.25), transparent 70%)' }}
@@ -261,13 +261,19 @@ const AgentIA: React.FC = () => {
             />
             <img
               src={LOGO_SRC}
-              alt="Logo Les Marches du Vivant — Empreinte vivante"
+              alt={BRAND_LOGO_ALT}
+              title={BRAND_LOGO_TITLE}
               className="relative h-28 w-28 md:h-44 md:w-44 rounded-full object-cover ring-1 ring-primary/25 shadow-2xl"
               width={176}
               height={176}
               loading="eager"
+              decoding="async"
             />
-          </div>
+            <figcaption className="relative mt-3 max-w-[11rem] text-center text-[11px] leading-snug text-muted-foreground">
+              Logo « Empreinte vivante » — Les Marches du Vivant
+            </figcaption>
+          </figure>
+
 
           <div className="min-w-0">
             <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-primary mb-6">
