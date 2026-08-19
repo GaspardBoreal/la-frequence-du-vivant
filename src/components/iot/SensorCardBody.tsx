@@ -39,6 +39,7 @@ export const SensorCardBody: React.FC<Props> = ({
   capteur, latest, pings, coverUrl, capabilities, onObservatory, onAskAi, onClose, hideHeader,
 }) => {
   const setService = useSetCapteurEtat();
+  const [closePhotos, setClosePhotos] = React.useState(0);
   const health = sensorHealth(capteur);
 
   return (
@@ -110,7 +111,7 @@ export const SensorCardBody: React.FC<Props> = ({
         )}
       </div>
 
-      <SensorPhotoGallery capteurId={capteur.id} nom={capteur.nom} coverUrl={coverUrl} />
+      <SensorPhotoGallery capteurId={capteur.id} nom={capteur.nom} coverUrl={coverUrl} closeSignal={closePhotos} />
 
 
       <dl className="mt-3 space-y-1 text-[11px]">
@@ -168,13 +169,13 @@ export const SensorCardBody: React.FC<Props> = ({
       </div>
 
       {onObservatory && (
-        <Button size="sm" className="mt-3 w-full" onClick={() => onObservatory(capteur)}>
+        <Button size="sm" className="mt-3 w-full" onClick={() => { setClosePhotos((n) => n + 1); onObservatory(capteur); }}>
           <BarChart3 className="mr-1 h-3.5 w-3.5" /> Voir tous les graphes
         </Button>
       )}
 
       {capabilities.ai && onAskAi && (
-        <Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => onAskAi(capteur)}>
+        <Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => { setClosePhotos((n) => n + 1); onAskAi(capteur); }}>
           <Sparkles className="mr-1 h-3.5 w-3.5" /> Interroger l'IA de Jardin
         </Button>
       )}
