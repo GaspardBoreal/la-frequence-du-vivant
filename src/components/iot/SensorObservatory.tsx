@@ -42,6 +42,14 @@ export const SensorObservatory: React.FC<Props> = ({ capteur, onClose }) => {
   const [customFrom, setCustomFrom] = React.useState(dayKey(new Date(Date.now() - 7 * 86_400_000)));
   const [customTo, setCustomTo] = React.useState(dayKey(new Date()));
 
+  // Surface plein écran (z-3000) : le chatbot doit passer devant, sinon
+  // « IA de Jardin » ouvre une fenêtre invisible derrière l'observatoire.
+  React.useEffect(() => {
+    fullscreenSurfaces.push();
+    return () => fullscreenSurfaces.pop();
+  }, []);
+
+
   const { from, to } = React.useMemo(() => {
     if (preset === 'perso') {
       return {
