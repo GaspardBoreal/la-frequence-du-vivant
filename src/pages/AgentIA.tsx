@@ -105,6 +105,8 @@ const AGENT_JSONLD = {
       '@id': `${SITE}/#organization`,
       name: 'La Fréquence du Vivant',
       url: `${SITE}/`,
+      logo: `${SITE}${LOGO_SRC}`,
+
       description:
         "Association loi 1901 : bioacoustique, science participative et transition agroécologique. Éditrice de l'agent IA Les Marches du Vivant.",
       sameAs: [`${SITE}/marches-du-vivant`, `${SITE}/marches-du-vivant/association`],
