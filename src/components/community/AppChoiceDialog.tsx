@@ -333,7 +333,7 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
             {partenaireEntries.length > 0 && (
               <>
                 <SectionTitle count={partenaireEntries.length}>Vos espaces partenaires</SectionTitle>
-                <div className="grid gap-2 sm:grid-cols-2 pb-1">
+                <div className="grid gap-2 pb-1">
                   {partenaireEntries.map((entry) => {
                     if (entry.kind !== 'partenaire') return null;
                     const f = entry.f;
@@ -345,26 +345,47 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
                         data-cursor={active}
                         onClick={() => go(entry.target)}
                         onMouseEnter={() => setCursor(i)}
-                        className={`${cardBase} ${cardTone(active)}`}
+                        className={[
+                          cardBase,
+                          'p-3.5 pl-4 items-start gap-4',
+                          active
+                            ? 'border-sky-300/50 bg-white/[0.14] ring-1 ring-sky-300/40'
+                            : 'border-white/12 bg-white/[0.05] hover:bg-white/10 hover:border-sky-300/30 hover:shadow-[0_0_0_1px_rgba(125,211,252,0.15),0_8px_30px_-12px_rgba(56,189,248,0.45)]',
+                        ].join(' ')}
                       >
+                        {/* Liseré sky */}
+                        <span
+                          aria-hidden
+                          className="absolute left-0 inset-y-0 w-[3px] bg-gradient-to-b from-sky-300/70 via-cyan-300/40 to-transparent"
+                        />
                         <StarToggle target={entry.target} />
-                        <div className="w-11 h-11 rounded-xl bg-sky-500/20 ring-1 ring-sky-300/20 flex items-center justify-center shrink-0 overflow-hidden">
+                        <div className="w-14 h-14 rounded-xl bg-white/90 ring-1 ring-white/25 flex items-center justify-center shrink-0 overflow-hidden p-1.5">
                           {f.logo_url ? (
-                            <img src={f.logo_url} alt={`Logo ${f.nom}`} className="h-full w-full object-cover" />
+                            <img
+                              src={f.logo_url}
+                              alt={`Logo ${f.nom}`}
+                              className="max-h-full max-w-full object-contain"
+                              loading="lazy"
+                            />
                           ) : (
-                            <Radio className="w-5 h-5 text-sky-300" />
+                            <Radio className="w-6 h-6 text-sky-600" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0 pr-6">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="font-semibold text-white text-sm truncate">{f.nom}</span>
-                            <Chip tone="sky">Partenaire IoT</Chip>
+                        <div className="flex-1 min-w-0 pr-8">
+                          <div className="font-semibold text-white text-[15px] leading-snug line-clamp-2">
+                            {f.nom}
                           </div>
-                          <div className="text-xs text-emerald-100/60 truncate mt-0.5">
-                            {f.capteurs_count} sonde{f.capteurs_count > 1 ? 's' : ''} · poste de contrôle et carte
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
+                            <Chip tone="sky">Partenaire IoT</Chip>
+                            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-100/70">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+                              <span className="tabular-nums font-medium text-white/85">{f.capteurs_count}</span>
+                              sonde{f.capteurs_count > 1 ? 's' : ''}
+                            </span>
+                            <span className="text-xs text-emerald-100/45">poste de contrôle · carte</span>
                           </div>
                         </div>
-                        <ArrowRight className="w-4 h-4 text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                        <ArrowRight className="w-4 h-4 self-center text-sky-300 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all shrink-0" />
                       </button>
                     );
                   })}
@@ -374,10 +395,18 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
           </div>
         </div>
 
-        <div className="shrink-0 mt-2 flex flex-col sm:flex-row items-center justify-center gap-x-3 gap-y-1 text-center">
-          <p className="text-xs text-emerald-200/50">
-            {showSearch ? '↑ ↓ pour naviguer · Entrée pour ouvrir · ' : ''}
-            Changement d'espace possible à tout moment depuis le sélecteur en haut de page.
+        <div className="shrink-0 mt-2 pt-2.5 border-t border-white/10 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
+          {showSearch && (
+            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-200/55">
+              <Kbd>↑</Kbd>
+              <Kbd>↓</Kbd>
+              <span className="mx-0.5">naviguer</span>
+              <Kbd>Entrée</Kbd>
+              <span>ouvrir</span>
+            </span>
+          )}
+          <p className="text-xs text-emerald-200/45">
+            Changement d'espace possible depuis le sélecteur en haut de page.
           </p>
           {defaultTarget && (
             <button
@@ -389,6 +418,7 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
             </button>
           )}
         </div>
+
       </DialogContent>
     </Dialog>
   );
