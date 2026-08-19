@@ -199,7 +199,9 @@ export const SensorObservatory: React.FC<Props> = ({ capteur, onClose }) => {
           )}
           <span className="ml-auto text-xs text-muted-foreground">
             {rows.length} relevés · {charts.length} grandeur{charts.length > 1 ? 's' : ''}
+            {truncated ? ' · lecture plafonnée : les relevés les plus anciens ne sont pas pris en compte' : ''}
           </span>
+
         </div>
 
         {/* Vitalité de transmission */}
