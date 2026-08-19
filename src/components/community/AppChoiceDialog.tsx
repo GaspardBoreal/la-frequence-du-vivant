@@ -351,8 +351,8 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
                           cardBase,
                           'p-3.5 pl-4 items-start gap-4',
                           active
-                            ? 'border-sky-300/50 bg-white/[0.14] ring-1 ring-sky-300/40'
-                            : 'border-white/12 bg-white/[0.05] hover:bg-white/10 hover:border-sky-300/30 hover:shadow-[0_0_0_1px_rgba(125,211,252,0.15),0_8px_30px_-12px_rgba(56,189,248,0.45)]',
+                            ? 'border-sky-300/50 bg-emerald-900 ring-1 ring-sky-300/40'
+                            : 'border-white/15 bg-emerald-900 hover:bg-emerald-800 hover:border-sky-300/30',
                         ].join(' ')}
                       >
                         {/* Liseré sky */}
