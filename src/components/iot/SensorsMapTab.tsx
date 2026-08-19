@@ -3,17 +3,18 @@ import { TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Link } from 'react-router-dom';
-import { BarChart3, Battery, ExternalLink, MapPin, Radio, Search, Signal, Sparkles, Wrench } from 'lucide-react';
+import { ExternalLink, MapPin, Radio, Search } from 'lucide-react';
 import SafeMapContainer from '@/components/maps/SafeMapContainer';
 import IotLayer from '@/components/propriete/iot/map/IotLayer';
 import SensorObservatory from '@/components/iot/SensorObservatory';
+import SensorCardBody from '@/components/iot/SensorCardBody';
+
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAllCapteursGeo, useTelemetryLive, useTelemetryPings, type CapteurGeo } from '@/hooks/iot/useIotTelemetry';
-import { useLatestMesures, useSetCapteurEtat } from '@/hooks/iot/useIot';
+import { useLatestMesures } from '@/hooks/iot/useIot';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
-import { CAPTEUR_ETATS, HEALTH_COLOR, capteurEtat, fmtHorodatage, fmtMesure, fmtProfondeur, sensorHealth } from '@/lib/iot/grandeurs';
+import { HEALTH_COLOR, sensorHealth } from '@/lib/iot/grandeurs';
 import { iotChatFocus, openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import { useIotConsole } from '@/components/iot/console/IotConsoleContext';
 
@@ -49,7 +50,6 @@ export const SensorsMapTab: React.FC = () => {
   const ids = React.useMemo(() => capteurs.map((c) => c.id), [capteurs]);
   const { data: latest = {} } = useLatestMesures(ids);
   const { data: covers = {} } = useCapteurCovers(ids);
-  const setService = useSetCapteurEtat();
   const { data: pings = [] } = useTelemetryPings(48, ids);
 
   const { live, lastLiveAt } = useTelemetryLive();
@@ -256,157 +256,25 @@ export const SensorsMapTab: React.FC = () => {
           {/* Fiche sonde */}
           {selected && (
             <div className="absolute right-3 top-3 z-[1000] max-h-[calc(70vh-24px)] w-[320px] overflow-y-auto rounded-2xl border border-border bg-card/95 p-4 shadow-xl backdrop-blur">
-              <div className="flex items-start gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold">{selected.nom}</div>
-                  <div className="truncate text-[11px] text-muted-foreground">
-                    {selected.serial_number} · {selected.type?.modele ?? '—'}
-                  </div>
-                </div>
-                <button onClick={() => { setSelectedId(null); setFocus(null); }} className="text-xs text-muted-foreground">✕</button>
-              </div>
-
-              <div className="mt-2 flex items-center gap-2 text-[11px]">
-                <span
-                  className="rounded-full px-2 py-0.5 text-white"
-                  style={{ background: HEALTH_COLOR[sensorHealth(selected as any).status] }}
-                >
-                  {sensorHealth(selected as any).label}
-                </span>
-                <span className="text-muted-foreground">{fmtHorodatage(selected.last_seen_at)}</span>
-              </div>
-
-              <div className="mt-3 rounded-xl border border-border/60 bg-background/60 p-2">
-                <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <Wrench className="h-3 w-3" /> État de service
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {CAPTEUR_ETATS.map((e) => {
-                    const active = capteurEtat(selected as any) === e.key;
-                    return (
-                      <button
-                        key={e.key}
-                        type="button"
-                        title={e.hint}
-                        disabled={setService.isPending}
-                        onClick={() =>
-                          setService.mutate({
-                            id: selected.id,
-                            etat: e.key,
-                            motif:
-                              e.key === 'service'
-                                ? null
-                                : window.prompt(`Motif — ${e.label} (facultatif)`, (selected as any).etat_motif ?? '') ??
-                                  null,
-                          })
-                        }
-                        className="rounded-full border px-2 py-0.5 text-[10px] transition disabled:opacity-50"
-                        style={
-                          active
-                            ? { background: e.color, borderColor: e.color, color: '#fff' }
-                            : { borderColor: 'hsl(var(--border))' }
-                        }
-                      >
-                        {e.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                {capteurEtat(selected as any) !== 'service' && (
-                  <p className="mt-1.5 text-[10px] text-muted-foreground">
-                    {(selected as any).etat_motif || 'Sans motif renseigné'} — sonde écartée des alertes et des
-                    analyses.
-                  </p>
-                )}
-              </div>
-
-              {covers[selected.id]?.url && (
-                <img
-                  src={covers[selected.id]!.url}
-                  alt={`${selected.nom} en situation`}
-                  decoding="async"
-                  fetchPriority="high"
-                  className="mt-3 h-28 w-full rounded-xl object-cover"
-                />
-              )}
-
-              <dl className="mt-3 space-y-1 text-[11px]">
-                <div className="flex justify-between gap-2">
-                  <dt className="text-muted-foreground">Propriété</dt>
-                  <dd className="truncate">
-                    {capabilities.proprieteLinks ? (
-                      <Link to={`/jardin/${selected.propriete_id}`} className="text-emerald-700 underline">
-                        {selected.propriete?.nom ?? '—'}
-                      </Link>
-                    ) : (
-                      <span>{selected.propriete?.nom ?? '—'}</span>
-                    )}
-                  </dd>
-
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-muted-foreground">Emplacement</dt>
-                  <dd className="truncate">{selected.emplacement ?? '—'}</dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-muted-foreground">Coordonnées</dt>
-                  <dd className="tabular-nums">
-                    {selected.lat != null ? `${selected.lat.toFixed(6)}, ${selected.lng?.toFixed(6)}` : 'non posée'}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-muted-foreground"><Battery className="mr-1 inline h-3 w-3" />Batterie</dt>
-                  <dd>{selected.battery_pct ? `${Math.round(selected.battery_pct)} %` : 'non transmise'}</dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-muted-foreground"><Signal className="mr-1 inline h-3 w-3" />Réception</dt>
-                  <dd>{selected.rssi != null ? `${selected.rssi} dBm` : '—'}{selected.snr != null ? ` · SNR ${selected.snr}` : ''}</dd>
-                </div>
-              </dl>
-
-              <div className="mt-3">
-                <div className="mb-1 text-[11px] font-medium text-muted-foreground">Dernières mesures</div>
-                <div className="flex flex-wrap gap-1">
-                  {(latest[selected.id] ?? []).map((m: any) => (
-                    <span key={m.id} className="rounded-full bg-muted px-2 py-0.5 text-[10px]">
-                      {fmtProfondeur(m.profondeur_m) ? `${fmtProfondeur(m.profondeur_m)} · ` : ''}
-                      {fmtMesure(m.valeur, m.grandeur, m.unite)}
-                    </span>
-                  ))}
-                  {(latest[selected.id] ?? []).length === 0 && (
-                    <span className="text-[11px] italic text-muted-foreground">Aucune mesure</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-3">
-                <div className="mb-1 text-[11px] font-medium text-muted-foreground">Vitalité · 48 h</div>
-                <VitalityStrip timestamps={pingsFor(selected.id)} hours={48} showScale />
-              </div>
-
-              <Button size="sm" className="mt-3 w-full" onClick={() => setObservatory(selected)}>
-                <BarChart3 className="mr-1 h-3.5 w-3.5" /> Voir tous les graphes
-              </Button>
-
-              {capabilities.ai && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="mt-2 w-full"
-                  onClick={() =>
-                    openIotAi({
-                      capteurId: selected.id,
-                      proprieteId: selected.propriete_id,
-                      prefill: `Cette sonde « ${selected.nom} » est-elle fiable ? Que dit-elle du sol ${selected.emplacement ? `au ${selected.emplacement}` : ''} ?`,
-                    })
-                  }
-                >
-                  <Sparkles className="mr-1 h-3.5 w-3.5" /> Interroger l'IA de Jardin
-                </Button>
-              )}
-
+              <SensorCardBody
+                capteur={selected}
+                latest={latest[selected.id] ?? []}
+                pings={pingsFor(selected.id)}
+                coverUrl={covers[selected.id]?.url}
+                capabilities={capabilities}
+                onClose={() => { setSelectedId(null); setFocus(null); }}
+                onObservatory={(c) => setObservatory(c as CapteurGeo)}
+                onAskAi={(c) =>
+                  openIotAi({
+                    capteurId: c.id,
+                    proprieteId: c.propriete_id,
+                    prefill: `Cette sonde « ${c.nom} » est-elle fiable ? Que dit-elle du sol ${c.emplacement ? `au ${c.emplacement}` : ''} ?`,
+                  })
+                }
+              />
             </div>
           )}
+
         </div>
       </div>
 
