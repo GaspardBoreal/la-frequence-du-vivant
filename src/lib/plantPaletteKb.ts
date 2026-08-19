@@ -18,6 +18,9 @@
 
 export type PaletteStrate = 'arbre' | 'arbuste' | 'herbacee' | 'grimpante' | 'couvre_sol';
 export type PaletteOrigin = 'indigene' | 'horticole';
+/** Trois familles d'usage, pour proposer une palette lisible par le propriétaire. */
+export type PaletteUsage = 'nourricier' | 'potager' | 'ornemental';
+
 
 export interface PaletteSpecies {
   id: string;
