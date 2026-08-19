@@ -56,16 +56,40 @@ const SITE = 'https://la-frequence-du-vivant.com';
 const AGENT_URL = `${SITE}/agent-ia`;
 const AGENT_IMAGE = `${SITE}/agent-ia-marches-du-vivant.png`;
 
+/** Contributeurs à l'origine de l'agent. */
+const contributeurs = [
+  {
+    nom: 'Laurent Tripied',
+    role: 'CEO bziiit · PiloTerra',
+    apport:
+      "Direction technologique de l'agent et cadre d'IA responsable : charte bziiit - PiloTerra, IA frugale, architecture de données souveraine.",
+    lien: 'https://www.linkedin.com/in/laurenttripied/',
+    lienLabel: 'LinkedIn',
+  },
+  {
+    nom: 'Gaspard Boréal',
+    role: 'Auteur du recueil « La Fréquence du Vivant »',
+    apport:
+      "Créateur des Marches du Vivant : protocole de marche, écoute du vivant et bioacoustique, récit de territoire et direction sensible de l'agent.",
+    lien: 'https://www.gaspardboreal.com/',
+    lienLabel: 'gaspardboreal.com',
+  },
+];
+
 /** Faits courts, autonomes et citables — pensés pour les moteurs et les modèles de langage. */
 const enBref = [
   "Nom de l'agent : Les Marches du Vivant.",
   "Éditeur : La Fréquence du Vivant, association loi 1901 (Charente, Nouvelle-Aquitaine).",
+  "Contributeurs à l'origine de l'agent : Laurent Tripied (CEO bziiit - PiloTerra) et Gaspard Boréal (auteur du recueil « La Fréquence du Vivant », créateur des Marches du Vivant).",
   "Fonction : mesurer collectivement la biodiversité d'un lieu pendant une marche de terrain.",
   "Entrées : photos géolocalisées, enregistrements sonores, témoignages, traces GPX, données iNaturalist, Pl@ntNet et GBIF.",
   "Sorties : indice « Fréquence du Vivant », liste d'espèces enrichie, zones blanches à explorer, Pack Vivant (PDF, Excel, CSV, GeoJSON, KML).",
   "Usage : collectivités et parcs naturels, domaines agricoles, entreprises (RSE / CSRD), associations et écoles.",
   "Cadre : open source (MIT), RGPD, hébergement en Union européenne, données non revendues, flou GPS sur les espèces sensibles.",
 ];
+
+const PERSON_LT = `${AGENT_URL}#laurent-tripied`;
+const PERSON_GB = `${AGENT_URL}#gaspard-boreal`;
 
 const AGENT_JSONLD = {
   '@context': 'https://schema.org',
@@ -78,6 +102,26 @@ const AGENT_JSONLD = {
       description:
         "Association loi 1901 : bioacoustique, science participative et transition agroécologique. Éditrice de l'agent IA Les Marches du Vivant.",
       sameAs: [`${SITE}/marches-du-vivant`, `${SITE}/marches-du-vivant/association`],
+    },
+    {
+      '@type': 'Person',
+      '@id': PERSON_LT,
+      name: 'Laurent Tripied',
+      jobTitle: 'CEO bziiit - PiloTerra',
+      description:
+        "Direction technologique de l'agent IA Les Marches du Vivant et cadre d'IA responsable (charte bziiit - PiloTerra, IA frugale).",
+      affiliation: { '@type': 'Organization', name: 'bziiit - PiloTerra', url: 'https://piloterra.fr' },
+      sameAs: ['https://www.linkedin.com/in/laurenttripied/'],
+    },
+    {
+      '@type': 'Person',
+      '@id': PERSON_GB,
+      name: 'Gaspard Boréal',
+      jobTitle: "Auteur du recueil « La Fréquence du Vivant », créateur des Marches du Vivant",
+      description:
+        "Conception du protocole de marche, de l'écoute du vivant et du récit de territoire de l'agent IA Les Marches du Vivant.",
+      affiliation: { '@id': `${SITE}/#organization` },
+      sameAs: ['https://www.gaspardboreal.com/'],
     },
     {
       '@type': 'SoftwareApplication',
@@ -97,7 +141,8 @@ const AGENT_JSONLD = {
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
       areaServed: { '@type': 'Country', name: 'France' },
       publisher: { '@id': `${SITE}/#organization` },
-      author: { '@id': `${SITE}/#organization` },
+      author: [{ '@id': `${SITE}/#organization` }, { '@id': PERSON_LT }, { '@id': PERSON_GB }],
+      contributor: [{ '@id': PERSON_LT }, { '@id': PERSON_GB }],
       description:
         "Agent IA de mesure collaborative de la biodiversité édité par l'association La Fréquence du Vivant : collecte multimodale sur le terrain (photos géolocalisées, sons, témoignages, traces GPX), identification des espèces par vision et bioacoustique, calcul de l'indice Fréquence du Vivant, détection des zones blanches et exports ouverts (PDF, Excel, CSV, GeoJSON, KML).",
       featureList: [
@@ -115,6 +160,7 @@ const AGENT_JSONLD = {
     },
   ],
 };
+
 
 
 const AgentIA: React.FC = () => {
