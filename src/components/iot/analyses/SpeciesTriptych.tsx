@@ -53,7 +53,7 @@ const SpeciesTriptych: React.FC<{ fit: PaletteFit; proprieteId?: string }> = ({ 
         </span>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {COLUMNS.map((col) => {
           const rows = fit.groups[col.key] ?? [];
           const Icon = col.icon;
