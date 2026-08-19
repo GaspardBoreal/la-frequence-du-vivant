@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import type { SensorAnalysis } from '@/lib/iot/analyses';
 import type { SensorSpan } from '@/hooks/iot/useIotTelemetry';
+import type { PaletteFit } from '@/hooks/iot/useIotAnalyses';
 import CoverageLine from './CoverageLine';
+import SpeciesTriptych from './SpeciesTriptych';
 
 const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?: string }> = ({
   icon,
