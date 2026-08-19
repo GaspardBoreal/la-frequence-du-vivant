@@ -49,8 +49,22 @@ export const GRANDEURS: Record<string, GrandeurMeta> = {
 export const grandeurMeta = (g: string): GrandeurMeta =>
   GRANDEURS[g] ?? { label: g, unite: '', digits: 1, color: '#6b7f6b' };
 
+/**
+ * Grandeurs volontairement retirées de toute lecture : la donnée existe en base
+ * (historique conservé, ingestion inchangée) mais n'est pas exploitable, donc
+ * jamais affichée, ni tracée, ni transmise à l'IA.
+ */
+export const GRANDEURS_MASQUEES: readonly string[] = ['soil_capacitance'];
+
+/** Vrai si la grandeur peut être présentée à l'écran. */
+export const estGrandeurLisible = (g: string) => !GRANDEURS_MASQUEES.includes(g);
+
+/** Filtre commun à toutes les listes de mesures. */
+export const filtrerMesuresLisibles = <T extends { grandeur: string }>(rows: T[]): T[] =>
+  rows.filter((r) => estGrandeurLisible(r.grandeur));
+
 /** Ordre de lecture canonique : sol → air → ciel → sonde. */
-export const GRANDEUR_ORDER = Object.keys(GRANDEURS);
+export const GRANDEUR_ORDER = Object.keys(GRANDEURS).filter(estGrandeurLisible);
 const orderIndex = (g: string) => {
   const i = GRANDEUR_ORDER.indexOf(g);
   return i === -1 ? Number.POSITIVE_INFINITY : i;
