@@ -53,8 +53,16 @@ const FrequenceJardinLogo: React.FC = () => {
 
   const imageUrl = logoImageUrl(logo);
   const pageUrl = logoPageUrl(logo);
-  const title = `${logo.name} — logo Fréquence Jardin | La Fréquence du Vivant`;
-  const description = `${logo.name} : proposition de logo pour Fréquence Jardin, l'application de diagnostic du vivant éditée par l'association La Fréquence du Vivant. Image libre d'accès par URL directe.`;
+  /** Marque à laquelle ce logo appartient — mot-clé principal en recherche d'images. */
+  const famLabel =
+    logo.family === 'marches'
+      ? 'Les Marches du Vivant'
+      : logo.family === 'lfdv'
+        ? 'La Fréquence du Vivant'
+        : 'Fréquence Jardin';
+  const title = `${logo.name} — logo ${famLabel} | La Fréquence du Vivant`;
+  const description = `${logo.name} : logo ${famLabel}, application éditée par l'association La Fréquence du Vivant. Image PNG haute définition, libre d'accès par URL directe.`;
+
 
   return (
     <div className="min-h-screen bg-background">
