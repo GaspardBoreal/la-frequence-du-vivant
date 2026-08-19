@@ -70,7 +70,7 @@ const contributeurs = [
     nom: 'Gaspard Boréal',
     role: 'Auteur du recueil « La Fréquence du Vivant »',
     apport:
-      "Créateur des Marches du Vivant : protocole de marche, écoute du vivant et bioacoustique, récit de territoire et direction sensible de l'agent.",
+      "Créateur des Marches du Vivant : protocole de marche, écoute du vivant et bioacoustique, récit de territoire et direction sensible de l'agent. L'expédition a débuté en août 2025 sur la Dordogne, lors du projet 'Fréquence de la rivière Dordogne', où il a remonté le fleuve de l'estuaire de Bec d'Ambès jusqu'aux pentes du Puy de Sancy (Puy-de-Dôme), à 1 370 m d'altitude.",
     lien: 'https://www.gaspardboreal.com/',
     lienLabel: 'gaspardboreal.com',
   },
@@ -85,6 +85,7 @@ const enBref = [
   "Entrées : photos géolocalisées, enregistrements sonores, témoignages, traces GPX, données iNaturalist, Pl@ntNet et GBIF.",
   "Sorties : indice « Fréquence du Vivant », liste d'espèces enrichie, zones blanches à explorer, Pack Vivant (PDF, Excel, CSV, GeoJSON, KML).",
   "Usage : collectivités et parcs naturels, domaines agricoles, entreprises (RSE / CSRD), associations et écoles.",
+  "Origine terrain : première marche en août 2025 sur la Dordogne — Gaspard Boréal remonte le fleuve de Bec d'Ambès jusqu'aux pentes du Puy de Sancy (1 370 m d'altitude).",
   "Cadre : open source (MIT), RGPD, hébergement en Union européenne, données non revendues, flou GPS sur les espèces sensibles.",
 ];
 
