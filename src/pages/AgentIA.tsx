@@ -96,7 +96,7 @@ const contributeurs = [
     nom: 'Gaspard Boréal',
     role: 'Auteur du recueil « La Fréquence du Vivant »',
     apport:
-      "Créateur des Marches du Vivant : protocole de marche, écoute du vivant et bioacoustique, récit de territoire et direction sensible de l'agent.\u00a0",
+      "Créateur des Marches du Vivant : protocole de marche, écoute du vivant et bioacoustique, récit de territoire et direction sensible de l'agent.",
     lien: 'https://www.gaspardboreal.com/',
     lienLabel: 'gaspardboreal.com',
   },
