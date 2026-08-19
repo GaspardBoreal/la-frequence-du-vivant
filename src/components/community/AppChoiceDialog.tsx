@@ -366,7 +366,7 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
                           className="absolute left-0 inset-y-0 w-[3px] bg-gradient-to-b from-sky-300/70 via-cyan-300/40 to-transparent"
                         />
                         <StarToggle target={entry.target} />
-                        <div className="w-14 h-14 rounded-xl bg-white/90 ring-1 ring-white/25 flex items-center justify-center shrink-0 overflow-hidden p-1.5">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white/90 ring-1 ring-white/25 flex items-center justify-center shrink-0 overflow-hidden p-1.5">
                           {f.logo_url ? (
                             <img
                               src={f.logo_url}
@@ -378,21 +378,20 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
                             <Radio className="w-6 h-6 text-sky-600" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0 pr-8">
-                          <div className="font-semibold text-white text-[15px] leading-snug line-clamp-2">
+                        <div className="flex-1 min-w-0 pr-9">
+                          <div className="text-[11px] uppercase tracking-[0.12em] text-sky-200/90">
+                            Partenaire IoT
+                          </div>
+                          <div className="font-semibold text-white text-[15px] leading-snug line-clamp-2 mt-0.5">
                             {f.nom}
                           </div>
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
-                            <Chip tone="sky">Partenaire IoT</Chip>
-                            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-100/70">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-                              <span className="tabular-nums font-medium text-white/85">{f.capteurs_count}</span>
-                              sonde{f.capteurs_count > 1 ? 's' : ''}
-                            </span>
-                            <span className="text-xs text-emerald-100/45">poste de contrôle · carte</span>
+                          <div className="mt-1 inline-flex items-center gap-1.5 text-[13px] text-emerald-50/85">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)] shrink-0" />
+                            <span className="tabular-nums font-semibold text-white">{f.capteurs_count}</span>
+                            sonde{f.capteurs_count > 1 ? 's' : ''} active{f.capteurs_count > 1 ? 's' : ''}
                           </div>
                         </div>
-                        <ArrowRight className="w-4 h-4 self-center text-sky-300 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all shrink-0" />
+                        <ArrowRight className="hidden sm:block w-4 h-4 self-center text-sky-300 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all shrink-0" />
                       </button>
                     );
                   })}
