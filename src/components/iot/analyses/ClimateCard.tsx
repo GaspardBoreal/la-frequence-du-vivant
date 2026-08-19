@@ -92,6 +92,7 @@ const ClimateCard: React.FC<{
 
       <CoverageLine span={span} windowDays={analysis.windowDays} />
 
+      {fit && <SpeciesTriptych fit={fit} proprieteId={capteur?.propriete_id ?? undefined} />}
 
 
       {v.missing.length > 0 && (
