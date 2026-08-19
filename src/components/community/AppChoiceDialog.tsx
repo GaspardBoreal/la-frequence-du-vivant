@@ -374,10 +374,7 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
                           )}
                         </div>
                         <div className="flex-1 min-w-0 pr-9">
-                          <div className="text-[11px] uppercase tracking-[0.12em] text-sky-200/90">
-                            Partenaire IoT
-                          </div>
-                          <div className="font-semibold text-white text-[15px] leading-snug line-clamp-2 mt-0.5">
+                          <div className="font-semibold text-white text-[15px] leading-snug line-clamp-2">
                             {f.nom}
                           </div>
                           {(() => {
