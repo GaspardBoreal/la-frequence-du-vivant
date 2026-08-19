@@ -16,9 +16,16 @@ interface Props {
   partenaires?: PartenaireIotAccess[];
   /** Appelé si le dialogue est fermé sans qu'aucun espace n'ait été choisi. */
   onDismiss?: () => void;
+  /**
+   * `launch` (défaut) : dialogue de bienvenue à la connexion.
+   * `settings` : réglage de l'espace de démarrage depuis le sélecteur d'espaces.
+   */
+  mode?: 'launch' | 'settings';
 }
 
-export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, partenaires = [], onDismiss }: Props) {
+export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, partenaires = [], onDismiss, mode = 'launch' }: Props) {
+  const isSettings = mode === 'settings';
+
   const navigate = useNavigate();
   const chosenRef = useRef(false);
   const [defaultTarget, setDefaultTarget] = useState<string | null>(null);
