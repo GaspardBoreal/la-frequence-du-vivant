@@ -175,6 +175,9 @@ export const ficheLogos: FicheLogo[] = [
     alt: 'Logo Les Marches du Vivant — Sentier en fréquence : un chemin qui devient une onde parmi les graminées, identité de La Fréquence du Vivant',
     width: 1024,
     height: 1024,
+    status: 'ecarte',
+    usage:
+      'Conservé comme illustration éditoriale (articles, pages de contenu), pas comme logo.',
   },
   {
     slug: 'empreinte-vivante',
@@ -186,6 +189,9 @@ export const ficheLogos: FicheLogo[] = [
     alt: 'Logo Les Marches du Vivant — Empreinte vivante : une empreinte de pas remplie de feuillages entourée d’ondes, identité de La Fréquence du Vivant',
     width: 1024,
     height: 1024,
+    status: 'retenu',
+    usage:
+      "Logo de l'application Les Marches du Vivant : interface, favicon, avatar, pastille d'annuaire, en-tête d'export. Forme compacte, lisible en très petit et en monochrome.",
   },
   {
     slug: 'horizon-marche',
@@ -197,7 +203,11 @@ export const ficheLogos: FicheLogo[] = [
     alt: 'Logo Les Marches du Vivant — Horizon marché : des collines et haies en courbes traversées par un signal, identité de La Fréquence du Vivant',
     width: 1024,
     height: 1024,
+    status: 'variante',
+    usage:
+      'Motif de bandeau et de couverture (hero, image de partage, en-tête de rapport). Ne remplace jamais le logo retenu.',
   },
+
 ];
 
 export const logosByFamily = (family: FicheLogoFamily) =>
