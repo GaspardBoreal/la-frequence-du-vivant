@@ -396,7 +396,7 @@ const PAGE = 1000;
 /** Plafond par sonde : au-delà, on garde le plus récent et on le dit. */
 const MAX_ROWS_PER_SENSOR = 8000;
 
-const EMPTY_WINDOW: MesuresWindow = { rows: [], truncated: false, spans: {} };
+export const EMPTY_WINDOW: MesuresWindow = { rows: [], truncated: false, spans: {} };
 
 /**
  * Mesures d'une fenêtre glissante, lues sonde par sonde et page par page.
