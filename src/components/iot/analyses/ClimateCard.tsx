@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import type { SensorAnalysis } from '@/lib/iot/analyses';
 import type { SensorSpan } from '@/hooks/iot/useIotTelemetry';
+import type { PaletteFit } from '@/hooks/iot/useIotAnalyses';
 import CoverageLine from './CoverageLine';
+import SpeciesTriptych from './SpeciesTriptych';
 
 const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?: string }> = ({
   icon,
@@ -26,11 +28,12 @@ const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?
  * Lecture d'une station météo : le climat du lieu, sans verdict de plantation.
  * Une station ne voit pas le sol — elle donne le cadre, pas la décision.
  */
-const ClimateCard: React.FC<{ capteur: any; analysis: SensorAnalysis; span?: SensorSpan | null }> = ({
-  capteur,
-  analysis,
-  span,
-}) => {
+const ClimateCard: React.FC<{
+  capteur: any;
+  analysis: SensorAnalysis;
+  span?: SensorSpan | null;
+  fit?: PaletteFit | null;
+}> = ({ capteur, analysis, span, fit }) => {
   const c = analysis.climate;
   if (!c) return null;
   const v = analysis.verdict;
@@ -89,6 +92,7 @@ const ClimateCard: React.FC<{ capteur: any; analysis: SensorAnalysis; span?: Sen
 
       <CoverageLine span={span} windowDays={analysis.windowDays} />
 
+      {fit && <SpeciesTriptych fit={fit} proprieteId={capteur?.propriete_id ?? undefined} />}
 
 
       {v.missing.length > 0 && (

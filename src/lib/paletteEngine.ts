@@ -11,7 +11,9 @@ import {
   PALETTE_BLACKLIST,
   STRATE_ORDER,
   type PaletteSpecies,
+  POTAGER_KB,
   type PaletteStrate,
+  type PaletteUsage,
 } from './plantPaletteKb';
 import type { SoilLite, PoleScore } from './plantIndicatorKb';
 
@@ -347,4 +349,56 @@ export function buildImplementation(profile: SiteProfile, zoneCount: number): Im
       detail: 'Une fauche tardive annuelle (après le 15 juillet), export du foin, aucun désherbage sélectif. On ne remplace un sujet qu’après deux étés d’observation.',
     },
   ];
+}
+
+/* ── Triptyque d'usage ────────────────────────────────────────────────────── */
+
+export interface UsagePick extends ScoredSpecies {
+  /** Note ajustée : pour le potager, la fenêtre thermique mesurée compte aussi. */
+  fit: number;
+  /** Une ligne de justification, formulée pour le propriétaire. */
+  why: string;
+}
+
+/**
+ * Les meilleures espèces d'une famille d'usage pour un profil donné.
+ * Le potager tient compte de la température mesurée : une culture dont la
+ * fenêtre de semis n'est pas ouverte est proposée plus bas, avec sa fenêtre.
+ */
+export function topByUsage(
+  profile: SiteProfile,
+  usage: PaletteUsage,
+  n = 5,
+  opts?: { soilTempC?: number | null; airMeanC?: number | null; exclude?: string[] },
+): UsagePick[] {
+  const excluded = new Set(opts?.exclude ?? []);
+  const source = usage === 'potager' ? POTAGER_KB : PALETTE_KB.filter((s) => s.usages.includes(usage));
+  const temp = opts?.soilTempC ?? opts?.airMeanC ?? null;
+
+  return source
+    .filter((s) => !s.caution && !excluded.has(s.id))
+    .map((s) => {
+      const scored = scoreSpecies(profile, s);
+      let fit = scored.score;
+      let why = s.reason;
+
+      if (usage === 'potager' && s.sowing) {
+        if (temp == null) {
+          why = `${s.reason} · ${s.sowing.window}.`;
+        } else if (temp < s.sowing.soilMinC) {
+          fit -= 18;
+          why = `Fenêtre pas encore ouverte : il lui faut ${s.sowing.soilMinC} °C, le lieu mesure ${temp.toFixed(0)} °C. ${s.sowing.window}.`;
+        } else if (temp > s.sowing.airMaxC) {
+          fit -= 22;
+          why = `Décroche au-delà de ${s.sowing.airMaxC} °C ; le lieu mesure ${temp.toFixed(0)} °C — à décaler ou à ombrer.`;
+        } else {
+          fit += 8;
+          why = `Fenêtre ouverte ici (${temp.toFixed(0)} °C mesurés). ${s.sowing.window}.`;
+        }
+      }
+
+      return { ...scored, fit: Math.max(0, Math.min(100, Math.round(fit))), why };
+    })
+    .sort((a, b) => b.fit - a.fit || (a.species.origin === 'indigene' ? -1 : 1))
+    .slice(0, n);
 }

@@ -18,6 +18,9 @@
 
 export type PaletteStrate = 'arbre' | 'arbuste' | 'herbacee' | 'grimpante' | 'couvre_sol';
 export type PaletteOrigin = 'indigene' | 'horticole';
+/** Trois familles d'usage, pour proposer une palette lisible par le propriétaire. */
+export type PaletteUsage = 'nourricier' | 'potager' | 'ornemental';
+
 
 export interface PaletteSpecies {
   id: string;
@@ -36,7 +39,16 @@ export interface PaletteSpecies {
   service: string;
   /** Déconseillée : motif éditorial (invasive, allergène majeur, hors sol…). */
   caution?: string;
+  /** Familles d'usage (nourricier / potager / ornemental) — dérivées, jamais saisies deux fois. */
+  usages: PaletteUsage[];
+  /**
+   * Fenêtre thermique de mise en place, uniquement pour le potager :
+   * température de sol minimale de semis et température d'air au-delà de
+   * laquelle la culture décroche.
+   */
+  sowing?: { soilMinC: number; airMaxC: number; window: string };
 }
+
 
 type Row = [
   string, // id
@@ -193,6 +205,54 @@ const ROWS: Row[] = [
   ['sinapis-alba', 'Moutarde blanche', 'Sinapis alba', 'herbacee', 'horticole', 0, [0, 1, 2, 2, 3], 'engrais vert', 'Annuelle rapide de sol frais.', 'Structure le sol tassé avant plantation d’automne.'],
 ];
 
+/**
+ * Potager nourricier : légumes et aromatiques pérennes ou annuels, décrits sur
+ * la même échelle -3 → +3 que les ligneux, plus une fenêtre thermique de mise
+ * en place (température de sol de semis, plafond thermique de culture).
+ */
+type PotagerRow = [...Row, number, number, string];
+
+const POTAGER_ROWS: PotagerRow[] = [
+  ['pot-tomate', 'Tomate', 'Solanum lycopersicum', 'herbacee', 'horticole', 0, [1, 0, 2, 1, 3], 'fruits|potager', 'Chaleur et sol riche bien drainé, sensible à l’humidité stagnante du feuillage.', 'La récolte-signature de l’été, du plein soleil au moindre mètre carré.', 12, 35, 'Semis en avril sous abri, plantation mi-mai'],
+  ['pot-courgette', 'Courgette', 'Cucurbita pepo', 'herbacee', 'horticole', 0, [2, 1, 3, 1, 3], 'fruits|potager', 'Très gourmande en eau et en azote, s’effondre en sol sec.', 'Production continue de juin à septembre sur deux pieds.', 13, 34, 'Semis mi-mai en place'],
+  ['pot-haricot', 'Haricot vert', 'Phaseolus vulgaris', 'herbacee', 'horticole', 0, [1, 0, 0, 1, 3], 'potager|fixateur azote', 'Craint le froid, fixe son propre azote.', 'Nourrit sans fertiliser et laisse le sol plus riche qu’avant.', 12, 32, 'Semis de mai à juillet'],
+  ['pot-poireau', 'Poireau', 'Allium porrum', 'herbacee', 'horticole', 0, [1, 1, 2, 1, 3], 'potager|hiver', 'Sol profond frais, très rustique au gel.', 'Tient le potager tout l’hiver, se récolte au fur et à mesure.', 8, 30, 'Plantation de juin à août'],
+  ['pot-carotte', 'Carotte', 'Daucus carota subsp. sativus', 'herbacee', 'horticole', 0, [0, -1, 0, 1, 3], 'potager|conservation', 'Exige un sol meuble et sans cailloux, déteste le fumier frais.', 'Se conserve tout l’hiver en cave ou en terre.', 8, 30, 'Semis de mars à juillet'],
+  ['pot-betterave', 'Betterave', 'Beta vulgaris', 'herbacee', 'horticole', 0, [0, 0, 1, 2, 3], 'potager|conservation', 'Tolère le calcaire et les sols un peu lourds.', 'Racine et feuilles comestibles, longue conservation.', 8, 32, 'Semis d’avril à juin'],
+  ['pot-salade', 'Laitue', 'Lactuca sativa', 'herbacee', 'horticole', 0, [1, 0, 1, 1, 1], 'potager|primeur', 'Monte en graines dès qu’il fait sec et chaud, aime la mi-ombre d’été.', 'Récolte en six semaines, se ressème en continu.', 6, 26, 'Semis de mars à septembre'],
+  ['pot-epinard', 'Épinard', 'Spinacia oleracea', 'herbacee', 'horticole', 0, [1, 1, 2, 1, 1], 'potager|hiver', 'Culture de saison fraîche, monte à la chaleur.', 'Feuilles d’automne et de printemps, hors saison des tomates.', 5, 24, 'Semis en mars puis en septembre'],
+  ['pot-blette', 'Blette', 'Beta vulgaris subsp. cicla', 'herbacee', 'horticole', 0, [1, 1, 2, 1, 2], 'potager|rustique', 'Très tolérante, supporte chaleur et sols moyens.', 'Un seul semis produit d’été à gelées.', 10, 33, 'Semis d’avril à juin'],
+  ['pot-radis', 'Radis', 'Raphanus sativus', 'herbacee', 'horticole', 0, [1, -1, 1, 1, 2], 'potager|primeur', 'Cycle court, devient piquant en sol sec.', 'Première récolte du jardin, trois semaines après semis.', 8, 28, 'Semis de mars à septembre'],
+  ['pot-pois', 'Petit pois', 'Pisum sativum', 'herbacee', 'horticole', 0, [1, 0, -1, 2, 3], 'potager|fixateur azote', 'Culture de fraîcheur, déteste les étés secs.', 'Enrichit le sol en azote et libère la place en juin.', 6, 27, 'Semis de février à avril'],
+  ['pot-feve', 'Fève', 'Vicia faba', 'herbacee', 'horticole', 0, [1, 2, 0, 2, 3], 'potager|fixateur azote', 'Supporte les terres lourdes et le froid hivernal.', 'Semée en novembre, elle occupe et nourrit le sol nu.', 5, 28, 'Semis en novembre ou février'],
+  ['pot-ail', 'Ail', 'Allium sativum', 'herbacee', 'horticole', 0, [-1, -1, 0, 2, 3], 'potager|conservation', 'Exige un sol drainant : pourrit dans l’argile humide.', 'Se plante en automne, se conserve un an.', 6, 32, 'Plantation d’octobre à décembre'],
+  ['pot-oignon', 'Oignon', 'Allium cepa', 'herbacee', 'horticole', 0, [-1, -1, 0, 2, 3], 'potager|conservation', 'Sol léger et sec en fin de culture, craint l’excès d’eau.', 'Base de cuisine conservée tout l’hiver.', 8, 33, 'Plantation de février à avril'],
+  ['pot-pdt', 'Pomme de terre', 'Solanum tuberosum', 'herbacee', 'horticole', 0, [1, -1, 2, 0, 3], 'potager|conservation', 'Sol meuble et frais, préfère les terres légèrement acides.', 'Le plus fort rendement calorique au mètre carré.', 8, 32, 'Plantation de mars à mai'],
+  ['pot-potiron', 'Potiron', 'Cucurbita maxima', 'herbacee', 'horticole', 0, [2, 1, 3, 1, 3], 'potager|conservation', 'Très gourmand, prend beaucoup de place et d’eau.', 'Une récolte d’octobre qui se garde jusqu’en mars.', 13, 34, 'Semis mi-mai'],
+  ['pot-concombre', 'Concombre', 'Cucumis sativus', 'herbacee', 'horticole', 0, [2, 0, 2, 1, 3], 'potager|fruits', 'Chaleur constante et humidité du sol régulière.', 'Palissé, il produit beaucoup sur peu de surface.', 14, 33, 'Semis mi-mai'],
+  ['pot-chou-kale', 'Chou kale', 'Brassica oleracea var. sabellica', 'herbacee', 'horticole', 0, [1, 1, 2, 2, 3], 'potager|hiver', 'Rustique jusqu’à -12 °C, meilleur après les gelées.', 'Feuilles fraîches en plein hiver, sans abri.', 8, 30, 'Semis en juin, plantation en juillet'],
+  ['pot-artichaut', 'Artichaut', 'Cynara cardunculus var. scolymus', 'herbacee', 'horticole', 0, [0, 0, 2, 1, 3], 'potager|vivace', 'Vivace de sol profond drainant, craint l’humidité hivernale.', 'Une plantation, cinq ans de récolte et un feuillage sculptural.', 10, 34, 'Plantation en mars ou septembre'],
+  ['pot-asperge', 'Asperge', 'Asparagus officinalis', 'herbacee', 'horticole', 0, [-1, -2, 1, 2, 3], 'potager|vivace', 'Exige un sol sableux drainant, s’installe pour quinze ans.', 'Le luxe du printemps, une fois la patience investie.', 10, 33, 'Plantation de griffes en mars'],
+  ['pot-rhubarbe', 'Rhubarbe', 'Rheum rhabarbarum', 'herbacee', 'horticole', 0, [2, 1, 3, 0, 1], 'potager|vivace', 'Sol frais riche, supporte la mi-ombre et le froid.', 'Vivace généreuse qui occupe les coins frais et ingrats.', 5, 28, 'Plantation en automne'],
+  ['pot-fraisier', 'Fraisier', 'Fragaria × ananassa', 'couvre_sol', 'horticole', 0, [1, 0, 1, 0, 2], 'potager|fruits', 'Sol frais légèrement acide, souffre du calcaire actif.', 'Couvre-sol comestible qui se multiplie tout seul par stolons.', 8, 30, 'Plantation d’août à septembre'],
+  ['pot-basilic', 'Basilic', 'Ocimum basilicum', 'herbacee', 'horticole', 0, [1, 0, 2, 1, 3], 'potager|aromatique', 'Frileux : la moindre nuit fraîche l’arrête.', 'Aromatique d’été, compagne des tomates.', 14, 35, 'Plantation après mi-mai'],
+  ['pot-persil', 'Persil', 'Petroselinum crispum', 'herbacee', 'horticole', 0, [1, 0, 1, 1, 1], 'potager|aromatique', 'Germination lente, préfère la mi-ombre fraîche.', 'Bisannuel disponible presque toute l’année.', 8, 28, 'Semis de mars à août'],
+  ['pot-ciboulette', 'Ciboulette', 'Allium schoenoprasum', 'herbacee', 'indigene', 0, [1, 0, 1, 1, 2], 'potager|aromatique|mellifère', 'Vivace rustique de sol frais, fleurs mellifères.', 'Repousse chaque printemps sans rien demander.', 5, 30, 'Plantation au printemps'],
+  ['pot-thym-cuisine', 'Thym commun', 'Thymus vulgaris', 'couvre_sol', 'horticole', 0, [-3, -2, -2, 2, 3], 'potager|aromatique|mellifère', 'Sol pauvre et sec, meurt en terre humide.', 'Aromatique persistante qui traverse les canicules.', 8, 38, 'Plantation au printemps'],
+  ['pot-romarin', 'Romarin', 'Salvia rosmarinus', 'arbuste', 'horticole', 0, [-3, -2, -2, 2, 3], 'potager|aromatique|mellifère', 'Calcaire sec, une des plantes les plus sobres du jardin.', 'Aromatique-arbuste fleurie en hiver pour les abeilles.', 8, 40, 'Plantation en automne ou printemps'],
+];
+
+/** Ce qui rend une espèce ligneuse « nourricière » au sens du triptyque. */
+const NOURRICIER_KEYS = ['fruits', 'comestible', 'aromatique', 'fourrage'];
+
+function usagesOf(strate: PaletteStrate, services: string[]): PaletteUsage[] {
+  const out: PaletteUsage[] = [];
+  const feeding = services.some((s) => NOURRICIER_KEYS.includes(s));
+  if (feeding && (strate === 'arbre' || strate === 'arbuste' || strate === 'grimpante')) out.push('nourricier');
+  out.push('ornemental');
+  return out;
+}
+
 export const PALETTE_KB: PaletteSpecies[] = ROWS.map(
   ([id, fr, latin, strate, origin, vl, o, services, reason, service]) => ({
     id,
@@ -205,10 +265,42 @@ export const PALETTE_KB: PaletteSpecies[] = ROWS.map(
     services: services.split('|'),
     reason,
     service,
+    usages: usagesOf(strate, services.split('|')),
   }),
 );
 
-export const PALETTE_BY_ID = new Map(PALETTE_KB.map((s) => [s.id, s]));
+/** Potager : référentiel séparé, pour ne pas altérer la palette paysagère existante. */
+export const POTAGER_KB: PaletteSpecies[] = POTAGER_ROWS.map(
+  ([id, fr, latin, strate, origin, vl, o, services, reason, service, soilMinC, airMaxC, window]) => ({
+    id,
+    fr,
+    latin,
+    strate,
+    origin,
+    vegetalLocal: vl === 1,
+    optima: { eau: o[0], texture: o[1], nutrition: o[2], ph: o[3], lumiere: o[4] },
+    services: services.split('|'),
+    reason,
+    service,
+    usages: ['potager'] as PaletteUsage[],
+    sowing: { soilMinC, airMaxC, window },
+  }),
+);
+
+export const USAGE_LABEL: Record<PaletteUsage, string> = {
+  nourricier: 'Arbres & arbustes nourriciers',
+  potager: 'Légumes nourriciers',
+  ornemental: 'Ornementaux',
+};
+
+export const USAGE_HINT: Record<PaletteUsage, string> = {
+  nourricier: 'Fruitiers rustiques, haie gourmande, petits fruits',
+  potager: 'Le potager possible ici, selon la fraîcheur et la lumière mesurées',
+  ornemental: 'Structure, floraison et feuillage toute l’année',
+};
+
+export const PALETTE_BY_ID = new Map([...PALETTE_KB, ...POTAGER_KB].map((s) => [s.id, s]));
+
 
 export const STRATE_LABEL: Record<PaletteStrate, string> = {
   arbre: 'Arbres',
