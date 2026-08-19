@@ -9,7 +9,6 @@ import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
 import {
   BRAND_LOGO_ALT,
   BRAND_LOGO_CAPTION,
-  BRAND_LOGO_DARK,
   BRAND_LOGO_HEIGHT,
   BRAND_LOGO_ID,
   BRAND_LOGO_MARK,
@@ -27,8 +26,6 @@ import {
  * et se lit par les lecteurs d'écran, ce que le wordmark gravé dans le PNG ne fait pas.
  */
 const LOGO_SRC = BRAND_LOGO_MARK.path;
-/** Lock-up complet (texte inclus) réservé aux contextes hors interface : partage social, annuaires. */
-const LOGO_SHARE_SRC = BRAND_LOGO_DARK.url;
 
 
 
