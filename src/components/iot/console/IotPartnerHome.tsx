@@ -119,13 +119,17 @@ export const IotPartnerHome: React.FC = () => {
     return m == null || m > (c.silence_alert_hours ?? 24) * 60;
   }).length;
 
-  /** Lectures clés par sonde + échelles partagées (sondes en service uniquement). */
+  /** Lectures clés par sonde + échelles partagées (sondes en ligne uniquement). */
   const { readings, scaleH, scaleT, extremes } = React.useMemo(() => {
     const readings = new Map<string, ReturnType<typeof keyReadings>>();
     capteurs.forEach((c) => readings.set(c.id, keyReadings(c, (latest as any)[c.id] ?? [])));
-    const inService = capteurs.filter((c) => capteurEtat(c as any) === 'service');
+    const online = capteurs.filter(
+      (c) =>
+        capteurEtat(c as any) === 'service' &&
+        sensorStatus(minutesSince(c.last_seen_at), c.silence_alert_hours).label === 'En ligne',
+    );
     const collect = (axis: 'humidite' | 'temperature') =>
-      inService
+      online
         .map((c) => readings.get(c.id)?.[axis])
         .filter(Boolean)
         .map((r) => ({ valeur: r!.valeur, unite: r!.unite, digits: r!.digits }));
@@ -135,7 +139,7 @@ export const IotPartnerHome: React.FC = () => {
     const extremes = new Map<string, string>();
     const mark = (axis: 'humidite' | 'temperature', scale: AxisScale | null, lo: string, hi: string) => {
       if (!scale || scale.count < 2 || scale.max === scale.min) return;
-      inService.forEach((c) => {
+      online.forEach((c) => {
         const r = readings.get(c.id)?.[axis];
         if (!r) return;
         if (r.valeur === scale.max) extremes.set(`${c.id}|${axis}`, hi);
