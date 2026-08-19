@@ -68,7 +68,8 @@ const AnalysesTab: React.FC = () => {
   const [level, setLevel] = React.useState<LevelKey>('simple');
   const [selected, setSelected] = React.useState<string | null>(null);
 
-  const { capteurs, excluded, byCapteur, isLoading, mesureCount, spans, truncated } = useIotAnalyses(windowDays);
+  const { capteurs, excluded, byCapteur, isLoading, isFetching, error, isEmpty, mesureCount, spans, truncated } =
+    useIotAnalyses(windowDays);
 
   const capteur = React.useMemo(
     () => capteurs.find((c) => c.id === selected) ?? capteurs[0] ?? null,
@@ -76,6 +77,9 @@ const AnalysesTab: React.FC = () => {
   );
   const analysis = capteur ? byCapteur.get(capteur.id) ?? null : null;
 
+  /** Tant que la lecture n'est pas finie, aucun verdict n'est prononcé. */
+  const reading = isLoading || (isFetching && mesureCount === 0);
+  const showVerdicts = !reading && !error && mesureCount > 0;
 
   return (
     <div className="space-y-5">
@@ -84,11 +88,16 @@ const AnalysesTab: React.FC = () => {
         <div className="min-w-0">
           <div className="text-sm font-semibold">Analyses</div>
           <p className="text-[11px] text-muted-foreground">
-            {isLoading
+            {reading
               ? 'Lecture des mesures…'
-              : `${capteurs.length} sonde${capteurs.length > 1 ? 's' : ''} · ${mesureCount} relevés sur ${windowDays} jours`}
+              : error
+                ? 'Lecture des mesures indisponible'
+                : `${capteurs.length} sonde${capteurs.length > 1 ? 's' : ''} · ${mesureCount} relevé${
+                    mesureCount > 1 ? 's' : ''
+                  } sur ${windowDays} jours${isFetching ? ' · actualisation…' : ''}`}
           </p>
         </div>
+
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <div className="flex rounded-full border border-border/60 bg-background p-1">
