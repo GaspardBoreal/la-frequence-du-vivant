@@ -27,6 +27,9 @@ import {
  */
 const LOGO_SRC = BRAND_LOGO_MARK.path;
 
+/** Fiche de l'agent sur le portail partenaire PiloTerra (lien d'entité réciproque). */
+const PILOTERRA_URL = 'https://piloterra.fr/agents/les-marches-du-vivant';
+
 
 
 
@@ -128,7 +131,11 @@ const AGENT_JSONLD = {
       image: { '@id': BRAND_LOGO_ID },
       description:
         "Association loi 1901 : bioacoustique, science participative et transition agroécologique. Éditrice de l'agent IA Les Marches du Vivant.",
-      sameAs: [`${SITE}/marches-du-vivant`, `${SITE}/marches-du-vivant/association`],
+      sameAs: [
+        `${SITE}/marches-du-vivant`,
+        `${SITE}/marches-du-vivant/association`,
+        PILOTERRA_URL,
+      ],
     },
 
     {
@@ -162,7 +169,8 @@ const AGENT_JSONLD = {
       url: AGENT_URL,
       image: AGENT_IMAGE,
       inLanguage: 'fr',
-      datePublished: '2026-08-19',
+      datePublished: '2025-08-01',
+      dateModified: '2026-08-19',
       softwareVersion: '1.3',
       license: 'https://opensource.org/licenses/MIT',
       isAccessibleForFree: true,
@@ -184,7 +192,7 @@ const AGENT_JSONLD = {
       ],
       keywords:
         'biodiversité, agriculture, agroécologie, science participative, sol vivant, collectivités, RSE, CSRD, données géospatiales, bioacoustique',
-      sameAs: [`${SITE}/marches-du-vivant`, `${SITE}/roadmap/frequence-jardin`],
+      sameAs: [`${SITE}/marches-du-vivant`, `${SITE}/roadmap/frequence-jardin`, PILOTERRA_URL],
     },
   ],
 };
@@ -549,6 +557,18 @@ const AgentIA: React.FC = () => {
           </span>
 
           la-frequence-du-vivant.com&nbsp;
+
+          <span className="text-[11px]">
+            Référencé sur le portail{' '}
+            <a
+              href={PILOTERRA_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-primary transition-colors"
+            >
+              PiloTerra
+            </a>
+          </span>
 
 
         </div>
