@@ -214,13 +214,34 @@ export const ficheLogos: FicheLogo[] = [
 ];
 
 export const logosByFamily = (family: FicheLogoFamily) =>
-  ficheLogos.filter((l) => l.family === family);
+  ficheLogos
+    .filter((l) => l.family === family)
+    .sort((a, b) => statusRank(a.status) - statusRank(b.status));
+
+const statusRank = (s?: FicheLogoStatus) =>
+  s === 'retenu' ? 0 : s === 'variante' ? 1 : s === 'ecarte' ? 3 : 2;
+
+/** Logo arbitré comme retenu pour une famille de marque, s'il existe. */
+export const retainedLogo = (family: FicheLogoFamily) =>
+  ficheLogos.find((l) => l.family === family && l.status === 'retenu');
 
 /** URL absolue d'une image de logo (utilisable dans un annuaire externe). */
 export const logoImageUrl = (l: FicheLogo) => `${SITE_URL}${l.src}`;
 /** URL absolue de la page dédiée d'un logo. */
 export const logoPageUrl = (l: FicheLogo) => `${FICHE_URL}/logo/${l.slug}`;
 export const findLogo = (slug?: string) => ficheLogos.find((l) => l.slug === slug);
+
+/** Règles d'emploi issues de l'arbitrage des logos. */
+export const logoArbitrage = {
+  date: '19.08.2026',
+  rules: [
+    "La Feuille-signal « La Fréquence du Vivant » signe l'association : en-tête de document, signature, fiche d'annuaire.",
+    "« Empreinte vivante » est le logo de l'application Les Marches du Vivant : interface, favicon, avatar, en-tête d'export.",
+    "« Horizon marché » reste un motif paysager réservé aux bandeaux, couvertures et images de partage — jamais en logo.",
+    "Fréquence Jardin n'est pas encore arbitré : les six directions restent ouvertes.",
+  ],
+};
+
 
 
 export const fiche = {
