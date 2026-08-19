@@ -253,11 +253,25 @@ const FrequenceJardinFiche: React.FC = () => {
             </span>
             <h2 className="text-2xl font-semibold text-foreground">Identité visuelle</h2>
           </div>
-          <p className="mb-8 max-w-3xl text-base leading-relaxed text-muted-foreground">
-            Les propositions de logo, par famille de marque. Aucune n'est encore arbitrée. Chacune
-            dispose d'une page dédiée et d'une URL d'image directe, réutilisables telles quelles
-            dans un annuaire ou une fiche partenaire.
+          <p className="mb-6 max-w-3xl text-base leading-relaxed text-muted-foreground">
+            Les propositions de logo, par famille de marque. Chacune dispose d'une page dédiée et
+            d'une URL d'image directe, réutilisables telles quelles dans un annuaire ou une fiche
+            partenaire.
           </p>
+
+          <div className="mb-8 rounded-2xl border border-primary/30 bg-primary/5 p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Arbitrage · {logoArbitrage.date}
+            </h3>
+            <ul className="mt-3 space-y-2">
+              {logoArbitrage.rules.map((r) => (
+                <li key={r} className="flex gap-2 text-sm leading-relaxed text-muted-foreground">
+                  <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary" />
+                  <span>{r}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
           {logoFamilies.map((fam) => (
             <div key={fam.id} className="mb-10 last:mb-0">
@@ -269,7 +283,11 @@ const FrequenceJardinFiche: React.FC = () => {
                 {logosByFamily(fam.id).map((l) => (
                   <article
                     key={l.slug}
-                    className="overflow-hidden rounded-2xl border border-border/60 bg-card/40 transition hover:border-primary/40"
+                    className={`overflow-hidden rounded-2xl border bg-card/40 transition ${
+                      l.status === 'retenu'
+                        ? 'border-primary/60 ring-1 ring-primary/30'
+                        : 'border-border/60 hover:border-primary/40'
+                    } ${l.status === 'ecarte' ? 'opacity-70' : ''}`}
                   >
                     <a href={`/roadmap/frequence-jardin/logo/${l.slug}`} className="block">
                       <img
@@ -284,16 +302,36 @@ const FrequenceJardinFiche: React.FC = () => {
                       />
                     </a>
                     <div className="p-4">
-                      <h4 className="text-sm font-semibold text-foreground">{l.name}</h4>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="text-sm font-semibold text-foreground">{l.name}</h4>
+                        {l.status && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
+                              l.status === 'retenu'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'border border-border/60 text-muted-foreground'
+                            }`}
+                          >
+                            {logoStatusLabels[l.status]}
+                          </span>
+                        )}
+                      </div>
                       <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                         {l.intention}
                       </p>
+                      {l.usage && (
+                        <p className="mt-2 text-xs leading-relaxed text-foreground/80">
+                          <span className="font-medium">Emploi : </span>
+                          {l.usage}
+                        </p>
+                      )}
                       <a
                         href={`/roadmap/frequence-jardin/logo/${l.slug}`}
                         className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                       >
                         Voir la page du logo <ArrowUpRight className="h-3.5 w-3.5" />
                       </a>
+
                       <div className="mt-3 flex items-start gap-2">
                         <p className="min-w-0 flex-1 break-all font-mono text-[10px] leading-relaxed text-muted-foreground">
                           {logoImageUrl(l)}
