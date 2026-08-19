@@ -537,7 +537,7 @@ const AgentIA: React.FC = () => {
             </a>
           </Button>
         </div>
-        <div className="mt-12 flex flex-col items-center gap-3 text-xs text-muted-foreground">
+        <div className="mt-12 flex flex-col items-center gap-2 text-xs text-muted-foreground">
           <img
             src={LOGO_SRC}
             alt={BRAND_LOGO_ALT}
@@ -547,8 +547,12 @@ const AgentIA: React.FC = () => {
             height={48}
             loading="lazy"
           />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground/80">
+            Les Marches du Vivant
+          </span>
 
           la-frequence-du-vivant.com&nbsp;
+
 
         </div>
       </section>
