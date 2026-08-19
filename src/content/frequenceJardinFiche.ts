@@ -120,6 +120,9 @@ export const ficheLogos: FicheLogo[] = [
     alt: 'Logo La Fréquence du Vivant — Feuille-signal : une feuille dont la nervure devient une onde, marque de l’association La Fréquence du Vivant',
     width: 1024,
     height: 1024,
+    status: 'retenu',
+    usage:
+      "Marque ombrelle : signature de l'association, en-tête de document, fiche d'annuaire. Les logos applicatifs viennent en second niveau.",
   },
   {
     slug: 'germination-onde-pleine',
