@@ -178,6 +178,19 @@ const FrequenceJardinLogo: React.FC = () => {
           />
           <figcaption className="mt-6 text-center text-sm text-muted-foreground">
             {logo.alt}
+            <span className="mt-2 block text-xs">
+              © La Fréquence du Vivant — réutilisation autorisée sans modification (
+              <a
+                href="https://creativecommons.org/licenses/by-nd/4.0/"
+                target="_blank"
+                rel="noopener noreferrer license"
+                className="underline underline-offset-2"
+              >
+                CC BY-ND 4.0
+              </a>
+              ), crédit « {famLabel} — La Fréquence du Vivant ».
+            </span>
+
           </figcaption>
         </figure>
 
