@@ -192,7 +192,7 @@ const AGENT_JSONLD = {
       ],
       keywords:
         'biodiversité, agriculture, agroécologie, science participative, sol vivant, collectivités, RSE, CSRD, données géospatiales, bioacoustique',
-      sameAs: [`${SITE}/marches-du-vivant`, `${SITE}/roadmap/frequence-jardin`],
+      sameAs: [`${SITE}/marches-du-vivant`, `${SITE}/roadmap/frequence-jardin`, PILOTERRA_URL],
     },
   ],
 };
