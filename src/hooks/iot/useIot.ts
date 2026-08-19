@@ -258,7 +258,7 @@ export function useLatestMesures(capteurIds: string[]) {
       if (error) throw error;
       const out: Record<string, IotMesure[]> = {};
       const seen = new Set<string>();
-      (data ?? []).forEach((m: any) => {
+      filtrerMesuresLisibles(data ?? []).forEach((m: any) => {
         const k = `${m.capteur_id}|${m.grandeur}|${m.profondeur_m ?? ''}`;
         if (seen.has(k)) return;
         seen.add(k);
@@ -295,7 +295,7 @@ export function useMesureSeries(capteurId?: string, days = 30) {
         .order('mesure_at', { ascending: true })
         .limit(3000);
       if (error) throw error;
-      return (data ?? []).map((m: any) => ({
+      return filtrerMesuresLisibles(data ?? []).map((m: any) => ({
         ...m,
         valeur: Number(m.valeur),
         profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),

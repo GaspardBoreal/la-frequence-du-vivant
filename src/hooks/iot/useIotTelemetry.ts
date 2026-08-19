@@ -368,7 +368,7 @@ export function useMesureSeriesRange(capteurId?: string, fromISO?: string, toISO
         .order('mesure_at', { ascending: true })
         .limit(20000);
       if (error) throw error;
-      return (data ?? []).map((m: any) => ({
+      return filtrerMesuresLisibles(data ?? []).map((m: any) => ({
         ...m,
         valeur: Number(m.valeur),
         profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),
@@ -447,7 +447,7 @@ export function useMesuresWindow(capteurIds: string[], days: number) {
             }
           }
           rows.reverse();
-          const mapped = rows.map((m: any) => ({
+          const mapped = filtrerMesuresLisibles(rows).map((m: any) => ({
             ...m,
             valeur: Number(m.valeur),
             profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),
@@ -499,7 +499,7 @@ export function useMesuresInWindow(capteurId?: string | null, fromISO?: string |
         .order('mesure_at', { ascending: true })
         .limit(500);
       if (error) throw error;
-      return (data ?? []).map((m: any) => ({
+      return filtrerMesuresLisibles(data ?? []).map((m: any) => ({
         ...m,
         valeur: Number(m.valeur),
         profondeur_m: m.profondeur_m == null ? null : Number(m.profondeur_m),
