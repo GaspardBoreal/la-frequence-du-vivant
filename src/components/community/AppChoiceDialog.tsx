@@ -216,6 +216,11 @@ export function getDefaultAppTarget(): string | null {
   try { return localStorage.getItem(DEFAULT_KEY); } catch { return null; }
 }
 
+export function setDefaultAppTarget(target: string) {
+  try { localStorage.setItem(DEFAULT_KEY, target); } catch { /* stockage indisponible */ }
+}
+
+
 export function clearDefaultAppTarget() {
   try { localStorage.removeItem(DEFAULT_KEY); } catch { /* stockage indisponible */ }
 }
