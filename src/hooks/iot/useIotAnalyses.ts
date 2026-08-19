@@ -88,7 +88,14 @@ export function useIotAnalyses(windowDays: number) {
     spans,
     truncated: win?.truncated ?? false,
     isLoading: loadingC || loadingM,
+    /** Vrai tant qu'une lecture est en cours, y compris un rafraîchissement. */
+    isFetching: fetchingM,
+    /** Erreur de lecture des mesures : à distinguer d'une absence de données. */
+    error: (errorM as Error | null) ?? null,
+    /** Vrai seulement quand la lecture est terminée et n'a rien ramené. */
+    isEmpty: !loadingC && !loadingM && !fetchingM && !errorM && mesures.length === 0,
     mesureCount: mesures.length,
+
   };
 }
 
