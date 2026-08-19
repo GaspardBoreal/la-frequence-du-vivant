@@ -214,9 +214,17 @@ const AgentIA: React.FC = () => {
 
 
       {/* Nav */}
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link to="/marches-du-vivant" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" /> Accueil
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-3">
+        <Link to="/marches-du-vivant" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-2 min-w-0">
+          <ArrowLeft className="h-4 w-4 shrink-0" />
+          <img
+            src={LOGO_SRC}
+            alt="Logo Les Marches du Vivant — Empreinte vivante"
+            className="h-8 w-8 rounded-full object-cover ring-1 ring-primary/25 shrink-0"
+            width={32}
+            height={32}
+          />
+          <span className="truncate">Accueil</span>
         </Link>
         <Button asChild size="sm" variant="default">
           <Link to="/agent-ia/fiche" target="_blank" rel="noreferrer">
@@ -228,24 +236,46 @@ const AgentIA: React.FC = () => {
 
       {/* Hero */}
       <section className="container mx-auto px-4 pt-12 pb-20 max-w-5xl">
-        <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-primary mb-6">
-          <Sparkles className="h-4 w-4" />
-          <span>LA FRÉQUENCE DU VIVANT — FICHE AGENT IA 2026</span>
-        </div>
-        <h1 className="text-5xl md:text-7xl font-bold leading-[1.05] mb-6">
-          Les Marches<br/>du Vivant
-        </h1>
-        <p className="text-xl md:text-2xl text-primary italic max-w-3xl mb-8">
-          Mesurer collectivement la biodiversité pour accélérer la transition agroécologique
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <Badge className="bg-primary text-primary-foreground">ACTIF</Badge>
-          <Badge variant="outline">v1.3</Badge>
-          <Badge variant="outline">AI Gateway</Badge>
-          <Badge variant="outline">Supabase souverain (UE)</Badge>
-          <Badge variant="outline">Open Source · MIT</Badge>
+        <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-12">
+          {/* Signature visuelle — logo retenu « Empreinte vivante » */}
+          <div className="relative shrink-0 self-start md:self-center">
+            <div
+              className="absolute -inset-4 rounded-full blur-2xl opacity-60"
+              style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.25), transparent 70%)' }}
+              aria-hidden
+            />
+            <img
+              src={LOGO_SRC}
+              alt="Logo Les Marches du Vivant — Empreinte vivante"
+              className="relative h-28 w-28 md:h-44 md:w-44 rounded-full object-cover ring-1 ring-primary/25 shadow-2xl"
+              width={176}
+              height={176}
+              loading="eager"
+            />
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-primary mb-6">
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span>LA FRÉQUENCE DU VIVANT — FICHE AGENT IA 2026</span>
+            </div>
+            <h1 className="text-5xl md:text-7xl font-bold leading-[1.05] mb-6">
+              Les Marches<br/>du Vivant
+            </h1>
+            <p className="text-xl md:text-2xl text-primary italic max-w-3xl mb-8">
+              Mesurer collectivement la biodiversité pour accélérer la transition agroécologique
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge className="bg-primary text-primary-foreground">ACTIF</Badge>
+              <Badge variant="outline">v1.3</Badge>
+              <Badge variant="outline">AI Gateway</Badge>
+              <Badge variant="outline">Supabase souverain (UE)</Badge>
+              <Badge variant="outline">Open Source · MIT</Badge>
+            </div>
+          </div>
         </div>
       </section>
+
 
       {/* En bref — faits courts et citables (SEO / GEO) */}
       <section className="container mx-auto px-4 pb-4 max-w-5xl">
