@@ -403,7 +403,7 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
 
         <div className="shrink-0 mt-2 pt-2.5 border-t border-white/10 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
           {showSearch && (
-            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-200/55">
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-emerald-200/70">
               <Kbd>↑</Kbd>
               <Kbd>↓</Kbd>
               <span className="mx-0.5">naviguer</span>
@@ -411,7 +411,7 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
               <span>ouvrir</span>
             </span>
           )}
-          <p className="text-xs text-emerald-200/45">
+          <p className="text-xs text-emerald-200/60">
             Changement d'espace possible depuis le sélecteur en haut de page.
           </p>
           {defaultTarget && (
