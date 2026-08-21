@@ -158,14 +158,40 @@ export const SensorCardBody: React.FC<Props> = ({
       <div className="mt-3">
         <div className="mb-1 text-[11px] font-medium text-muted-foreground">Dernières mesures</div>
         <div className="flex flex-wrap gap-1">
-          {latest.map((m: any) => (
-            <span key={m.id} className="rounded-full bg-muted px-2 py-0.5 text-[10px]">
-              {fmtProfondeur(m.profondeur_m) ? `${fmtProfondeur(m.profondeur_m)} · ` : ''}
-              {fmtMesure(m.valeur, m.grandeur, m.unite)}
-            </span>
-          ))}
+          {latest.map((m: any) => {
+            const verdict = jugerLecture(
+              { grandeur: m.grandeur, valeur: m.valeur, profondeur_m: m.profondeur_m },
+              latest.map((x: any) => ({ grandeur: x.grandeur, valeur: x.valeur, profondeur_m: x.profondeur_m })),
+            );
+            return (
+              <span
+                key={m.id}
+                title={verdict.fiable ? undefined : verdict.motif ?? undefined}
+                className={`rounded-full px-2 py-0.5 text-[10px] ${
+                  verdict.fiable
+                    ? 'bg-muted'
+                    : 'border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                }`}
+              >
+                {fmtProfondeur(m.profondeur_m) ? `${fmtProfondeur(m.profondeur_m)} · ` : ''}
+                {fmtMesure(m.valeur, m.grandeur, m.unite)}
+                {!verdict.fiable && ' · à vérifier'}
+              </span>
+            );
+          })}
           {latest.length === 0 && <span className="text-[11px] italic text-muted-foreground">Aucune mesure</span>}
         </div>
+        {latest.some((m: any) =>
+          !jugerLecture(
+            { grandeur: m.grandeur, valeur: m.valeur, profondeur_m: m.profondeur_m },
+            latest.map((x: any) => ({ grandeur: x.grandeur, valeur: x.valeur, profondeur_m: x.profondeur_m })),
+          ).fiable,
+        ) && (
+          <p className="mt-1 text-[10px] leading-relaxed text-amber-600 dark:text-amber-400">
+            Une lecture sort du domaine plausible ou contredit les autres profondeurs : ouvrez l'Observatoire pour
+            voir le moment de la bascule avant d'en tirer une conclusion.
+          </p>
+        )}
       </div>
 
       <div className="mt-3">
