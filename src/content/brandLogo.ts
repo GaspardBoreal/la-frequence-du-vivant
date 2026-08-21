@@ -16,6 +16,7 @@ import logoLight from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante-c
 import logoDark from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante-sombre.png.asset.json';
 import lockupLight from '@/assets/brand/marches-du-vivant/logo-lockup-horizontal.png.asset.json';
 import lockupDark from '@/assets/brand/marches-du-vivant/logo-lockup-horizontal-clair.png.asset.json';
+import lockupVertical from '@/assets/brand/marches-du-vivant/logo-lockup-vertical.png.asset.json';
 
 export const BRAND_SITE = 'https://la-frequence-du-vivant.com';
 
@@ -25,7 +26,8 @@ export type BrandLogoVariantKey =
   | 'dark'
   | 'legacy'
   | 'lockup-light'
-  | 'lockup-dark';
+  | 'lockup-dark'
+  | 'lockup-vertical';
 
 export interface BrandLogoVariant {
   key: BrandLogoVariantKey;
@@ -116,6 +118,16 @@ export const BRAND_LOGO_LOCKUP_DARK = build(
   'Logo Les Marches du Vivant — empreinte en feuillage et nom en toute lettre, version horizontale pour fond sombre',
   1965,
   800,
+);
+
+export const BRAND_LOGO_LOCKUP_VERTICAL = build(
+  'lockup-vertical',
+  lockupVertical,
+  'Lock-up vertical — empreinte au-dessus du nom',
+  'Bandeaux centrés et fonds sombres : le nom est composé en clair sous l’empreinte.',
+  'Logo Les Marches du Vivant — empreinte en feuillage surmontant le nom en toutes lettres, version verticale',
+  1254,
+  1254,
 );
 
 /** Les déclinaisons à présenter, dans l'ordre de recommandation. */
