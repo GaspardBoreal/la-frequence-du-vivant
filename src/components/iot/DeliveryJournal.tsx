@@ -115,7 +115,8 @@ export const DeliveryJournal: React.FC = () => {
   const [open, setOpen] = React.useState<string | null>(null);
 
   /* Sous-onglet courant, mémorisé dans l'URL pour être partageable. */
-  const vue = params.get('vue') === 'alertes' ? 'alertes' : 'journal';
+  /* Les alertes ouvrent le poste de contrôle : on regarde d'abord ce qui cloche. */
+  const vue = params.get('vue') === 'journal' ? 'journal' : 'alertes';
 
   /* Même clé de requête que le panneau : React Query mutualise l'analyse. */
   const { data: anomalies } = useIotAnomalies({ since, until, fournisseur, serial });
