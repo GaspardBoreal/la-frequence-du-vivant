@@ -255,16 +255,18 @@ const SauniersProposition: React.FC = () => {
         </div>
 
         <div className="relative z-10 mx-auto w-full max-w-2xl">
-          <div className="w-full max-w-[260px] sm:max-w-[320px]">
+          <div className="relative w-[168px] sm:w-[196px]">
+            <div className="pointer-events-none absolute -inset-6 rounded-full bg-emerald-400/10 blur-2xl" />
             <img
-              src={BRAND_LOGO_LOCKUP_DARK.path}
-              alt={BRAND_LOGO_LOCKUP_DARK.alt}
-              className="h-auto w-full"
-              width={1965}
-              height={800}
+              src={BRAND_LOGO_LOCKUP_VERTICAL.path}
+              alt={BRAND_LOGO_LOCKUP_VERTICAL.alt}
+              className="relative h-auto w-full drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]"
+              width={1254}
+              height={1254}
               loading="eager"
             />
           </div>
+
 
           <Reveal delay={60}>
             <p className="mt-10 font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-400/80">
