@@ -50,7 +50,9 @@ const ReadingCell: React.FC<{
   dimmed?: boolean;
   extreme?: string | null;
   fallbackLabel: string;
-}> = ({ reading, scale, dimmed, extreme, fallbackLabel }) => {
+  /** Ouvre l'Observatoire sur la semaine écoulée pour enquêter. */
+  onInvestigate?: () => void;
+}> = ({ reading, scale, dimmed, extreme, fallbackLabel, onInvestigate }) => {
   if (!reading) {
     return (
       <div className="min-w-0">
@@ -59,14 +61,16 @@ const ReadingCell: React.FC<{
       </div>
     );
   }
+  const doute = !reading.fiable;
   const pos = scale ? positionOnScale(reading.valeur, scale) : 0.5;
+  const attenue = dimmed || doute;
   return (
     <div className="min-w-0">
       <div className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
         {reading.label}
         {reading.profondeurLabel ? ` · ${reading.profondeurLabel}` : ''}
       </div>
-      <div className={`mt-0.5 flex items-baseline gap-1 ${dimmed ? 'text-muted-foreground' : 'text-foreground'}`}>
+      <div className={`mt-0.5 flex items-baseline gap-1 ${attenue ? 'text-muted-foreground' : 'text-foreground'}`}>
         <span className="text-2xl font-semibold tabular-nums leading-none sm:text-xl">
           {fmtValue(reading.valeur, reading.digits)}
         </span>
@@ -75,7 +79,7 @@ const ReadingCell: React.FC<{
       <div className="relative mt-1.5 h-1.5 w-full rounded-full bg-muted">
         <span
           className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background"
-          style={{ left: `${pos * 100}%`, background: dimmed ? 'hsl(var(--muted-foreground))' : reading.color }}
+          style={{ left: `${pos * 100}%`, background: attenue ? 'hsl(var(--muted-foreground))' : reading.color }}
         />
         {scale && (
           <span
@@ -84,7 +88,25 @@ const ReadingCell: React.FC<{
           />
         )}
       </div>
-      {extreme && <div className="mt-1 text-[10px] text-muted-foreground">{extreme}</div>}
+      {doute ? (
+        <span
+          role="button"
+          tabIndex={0}
+          title={reading.motif ?? undefined}
+          onClick={(e) => { e.stopPropagation(); onInvestigate?.(); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onInvestigate?.(); }
+          }}
+          className="mt-1 inline-flex items-center gap-1 rounded-full border border-amber-500/40 px-2 py-0.5 text-[10px] text-amber-500 hover:bg-amber-500/10"
+        >
+          <AlertTriangle className="h-3 w-3" /> à vérifier
+        </span>
+      ) : (
+        extreme && <div className="mt-1 text-[10px] text-muted-foreground">{extreme}</div>
+      )}
+      {doute && reading.motif && (
+        <p className="mt-1 text-[10px] leading-snug text-muted-foreground">{reading.motif}</p>
+      )}
     </div>
   );
 };
