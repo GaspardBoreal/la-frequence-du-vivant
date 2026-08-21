@@ -4,6 +4,8 @@ import { BarChart3, Battery, Signal, Sparkles, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
 import SensorPhotoGallery from '@/components/iot/SensorPhotoGallery';
+import { fmtDuree, fmtReception, vitalityStats } from '@/lib/iot/vitality';
+
 
 import { useSetCapteurEtat } from '@/hooks/iot/useIot';
 import type { IotMesure } from '@/hooks/iot/useIot';
