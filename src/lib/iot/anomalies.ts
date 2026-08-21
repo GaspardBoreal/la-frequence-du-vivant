@@ -57,6 +57,15 @@ export const REGLES: RegleMeta[] = [
     signature: 'derive',
   },
   {
+    key: 'incoherence',
+    nom: 'Incohérence entre profondeurs',
+    cherche:
+      "Deux profondeurs d'une même sonde qui se contredisent au même instant : sol quasi sec en surface alors que le fond est détrempé, sans transition possible.",
+    ignore: 'Les grandeurs sans profondeur, et les sondes qui ne mesurent qu’un seul niveau.',
+    gravite: 'surveiller',
+    signature: 'marche',
+  },
+  {
     key: 'aberrante',
     nom: 'Valeur aberrante',
     cherche: "Un point très éloigné de l'histoire propre de la sonde, mesuré par un écart robuste (médiane et écart absolu médian).",
