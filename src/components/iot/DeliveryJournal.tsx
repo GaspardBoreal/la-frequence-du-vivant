@@ -113,6 +113,18 @@ export const DeliveryJournal: React.FC = () => {
   const total = data?.total ?? 0;
   const [open, setOpen] = React.useState<string | null>(null);
 
+  /* Sous-onglet courant, mémorisé dans l'URL pour être partageable. */
+  const vue = params.get('vue') === 'alertes' ? 'alertes' : 'journal';
+
+  /* Même clé de requête que le panneau : React Query mutualise l'analyse. */
+  const { data: anomalies } = useIotAnomalies({ since, until, fournisseur, serial });
+  const nbAlertes = anomalies?.alertes.length ?? 0;
+
+  const periodeLabel =
+    periode === 'custom'
+      ? [du, au].filter(Boolean).join(' → ') || 'période libre'
+      : (PERIODES.find((p) => p.value === periode)?.label ?? '24 h');
+
   const actifs =
     (periode !== '24h' ? 1 : 0) + (fournisseur ? 1 : 0) + (serial ? 1 : 0) + (etat !== 'all' ? 1 : 0) + (q ? 1 : 0);
 
