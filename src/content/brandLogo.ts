@@ -14,10 +14,18 @@ import logoLegacy from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante.
 import logoMark from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante-marque.png.asset.json';
 import logoLight from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante-clair.png.asset.json';
 import logoDark from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante-sombre.png.asset.json';
+import lockupLight from '@/assets/brand/marches-du-vivant/logo-lockup-horizontal.png.asset.json';
+import lockupDark from '@/assets/brand/marches-du-vivant/logo-lockup-horizontal-clair.png.asset.json';
 
 export const BRAND_SITE = 'https://la-frequence-du-vivant.com';
 
-export type BrandLogoVariantKey = 'mark' | 'light' | 'dark' | 'legacy';
+export type BrandLogoVariantKey =
+  | 'mark'
+  | 'light'
+  | 'dark'
+  | 'legacy'
+  | 'lockup-light'
+  | 'lockup-dark';
 
 export interface BrandLogoVariant {
   key: BrandLogoVariantKey;
@@ -41,14 +49,16 @@ const build = (
   label: string,
   usage: string,
   alt: string,
+  width = 1024,
+  height = 1024,
 ): BrandLogoVariant => ({
   key,
   label,
   usage,
   path: pointer.url,
   url: `${BRAND_SITE}${pointer.url}`,
-  width: 1024,
-  height: 1024,
+  width,
+  height,
   alt,
 });
 
@@ -82,6 +92,30 @@ export const BRAND_LOGO_LEGACY = build(
   'Version initiale',
   "Conservée pour les liens déjà publiés à l'extérieur. Ne plus l'employer dans de nouveaux supports : son wordmark est trop fin pour rester lisible en petite taille.",
   'Logo Les Marches du Vivant — Empreinte vivante, agent IA de mesure collaborative de la biodiversité',
+);
+
+/* ------------------------------------------------------------------ *
+ * Lock-up horizontal (empreinte + wordmark à droite).
+ * Utilisé en tête de la page Sauniers.
+ * ------------------------------------------------------------------ */
+export const BRAND_LOGO_LOCKUP = build(
+  'lockup-light',
+  lockupLight,
+  'Lock-up horizontal — fond clair',
+  'Fonds clairs : documents, PDF, impressions. Encre verte profonde d’origine.',
+  'Logo Les Marches du Vivant — empreinte en feuillage et nom en toute lettre, version horizontale pour fond clair',
+  1965,
+  800,
+);
+
+export const BRAND_LOGO_LOCKUP_DARK = build(
+  'lockup-dark',
+  lockupDark,
+  'Lock-up horizontal — fond sombre',
+  'Fonds sombres : hero de la page Sauniers et tout écran Forêt Émeraude.',
+  'Logo Les Marches du Vivant — empreinte en feuillage et nom en toute lettre, version horizontale pour fond sombre',
+  1965,
+  800,
 );
 
 /** Les déclinaisons à présenter, dans l'ordre de recommandation. */
@@ -138,37 +172,4 @@ export const BRAND_LOGO_ID = `${BRAND_SITE}/#logo`;
 export function brandLogoImageObject(
   pageUrl: string,
   representativeOfPage = false,
-  variant: BrandLogoVariant = BRAND_LOGO_CANONICAL,
-) {
-  const isCanonical = variant.key === BRAND_LOGO_CANONICAL.key;
-  return {
-    '@type': 'ImageObject',
-    ...(isCanonical ? { '@id': BRAND_LOGO_ID } : {}),
-    name: `Empreinte vivante — logo Les Marches du Vivant${isCanonical ? '' : ` (${variant.label})`}`,
-    alternateName: variant.alt,
-    caption: BRAND_LOGO_CAPTION,
-    description: BRAND_LOGO_DESCRIPTION,
-    contentUrl: variant.url,
-    url: pageUrl,
-    thumbnailUrl: variant.url,
-    width: variant.width,
-    height: variant.height,
-    encodingFormat: 'image/png',
-    inLanguage: 'fr',
-    representativeOfPage,
-    creditText: BRAND_LOGO_CREDIT,
-    copyrightNotice: BRAND_LOGO_COPYRIGHT,
-    creator: { '@id': ORGANIZATION_ID },
-    copyrightHolder: { '@id': ORGANIZATION_ID },
-    license: BRAND_LOGO_LICENSE,
-    acquireLicensePage: BRAND_LOGO_ACQUIRE_PAGE,
-    mainEntityOfPage: pageUrl,
-    keywords: [
-      'Les Marches du Vivant',
-      'logo Les Marches du Vivant',
-      'La Fréquence du Vivant',
-      'Empreinte vivante',
-      'agent IA biodiversité',
-    ],
-  } as const;
-}
+  variant: BrandLogoVariant = BRA
