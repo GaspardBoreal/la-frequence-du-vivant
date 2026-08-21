@@ -275,8 +275,9 @@ const SauniersProposition: React.FC = () => {
             </h1>
             <p className="mt-5 text-base leading-relaxed text-teal-900/80 sm:text-lg">
               Vous avez déjà le récit : huit stations, un village, un métier qui tient depuis mille
-              ans. Nous proposons d’y ajouter ce qui manque encore — la mesure. Une demi-journée, et
-              le marais d’Ars-en-Ré possède son premier relevé du vivant.
+              ans. Nous proposons d’y ajouter ce qui manque : la mesure collective de la
+              biodiversité. Une demi-journée, et le marais d’Ars-en-Ré possède son premier relevé du
+              vivant.
             </p>
           </Reveal>
 
