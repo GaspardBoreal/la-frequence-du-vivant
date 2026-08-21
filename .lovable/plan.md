@@ -11,17 +11,31 @@ Le nouveau lock-up (horizontal blanc et vertical) n'est aujourd'hui affiché que
 
 Autrement dit : le nouveau logo est en ligne mais invisible pour l'indexation.
 
+## Le fichier retenu — confirmation
+
+Le logo qui sera indexé est le **lock-up vertical** (empreinte au-dessus du nom en toutes lettres), asset `ac3bea79-9e96-4d1f-9987-376d70361096` :
+
+```text
+https://la-frequence-du-vivant.com/__l5e/assets-v1/ac3bea79-9e96-4d1f-9987-376d70361096/logo-lockup-vertical.png
+```
+
+Deux précisions qui conditionnent le résultat :
+
+- **L'URL indexée est celle du domaine public**, pas celle en `…lovableproject.com` (celle-là ne doit jamais apparaître dans le JSON-LD ni le sitemap : elle créerait un doublon d'image sur un domaine de préview).
+- Le fichier est **transparent avec le nom en blanc** : sur le fond blanc des résultats Google Images, le nom disparaît. On produit donc, à partir du même dessin et sans le modifier, une **variante d'indexation à fond vert profond aplati** (carré 1200 × 1200, marges régulières) : c'est elle qui est déclarée comme logo canonique dans le JSON-LD et le sitemap. La version transparente reste servie dans l'application et téléchargeable sur la page logo.
+
 ## Ce qu'on fait — par ordre d'efficacité
 
-### 1. Publier le nouveau logo sur une page indexable (impact n°1)
-La page publique `/roadmap/frequence-jardin/logo/empreinte-vivante` est déjà indexée, canonique et déclarée au sitemap. On y ajoute les trois nouvelles déclinaisons (marque seule, lock-up horizontal blanc, lock-up vertical) : image affichée en grand, légende visible sous chaque image, usage recommandé, bouton de téléchargement. C'est le texte autour de l'image qui fait ranker une image.
+### 1. Publier le logo sur une page indexable (impact n°1)
+La page publique `/roadmap/frequence-jardin/logo/empreinte-vivante` est déjà indexée, canonique et déclarée au sitemap. Le lock-up vertical y est affiché en grand et en premier, avec légende visible, usage recommandé et téléchargement — accompagné des déclinaisons (marque seule, lock-up horizontal). C'est le texte autour de l'image qui fait ranker une image.
 
-### 2. Faire du nouveau lock-up la variante canonique de la marque
-Dans `brandLogo.ts`, `BRAND_LOGO_CANONICAL` et `BRAND_LOGO_VARIANTS` passent aux nouveaux fichiers. Conséquence automatique : le nœud `ImageObject` `#logo`, le `sameAs`/`logo` de l'`Organization` et toutes les pages qui consomment ces constantes décrivent le bon fichier. Les anciennes constantes restent exportées (aucune URL publiée ne casse).
+### 2. Faire du lock-up vertical la variante canonique de la marque
+Dans `brandLogo.ts`, `BRAND_LOGO_CANONICAL` et `BRAND_LOGO_VARIANTS` passent au lock-up vertical (variante d'indexation pour les nœuds structurés, variante transparente pour l'affichage). Conséquence automatique : le nœud `ImageObject` `#logo`, le `logo` de l'`Organization` et toutes les pages qui consomment ces constantes décrivent ce fichier. Les anciennes constantes restent exportées (aucune URL publiée ne casse).
 
 ### 3. Rattacher le logo à l'entité de marque
-- `index.html` : `Organization.logo` passe de `favicon.png` à l'URL absolue du nouveau lock-up (avec `width`/`height`), et gagne un `image`. C'est ce que lisent Google Knowledge Graph, Bing et les IA génératives.
-- `/agent-ia` : le nœud `ImageObject` du logo pointe la nouvelle variante, `Organization.logo` idem.
+- `index.html` : `Organization.logo` passe de `favicon.png` à l'URL absolue du lock-up vertical (avec `width`/`height`), et gagne un `image`. C'est ce que lisent Google Knowledge Graph, Bing et les IA génératives.
+- `/agent-ia` : le nœud `ImageObject` du logo et `Organization.logo` pointent la même URL — une seule entité image pour toute la marque.
+
 
 ### 4. Sitemap images
 Ajouter les entrées `image:image` des trois nouveaux fichiers sur les pages qui les affichent (`/roadmap/frequence-jardin/logo/empreinte-vivante`, `/agent-ia`, `/marches-du-vivant`, `/`), avec `image:title`, `image:caption` et `image:license` cohérents, puis rafraîchir les `lastmod` concernés. La licence déclarée active le badge « Licensable » dans Google Images.
