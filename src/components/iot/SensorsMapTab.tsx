@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { useAllCapteursGeo, useTelemetryLive, useTelemetryPings, type CapteurGeo } from '@/hooks/iot/useIotTelemetry';
 import { useLatestMesures } from '@/hooks/iot/useIot';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
-import { HEALTH_COLOR, sensorHealth } from '@/lib/iot/grandeurs';
+import { HEALTH_COLOR, capteurEtat, etatMeta, sensorHealth } from '@/lib/iot/grandeurs';
 import { iotChatFocus, openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import { useIotConsole } from '@/components/iot/console/IotConsoleContext';
 
