@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, Users, MapPin, Database, Layers, Radio } from 'lucide-react';
+import { Leaf, Users, MapPin, Database, FlaskConical, Radio } from 'lucide-react';
 import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
 
 interface CounterItemProps {
