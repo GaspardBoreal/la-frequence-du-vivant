@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
 import SensorPhotoGallery from '@/components/iot/SensorPhotoGallery';
 import { fmtDuree, fmtReception, vitalityStats } from '@/lib/iot/vitality';
+import { useSensorsOrigin } from '@/hooks/iot/useIotTelemetry';
 
 
 import { useSetCapteurEtat } from '@/hooks/iot/useIot';
