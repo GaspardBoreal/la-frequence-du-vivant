@@ -29,13 +29,47 @@ export const AlertsPanel: React.FC<AnomalyFilters & { periodeLabel: string }> = 
   const { data, isFetching, isPending, isError, error, refetch } = useIotAnomalies(filtres);
   const { data: capteursGeo = [] } = useAllCapteursGeo();
 
-  const [regle, setRegle] = React.useState<RegleKey | null>(null);
+  const [regle, setRegleState] = React.useState<RegleKey | null>(null);
   const [ouvert, setOuvert] = React.useState<string | null>(null);
   const [legende, setLegende] = React.useState(false);
   const [observatoire, setObservatoire] = React.useState<{ capteur: any; from: string; to: string } | null>(null);
 
+  /* Pagination d'affichage, mémorisée dans l'URL (clés propres aux alertes). */
+  const [params, setParams] = useSearchParams();
+  const page = Math.max(1, Number(params.get('ap') ?? 1));
+  const pageSize = Number(params.get('aps') ?? 20);
+
+  const patch = React.useCallback(
+    (next: Record<string, string | number | null>) => {
+      const p = new URLSearchParams(params);
+      Object.entries(next).forEach(([k, v]) => {
+        if (v === null || v === '') p.delete(k);
+        else p.set(k, String(v));
+      });
+      setParams(p, { replace: true });
+    },
+    [params, setParams],
+  );
+
+  /* Changer de règle repart de la première page. */
+  const setRegle = React.useCallback(
+    (r: RegleKey | null) => { setRegleState(r); patch({ ap: null }); },
+    [patch],
+  );
+
   const alertes = data?.alertes ?? [];
   const visibles = regle ? alertes.filter((a) => a.regle === regle) : alertes;
+
+  /* Filtre ou période plus étroits : ne jamais rester sur une page vide. */
+  const dernierePage = Math.max(1, Math.ceil(visibles.length / pageSize));
+  React.useEffect(() => {
+    if (page > dernierePage) patch({ ap: dernierePage > 1 ? dernierePage : null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, dernierePage]);
+
+  const debut = (Math.min(page, dernierePage) - 1) * pageSize;
+  const pageAlertes = visibles.slice(debut, debut + pageSize);
+
 
   /** Seuil concret par règle, tiré de la première alerte rencontrée. */
   const exemples = React.useMemo(() => {
