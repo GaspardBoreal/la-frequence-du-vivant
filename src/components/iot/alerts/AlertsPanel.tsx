@@ -1,8 +1,10 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AlertTriangle, ChevronDown, LineChart, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import PaginationControls from '@/components/admin/marche-events/PaginationControls';
 import RuleConstellation from '@/components/iot/alerts/RuleConstellation';
 import RulesLegend from '@/components/iot/alerts/RulesLegend';
 import AnomalySparkline from '@/components/iot/alerts/AnomalySparkline';
@@ -10,6 +12,7 @@ import SensorObservatory from '@/components/iot/SensorObservatory';
 import { useIotAnomalies, type AnomalyFilters } from '@/hooks/iot/useIotAnomalies';
 import { useAllCapteursGeo } from '@/hooks/iot/useIotTelemetry';
 import { fenetreObservatoire, GRAVITE_LABEL, REGLES, regleMeta, type IotAlerte, type RegleKey } from '@/lib/iot/anomalies';
+
 
 const PARIS = 'Europe/Paris';
 
