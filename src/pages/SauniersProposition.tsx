@@ -304,13 +304,13 @@ const SauniersProposition: React.FC = () => {
       </header>
 
       {/* --------------------------- Ce qui existe déjà --------------------------- */}
-      <Section eyebrow="Votre projet" titre="Nous ne touchons pas à votre première heure.">
+      <Section eyebrow="LE PROJET" titre="Nous ne touchons pas à votre première heure.">
         <Reveal>
           <p className="text-[15px] leading-relaxed text-teal-900/80">
-            Vos huit stations dans le village sont justes. Elles racontent le sel par le bâti, le
-            port, la chaux, la coopérative. Elles se marchent sans écran, avec une besace, une
-            boussole, un peu d’argile et une loupe. C’est exactement ce qu’il faut pour ouvrir les
-            sens avant d’entrer dans le marais.
+            Vos huit stations dans le village racontent le sel par le bâti, le port, la chaux, la
+            coopérative. Elles se marchent sans écran, avec une besace, une boussole, un peu
+            d’argile et une loupe. C’est exactement ce qu’il faut pour ouvrir les sens avant
+            d’entrer dans le marais.
           </p>
         </Reveal>
 
