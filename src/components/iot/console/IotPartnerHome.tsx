@@ -316,7 +316,13 @@ export const IotPartnerHome: React.FC = () => {
 
         {capteurs.length > 0 && (
           <div className="mt-3 space-y-1 text-[11px] leading-relaxed text-muted-foreground">
-            {echelles && <p>Échelle du parc — {echelles}. Le repère central marque la médiane.</p>}
+            {echelles && (
+              <p>
+                Échelle du parc — {echelles}. Le repère central marque la médiane.
+                {ecartees > 0 &&
+                  ` ${ecartees} relevé${ecartees > 1 ? 's' : ''} écarté${ecartees > 1 ? 's' : ''} du calcul : marqué${ecartees > 1 ? 's' : ''} « à vérifier ».`}
+              </p>
+            )}
             <p>
               <span className="text-foreground/80">En ligne</span> : vue il y a moins de 2 h ·{' '}
               <span className="text-foreground/80">En veille</span> : pas de remontée depuis plus de 2 h ·{' '}
