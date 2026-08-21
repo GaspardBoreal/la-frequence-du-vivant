@@ -1,19 +1,22 @@
 import React from 'react';
-import { AlertOctagon, Activity, Ban, Gauge, Minus, MoveUpRight, VolumeX } from 'lucide-react';
+import { AlertOctagon, Activity, Ban, Gauge, Layers, Minus, MoveUpRight, VolumeX } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import RuleCard from '@/components/iot/alerts/RuleCard';
 import { REGLES, type RegleKey } from '@/lib/iot/anomalies';
 
-const ICONES: Record<RegleKey, React.ComponentType<{ className?: string }>> = {
+export const ICONES_REGLES: Record<RegleKey, React.ComponentType<{ className?: string }>> = {
   hors_domaine: AlertOctagon,
   hors_usage: Gauge,
+  incoherence: Layers,
   aberrante: Activity,
   saut: MoveUpRight,
   figee: Minus,
   silence: VolumeX,
   ingestion: Ban,
 };
+
+const ICONES = ICONES_REGLES;
 
 interface Props {
   counts: Record<RegleKey, number>;
