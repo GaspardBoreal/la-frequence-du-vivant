@@ -282,6 +282,7 @@ export const IotPartnerHome: React.FC = () => {
                           dimmed={hors}
                           extreme={hors ? null : extremes.get(`${c.id}|humidite`) ?? null}
                           fallbackLabel="Humidité"
+                          onInvestigate={() => setObservatory(c)}
                         />
                         <ReadingCell
                           reading={r?.temperature ?? null}
@@ -289,6 +290,7 @@ export const IotPartnerHome: React.FC = () => {
                           dimmed={hors}
                           extreme={hors ? null : extremes.get(`${c.id}|temperature`) ?? null}
                           fallbackLabel="Température"
+                          onInvestigate={() => setObservatory(c)}
                         />
                       </div>
 
