@@ -23,7 +23,7 @@ const tonDe = (g: IotAlerte['gravite']) =>
 
 /** Onglet « Alertes » : les valeurs réellement bizarres de la période. */
 export const AlertsPanel: React.FC<AnomalyFilters & { periodeLabel: string }> = ({ periodeLabel, ...filtres }) => {
-  const { data, isFetching } = useIotAnomalies(filtres);
+  const { data, isFetching, isPending, isError, error, refetch } = useIotAnomalies(filtres);
   const { data: capteursGeo = [] } = useAllCapteursGeo();
 
   const [regle, setRegle] = React.useState<RegleKey | null>(null);
