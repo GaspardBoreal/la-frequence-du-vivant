@@ -63,8 +63,8 @@ export function keyReadings(capteur: any, rows: IotMesure[]): {
   const humid = order ? [...HUMID].reverse() : HUMID;
   const temp = order ? [...TEMP].reverse() : TEMP;
   return {
-    humidite: toReading(pick(rows, humid), 'humidite'),
-    temperature: toReading(pick(rows, temp), 'temperature'),
+    humidite: toReading(pick(rows, humid), 'humidite', rows),
+    temperature: toReading(pick(rows, temp), 'temperature', rows),
   };
 }
 
