@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, Users, MapPin, Database, Layers, Radio } from 'lucide-react';
+import { Leaf, Users, MapPin, Database, FlaskConical, Radio } from 'lucide-react';
 import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
 
 interface CounterItemProps {
@@ -72,13 +72,9 @@ const ScienceCounters: React.FC<ScienceCountersProps> = ({ className = '' }) => 
       label: 'Marcheurs',
     },
     {
-      icon: <Layers className="w-5 h-5 text-orange-400" />,
-      value: stats?.sols_documentes,
-      label: 'Sols documentés',
-      sublabel:
-        typeof stats?.prelevements_analyses === 'number'
-          ? `${stats.prelevements_analyses.toLocaleString('fr-FR')} prélèvements analysés`
-          : undefined,
+      icon: <FlaskConical className="w-5 h-5 text-orange-400" />,
+      value: stats?.prelevements_analyses,
+      label: 'Prélèvements analysés',
     },
     {
       icon: <Radio className="w-5 h-5 text-violet-400" />,
