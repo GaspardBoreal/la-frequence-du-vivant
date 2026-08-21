@@ -3,7 +3,7 @@ import { Radio, Building2, Clock, Activity } from 'lucide-react';
 import { useAllCapteursGeo, useTelemetryPings, type CapteurGeo } from '@/hooks/iot/useIotTelemetry';
 import { useLatestMesures } from '@/hooks/iot/useIot';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
-import VitalityStrip from '@/components/iot/VitalityStrip';
+import VitalityAtlas from '@/components/iot/console/VitalityAtlas';
 import SensorObservatory from '@/components/iot/SensorObservatory';
 import SensorPeekDialog from '@/components/iot/SensorPeekDialog';
 import { useIotConsole } from './IotConsoleContext';
@@ -183,14 +183,7 @@ export const IotPartnerHome: React.FC = () => {
         />
       </div>
 
-      <div className="rounded-2xl border border-border/60 bg-card/60 p-4">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Vitalité 48 h</p>
-        <VitalityStrip timestamps={pings.map((p) => p.mesure_at)} hours={48} showScale className="mt-3" />
-        <p className="mt-2 text-xs text-muted-foreground">
-          {pings.length} mesures reçues sur les deux derniers jours. Chaque barre est une heure ; les trous
-          signalent un silence.
-        </p>
-      </div>
+      <VitalityAtlas capteurs={capteurs} pings={pings} onOpenSensor={setPeekId} />
 
       <div className="rounded-2xl border border-border/60 bg-card/60 p-3 sm:p-4">
         <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Sondes actives du parc</p>

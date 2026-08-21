@@ -63,9 +63,13 @@ export const VitalityStrip: React.FC<VitalityStripProps> = ({
               }}
             />
           );
+          const { from, to } = boundsFor(i);
+          const fmt = (d: Date) => new Intl.DateTimeFormat('fr-FR', {
+            weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris',
+          }).format(d);
           const title = n
-            ? `${n} mesure${n > 1 ? 's' : ''} · il y a ${hours - 1 - i} h`
-            : `silence · il y a ${hours - 1 - i} h`;
+            ? `${n} valeur${n > 1 ? 's' : ''} · ${fmt(from)} → ${fmt(to)}`
+            : `Silence · ${fmt(from)} → ${fmt(to)}`;
 
           if (!onSelectHour) {
             return (
