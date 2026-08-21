@@ -44,6 +44,8 @@ export const SensorCardBody: React.FC<Props> = ({
   const setService = useSetCapteurEtat();
   const [closePhotos, setClosePhotos] = React.useState(0);
   const health = sensorHealth(capteur);
+  const { data: origins } = useSensorsOrigin(capteur?.id ? [capteur.id] : []);
+  const origine = capteur?.id ? origins?.[capteur.id] ?? null : null;
 
   return (
     <div>
