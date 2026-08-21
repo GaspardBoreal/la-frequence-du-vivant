@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PaginationControls from '@/components/admin/marche-events/PaginationControls';
 import AlertsPanel from '@/components/iot/alerts/AlertsPanel';
+import { useIotAnomalies } from '@/hooks/iot/useIotAnomalies';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useIotConsole } from '@/components/iot/console/IotConsoleContext';
 
