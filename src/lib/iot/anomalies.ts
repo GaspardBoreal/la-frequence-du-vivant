@@ -241,11 +241,21 @@ export interface AnomalyReport {
   /** Nombre de relevés impliqués dans au moins une alerte. */
   signales: number;
   parRegle: Record<RegleKey, number>;
+  /** Règles ayant échoué pendant l'analyse (jamais silencieuses). */
+  erreurs?: string[];
 }
 
 /* ── Utilitaires ───────────────────────────────────────────────────────── */
 
 const ms = (iso: string) => new Date(iso).getTime();
+
+/**
+ * Index (dans la série) du relevé qui maximise un score.
+ * On raisonne directement sur les index fautifs : chercher un score transformé
+ * dans le tableau des valeurs brutes renvoyait -1 et faisait planter l'analyse.
+ */
+const pireIndex = (idx: number[], score: (i: number) => number): number =>
+  idx.reduce((meilleur, i) => (score(i) > score(meilleur) ? i : meilleur), idx[0]);
 
 const median = (xs: number[]) => {
   if (!xs.length) return NaN;
