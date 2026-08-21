@@ -125,14 +125,26 @@ export const TelemetryControl: React.FC = () => {
           )}
         </div>
         <div className="grid gap-2">
-          {capteurs.map((c: any) => {
+          {sortedCapteurs.map((c: any) => {
             const open = openHours[c.id];
+            const isMaintenance = capteurEtat(c) === 'maintenance';
+            const meta = isMaintenance ? etatMeta('maintenance') : null;
             return (
-            <div key={c.id} className="rounded-xl border border-border bg-card p-3">
+            <div key={c.id} className={`rounded-xl border border-border bg-card p-3 ${isMaintenance ? 'bg-amber-50/40 dark:bg-amber-950/10' : ''}`}>
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="truncate text-sm font-medium">{c.nom}</span>
+                    {isMaintenance && meta && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium"
+                        style={{ borderColor: `${meta.color}40`, backgroundColor: `${meta.color}15`, color: meta.color }}
+                        title={c.etat_motif ? `Maintenance : ${c.etat_motif}` : 'Sonde déclarée en maintenance'}
+                      >
+                        <Wrench className="h-3 w-3" />
+                        {meta.label}
+                      </span>
+                    )}
                     {open && (
                       <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-emerald-700">
                         {fmtCreneau(open.from, open.to)}
@@ -141,6 +153,7 @@ export const TelemetryControl: React.FC = () => {
                   </div>
                   <div className="truncate text-xs text-muted-foreground">
                     {c.serial_number} · {c.type?.modele ?? '—'} · vue {fmtAgo(c.last_seen_at)}
+                    {isMaintenance && c.etat_motif && <span className="ml-1">· {c.etat_motif}</span>}
                   </div>
                 </div>
                 {capabilities.testDelivery && (
@@ -159,6 +172,7 @@ export const TelemetryControl: React.FC = () => {
                 timestamps={pingsByCapteur[c.id] ?? []}
                 hours={48}
                 showScale
+                className={isMaintenance ? 'opacity-60' : ''}
                 selectedIndex={open ? open.index : null}
                 onSelectHour={(index, from, to) =>
                   setOpenHours((prev) => {
@@ -191,7 +205,7 @@ export const TelemetryControl: React.FC = () => {
 
 
 
-          {capteurs.length === 0 && (
+          {sortedCapteurs.length === 0 && (
             <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">Aucune sonde déclarée pour l’instant.</p>
           )}
         </div>
