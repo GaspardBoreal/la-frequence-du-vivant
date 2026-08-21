@@ -159,8 +159,13 @@ export const AlertsPanel: React.FC<AnomalyFilters & { periodeLabel: string }> = 
           </div>
         </div>
       ) : (
+        <>
+        <p className="px-1 text-xs text-muted-foreground">
+          {debut + 1}–{debut + pageAlertes.length} sur {visibles.length.toLocaleString('fr-FR')} alerte{visibles.length > 1 ? 's' : ''}
+        </p>
         <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-          {visibles.map((a) => {
+          {pageAlertes.map((a) => {
+
             const meta = regleMeta(a.regle);
             const open = ouvert === a.id;
             return (
