@@ -3,8 +3,8 @@ import { Activity, Clock3, Gauge, Radio, Waves } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
 import { capteurEtat } from '@/lib/iot/grandeurs';
-import { averageRegularity, fmtDuree, fmtReception, vitalityStats } from '@/lib/iot/vitality';
-import type { CapteurGeo, TelemetryPing } from '@/hooks/iot/useIotTelemetry';
+import { averageRegularity, earliest, fmtAnciennete, fmtDuree, fmtReception, vitalityStats } from '@/lib/iot/vitality';
+import { useSensorsOrigin, type CapteurGeo, type TelemetryPing } from '@/hooks/iot/useIotTelemetry';
 
 const PARIS = 'Europe/Paris';
 const shortTime = (d: Date) => new Intl.DateTimeFormat('fr-FR', {
@@ -35,6 +35,12 @@ const VitalityAtlas: React.FC<VitalityAtlasProps> = ({ capteurs, pings, onOpenSe
   const ordered = React.useMemo(
     () => pings.filter((p) => retenuesIds.has(p.capteur_id)).sort((a, b) => a.mesure_at.localeCompare(b.mesure_at)),
     [pings, retenuesIds],
+  );
+
+  const { data: origins } = useSensorsOrigin(retenues.map((c) => c.id));
+  const origine = React.useMemo(
+    () => earliest(retenues.map((c) => origins?.[c.id])),
+    [retenues, origins],
   );
 
   const stats = React.useMemo(() => vitalityStats(ordered.map((p) => p.mesure_at)), [ordered]);
@@ -78,7 +84,12 @@ const VitalityAtlas: React.FC<VitalityAtlasProps> = ({ capteurs, pings, onOpenSe
         <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
           <div className="rounded-lg border border-border/60 bg-background/50 p-2.5">
             <div className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground"><Clock3 className="h-3 w-3" /> Première réception</div>
-            <div className="mt-1 text-xs font-medium text-foreground">{fmtReception(stats.first)}</div>
+            <div className="mt-1 text-xs font-medium text-foreground">{fmtReception(origine ?? stats.first)}</div>
+            <div className="text-[10px] text-muted-foreground">
+              {origine
+                ? `${fmtAnciennete(origine)} · ${retenues.length} sonde${retenues.length > 1 ? 's' : ''}`
+                : 'depuis la mise en service'}
+            </div>
           </div>
           <div className="rounded-lg border border-border/60 bg-background/50 p-2.5">
             <div className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground"><Radio className="h-3 w-3" /> Dernière réception</div>

@@ -110,6 +110,36 @@ export function useTelemetryPings(hours = 48, capteurIds?: string[]) {
   });
 }
 
+/**
+ * Origine d'écoute : première réception jamais enregistrée, par sonde.
+ * Indépendant de la fenêtre glissante 48 h — cette donnée ne bouge plus,
+ * on la met donc en cache longuement.
+ */
+export function useSensorsOrigin(capteurIds: string[]) {
+  const ids = [...capteurIds].sort();
+  return useQuery<Record<string, string>>({
+    queryKey: ['iot-origin', ids.join(',')],
+    enabled: ids.length > 0,
+    staleTime: 6 * 3_600_000,
+    gcTime: 12 * 3_600_000,
+    queryFn: async () => {
+      const out: Record<string, string> = {};
+      await Promise.all(ids.map(async (id) => {
+        const { data, error } = await db
+          .from('iot_mesures')
+          .select('mesure_at')
+          .eq('capteur_id', id)
+          .eq('rejected', false)
+          .order('mesure_at', { ascending: true })
+          .limit(1);
+        if (error) throw error;
+        if (data && data.length) out[id] = data[0].mesure_at as string;
+      }));
+      return out;
+    },
+  });
+}
+
 
 
 /**
