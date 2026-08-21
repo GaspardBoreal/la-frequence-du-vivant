@@ -4,6 +4,7 @@ import { useLatestMesures } from '@/hooks/iot/useIot';
 import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
 import { sensorHealth, grandeurMeta, fmtProfondeur } from '@/lib/iot/grandeurs';
+import { jugerLecture } from '@/lib/iot/fiabilite';
 import { payloadBytes } from '@/lib/chatContextCost';
 import type { ContextProvider } from '@/hooks/useChatPageContext';
 import { useIotChatFocus } from '@/components/iot/chatbot/iotChatFocus';
@@ -234,15 +235,24 @@ export function useIotChatProviders(): {
     const lite = soilLiteFromState(soil);
     const humidites: any[] = [];
     scope.capteurs.forEach((c) => {
+      const voisines = (latest[c.id] ?? []).map((m: any) => ({
+        grandeur: m.grandeur,
+        valeur: m.valeur,
+        profondeur_m: m.profondeur_m,
+      }));
       (latest[c.id] ?? []).forEach((m: any) => {
         if (m.grandeur === 'soil_moisture' || m.grandeur === 'soil_temperature') {
+          const verdict = jugerLecture(
+            { grandeur: m.grandeur, valeur: m.valeur, profondeur_m: m.profondeur_m },
+            voisines,
+          );
           humidites.push({
             sonde: c.nom,
             grandeur: grandeurMeta(m.grandeur).label,
             valeur: round(m.valeur, 1),
             unite: m.unite ?? grandeurMeta(m.grandeur).unite,
             profondeur: fmtProfondeur(m.profondeur_m),
-            suspecte: suspect(m.grandeur, m.valeur) || undefined,
+            suspecte: verdict.fiable ? suspect(m.grandeur, m.valeur) || undefined : verdict.motif,
           });
         }
       });

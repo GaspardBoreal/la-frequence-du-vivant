@@ -1,4 +1,5 @@
 import { estGrandeurLisible, fmtProfondeur, grandeurMeta, sensorProfile } from '@/lib/iot/grandeurs';
+import { jugerLecture } from '@/lib/iot/fiabilite';
 import type { IotMesure } from '@/hooks/iot/useIot';
 
 /** Une valeur clé retenue pour une sonde, dans une colonne de comparaison. */
@@ -12,6 +13,9 @@ export interface KeyReading {
   digits: number;
   color: string;
   profondeurLabel: string | null;
+  /** Verdict de fiabilité : une valeur douteuse s'affiche, mais sans autorité. */
+  fiable: boolean;
+  motif: string | null;
 }
 
 const HUMID = ['soil_moisture', 'air_humidity'];
@@ -27,9 +31,10 @@ const pick = (rows: IotMesure[], prefer: string[]): IotMesure | null => {
   return null;
 };
 
-const toReading = (m: IotMesure | null, axis: KeyReading['axis']): KeyReading | null => {
+const toReading = (m: IotMesure | null, axis: KeyReading['axis'], voisines: IotMesure[]): KeyReading | null => {
   if (!m) return null;
   const meta = grandeurMeta(m.grandeur);
+  const verdict = jugerLecture(m as any, voisines as any);
   return {
     axis,
     grandeur: m.grandeur,
@@ -39,6 +44,8 @@ const toReading = (m: IotMesure | null, axis: KeyReading['axis']): KeyReading | 
     digits: meta.digits,
     color: meta.color,
     profondeurLabel: fmtProfondeur(m.profondeur_m) ?? null,
+    fiable: verdict.fiable,
+    motif: verdict.motif,
   };
 };
 
@@ -56,8 +63,8 @@ export function keyReadings(capteur: any, rows: IotMesure[]): {
   const humid = order ? [...HUMID].reverse() : HUMID;
   const temp = order ? [...TEMP].reverse() : TEMP;
   return {
-    humidite: toReading(pick(rows, humid), 'humidite'),
-    temperature: toReading(pick(rows, temp), 'temperature'),
+    humidite: toReading(pick(rows, humid), 'humidite', rows),
+    temperature: toReading(pick(rows, temp), 'temperature', rows),
   };
 }
 

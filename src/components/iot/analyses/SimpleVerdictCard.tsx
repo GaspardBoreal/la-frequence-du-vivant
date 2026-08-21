@@ -1,8 +1,9 @@
 import React from 'react';
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Sparkles } from 'lucide-react';
+import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import { fmtMesure } from '@/lib/iot/grandeurs';
+import { jugerLecture } from '@/lib/iot/fiabilite';
 import { moistureLayers, type SensorAnalysis } from '@/lib/iot/analyses';
 import type { PaletteFit } from '@/hooks/iot/useIotAnalyses';
 import type { SensorSpan } from '@/hooks/iot/useIotTelemetry';
@@ -49,6 +50,19 @@ const SimpleVerdictCard: React.FC<{
   const { surface, deep } = moistureLayers(analysis.series);
   const soilT = analysis.series.find((s) => s.grandeur === 'soil_temperature') ?? null;
   const v = analysis.verdict;
+
+  /* Le verdict et la palette s'appuient d'abord sur l'humidité : si cette
+     lecture est douteuse, on le dit avant de conseiller quoi que ce soit. */
+  const doute = React.useMemo(() => {
+    const lectures = analysis.series
+      .filter((s) => Number.isFinite(s.last))
+      .map((s) => ({ grandeur: s.grandeur, valeur: s.last, profondeur_m: s.profondeur_m }));
+    for (const l of lectures) {
+      const verdict = jugerLecture(l, lectures);
+      if (!verdict.fiable) return verdict.motif;
+    }
+    return null;
+  }, [analysis.series]);
 
   return (
     <section className="rounded-3xl border border-border/60 bg-card/60 p-5">
@@ -118,6 +132,18 @@ const SimpleVerdictCard: React.FC<{
           missing={analysis.water.rain7d == null}
         />
       </div>
+
+      {doute && (
+        <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-500/40 bg-amber-500/5 p-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+          <div className="text-[11px] leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">Lecture à vérifier avant de conclure.</span> {doute} Le
+            verdict et les espèces proposées ci-dessous s'appuient sur cette mesure : prenez-les comme une hypothèse
+            tant que la sonde n'a pas été contrôlée.
+          </div>
+        </div>
+      )}
+
 
       <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-3">
         <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Action conseillée</div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Radio, Building2, Clock, Activity } from 'lucide-react';
+import { Radio, Building2, Clock, Activity, AlertTriangle } from 'lucide-react';
 import { useAllCapteursGeo, useTelemetryPings, type CapteurGeo } from '@/hooks/iot/useIotTelemetry';
 import { useLatestMesures } from '@/hooks/iot/useIot';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
@@ -50,7 +50,9 @@ const ReadingCell: React.FC<{
   dimmed?: boolean;
   extreme?: string | null;
   fallbackLabel: string;
-}> = ({ reading, scale, dimmed, extreme, fallbackLabel }) => {
+  /** Ouvre l'Observatoire sur la semaine écoulée pour enquêter. */
+  onInvestigate?: () => void;
+}> = ({ reading, scale, dimmed, extreme, fallbackLabel, onInvestigate }) => {
   if (!reading) {
     return (
       <div className="min-w-0">
@@ -59,14 +61,16 @@ const ReadingCell: React.FC<{
       </div>
     );
   }
+  const doute = !reading.fiable;
   const pos = scale ? positionOnScale(reading.valeur, scale) : 0.5;
+  const attenue = dimmed || doute;
   return (
     <div className="min-w-0">
       <div className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
         {reading.label}
         {reading.profondeurLabel ? ` · ${reading.profondeurLabel}` : ''}
       </div>
-      <div className={`mt-0.5 flex items-baseline gap-1 ${dimmed ? 'text-muted-foreground' : 'text-foreground'}`}>
+      <div className={`mt-0.5 flex items-baseline gap-1 ${attenue ? 'text-muted-foreground' : 'text-foreground'}`}>
         <span className="text-2xl font-semibold tabular-nums leading-none sm:text-xl">
           {fmtValue(reading.valeur, reading.digits)}
         </span>
@@ -75,7 +79,7 @@ const ReadingCell: React.FC<{
       <div className="relative mt-1.5 h-1.5 w-full rounded-full bg-muted">
         <span
           className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background"
-          style={{ left: `${pos * 100}%`, background: dimmed ? 'hsl(var(--muted-foreground))' : reading.color }}
+          style={{ left: `${pos * 100}%`, background: attenue ? 'hsl(var(--muted-foreground))' : reading.color }}
         />
         {scale && (
           <span
@@ -84,7 +88,25 @@ const ReadingCell: React.FC<{
           />
         )}
       </div>
-      {extreme && <div className="mt-1 text-[10px] text-muted-foreground">{extreme}</div>}
+      {doute ? (
+        <span
+          role="button"
+          tabIndex={0}
+          title={reading.motif ?? undefined}
+          onClick={(e) => { e.stopPropagation(); onInvestigate?.(); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onInvestigate?.(); }
+          }}
+          className="mt-1 inline-flex items-center gap-1 rounded-full border border-amber-500/40 px-2 py-0.5 text-[10px] text-amber-500 hover:bg-amber-500/10"
+        >
+          <AlertTriangle className="h-3 w-3" /> à vérifier
+        </span>
+      ) : (
+        extreme && <div className="mt-1 text-[10px] text-muted-foreground">{extreme}</div>
+      )}
+      {doute && reading.motif && (
+        <p className="mt-1 text-[10px] leading-snug text-muted-foreground">{reading.motif}</p>
+      )}
     </div>
   );
 };
@@ -119,8 +141,12 @@ export const IotPartnerHome: React.FC = () => {
     return m == null || m > (c.silence_alert_hours ?? 24) * 60;
   }).length;
 
-  /** Lectures clés par sonde + échelles partagées (sondes en ligne uniquement). */
-  const { readings, scaleH, scaleT, extremes } = React.useMemo(() => {
+  /**
+   * Lectures clés par sonde + échelles partagées (sondes en ligne uniquement).
+   * Les valeurs jugées douteuses sont écartées de l'échelle et des superlatifs :
+   * une mesure qu'on ne croit pas ne peut pas servir de référence au parc.
+   */
+  const { readings, scaleH, scaleT, extremes, ecartees } = React.useMemo(() => {
     const readings = new Map<string, ReturnType<typeof keyReadings>>();
     capteurs.forEach((c) => readings.set(c.id, keyReadings(c, (latest as any)[c.id] ?? [])));
     const online = capteurs.filter(
@@ -128,27 +154,40 @@ export const IotPartnerHome: React.FC = () => {
         capteurEtat(c as any) === 'service' &&
         sensorStatus(minutesSince(c.last_seen_at), c.silence_alert_hours).label === 'En ligne',
     );
-    const collect = (axis: 'humidite' | 'temperature') =>
+    let ecartees = 0;
+    const retenues = (axis: 'humidite' | 'temperature') =>
       online
-        .map((c) => readings.get(c.id)?.[axis])
-        .filter(Boolean)
-        .map((r) => ({ valeur: r!.valeur, unite: r!.unite, digits: r!.digits }));
-    const scaleH = buildScale(collect('humidite'));
-    const scaleT = buildScale(collect('temperature'));
+        .map((c) => ({ c, r: readings.get(c.id)?.[axis] }))
+        .filter((x): x is { c: typeof online[number]; r: KeyReading } => !!x.r)
+        .filter(({ r }) => {
+          if (r.fiable) return true;
+          ecartees += 1;
+          return false;
+        });
+    const listeH = retenues('humidite');
+    const listeT = retenues('temperature');
+    const collect = (l: { r: KeyReading }[]) =>
+      l.map(({ r }) => ({ valeur: r.valeur, unite: r.unite, digits: r.digits }));
+    const scaleH = buildScale(collect(listeH));
+    const scaleT = buildScale(collect(listeT));
 
     const extremes = new Map<string, string>();
-    const mark = (axis: 'humidite' | 'temperature', scale: AxisScale | null, lo: string, hi: string) => {
+    const mark = (
+      axis: 'humidite' | 'temperature',
+      liste: { c: { id: string }; r: KeyReading }[],
+      scale: AxisScale | null,
+      lo: string,
+      hi: string,
+    ) => {
       if (!scale || scale.count < 2 || scale.max === scale.min) return;
-      online.forEach((c) => {
-        const r = readings.get(c.id)?.[axis];
-        if (!r) return;
+      liste.forEach(({ c, r }) => {
         if (r.valeur === scale.max) extremes.set(`${c.id}|${axis}`, hi);
         if (r.valeur === scale.min) extremes.set(`${c.id}|${axis}`, lo);
       });
     };
-    mark('humidite', scaleH, 'le plus sec', 'le plus humide');
-    mark('temperature', scaleT, 'le plus frais', 'le plus chaud');
-    return { readings, scaleH, scaleT, extremes };
+    mark('humidite', listeH, scaleH, 'le plus sec', 'le plus humide');
+    mark('temperature', listeT, scaleT, 'le plus frais', 'le plus chaud');
+    return { readings, scaleH, scaleT, extremes, ecartees };
   }, [capteurs, latest]);
 
   if (isLoading) {
@@ -243,6 +282,7 @@ export const IotPartnerHome: React.FC = () => {
                           dimmed={hors}
                           extreme={hors ? null : extremes.get(`${c.id}|humidite`) ?? null}
                           fallbackLabel="Humidité"
+                          onInvestigate={() => setObservatory(c)}
                         />
                         <ReadingCell
                           reading={r?.temperature ?? null}
@@ -250,6 +290,7 @@ export const IotPartnerHome: React.FC = () => {
                           dimmed={hors}
                           extreme={hors ? null : extremes.get(`${c.id}|temperature`) ?? null}
                           fallbackLabel="Température"
+                          onInvestigate={() => setObservatory(c)}
                         />
                       </div>
 
@@ -275,7 +316,13 @@ export const IotPartnerHome: React.FC = () => {
 
         {capteurs.length > 0 && (
           <div className="mt-3 space-y-1 text-[11px] leading-relaxed text-muted-foreground">
-            {echelles && <p>Échelle du parc — {echelles}. Le repère central marque la médiane.</p>}
+            {echelles && (
+              <p>
+                Échelle du parc — {echelles}. Le repère central marque la médiane.
+                {ecartees > 0 &&
+                  ` ${ecartees} relevé${ecartees > 1 ? 's' : ''} écarté${ecartees > 1 ? 's' : ''} du calcul : marqué${ecartees > 1 ? 's' : ''} « à vérifier ».`}
+              </p>
+            )}
             <p>
               <span className="text-foreground/80">En ligne</span> : vue il y a moins de 2 h ·{' '}
               <span className="text-foreground/80">En veille</span> : pas de remontée depuis plus de 2 h ·{' '}
