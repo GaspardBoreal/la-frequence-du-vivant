@@ -349,8 +349,8 @@ const SauniersProposition: React.FC = () => {
         <Reveal>
           <p className="text-[15px] leading-relaxed text-teal-900/80">
             Nous emmenons le groupe dans le marais et nous y faisons une chose simple : nous
-            mesurons. Pas avec des capteurs, pas avec des tablettes dans les mains des visiteurs.
-            Avec des gestes de saunier, faits par des humains, et notés proprement.
+            identifions la biodiversité. Pas avec des capteurs dans les mains des visiteurs. Avec
+            des gestes simples faits par des humains.
           </p>
         </Reveal>
 
