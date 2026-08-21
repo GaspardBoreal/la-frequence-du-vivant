@@ -234,15 +234,24 @@ export function useIotChatProviders(): {
     const lite = soilLiteFromState(soil);
     const humidites: any[] = [];
     scope.capteurs.forEach((c) => {
+      const voisines = (latest[c.id] ?? []).map((m: any) => ({
+        grandeur: m.grandeur,
+        valeur: m.valeur,
+        profondeur_m: m.profondeur_m,
+      }));
       (latest[c.id] ?? []).forEach((m: any) => {
         if (m.grandeur === 'soil_moisture' || m.grandeur === 'soil_temperature') {
+          const verdict = jugerLecture(
+            { grandeur: m.grandeur, valeur: m.valeur, profondeur_m: m.profondeur_m },
+            voisines,
+          );
           humidites.push({
             sonde: c.nom,
             grandeur: grandeurMeta(m.grandeur).label,
             valeur: round(m.valeur, 1),
             unite: m.unite ?? grandeurMeta(m.grandeur).unite,
             profondeur: fmtProfondeur(m.profondeur_m),
-            suspecte: suspect(m.grandeur, m.valeur) || undefined,
+            suspecte: verdict.fiable ? suspect(m.grandeur, m.valeur) || undefined : verdict.motif,
           });
         }
       });
