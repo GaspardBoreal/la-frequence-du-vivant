@@ -157,6 +157,17 @@ export const INERTIE: Record<string, number> = {
   battery_voltage: 0.6,
 };
 
+/**
+ * Écart maximal admis, en points, entre deux profondeurs d'une même sonde
+ * au même instant. Source unique : le moteur de fiabilité de l'accueil
+ * (`fiabilite.ts`) et la veille « Incohérence entre profondeurs » lisent la
+ * même table, pour qu'un « à vérifier » de l'accueil soit toujours une alerte.
+ */
+export const ECART_PROFONDEURS: Record<string, number> = {
+  soil_moisture: 20,
+};
+
+
 /** Grandeurs qui peuvent légitimement rester plates (pas de règle « figée »). */
 const PLATES = new Set(['rainfall', 'battery_voltage', 'luminosity', 'infrared', 'uv_index', 'wind_speed']);
 
