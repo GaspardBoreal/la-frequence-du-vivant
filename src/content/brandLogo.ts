@@ -29,7 +29,8 @@ export type BrandLogoVariantKey =
   | 'legacy'
   | 'lockup-light'
   | 'lockup-dark'
-  | 'lockup-vertical';
+  | 'lockup-vertical'
+  | 'index';
 
 export interface BrandLogoVariant {
   key: BrandLogoVariantKey;
