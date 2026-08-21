@@ -18,6 +18,7 @@ import {
 } from '@/hooks/useScenography';
 import ScenographyRuntime from '@/components/scenography/ScenographyRuntime';
 import { DEVIAT_JARDIN_MONDE_TEMPLATE } from '@/lib/scenography/deviatJardinMondeTemplate';
+import { SAUNIERS_ARS_EN_RE_TEMPLATE } from '@/lib/scenography/sauniersTemplate';
 import { toast } from 'sonner';
 
 interface Props { eventId: string; }
@@ -35,6 +36,10 @@ export default Scenography;`,
   {
     label: 'DEVIAT / Jardin Monde (4 actes)',
     code: DEVIAT_JARDIN_MONDE_TEMPLATE,
+  },
+  {
+    label: 'Sauniers · Ars-en-Ré (6 temps)',
+    code: SAUNIERS_ARS_EN_RE_TEMPLATE,
   },
 ];
 
