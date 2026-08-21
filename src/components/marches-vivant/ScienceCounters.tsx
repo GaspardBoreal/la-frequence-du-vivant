@@ -72,13 +72,9 @@ const ScienceCounters: React.FC<ScienceCountersProps> = ({ className = '' }) => 
       label: 'Marcheurs',
     },
     {
-      icon: <Layers className="w-5 h-5 text-orange-400" />,
-      value: stats?.sols_documentes,
-      label: 'Sols documentés',
-      sublabel:
-        typeof stats?.prelevements_analyses === 'number'
-          ? `${stats.prelevements_analyses.toLocaleString('fr-FR')} prélèvements analysés`
-          : undefined,
+      icon: <FlaskConical className="w-5 h-5 text-orange-400" />,
+      value: stats?.prelevements_analyses,
+      label: 'Prélèvements analysés',
     },
     {
       icon: <Radio className="w-5 h-5 text-violet-400" />,
