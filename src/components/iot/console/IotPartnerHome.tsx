@@ -141,8 +141,12 @@ export const IotPartnerHome: React.FC = () => {
     return m == null || m > (c.silence_alert_hours ?? 24) * 60;
   }).length;
 
-  /** Lectures clés par sonde + échelles partagées (sondes en ligne uniquement). */
-  const { readings, scaleH, scaleT, extremes } = React.useMemo(() => {
+  /**
+   * Lectures clés par sonde + échelles partagées (sondes en ligne uniquement).
+   * Les valeurs jugées douteuses sont écartées de l'échelle et des superlatifs :
+   * une mesure qu'on ne croit pas ne peut pas servir de référence au parc.
+   */
+  const { readings, scaleH, scaleT, extremes, ecartees } = React.useMemo(() => {
     const readings = new Map<string, ReturnType<typeof keyReadings>>();
     capteurs.forEach((c) => readings.set(c.id, keyReadings(c, (latest as any)[c.id] ?? [])));
     const online = capteurs.filter(
@@ -150,27 +154,40 @@ export const IotPartnerHome: React.FC = () => {
         capteurEtat(c as any) === 'service' &&
         sensorStatus(minutesSince(c.last_seen_at), c.silence_alert_hours).label === 'En ligne',
     );
-    const collect = (axis: 'humidite' | 'temperature') =>
+    let ecartees = 0;
+    const retenues = (axis: 'humidite' | 'temperature') =>
       online
-        .map((c) => readings.get(c.id)?.[axis])
-        .filter(Boolean)
-        .map((r) => ({ valeur: r!.valeur, unite: r!.unite, digits: r!.digits }));
-    const scaleH = buildScale(collect('humidite'));
-    const scaleT = buildScale(collect('temperature'));
+        .map((c) => ({ c, r: readings.get(c.id)?.[axis] }))
+        .filter((x): x is { c: typeof online[number]; r: KeyReading } => !!x.r)
+        .filter(({ r }) => {
+          if (r.fiable) return true;
+          ecartees += 1;
+          return false;
+        });
+    const listeH = retenues('humidite');
+    const listeT = retenues('temperature');
+    const collect = (l: { r: KeyReading }[]) =>
+      l.map(({ r }) => ({ valeur: r.valeur, unite: r.unite, digits: r.digits }));
+    const scaleH = buildScale(collect(listeH));
+    const scaleT = buildScale(collect(listeT));
 
     const extremes = new Map<string, string>();
-    const mark = (axis: 'humidite' | 'temperature', scale: AxisScale | null, lo: string, hi: string) => {
+    const mark = (
+      axis: 'humidite' | 'temperature',
+      liste: { c: { id: string }; r: KeyReading }[],
+      scale: AxisScale | null,
+      lo: string,
+      hi: string,
+    ) => {
       if (!scale || scale.count < 2 || scale.max === scale.min) return;
-      online.forEach((c) => {
-        const r = readings.get(c.id)?.[axis];
-        if (!r) return;
+      liste.forEach(({ c, r }) => {
         if (r.valeur === scale.max) extremes.set(`${c.id}|${axis}`, hi);
         if (r.valeur === scale.min) extremes.set(`${c.id}|${axis}`, lo);
       });
     };
-    mark('humidite', scaleH, 'le plus sec', 'le plus humide');
-    mark('temperature', scaleT, 'le plus frais', 'le plus chaud');
-    return { readings, scaleH, scaleT, extremes };
+    mark('humidite', listeH, scaleH, 'le plus sec', 'le plus humide');
+    mark('temperature', listeT, scaleT, 'le plus frais', 'le plus chaud');
+    return { readings, scaleH, scaleT, extremes, ecartees };
   }, [capteurs, latest]);
 
   if (isLoading) {
