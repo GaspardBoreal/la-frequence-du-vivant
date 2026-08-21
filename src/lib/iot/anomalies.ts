@@ -17,6 +17,7 @@ import { grandeurMeta, fmtMesure, fmtProfondeur, capteurEtat } from '@/lib/iot/g
 export type RegleKey =
   | 'hors_domaine'
   | 'hors_usage'
+  | 'incoherence'
   | 'aberrante'
   | 'saut'
   | 'figee'
