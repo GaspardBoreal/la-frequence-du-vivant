@@ -3,6 +3,7 @@ import { ArrowDownRight, ArrowRight, ArrowUpRight, Sparkles } from 'lucide-react
 import { Button } from '@/components/ui/button';
 import { openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import { fmtMesure } from '@/lib/iot/grandeurs';
+import { jugerLecture } from '@/lib/iot/fiabilite';
 import { moistureLayers, type SensorAnalysis } from '@/lib/iot/analyses';
 import type { PaletteFit } from '@/hooks/iot/useIotAnalyses';
 import type { SensorSpan } from '@/hooks/iot/useIotTelemetry';
