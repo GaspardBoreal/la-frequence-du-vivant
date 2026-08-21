@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, LineChart, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ChevronDown, LineChart, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
