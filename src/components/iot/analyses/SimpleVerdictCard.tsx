@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Sparkles } from 'lucide-react';
+import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import { fmtMesure } from '@/lib/iot/grandeurs';
