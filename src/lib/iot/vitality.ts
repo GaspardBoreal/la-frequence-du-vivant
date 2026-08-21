@@ -77,6 +77,24 @@ export function fmtDuree(minutes: number | null): string {
   return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`;
 }
 
+/** Ancienneté d'écoute depuis une date d'origine : « 16 jours d'écoute ». */
+export function fmtAnciennete(iso: string | null): string | null {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  const jours = Math.floor(ms / 86_400_000);
+  if (jours < 1) return 'depuis aujourd’hui';
+  if (jours === 1) return '1 jour d’écoute';
+  return `${jours} jours d’écoute`;
+}
+
+/** Plus ancienne date d'un ensemble d'ISO (null si vide). */
+export function earliest(isos: (string | null | undefined)[]): string | null {
+  const valid = isos.filter((v): v is string => !!v && Number.isFinite(new Date(v).getTime()));
+  if (!valid.length) return null;
+  return valid.reduce((a, b) => (new Date(b) < new Date(a) ? b : a));
+}
+
 const PARIS = 'Europe/Paris';
 
 /** Date + heure de Paris, format court et lisible. */
