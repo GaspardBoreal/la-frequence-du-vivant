@@ -50,6 +50,19 @@ const SimpleVerdictCard: React.FC<{
   const soilT = analysis.series.find((s) => s.grandeur === 'soil_temperature') ?? null;
   const v = analysis.verdict;
 
+  /* Le verdict et la palette s'appuient d'abord sur l'humidité : si cette
+     lecture est douteuse, on le dit avant de conseiller quoi que ce soit. */
+  const doute = React.useMemo(() => {
+    const lectures = analysis.series
+      .filter((s) => Number.isFinite(s.last))
+      .map((s) => ({ grandeur: s.grandeur, valeur: s.last, profondeur_m: s.profondeur_m }));
+    for (const l of lectures) {
+      const verdict = jugerLecture(l, lectures);
+      if (!verdict.fiable) return verdict.motif;
+    }
+    return null;
+  }, [analysis.series]);
+
   return (
     <section className="rounded-3xl border border-border/60 bg-card/60 p-5">
       <header className="flex flex-wrap items-start gap-3">
