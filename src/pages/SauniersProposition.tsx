@@ -18,7 +18,7 @@ import {
   Waves,
 } from 'lucide-react';
 import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
-import { BRAND_LOGO_MARK } from '@/content/brandLogo';
+import { BRAND_LOGO_LOCKUP_DARK, BRAND_LOGO_MARK } from '@/content/brandLogo';
 
 /* ------------------------------------------------------------------ *
  * Page de conviction — Coopérative des Sauniers de l'Île de Ré.
@@ -255,17 +255,15 @@ const SauniersProposition: React.FC = () => {
         </div>
 
         <div className="relative z-10 mx-auto w-full max-w-2xl">
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3.5 py-2">
+          <div className="w-full max-w-[260px] sm:max-w-[320px]">
             <img
-              src={BRAND_LOGO_MARK.path}
-              alt={BRAND_LOGO_MARK.alt}
-              className="h-6 w-6 shrink-0"
-              width={24}
-              height={24}
+              src={BRAND_LOGO_LOCKUP_DARK.path}
+              alt={BRAND_LOGO_LOCKUP_DARK.alt}
+              className="h-auto w-full"
+              width={1965}
+              height={800}
+              loading="eager"
             />
-            <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-emerald-300">
-              Les Marches du Vivant
-            </span>
           </div>
 
           <Reveal delay={60}>
