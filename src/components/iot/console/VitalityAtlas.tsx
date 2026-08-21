@@ -3,8 +3,8 @@ import { Activity, Clock3, Gauge, Radio, Waves } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
 import { capteurEtat } from '@/lib/iot/grandeurs';
-import { averageRegularity, fmtDuree, fmtReception, vitalityStats } from '@/lib/iot/vitality';
-import type { CapteurGeo, TelemetryPing } from '@/hooks/iot/useIotTelemetry';
+import { averageRegularity, earliest, fmtAnciennete, fmtDuree, fmtReception, vitalityStats } from '@/lib/iot/vitality';
+import { useSensorsOrigin, type CapteurGeo, type TelemetryPing } from '@/hooks/iot/useIotTelemetry';
 
 const PARIS = 'Europe/Paris';
 const shortTime = (d: Date) => new Intl.DateTimeFormat('fr-FR', {
