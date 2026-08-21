@@ -201,7 +201,7 @@ export const DeliveryJournal: React.FC = () => {
       </div>
 
       {/* Deux lectures de la même période : ce qui cloche, puis tout ce qui est arrivé */}
-      <Tabs value={vue} onValueChange={(v) => patch({ vue: v === 'journal' ? null : v }, false)}>
+      <Tabs value={vue} onValueChange={(v) => patch({ vue: v === 'alertes' ? null : v }, false)}>
         <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex">
           <TabsTrigger value="alertes" className="gap-1.5">
             Alertes
