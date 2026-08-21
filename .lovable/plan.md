@@ -37,6 +37,29 @@ Anti-bruit, indispensable pour que la liste reste crédible :
 - Sondes en maintenance : seules les règles 1 et 7 s'appliquent, avec la mention « sonde en maintenance ».
 - Plafond d'affichage par sonde, avec « + n autres occurrences » dans le dépliant.
 
+## Rendre les règles visibles et inspirantes
+
+Les sept règles ne restent pas cachées dans le code : elles deviennent la matière visuelle de l'onglet.
+
+**1. La « Constellation des sept veilles » — bandeau haut de l'onglet**
+Sept pastilles alignées (une par règle), chacune avec son pictogramme, son nom court et son compteur sur la période. Une pastille éteinte (fond sourd, chiffre 0) signifie « règle active, rien à signaler » — c'est déjà une information rassurante. Une pastille allumée pulse doucement et se colore selon la gravité. Cliquer sur une pastille filtre la liste sur cette règle ; re-cliquer la libère. En mobile : bande défilable horizontalement, deux lignes de 4/3 au-delà de `sm`.
+
+**2. La fiche de règle — panneau explicatif au clic long / bouton « ? »**
+Chaque pastille ouvre une fiche courte, écrite en français de terrain :
+- ce que la règle cherche, en une phrase
+- le seuil réellement appliqué à cette sonde et cette grandeur (valeur concrète, pas une formule)
+- une **micro-illustration animée** : une sparkline schématique de 40 px qui rejoue la signature de l'anomalie (le pic qui sort des bornes, la marche d'escalier du saut brutal, la ligne plate du capteur figé, le trou de la sonde silencieuse), avec la zone normale en fond doux et le point fautif en surbrillance
+- la mention de ce qui est volontairement ignoré (essais, relevés déjà refusés)
+
+**3. La bande de contrôle — preuve que la veille tourne**
+Sous la constellation, une ligne unique : « n relevés contrôlés · m sondes · période · 7 règles appliquées », avec une barre horizontale segmentée montrant la part de relevés sains (vert calme) et la part signalée (ambre/rouge). Quand tout est sain, la barre est pleine et une phrase l'accompagne : « Toutes les valeurs de la période tiennent dans leur domaine. »
+
+**4. La signature dans chaque alerte**
+Chaque ligne d'alerte dépliée montre la même sparkline, mais avec les **vraies données** de la sonde autour de l'anomalie : la fenêtre normale en gris, la bande de confort en fond, et le ou les points fautifs marqués. C'est ce petit graphe qui rend l'anomalie évidente avant même d'ouvrir l'Observatoire.
+
+Sobriété informationnelle : pas de bannière pédagogique permanente, tout l'explicatif est à un clic. Aucune couleur en dur, uniquement les jetons du thème (`--primary`, `--destructive`, `--muted`…), lisible en clair comme en sombre.
+
+
 ## Détail technique
 - Nouveau module `src/lib/iot/anomalies.ts` : bornes physiques et plages d'usage par grandeur, détecteurs purs (MAD, saut, plateau, cadence), regroupement en événements, typage `IotAlerte`.
 - Nouveau hook `src/hooks/iot/useIotAnomalies.ts` : lit les mesures de la période (réutilise la pagination descendante existante de `useMesuresWindow` / `useMesureSeriesRange`, plafond de lecture signalé si atteint) plus les livraisons de la même période, puis applique les détecteurs. Aucune écriture, aucune migration de base.
