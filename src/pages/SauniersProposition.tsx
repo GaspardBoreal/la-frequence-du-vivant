@@ -211,7 +211,7 @@ const Section: React.FC<{
           {eyebrow}
         </p>
         <h2 className="mt-2 font-crimson text-3xl leading-tight text-foreground sm:text-4xl">
-          {titre}
+          Un parcours riche en thématiques
         </h2>
       </Reveal>
       <div className="mt-6">{children}</div>
@@ -279,8 +279,7 @@ const SauniersProposition: React.FC = () => {
             </h1>
             <p className="mt-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
               Vous avez déjà le récit : huit stations, un village, un métier qui tient depuis mille
-              ans. Nous proposons d’y ajouter ce qui manque : la mesure collective de la
-              biodiversité. Une demi-journée, et le marais d’Ars-en-Ré possède son premier relevé du
+              ans. Nous proposons d’y ajouter la mesure collective de la biodiversité. Une demi-journée, et le marais d’Ars-en-Ré possède son premier relevé du
               vivant.
             </p>
           </Reveal>
@@ -295,8 +294,7 @@ const SauniersProposition: React.FC = () => {
               </a>
             </div>
             <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5 text-emerald-400" /> Ars-en-Ré · 3 heures · une
-              trentaine de participants
+              <MapPin className="h-3.5 w-3.5 text-emerald-400" /> Ars-en-Ré · 3 heures · Entre 10 et 30 participants
             </p>
           </Reveal>
         </div>
