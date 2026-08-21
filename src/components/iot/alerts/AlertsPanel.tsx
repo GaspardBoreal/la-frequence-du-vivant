@@ -4,11 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import RuleConstellation from '@/components/iot/alerts/RuleConstellation';
+import RulesLegend from '@/components/iot/alerts/RulesLegend';
 import AnomalySparkline from '@/components/iot/alerts/AnomalySparkline';
 import SensorObservatory from '@/components/iot/SensorObservatory';
 import { useIotAnomalies, type AnomalyFilters } from '@/hooks/iot/useIotAnomalies';
 import { useAllCapteursGeo } from '@/hooks/iot/useIotTelemetry';
-import { fenetreObservatoire, GRAVITE_LABEL, regleMeta, type IotAlerte, type RegleKey } from '@/lib/iot/anomalies';
+import { fenetreObservatoire, GRAVITE_LABEL, REGLES, regleMeta, type IotAlerte, type RegleKey } from '@/lib/iot/anomalies';
 
 const PARIS = 'Europe/Paris';
 
