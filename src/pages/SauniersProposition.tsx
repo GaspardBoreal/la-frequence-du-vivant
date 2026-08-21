@@ -349,8 +349,8 @@ const SauniersProposition: React.FC = () => {
         <Reveal>
           <p className="text-[15px] leading-relaxed text-teal-900/80">
             Nous emmenons le groupe dans le marais et nous y faisons une chose simple : nous
-            mesurons. Pas avec des capteurs, pas avec des tablettes dans les mains des visiteurs.
-            Avec des gestes de saunier, faits par des humains, et notés proprement.
+            identifions la biodiversité. Pas avec des capteurs dans les mains des visiteurs. Avec
+            des gestes simples faits par des humains.
           </p>
         </Reveal>
 
@@ -386,9 +386,10 @@ const SauniersProposition: React.FC = () => {
           <div className="mt-5 flex items-start gap-3 rounded-2xl bg-teal-900 p-4 text-teal-50">
             <Ear className="mt-0.5 h-5 w-5 shrink-0 text-teal-300" />
             <p className="text-[14px] leading-relaxed">
-              <strong className="font-semibold text-white">Le principe :</strong> aucun écran pendant
-              la marche. Le guide et deux ou trois marcheurs relais captent, tout le monde regarde le
-              marais. Le numérique arrive après, quand il ne dérange plus personne.
+              <strong className="font-semibold text-white">Le principe :&nbsp;</strong>les marcheurs
+              n'utilisent pas leurs écrans durant toute la marche. Le guide et deux ou trois
+              ambassadeurs relais captent, tout le monde regarde le marais. Le numérique arrive
+              après, quand il ne dérange plus personne.
             </p>
           </div>
         </Reveal>
