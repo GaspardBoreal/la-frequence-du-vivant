@@ -41,20 +41,24 @@ export const RulesLegend: React.FC<Props> = ({ ouvert, onToggle, counts, exemple
           const Icone = ICONES_REGLES[r.key];
           const n = counts[r.key] ?? 0;
           return (
-            <div key={r.key} className="relative">
-              <Icone
-                className={cn(
-                  'absolute right-3 top-3 h-3.5 w-3.5',
-                  n > 0
-                    ? r.gravite === 'critique'
-                      ? 'text-destructive'
-                      : 'text-primary'
-                    : 'text-muted-foreground/50',
-                )}
-                aria-hidden
-              />
-              <RuleCard regle={r} count={n} exemple={exemples?.[r.key] ?? null} />
-            </div>
+            <RuleCard
+              key={r.key}
+              regle={r}
+              count={n}
+              exemple={exemples?.[r.key] ?? null}
+              icone={
+                <Icone
+                  className={cn(
+                    'h-3.5 w-3.5',
+                    n > 0
+                      ? r.gravite === 'critique'
+                        ? 'text-destructive'
+                        : 'text-primary'
+                      : 'text-muted-foreground/50',
+                  )}
+                />
+              }
+            />
           );
         })}
       </div>
