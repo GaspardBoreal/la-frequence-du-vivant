@@ -186,6 +186,29 @@ export const DeliveryJournal: React.FC = () => {
         </div>
       </div>
 
+      {/* Deux lectures de la même période : ce qui cloche, puis tout ce qui est arrivé */}
+      <Tabs value={vue} onValueChange={(v) => patch({ vue: v === 'journal' ? null : v }, false)}>
+        <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex">
+          <TabsTrigger value="alertes" className="gap-1.5">
+            Alertes
+            {nbAlertes > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] tabular-nums">{nbAlertes}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="journal">Journal</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="alertes" className="mt-3">
+          <AlertsPanel
+            since={since}
+            until={until}
+            fournisseur={fournisseur}
+            serial={serial}
+            periodeLabel={periodeLabel}
+          />
+        </TabsContent>
+
+        <TabsContent value="journal" className="mt-3 space-y-3">
       {/* Liste */}
       <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
         {rows.map((d) => {
