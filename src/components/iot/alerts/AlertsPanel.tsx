@@ -217,7 +217,16 @@ export const AlertsPanel: React.FC<AnomalyFilters & { periodeLabel: string }> = 
             );
           })}
         </div>
+        <PaginationControls
+          page={Math.min(page, dernierePage)}
+          pageSize={pageSize}
+          total={visibles.length}
+          onPageChange={(p) => patch({ ap: p > 1 ? p : null })}
+          onPageSizeChange={(s) => patch({ aps: s === 20 ? null : s, ap: null })}
+        />
+        </>
       )}
+
 
       {observatoire && (
         <SensorObservatory
