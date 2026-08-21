@@ -241,11 +241,21 @@ export interface AnomalyReport {
   /** Nombre de relevés impliqués dans au moins une alerte. */
   signales: number;
   parRegle: Record<RegleKey, number>;
+  /** Règles ayant échoué pendant l'analyse (jamais silencieuses). */
+  erreurs?: string[];
 }
 
 /* ── Utilitaires ───────────────────────────────────────────────────────── */
 
 const ms = (iso: string) => new Date(iso).getTime();
+
+/**
+ * Index (dans la série) du relevé qui maximise un score.
+ * On raisonne directement sur les index fautifs : chercher un score transformé
+ * dans le tableau des valeurs brutes renvoyait -1 et faisait planter l'analyse.
+ */
+const pireIndex = (idx: number[], score: (i: number) => number): number =>
+  idx.reduce((meilleur, i) => (score(i) > score(meilleur) ? i : meilleur), idx[0]);
 
 const median = (xs: number[]) => {
   if (!xs.length) return NaN;
@@ -292,6 +302,7 @@ export function analyserAnomalies(
   now = Date.now(),
 ): AnomalyReport {
   const alertes: IotAlerte[] = [];
+  const erreurs: string[] = [];
   const signales = new Set<string>();
   const capteurById = new Map(capteurs.map((c) => [c.id, c]));
 
@@ -310,6 +321,7 @@ export function analyserAnomalies(
   });
 
   slots.forEach((brut, key) => {
+    try {
     const serie = [...brut].sort((a, b) => ms(a.mesure_at) - ms(b.mesure_at));
     const [capteurId, grandeur] = key.split(KEY_SEP);
     const capteur = capteurById.get(capteurId);
@@ -334,8 +346,7 @@ export function analyserAnomalies(
       const idx = serie.map((m, i) => (m.valeur < dom[0] || m.valeur > dom[1] ? i : -1)).filter((i) => i >= 0);
       if (idx.length) {
         idx.forEach(marque);
-        const vals = idx.map((i) => serie[i].valeur);
-        const pire = idx[vals.indexOf(Math.max(...vals.map((v) => Math.abs(v))))];
+        const pire = pireIndex(idx, (i) => Math.abs(serie[i].valeur));
         alertes.push({
           ...base,
           id: `${key}-dom`,
@@ -364,8 +375,8 @@ export function analyserAnomalies(
         .filter((i) => i >= 0);
       if (idx.length) {
         idx.forEach(marque);
-        const vals = idx.map((i) => serie[i].valeur);
-        const pire = idx[vals.indexOf(Math.max(...vals.map((v) => Math.abs(v - (use[0] + use[1]) / 2))))];
+        const centre = (use[0] + use[1]) / 2;
+        const pire = pireIndex(idx, (i) => Math.abs(serie[i].valeur - centre));
         alertes.push({
           ...base,
           id: `${key}-usage`,
@@ -475,6 +486,11 @@ export function analyserAnomalies(
           serie: extrait(serie, new Set(Array.from({ length: b - a + 1 }, (_, i) => a + i)), Math.round((a + b) / 2)),
         });
       }
+    }
+    } catch (e) {
+      // Une règle en défaut ne doit jamais faire disparaître les sept autres.
+      erreurs.push(`${key} : ${e instanceof Error ? e.message : String(e)}`);
+      console.error('[anomalies] slot en échec', key, e);
     }
   });
 
@@ -652,6 +668,7 @@ export function analyserAnomalies(
     sondes: parCapteur.size,
     signales: signales.size,
     parRegle,
+    erreurs: erreurs.length ? erreurs : undefined,
   };
 }
 

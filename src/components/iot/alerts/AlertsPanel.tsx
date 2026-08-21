@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, LineChart, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ChevronDown, LineChart, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,7 @@ const tonDe = (g: IotAlerte['gravite']) =>
 
 /** Onglet « Alertes » : les valeurs réellement bizarres de la période. */
 export const AlertsPanel: React.FC<AnomalyFilters & { periodeLabel: string }> = ({ periodeLabel, ...filtres }) => {
-  const { data, isFetching } = useIotAnomalies(filtres);
+  const { data, isFetching, isPending, isError, error, refetch } = useIotAnomalies(filtres);
   const { data: capteursGeo = [] } = useAllCapteursGeo();
 
   const [regle, setRegle] = React.useState<RegleKey | null>(null);
@@ -77,16 +77,47 @@ export const AlertsPanel: React.FC<AnomalyFilters & { periodeLabel: string }> = 
         </div>
       </div>
 
+      {/* Une analyse qui échoue ne doit jamais se lire comme « tout va bien » */}
+      {isError && (
+        <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">L'analyse n'a pas pu aboutir.</p>
+            <p className="text-xs text-muted-foreground">
+              Aucune conclusion ne peut être tirée de cette période tant que la lecture n'a pas repris.
+              {error instanceof Error ? ` (${error.message})` : ''}
+            </p>
+            <Button size="sm" variant="secondary" className="mt-2 h-8" onClick={() => refetch()}>Réessayer</Button>
+          </div>
+        </div>
+      )}
+
+      {data?.erreurs?.length ? (
+        <div className="rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          {data.erreurs.length} point{data.erreurs.length > 1 ? 's' : ''} de mesure n'a pas pu être analysé — les autres règles restent valides.
+        </div>
+      ) : null}
+
       {/* Liste */}
-      {visibles.length === 0 ? (
+      {isError ? null : visibles.length === 0 ? (
         <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div>
             <p className="text-sm font-medium">
-              {regle ? `Aucune alerte « ${regleMeta(regle).nom} » sur la période.` : 'Aucune valeur suspecte sur la période.'}
+              {isPending
+                ? 'Analyse de la période en cours…'
+                : controles === 0
+                  ? 'Aucun relevé sur la période sélectionnée.'
+                  : regle
+                    ? `Aucune alerte « ${regleMeta(regle).nom} » sur la période.`
+                    : 'Aucune valeur suspecte sur la période.'}
             </p>
             <p className="text-xs text-muted-foreground">
-              Toutes les valeurs de la période tiennent dans leur domaine — {controles.toLocaleString('fr-FR')} relevés contrôlés.
+              {isPending
+                ? 'Les huit veilles sont appliquées aux relevés de la période.'
+                : controles === 0
+                  ? 'Élargissez la période ou changez de filtre pour contrôler des relevés.'
+                  : `Toutes les valeurs de la période tiennent dans leur domaine — ${controles.toLocaleString('fr-FR')} relevés contrôlés.`}
             </p>
           </div>
         </div>
