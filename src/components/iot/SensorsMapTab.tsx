@@ -171,6 +171,8 @@ export const SensorsMapTab: React.FC = () => {
           {isLoading && <div className="h-24 animate-pulse rounded-xl bg-muted" />}
           {filtered.map((c) => {
             const h = sensorHealth(c as any);
+            const etat = capteurEtat(c as any);
+            const etatMetaData = etatMeta(etat);
             const active = c.id === selectedId;
             return (
               <button
@@ -196,7 +198,19 @@ export const SensorsMapTab: React.FC = () => {
                     <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: HEALTH_COLOR[h.status] }} />
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{c.nom}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-sm font-medium">{c.nom}</span>
+                      <span
+                        className="shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium"
+                        style={{
+                          color: etatMetaData.color,
+                          borderColor: `${etatMetaData.color}40`,
+                          backgroundColor: `${etatMetaData.color}18`,
+                        }}
+                      >
+                        {etatMetaData.label}
+                      </span>
+                    </div>
                     <div className="truncate text-[11px] text-muted-foreground">
                       {c.propriete?.nom ?? '—'} · {c.type?.modele ?? '—'}
                     </div>
