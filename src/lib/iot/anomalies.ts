@@ -668,6 +668,7 @@ export function analyserAnomalies(
     sondes: parCapteur.size,
     signales: signales.size,
     parRegle,
+    erreurs: erreurs.length ? erreurs : undefined,
   };
 }
 
