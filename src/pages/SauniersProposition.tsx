@@ -18,7 +18,7 @@ import {
   Waves,
 } from 'lucide-react';
 import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
-import { BRAND_LOGO_MARK } from '@/content/brandLogo';
+import { BRAND_LOGO_LOCKUP_DARK, BRAND_LOGO_MARK } from '@/content/brandLogo';
 
 /* ------------------------------------------------------------------ *
  * Page de conviction — Coopérative des Sauniers de l'Île de Ré.
