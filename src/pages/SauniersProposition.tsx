@@ -153,7 +153,7 @@ const LIVRABLES = [
 ];
 
 const BESOINS = [
-  'Le tracé du marais que vous acceptez d’ouvrir avec quatre points d’arrêt.',
+  'Le tracé du marais que vous souhaitez faire découvrir avec quatre points d’arrêt.',
   'Un saunier volontaire pour être filmé et enregistré une quinzaine de minutes.',
   'Votre logo et vos couleurs, pour que la page soit la vôtre.',
   "La disponibilité d'un de vos collaborateurs pour un moment le 12 Septembre 2026.",
@@ -372,7 +372,7 @@ const SauniersProposition: React.FC = () => {
             <p className="text-[14px] leading-relaxed text-emerald-50/85">
               <strong className="font-semibold text-white">Le principe :&nbsp;</strong>les marcheurs
               n'utilisent pas leurs écrans durant toute la marche. Le guide et deux ou trois
-              ambassadeurs relais captent, tout le monde regarde le marais. Le numérique arrive
+              ambassadeurs captent le vivant, tout le monde regarde le marais. Le numérique arrive
               après, quand il ne dérange plus personne.
             </p>
           </div>
