@@ -166,7 +166,19 @@ export const SensorCardBody: React.FC<Props> = ({
       <div className="mt-3">
         <div className="mb-1 text-[11px] font-medium text-muted-foreground">Vitalité · 48 h</div>
         <VitalityStrip timestamps={pings} hours={48} showScale />
+        {(() => {
+          const v = vitalityStats(pings);
+          return (
+            <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+              <span>Première · <span className="text-foreground">{fmtReception(v.first)}</span></span>
+              <span className="text-right">Dernière · <span className="text-foreground">{fmtReception(v.last)}</span></span>
+              <span>Régularité · <span className="text-foreground">{fmtDuree(v.regularityMin)}</span></span>
+              <span className="text-right">Plus long silence · <span className="text-foreground">{fmtDuree(v.longestSilenceMin)}</span></span>
+            </div>
+          );
+        })()}
       </div>
+
 
       {onObservatory && (
         <Button size="sm" className="mt-3 w-full" onClick={() => { setClosePhotos((n) => n + 1); onObservatory(capteur); }}>
