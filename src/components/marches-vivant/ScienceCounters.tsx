@@ -1,16 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, Users, MapPin, Database } from 'lucide-react';
+import { Leaf, Users, MapPin, Database, Layers, Radio } from 'lucide-react';
 import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
 
 interface CounterItemProps {
   icon: React.ReactNode;
   value: number | undefined;
   label: string;
+  sublabel?: string;
   delay: number;
 }
 
-const CounterItem: React.FC<CounterItemProps> = ({ icon, value, label, delay }) => (
+const CounterItem: React.FC<CounterItemProps> = ({ icon, value, label, sublabel, delay }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -25,6 +26,9 @@ const CounterItem: React.FC<CounterItemProps> = ({ icon, value, label, delay }) 
       {typeof value === 'number' ? value.toLocaleString('fr-FR') : '—'}
     </div>
     <div className="text-sm text-muted-foreground">{label}</div>
+    {sublabel && (
+      <div className="text-[11px] text-muted-foreground/70 mt-1 leading-snug">{sublabel}</div>
+    )}
   </motion.div>
 );
 
@@ -34,10 +38,17 @@ interface ScienceCountersProps {
 
 /**
  * Source de vérité unifiée avec /agent-ia (RPC get_public_global_stats).
- * Terminologie alignée : espèces tracées · domaines documentés · observations citoyennes.
+ * Tous les chiffres sont recalculés en base à chaque consultation.
  */
 const ScienceCounters: React.FC<ScienceCountersProps> = ({ className = '' }) => {
   const { data: stats } = usePublicGlobalStats();
+
+  const premiereMesure = stats?.premiere_mesure_capteur
+    ? new Date(stats.premiere_mesure_capteur).toLocaleDateString('fr-FR', {
+        month: 'long',
+        year: 'numeric',
+      })
+    : null;
 
   const counters = [
     {
@@ -54,6 +65,31 @@ const ScienceCounters: React.FC<ScienceCountersProps> = ({ className = '' }) => 
       icon: <Users className="w-5 h-5 text-amber-400" />,
       value: stats?.observations_citoyennes,
       label: 'Observations citoyennes',
+    },
+    {
+      icon: <Users className="w-5 h-5 text-cyan-400" />,
+      value: stats?.marcheurs,
+      label: 'Marcheurs',
+    },
+    {
+      icon: <Layers className="w-5 h-5 text-orange-400" />,
+      value: stats?.sols_documentes,
+      label: 'Sols documentés',
+      sublabel:
+        typeof stats?.prelevements_analyses === 'number'
+          ? `${stats.prelevements_analyses.toLocaleString('fr-FR')} prélèvements analysés`
+          : undefined,
+    },
+    {
+      icon: <Radio className="w-5 h-5 text-violet-400" />,
+      value: stats?.mesures_capteurs,
+      label: 'Mesures capteurs',
+      sublabel: [
+        typeof stats?.sondes_actives === 'number' ? `${stats.sondes_actives} sondes actives` : null,
+        premiereMesure ? `depuis ${premiereMesure}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ') || undefined,
     },
   ];
 
@@ -74,14 +110,15 @@ const ScienceCounters: React.FC<ScienceCountersProps> = ({ className = '' }) => 
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {counters.map((counter, index) => (
             <CounterItem
               key={counter.label}
               icon={counter.icon}
               value={counter.value}
               label={counter.label}
-              delay={index * 0.15}
+              sublabel={counter.sublabel}
+              delay={index * 0.1}
             />
           ))}
         </div>
@@ -91,9 +128,9 @@ const ScienceCounters: React.FC<ScienceCountersProps> = ({ className = '' }) => 
           whileInView={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
           viewport={{ once: true }}
-          className="text-center mt-6"
+          className="text-center mt-6 space-y-1"
         >
-          <span className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             Données certifiées connectées au{' '}
             <a
               href="https://www.gbif.org/"
@@ -103,7 +140,10 @@ const ScienceCounters: React.FC<ScienceCountersProps> = ({ className = '' }) => 
             >
               GBIF
             </a>
-          </span>
+          </div>
+          <div className="text-[11px] text-muted-foreground/70">
+            Chiffres recalculés en direct à chaque consultation
+          </div>
         </motion.div>
       </div>
     </div>

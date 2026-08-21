@@ -9,6 +9,16 @@ export interface PublicGlobalStats {
   observations_citoyennes: number;
   participations_validees: number;
   photos_collectees: number;
+  /** Diagnostics de sol enregistrés sur les propriétés documentées. */
+  sols_documentes: number;
+  /** Médias de prélèvements analysés (photos de tests de sol). */
+  prelevements_analyses: number;
+  /** Mesures brutes remontées par les sondes IoT. */
+  mesures_capteurs: number;
+  /** Sondes en service dans le réseau. */
+  sondes_actives: number;
+  /** Date de la toute première mesure capteur (ISO) ou null. */
+  premiere_mesure_capteur: string | null;
   computed_at: string;
 }
 
