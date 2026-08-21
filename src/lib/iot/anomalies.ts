@@ -320,6 +320,7 @@ export function analyserAnomalies(
   });
 
   slots.forEach((brut, key) => {
+    try {
     const serie = [...brut].sort((a, b) => ms(a.mesure_at) - ms(b.mesure_at));
     const [capteurId, grandeur] = key.split(KEY_SEP);
     const capteur = capteurById.get(capteurId);
