@@ -1,10 +1,12 @@
 import React from 'react';
-import { TileLayer, useMap } from 'react-leaflet';
+import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Link } from 'react-router-dom';
 import { ExternalLink, MapPin, Radio, Search } from 'lucide-react';
 import SafeMapContainer from '@/components/maps/SafeMapContainer';
+import DynamicTileLayer from '@/components/maps/DynamicTileLayer';
+import CadastreLayer from '@/components/cadastre/CadastreLayer';
 import IotLayer from '@/components/propriete/iot/map/IotLayer';
 import SensorObservatory from '@/components/iot/SensorObservatory';
 import SensorCardBody from '@/components/iot/SensorCardBody';
@@ -52,7 +54,7 @@ export const SensorsMapTab: React.FC = () => {
 
   const { live, lastLiveAt } = useTelemetryLive();
 
-  const [fond, setFond] = React.useState<'plan' | 'satellite'>('satellite');
+  const [fond, setFond] = React.useState<FondKey>('satellite');
   const [q, setQ] = React.useState('');
   const [propriete, setPropriete] = React.useState('all');
   const [etat, setEtat] = React.useState<'all' | 'green' | 'amber' | 'red'>('all');
@@ -84,6 +86,15 @@ export const SensorsMapTab: React.FC = () => {
   const orphans = filtered.filter((c) => c.lat == null || c.lng == null);
   const positions = placed.map((c) => [c.lat as number, c.lng as number] as [number, number]);
 
+  // Points pivots cadastre : les sondes posées visibles (repli : centre France).
+  const cadastrePoints = React.useMemo(
+    () =>
+      placed.length > 0
+        ? placed.map((c) => ({ id: c.id, lat: c.lat as number, lng: c.lng as number, label: c.nom || undefined }))
+        : [],
+    [placed],
+  );
+
   const selected = capteurs.find((c) => c.id === selectedId) ?? null;
   const pingsFor = (id: string) => pings.filter((p) => p.capteur_id === id).map((p) => p.mesure_at);
 
@@ -103,7 +114,6 @@ export const SensorsMapTab: React.FC = () => {
 
   React.useEffect(() => () => iotChatFocus.reset(), []);
 
-  const fondMeta = FONDS.find((f) => f.key === fond)!;
 
   return (
     <div className="space-y-3">
@@ -255,7 +265,10 @@ export const SensorsMapTab: React.FC = () => {
             className="h-[70vh] min-h-[420px] w-full"
             scrollWheelZoom
           >
-            <TileLayer url={fondMeta.url} attribution={fondMeta.attribution} maxNativeZoom={19} maxZoom={22} />
+            <DynamicTileLayer mapStyle={fond} maxZoom={22} />
+            {fond === 'cadastre' && cadastrePoints.length > 0 && (
+              <CadastreLayer points={cadastrePoints} enabled />
+            )}
             <FitAll positions={positions} focus={focus} />
             <IotLayer
               capteurs={placed as any}
