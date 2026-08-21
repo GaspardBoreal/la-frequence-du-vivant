@@ -37,6 +37,10 @@ export default Scenography;`,
     label: 'DEVIAT / Jardin Monde (4 actes)',
     code: DEVIAT_JARDIN_MONDE_TEMPLATE,
   },
+  {
+    label: 'Sauniers · Ars-en-Ré (6 temps)',
+    code: SAUNIERS_ARS_EN_RE_TEMPLATE,
+  },
 ];
 
 const ScenographyEditor: React.FC<Props> = ({ eventId }) => {
