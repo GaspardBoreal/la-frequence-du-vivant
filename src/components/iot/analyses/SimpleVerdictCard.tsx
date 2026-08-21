@@ -133,6 +133,18 @@ const SimpleVerdictCard: React.FC<{
         />
       </div>
 
+      {doute && (
+        <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-500/40 bg-amber-500/5 p-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+          <div className="text-[11px] leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">Lecture à vérifier avant de conclure.</span> {doute} Le
+            verdict et les espèces proposées ci-dessous s'appuient sur cette mesure : prenez-les comme une hypothèse
+            tant que la sonde n'a pas été contrôlée.
+          </div>
+        </div>
+      )}
+
+
       <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-3">
         <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Action conseillée</div>
         <div className="text-sm font-medium">{v.action}</div>
