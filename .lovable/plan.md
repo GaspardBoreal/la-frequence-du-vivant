@@ -1,21 +1,35 @@
-# Carte des sondes — option « Cadastre »
-
-Aujourd'hui la carte des sondes utilise ses propres fonds de carte maison (`Plan` = tuiles OSM brutes, `Satellite` = Esri) via un simple `TileLayer`. Le fond « Plan » n'affiche donc aucune parcelle cadastrale, contrairement à Mon espace → Carte.
+# Science participative — chiffres enrichis
 
 ## Ce qui change
 
-- Le bouton « Plan » est renommé **« Cadastre »**.
-- Il affiche exactement le même rendu que Mon espace → Carte : fond OSM + surcouche des tuiles cadastrales Etalab + tracé des parcelles cadastrales autour des sondes (contours, numéros, surfaces).
-- Le fond « Satellite » garde son comportement, mais bénéficie au passage du relais IGN/Esri anti-écran-noir et du super zoom (jusqu'à z22) déjà utilisés ailleurs.
-- Les parcelles se chargent autour des positions réelles des sondes affichées (filtres inclus), pas seulement au centre de la carte.
+Le bloc « Science participative » de `/marches-du-vivant` passe de 3 à 6 compteurs :
+
+| Compteur | Source |
+|---|---|
+| Espèces tracées | existant |
+| Domaines documentés | existant |
+| Observations citoyennes | existant |
+| **Marcheurs** (nouveau) | `community_profiles` — déjà calculé par le RPC, simplement pas affiché |
+| **Sols documentés** (nouveau) | diagnostics de sol enregistrés + prélèvements photographiés |
+| **Mesures capteurs** (nouveau) | mesures IoT remontées par les sondes du réseau |
+
+Valeurs actuelles constatées en base : 4 diagnostics de sol sur 4 propriétés, 45 médias de prélèvements, 8 266 mesures IoT depuis le 5 août 2026, 4 sondes (3 en service).
+
+Affichage : grille responsive 2 colonnes en mobile, 3 en desktop, même carte que l'existant. Les 3 nouveaux indicateurs prennent une icône dédiée (marcheurs, sol, capteur) et une sous-légende discrète, par exemple « depuis août 2026 » pour les mesures IoT.
+
+## Fraîcheur des chiffres
+
+Vérifié : le RPC `get_public_global_stats()` recalcule tout à chaque appel (aucune table de cache, `computed_at` = `now()`). Côté client, le hook garde les données 15 min en cache mais refetch à chaque montage de page (`refetchOnMount: 'always'`) — donc chaque consultation déclenche bien une lecture Supabase. On conserve ce comportement et on ajoute une mention « Chiffres recalculés en direct » sous les compteurs.
 
 ## Détails techniques
 
-Dans `src/components/iot/SensorsMapTab.tsx` :
-
-- Supprimer la constante `FONDS` et le `<TileLayer>` en dur ; l'état `fond` passe de `'plan' | 'satellite'` à `MapStyle` (`'cadastre' | 'satellite'`) de `src/components/maps/mapStyles.ts`.
-- Rendre `<DynamicTileLayer mapStyle={fond} maxZoom={22} />` (gère fond + surcouche cadastre + relais satellite).
-- Ajouter `<CadastreLayer points={...} enabled />` quand `fond === 'cadastre'`, avec `points` = sondes géolocalisées affichées (`id`, `lat`, `lng`, `label = nom`), repli sur le centre de la carte si aucune sonde placée.
-- Conserver les deux boutons de fond existants (style et position inchangés), en changeant simplement le libellé et la clé ; pas de passage au `MapStyleToggle` global pour ne pas casser l'habillage mobile de cet onglet.
-
-Aucun changement de données, de RLS ni de logique métier des sondes.
+1. Migration : remplacer `public.get_public_global_stats()` (même signature, jsonb) en ajoutant trois clés :
+   - `sols_documentes` = nombre de lignes `propriete_soil_diagnostics`
+   - `prelevements_analyses` = nombre de lignes `propriete_test_medias`
+   - `mesures_capteurs` = nombre de lignes `iot_mesures`
+   - `sondes_actives` = `iot_capteurs` dont l'état est « service »
+   - `premiere_mesure_capteur` = `min(mesure_at)` pour la sous-légende
+   Fonction toujours `STABLE SECURITY DEFINER`, `search_path = public`, exécutable par `anon` et `authenticated` (grants inchangés).
+2. `src/hooks/usePublicGlobalStats.ts` : étendre l'interface `PublicGlobalStats` avec ces champs.
+3. `src/components/marches-vivant/ScienceCounters.tsx` : ajouter les compteurs Marcheurs, Sols documentés, Mesures capteurs ; grille `grid-cols-2 md:grid-cols-3`.
+4. Aucune valeur en dur — règle « source de vérité unique » respectée ; `/agent-ia` et la fiche imprimable continuent de fonctionner (clés existantes inchangées).
