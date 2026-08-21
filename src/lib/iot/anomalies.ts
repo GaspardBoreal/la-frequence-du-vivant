@@ -302,6 +302,7 @@ export function analyserAnomalies(
   now = Date.now(),
 ): AnomalyReport {
   const alertes: IotAlerte[] = [];
+  const erreurs: string[] = [];
   const signales = new Set<string>();
   const capteurById = new Map(capteurs.map((c) => [c.id, c]));
 
