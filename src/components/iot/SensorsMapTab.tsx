@@ -19,15 +19,13 @@ import { iotChatFocus, openIotAi } from '@/components/iot/chatbot/iotChatFocus';
 import { useIotConsole } from '@/components/iot/console/IotConsoleContext';
 
 
+/** Mêmes fonds que Mon espace → Carte (mapStyles partagés). */
 const FONDS = [
-  { key: 'plan', label: 'Plan', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; OpenStreetMap' },
-  {
-    key: 'satellite',
-    label: 'Satellite',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: '&copy; Esri',
-  },
+  { key: 'cadastre', label: 'Cadastre' },
+  { key: 'satellite', label: 'Satellite' },
 ] as const;
+
+type FondKey = (typeof FONDS)[number]['key'];
 
 const FitAll: React.FC<{ positions: [number, number][]; focus?: [number, number] | null }> = ({ positions, focus }) => {
   const map = useMap();
