@@ -65,6 +65,18 @@ export const TelemetryControl: React.FC = () => {
     return m;
   }, [pings]);
 
+  const sortedCapteurs = React.useMemo(() => {
+    const rank = (etat?: string | null) => {
+      const e = capteurEtat({ etat });
+      return e === 'service' ? 0 : e === 'maintenance' ? 1 : 2;
+    };
+    return [...capteurs].sort((a, b) => {
+      const byEtat = rank(a.etat) - rank(b.etat);
+      if (byEtat !== 0) return byEtat;
+      return (a.nom ?? '').localeCompare(b.nom ?? '', 'fr', { sensitivity: 'base' });
+    });
+  }, [capteurs]);
+
   return (
     <div className="space-y-6">
       {/* Bandeau direct */}
