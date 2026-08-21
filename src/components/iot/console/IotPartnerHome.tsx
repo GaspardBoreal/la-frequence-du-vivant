@@ -1,5 +1,5 @@
 import React from 'react';
-import { Radio, Building2, Clock, Activity } from 'lucide-react';
+import { Radio, Building2, Clock, Activity, AlertTriangle } from 'lucide-react';
 import { useAllCapteursGeo, useTelemetryPings, type CapteurGeo } from '@/hooks/iot/useIotTelemetry';
 import { useLatestMesures } from '@/hooks/iot/useIot';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
