@@ -75,7 +75,11 @@ export function useTelemetryDeliveries(limit = 60) {
   });
 }
 
-/** Réceptions des dernières `hours` heures, pour la frise de vitalité. */
+/**
+ * Réceptions des dernières `hours` heures, pour la frise de vitalité.
+ * La base plafonne toute requête à 1 000 lignes : sans pagination, seules les
+ * heures les plus récentes remontaient et la frise restait tassée à droite.
+ */
 export function useTelemetryPings(hours = 48, capteurIds?: string[]) {
   const ids = capteurIds ? [...capteurIds].sort() : null;
   return useQuery<TelemetryPing[]>({
@@ -84,20 +88,28 @@ export function useTelemetryPings(hours = 48, capteurIds?: string[]) {
     enabled: !capteurIds || ids!.length > 0,
     queryFn: async () => {
       const since = new Date(Date.now() - hours * 3_600_000).toISOString();
-      let q = db
-        .from('iot_mesures')
-        .select('capteur_id, mesure_at, source')
-        .eq('rejected', false)
-        .gte('mesure_at', since)
-        .order('mesure_at', { ascending: false })
-        .limit(4000);
-      if (ids && ids.length) q = q.in('capteur_id', ids);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data ?? [];
+      const PAGE_SIZE = 1000;
+      const MAX_PAGES = 12; // garde-fou : 12 000 réceptions au plus
+      const rows: TelemetryPing[] = [];
+      for (let page = 0; page < MAX_PAGES; page += 1) {
+        let q = db
+          .from('iot_mesures')
+          .select('capteur_id, mesure_at, source')
+          .eq('rejected', false)
+          .gte('mesure_at', since)
+          .order('mesure_at', { ascending: false })
+          .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+        if (ids && ids.length) q = q.in('capteur_id', ids);
+        const { data, error } = await q;
+        if (error) throw error;
+        rows.push(...((data ?? []) as TelemetryPing[]));
+        if (!data || data.length < PAGE_SIZE) break;
+      }
+      return rows;
     },
   });
 }
+
 
 
 /**
