@@ -172,4 +172,22 @@ export const BRAND_LOGO_ID = `${BRAND_SITE}/#logo`;
 export function brandLogoImageObject(
   pageUrl: string,
   representativeOfPage = false,
-  variant: BrandLogoVariant = BRA
+  variant: BrandLogoVariant = BRAND_LOGO_CANONICAL,
+) {
+  const node: Record<string, unknown> = {
+    '@type': 'ImageObject',
+    '@id': representativeOfPage ? BRAND_LOGO_ID : `${pageUrl}/#logo-${variant.key}`,
+    url: variant.url,
+    contentUrl: variant.path,
+    width: variant.width,
+    height: variant.height,
+    name: variant.alt,
+    caption: BRAND_LOGO_CAPTION,
+    description: BRAND_LOGO_DESCRIPTION,
+    creditText: BRAND_LOGO_CREDIT,
+    copyrightNotice: BRAND_LOGO_COPYRIGHT,
+    license: BRAND_LOGO_LICENSE,
+    representativeOfPage,
+  };
+  return node;
+}
