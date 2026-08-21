@@ -37,6 +37,12 @@ const VitalityAtlas: React.FC<VitalityAtlasProps> = ({ capteurs, pings, onOpenSe
     [pings, retenuesIds],
   );
 
+  const { data: origins } = useSensorsOrigin(retenues.map((c) => c.id));
+  const origine = React.useMemo(
+    () => earliest(retenues.map((c) => origins?.[c.id])),
+    [retenues, origins],
+  );
+
   const stats = React.useMemo(() => vitalityStats(ordered.map((p) => p.mesure_at)), [ordered]);
   const regularite = React.useMemo(
     () => averageRegularity(retenues.map((c) => ordered.filter((p) => p.capteur_id === c.id).map((p) => p.mesure_at))),
@@ -78,7 +84,12 @@ const VitalityAtlas: React.FC<VitalityAtlasProps> = ({ capteurs, pings, onOpenSe
         <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
           <div className="rounded-lg border border-border/60 bg-background/50 p-2.5">
             <div className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground"><Clock3 className="h-3 w-3" /> Première réception</div>
-            <div className="mt-1 text-xs font-medium text-foreground">{fmtReception(stats.first)}</div>
+            <div className="mt-1 text-xs font-medium text-foreground">{fmtReception(origine ?? stats.first)}</div>
+            <div className="text-[10px] text-muted-foreground">
+              {origine
+                ? `${fmtAnciennete(origine)} · ${retenues.length} sonde${retenues.length > 1 ? 's' : ''}`
+                : 'depuis la mise en service'}
+            </div>
           </div>
           <div className="rounded-lg border border-border/60 bg-background/50 p-2.5">
             <div className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground"><Radio className="h-3 w-3" /> Dernière réception</div>
