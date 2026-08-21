@@ -5,7 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PaginationControls from '@/components/admin/marche-events/PaginationControls';
+import AlertsPanel from '@/components/iot/alerts/AlertsPanel';
+import { useIotAnomalies } from '@/hooks/iot/useIotAnomalies';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useIotConsole } from '@/components/iot/console/IotConsoleContext';
 
@@ -111,6 +114,18 @@ export const DeliveryJournal: React.FC = () => {
   const total = data?.total ?? 0;
   const [open, setOpen] = React.useState<string | null>(null);
 
+  /* Sous-onglet courant, mémorisé dans l'URL pour être partageable. */
+  const vue = params.get('vue') === 'alertes' ? 'alertes' : 'journal';
+
+  /* Même clé de requête que le panneau : React Query mutualise l'analyse. */
+  const { data: anomalies } = useIotAnomalies({ since, until, fournisseur, serial });
+  const nbAlertes = anomalies?.alertes.length ?? 0;
+
+  const periodeLabel =
+    periode === 'custom'
+      ? [du, au].filter(Boolean).join(' → ') || 'période libre'
+      : (PERIODES.find((p) => p.value === periode)?.label ?? '24 h');
+
   const actifs =
     (periode !== '24h' ? 1 : 0) + (fournisseur ? 1 : 0) + (serial ? 1 : 0) + (etat !== 'all' ? 1 : 0) + (q ? 1 : 0);
 
@@ -184,6 +199,29 @@ export const DeliveryJournal: React.FC = () => {
         </div>
       </div>
 
+      {/* Deux lectures de la même période : ce qui cloche, puis tout ce qui est arrivé */}
+      <Tabs value={vue} onValueChange={(v) => patch({ vue: v === 'journal' ? null : v }, false)}>
+        <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex">
+          <TabsTrigger value="alertes" className="gap-1.5">
+            Alertes
+            {nbAlertes > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] tabular-nums">{nbAlertes}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="journal">Journal</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="alertes" className="mt-3">
+          <AlertsPanel
+            since={since}
+            until={until}
+            fournisseur={fournisseur}
+            serial={serial}
+            periodeLabel={periodeLabel}
+          />
+        </TabsContent>
+
+        <TabsContent value="journal" className="mt-3 space-y-3">
       {/* Liste */}
       <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
         {rows.map((d) => {
@@ -239,6 +277,8 @@ export const DeliveryJournal: React.FC = () => {
         onPageChange={(p) => patch({ p: p > 1 ? p : null }, false)}
         onPageSizeChange={(s) => patch({ ps: s === 20 ? null : s })}
       />
+        </TabsContent>
+      </Tabs>
     </section>
   );
 };

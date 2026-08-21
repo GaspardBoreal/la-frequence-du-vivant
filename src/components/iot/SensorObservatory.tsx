@@ -36,13 +36,23 @@ const dayKey = (d: Date) => d.toISOString().slice(0, 10);
 interface Props {
   capteur: any;
   onClose: () => void;
+  /**
+   * Fenêtre imposée à l'ouverture (ISO) : l'observatoire démarre en plage
+   * libre, calé sur l'anomalie à observer. Sans ces props, comportement
+   * historique (7 jours glissants).
+   */
+  initialFrom?: string;
+  initialTo?: string;
 }
 
 /** Observatoire d'une sonde : tous les graphes, période libre, exports. */
-export const SensorObservatory: React.FC<Props> = ({ capteur, onClose }) => {
-  const [preset, setPreset] = React.useState<PresetKey>('7j');
-  const [customFrom, setCustomFrom] = React.useState(dayKey(new Date(Date.now() - 7 * 86_400_000)));
-  const [customTo, setCustomTo] = React.useState(dayKey(new Date()));
+export const SensorObservatory: React.FC<Props> = ({ capteur, onClose, initialFrom, initialTo }) => {
+  const cale = !!initialFrom && !!initialTo;
+  const [preset, setPreset] = React.useState<PresetKey>(cale ? 'perso' : '7j');
+  const [customFrom, setCustomFrom] = React.useState(
+    dayKey(new Date(initialFrom ?? Date.now() - 7 * 86_400_000)),
+  );
+  const [customTo, setCustomTo] = React.useState(dayKey(new Date(initialTo ?? Date.now())));
 
   // Surface plein écran (z-3000) : le chatbot doit passer devant, sinon
   // « IA de Jardin » ouvre une fenêtre invisible derrière l'observatoire.
