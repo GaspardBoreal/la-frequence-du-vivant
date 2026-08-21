@@ -264,6 +264,8 @@ export const DeliveryJournal: React.FC = () => {
         onPageChange={(p) => patch({ p: p > 1 ? p : null }, false)}
         onPageSizeChange={(s) => patch({ ps: s === 20 ? null : s })}
       />
+        </TabsContent>
+      </Tabs>
     </section>
   );
 };
