@@ -32,7 +32,7 @@ interface Props {
  * clic pour filtrer la liste. Le « ? » ouvre la fiche explicative.
  */
 export const RuleConstellation: React.FC<Props> = ({ counts, actif, onToggle, exemples }) => (
-  <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-4 sm:overflow-visible lg:grid-cols-7">
+  <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-4 sm:overflow-visible lg:grid-cols-8">
     {REGLES.map((r) => {
       const n = counts[r.key] ?? 0;
       const Icone = ICONES[r.key];
