@@ -363,8 +363,8 @@ export function analyserAnomalies(
         .filter((i) => i >= 0);
       if (idx.length) {
         idx.forEach(marque);
-        const vals = idx.map((i) => serie[i].valeur);
-        const pire = idx[vals.indexOf(Math.max(...vals.map((v) => Math.abs(v - (use[0] + use[1]) / 2))))];
+        const centre = (use[0] + use[1]) / 2;
+        const pire = pireIndex(idx, (i) => Math.abs(serie[i].valeur - centre));
         alertes.push({
           ...base,
           id: `${key}-usage`,
