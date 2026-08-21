@@ -13,6 +13,7 @@ import type { IotMesure } from '@/hooks/iot/useIot';
 import {
   CAPTEUR_ETATS, HEALTH_COLOR, capteurEtat, fmtHorodatage, fmtMesure, fmtProfondeur, sensorHealth,
 } from '@/lib/iot/grandeurs';
+import { jugerLecture } from '@/lib/iot/fiabilite';
 
 export interface SensorCardCapabilities {
   proprieteLinks?: boolean;
