@@ -4,6 +4,7 @@ import { useLatestMesures } from '@/hooks/iot/useIot';
 import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
 import { sensorHealth, grandeurMeta, fmtProfondeur } from '@/lib/iot/grandeurs';
+import { jugerLecture } from '@/lib/iot/fiabilite';
 import { payloadBytes } from '@/lib/chatContextCost';
 import type { ContextProvider } from '@/hooks/useChatPageContext';
 import { useIotChatFocus } from '@/components/iot/chatbot/iotChatFocus';
