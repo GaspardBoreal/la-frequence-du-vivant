@@ -16,7 +16,8 @@ import logoLight from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante-c
 import logoDark from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante-sombre.png.asset.json';
 import lockupLight from '@/assets/brand/marches-du-vivant/logo-lockup-horizontal.png.asset.json';
 import lockupDark from '@/assets/brand/marches-du-vivant/logo-lockup-horizontal-clair.png.asset.json';
-import lockupVertical from '@/assets/brand/marches-du-vivant/logo-lockup-vertical.png.asset.json';
+import lockupVerticalOpt from '@/assets/brand/marches-du-vivant/logo-lockup-vertical-opt.png.asset.json';
+import logoIndex from '@/assets/brand/marches-du-vivant/logo-index-carre.png.asset.json';
 
 export const BRAND_SITE = 'https://la-frequence-du-vivant.com';
 
@@ -27,7 +28,8 @@ export type BrandLogoVariantKey =
   | 'legacy'
   | 'lockup-light'
   | 'lockup-dark'
-  | 'lockup-vertical';
+  | 'lockup-vertical'
+  | 'index';
 
 export interface BrandLogoVariant {
   key: BrandLogoVariantKey;
@@ -122,23 +124,41 @@ export const BRAND_LOGO_LOCKUP_DARK = build(
 
 export const BRAND_LOGO_LOCKUP_VERTICAL = build(
   'lockup-vertical',
-  lockupVertical,
+  lockupVerticalOpt,
   'Lock-up vertical — empreinte au-dessus du nom',
-  'Bandeaux centrés et fonds sombres : le nom est composé en clair sous l’empreinte.',
-  'Logo Les Marches du Vivant — empreinte en feuillage surmontant le nom en toutes lettres, version verticale',
-  1254,
-  1254,
+  'Bandeaux centrés et fonds sombres : le nom est composé en clair sous l’empreinte. Fond transparent.',
+  'Logo Les Marches du Vivant — empreinte de pas en feuillage surmontant le nom en toutes lettres, version verticale',
+  1024,
+  1024,
+);
+
+/**
+ * Déclinaison d'indexation : même dessin, aplati sur un carré vert profond
+ * 1200 × 1200. Le nom est en blanc : sur le fond blanc des résultats de
+ * recherche d'images, la version transparente serait illisible. C'est ce
+ * fichier qui porte le JSON-LD, le sitemap images et les métadonnées IPTC.
+ */
+export const BRAND_LOGO_INDEX = build(
+  'index',
+  logoIndex,
+  'Logo officiel — carré fond vert',
+  "Recherche d'images, annuaires, aperçus sociaux, fiches partenaires : partout où le fond n'est pas maîtrisé.",
+  'Logo Les Marches du Vivant — empreinte de pas en feuillage entourée d’ondes, nom en toutes lettres sur fond vert profond',
+  1200,
+  1200,
 );
 
 /** Les déclinaisons à présenter, dans l'ordre de recommandation. */
 export const BRAND_LOGO_VARIANTS: BrandLogoVariant[] = [
+  BRAND_LOGO_INDEX,
+  BRAND_LOGO_LOCKUP_VERTICAL,
+  BRAND_LOGO_LOCKUP_DARK,
   BRAND_LOGO_MARK,
-  BRAND_LOGO_LIGHT,
-  BRAND_LOGO_DARK,
 ];
 
 /** Déclinaison canonique : celle que décrit le JSON-LD et que citent les annuaires. */
-export const BRAND_LOGO_CANONICAL = BRAND_LOGO_LIGHT;
+export const BRAND_LOGO_CANONICAL = BRAND_LOGO_INDEX;
+
 
 /* ------------------------------------------------------------------ *
  * Alias historiques — conservés pour ne casser aucun appelant existant.

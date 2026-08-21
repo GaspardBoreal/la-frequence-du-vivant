@@ -198,13 +198,22 @@ const FrequenceJardinLogo: React.FC = () => {
 
         {logo.slug === 'empreinte-vivante' && (
           <section className="mt-10 rounded-2xl border border-border/60 bg-card/50 p-6">
-            <h2 className="text-lg font-semibold text-foreground">Déclinaisons</h2>
+            <h2 className="text-lg font-semibold text-foreground">
+              Logo officiel Les Marches du Vivant — déclinaisons
+            </h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Le nom gravé dans le fichier d'origine est trop fin et trop sombre pour rester lisible
-              en petite taille ou sur fond sombre. Trois fichiers le remplacent : la marque seule
-              pour l'interface, et deux lock-ups au nom épaissi selon le fond.
+              Le logo officiel des Marches du Vivant est une empreinte de pas dont l'intérieur est un
+              feuillage, entourée d'ondes concentriques : la trace du marcheur est faite de vivant et
+              se propage. Il est édité par l'association La Fréquence du Vivant et identifie l'agent
+              IA de mesure collaborative de la biodiversité. Usage libre pour citer le projet, sans
+              modification (licence CC BY-ND 4.0).
             </p>
-            <div className="mt-6 grid gap-5 sm:grid-cols-3">
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              La première déclinaison, sur fond vert profond, est la version de référence : c'est
+              elle qu'il faut fournir aux annuaires, aux moteurs et aux partenaires, parce que le nom
+              en blanc de la version transparente disparaîtrait sur un fond clair.
+            </p>
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {BRAND_LOGO_VARIANTS.map((v) => (
                 <figure
                   key={v.key}
@@ -218,8 +227,9 @@ const FrequenceJardinLogo: React.FC = () => {
                     height={v.height}
                     loading="lazy"
                     decoding="async"
-                    className={`h-auto w-full ${v.key === 'dark' ? 'bg-[#10251c]' : 'bg-background'}`}
+                    className={`h-auto w-full ${v.key === 'index' ? 'bg-background' : 'bg-[#10251c]'}`}
                   />
+
                   <figcaption className="flex flex-1 flex-col gap-2 p-4">
                     <span className="text-sm font-semibold text-foreground">{v.label}</span>
                     <span className="text-xs leading-relaxed text-muted-foreground">{v.usage}</span>
