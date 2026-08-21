@@ -50,22 +50,22 @@ export const AlertsPanel: React.FC<AnomalyFilters & { periodeLabel: string }> = 
     setObservatoire({ capteur, from, to });
   };
 
+  const counts = data?.parRegle ?? ({} as Record<RegleKey, number>);
+
   return (
     <section className="space-y-3">
-      {/* Constellation des sept veilles */}
-      <RuleConstellation
-        counts={data?.parRegle ?? ({} as Record<RegleKey, number>)}
-        actif={regle}
-        onToggle={setRegle}
-        exemples={exemples}
-      />
+      {/* Constellation des veilles */}
+      <RuleConstellation counts={counts} actif={regle} onToggle={setRegle} exemples={exemples} />
+
+      {/* Les règles, lisibles sans chercher */}
+      <RulesLegend ouvert={legende} onToggle={setLegende} counts={counts} exemples={exemples} />
 
       {/* Bande de contrôle */}
       <div className="rounded-xl border border-border bg-card px-3 py-2.5">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
           <span className="font-medium text-foreground tabular-nums">{controles.toLocaleString('fr-FR')}</span> relevés contrôlés ·
           <span className="tabular-nums">{data?.sondes ?? 0}</span> sonde{(data?.sondes ?? 0) > 1 ? 's' : ''} ·
-          <span>{periodeLabel}</span> · 7 règles appliquées
+          <span>{periodeLabel}</span> · {REGLES.length} règles appliquées
           {isFetching && <span className="italic">· analyse en cours…</span>}
           {data?.truncated && <span className="italic">· lecture plafonnée sur les sondes les plus bavardes</span>}
         </div>
