@@ -1,4 +1,4 @@
-import { DOMAINE, USAGE } from '@/lib/iot/anomalies';
+import { DOMAINE, ECART_PROFONDEURS, USAGE } from '@/lib/iot/anomalies';
 import { fmtProfondeur, grandeurMeta } from '@/lib/iot/grandeurs';
 
 /**
