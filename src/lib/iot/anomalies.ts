@@ -486,6 +486,11 @@ export function analyserAnomalies(
         });
       }
     }
+    } catch (e) {
+      // Une règle en défaut ne doit jamais faire disparaître les sept autres.
+      erreurs.push(`${key} : ${e instanceof Error ? e.message : String(e)}`);
+      console.error('[anomalies] slot en échec', key, e);
+    }
   });
 
   /* 6 · Incohérence entre profondeurs — même contrôle qu'à l'accueil.
