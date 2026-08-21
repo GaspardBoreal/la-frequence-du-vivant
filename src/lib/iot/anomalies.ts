@@ -334,8 +334,7 @@ export function analyserAnomalies(
       const idx = serie.map((m, i) => (m.valeur < dom[0] || m.valeur > dom[1] ? i : -1)).filter((i) => i >= 0);
       if (idx.length) {
         idx.forEach(marque);
-        const vals = idx.map((i) => serie[i].valeur);
-        const pire = idx[vals.indexOf(Math.max(...vals.map((v) => Math.abs(v))))];
+        const pire = pireIndex(idx, (i) => Math.abs(serie[i].valeur));
         alertes.push({
           ...base,
           id: `${key}-dom`,
