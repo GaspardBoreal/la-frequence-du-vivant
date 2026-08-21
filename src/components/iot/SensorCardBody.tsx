@@ -175,7 +175,10 @@ export const SensorCardBody: React.FC<Props> = ({
           const v = vitalityStats(pings);
           return (
             <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
-              <span>Première · <span className="text-foreground">{fmtReception(v.first)}</span></span>
+              <span>
+                Première · <span className="text-foreground">{fmtReception(origine ?? v.first)}</span>
+                {origine && <span className="block text-[9px]">depuis la mise en service</span>}
+              </span>
               <span className="text-right">Dernière · <span className="text-foreground">{fmtReception(v.last)}</span></span>
               <span>Régularité · <span className="text-foreground">{fmtDuree(v.regularityMin)}</span></span>
               <span className="text-right">Plus long silence · <span className="text-foreground">{fmtDuree(v.longestSilenceMin)}</span></span>
