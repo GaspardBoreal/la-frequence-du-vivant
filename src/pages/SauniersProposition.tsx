@@ -152,7 +152,7 @@ const LIVRABLES = [
 ];
 
 const BESOINS = [
-  'Le tracé du marais que vous acceptez d’ouvrir, et quatre points d’arrêt.',
+  'Le tracé du marais que vous acceptez d’ouvrir avec quatre points d’arrêt.',
   'Un saunier volontaire pour être filmé et enregistré une quinzaine de minutes.',
   'Votre logo et vos couleurs, pour que la page soit la vôtre.',
   "La disponibilité d'un de vos collaborateurs pour un moment le 12 Septembre 2026.",
@@ -435,7 +435,7 @@ const SauniersProposition: React.FC = () => {
                 d: '20 min',
                 t: 'La parole du saunier',
                 icon: Camera,
-                c: 'Un des vôtres, sur son aire. Le geste filmé, le savoir enregistré. C’est le cœur de la journée, et c’est ce qui restera le plus longtemps.',
+                c: 'Un de de vos collaborateurs montre le geste du saunier.',
               },
               {
                 h: '12 h 35',
@@ -542,7 +542,7 @@ const SauniersProposition: React.FC = () => {
       </Section>
 
       {/* ------------------------------- Ce qu'il faut ------------------------------- */}
-      <Section eyebrow="De votre côté" titre="Quatre choses, et nous partons.">
+      <Section eyebrow="De votre côté" titre="Les prochaines étapes">
         <ul className="space-y-2.5">
           {BESOINS.map((b, i) => (
             <Reveal key={b} delay={i * 60}>
@@ -555,8 +555,7 @@ const SauniersProposition: React.FC = () => {
         </ul>
         <Reveal>
           <p className="mt-5 text-[14px] leading-relaxed text-teal-900/70">
-            Tout le reste, l’animation, le matériel, l’identification des espèces, la page publique,
-            l’archivage de la parole, est de notre côté.
+            Tout le reste, l’animation, l’identification des espèces, la page publique, l’archivage de la parole, est de notre côté.
           </p>
         </Reveal>
       </Section>
