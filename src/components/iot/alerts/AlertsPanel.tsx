@@ -4,11 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import RuleConstellation from '@/components/iot/alerts/RuleConstellation';
+import RulesLegend from '@/components/iot/alerts/RulesLegend';
 import AnomalySparkline from '@/components/iot/alerts/AnomalySparkline';
 import SensorObservatory from '@/components/iot/SensorObservatory';
 import { useIotAnomalies, type AnomalyFilters } from '@/hooks/iot/useIotAnomalies';
 import { useAllCapteursGeo } from '@/hooks/iot/useIotTelemetry';
-import { fenetreObservatoire, GRAVITE_LABEL, regleMeta, type IotAlerte, type RegleKey } from '@/lib/iot/anomalies';
+import { fenetreObservatoire, GRAVITE_LABEL, REGLES, regleMeta, type IotAlerte, type RegleKey } from '@/lib/iot/anomalies';
 
 const PARIS = 'Europe/Paris';
 
@@ -27,6 +28,7 @@ export const AlertsPanel: React.FC<AnomalyFilters & { periodeLabel: string }> = 
 
   const [regle, setRegle] = React.useState<RegleKey | null>(null);
   const [ouvert, setOuvert] = React.useState<string | null>(null);
+  const [legende, setLegende] = React.useState(false);
   const [observatoire, setObservatoire] = React.useState<{ capteur: any; from: string; to: string } | null>(null);
 
   const alertes = data?.alertes ?? [];
@@ -50,22 +52,22 @@ export const AlertsPanel: React.FC<AnomalyFilters & { periodeLabel: string }> = 
     setObservatoire({ capteur, from, to });
   };
 
+  const counts = data?.parRegle ?? ({} as Record<RegleKey, number>);
+
   return (
     <section className="space-y-3">
-      {/* Constellation des sept veilles */}
-      <RuleConstellation
-        counts={data?.parRegle ?? ({} as Record<RegleKey, number>)}
-        actif={regle}
-        onToggle={setRegle}
-        exemples={exemples}
-      />
+      {/* Constellation des veilles */}
+      <RuleConstellation counts={counts} actif={regle} onToggle={setRegle} exemples={exemples} />
+
+      {/* Les règles, lisibles sans chercher */}
+      <RulesLegend ouvert={legende} onToggle={setLegende} counts={counts} exemples={exemples} />
 
       {/* Bande de contrôle */}
       <div className="rounded-xl border border-border bg-card px-3 py-2.5">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
           <span className="font-medium text-foreground tabular-nums">{controles.toLocaleString('fr-FR')}</span> relevés contrôlés ·
           <span className="tabular-nums">{data?.sondes ?? 0}</span> sonde{(data?.sondes ?? 0) > 1 ? 's' : ''} ·
-          <span>{periodeLabel}</span> · 7 règles appliquées
+          <span>{periodeLabel}</span> · {REGLES.length} règles appliquées
           {isFetching && <span className="italic">· analyse en cours…</span>}
           {data?.truncated && <span className="italic">· lecture plafonnée sur les sondes les plus bavardes</span>}
         </div>

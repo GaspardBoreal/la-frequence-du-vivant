@@ -115,7 +115,8 @@ export const DeliveryJournal: React.FC = () => {
   const [open, setOpen] = React.useState<string | null>(null);
 
   /* Sous-onglet courant, mémorisé dans l'URL pour être partageable. */
-  const vue = params.get('vue') === 'alertes' ? 'alertes' : 'journal';
+  /* Les alertes ouvrent le poste de contrôle : on regarde d'abord ce qui cloche. */
+  const vue = params.get('vue') === 'journal' ? 'journal' : 'alertes';
 
   /* Même clé de requête que le panneau : React Query mutualise l'analyse. */
   const { data: anomalies } = useIotAnomalies({ since, until, fournisseur, serial });
@@ -200,7 +201,7 @@ export const DeliveryJournal: React.FC = () => {
       </div>
 
       {/* Deux lectures de la même période : ce qui cloche, puis tout ce qui est arrivé */}
-      <Tabs value={vue} onValueChange={(v) => patch({ vue: v === 'journal' ? null : v }, false)}>
+      <Tabs value={vue} onValueChange={(v) => patch({ vue: v === 'alertes' ? null : v }, false)}>
         <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex">
           <TabsTrigger value="alertes" className="gap-1.5">
             Alertes

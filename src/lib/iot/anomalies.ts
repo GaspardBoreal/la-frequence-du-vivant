@@ -17,6 +17,7 @@ import { grandeurMeta, fmtMesure, fmtProfondeur, capteurEtat } from '@/lib/iot/g
 export type RegleKey =
   | 'hors_domaine'
   | 'hors_usage'
+  | 'incoherence'
   | 'aberrante'
   | 'saut'
   | 'figee'
@@ -54,6 +55,15 @@ export const REGLES: RegleMeta[] = [
     ignore: 'Les grandeurs sans plage d’usage connue.',
     gravite: 'surveiller',
     signature: 'derive',
+  },
+  {
+    key: 'incoherence',
+    nom: 'Incohérence entre profondeurs',
+    cherche:
+      "Deux profondeurs d'une même sonde qui se contredisent au même instant : sol quasi sec en surface alors que le fond est détrempé, sans transition possible.",
+    ignore: 'Les grandeurs sans profondeur, et les sondes qui ne mesurent qu’un seul niveau.',
+    gravite: 'surveiller',
+    signature: 'marche',
   },
   {
     key: 'aberrante',
@@ -146,6 +156,17 @@ export const INERTIE: Record<string, number> = {
   pressure: 800,
   battery_voltage: 0.6,
 };
+
+/**
+ * Écart maximal admis, en points, entre deux profondeurs d'une même sonde
+ * au même instant. Source unique : le moteur de fiabilité de l'accueil
+ * (`fiabilite.ts`) et la veille « Incohérence entre profondeurs » lisent la
+ * même table, pour qu'un « à vérifier » de l'accueil soit toujours une alerte.
+ */
+export const ECART_PROFONDEURS: Record<string, number> = {
+  soil_moisture: 20,
+};
+
 
 /** Grandeurs qui peuvent légitimement rester plates (pas de règle « figée »). */
 const PLATES = new Set(['rainfall', 'battery_voltage', 'luminosity', 'infrared', 'uv_index', 'wind_speed']);
@@ -456,6 +477,70 @@ export function analyserAnomalies(
       }
     }
   });
+
+  /* 6 · Incohérence entre profondeurs — même contrôle qu'à l'accueil.
+     On compare, instant par instant, les profondeurs d'une même sonde pour
+     une grandeur stratifiée : un écart improbable trahit une voie de mesure. */
+  const croisees = new Map<string, MesureLite[]>();
+  mesures.forEach((m) => {
+    if (ECART_PROFONDEURS[m.grandeur] == null || m.profondeur_m == null || !Number.isFinite(m.valeur)) return;
+    const k = `${m.capteur_id}${KEY_SEP}${m.grandeur}`;
+    const arr = croisees.get(k) ?? [];
+    arr.push(m);
+    croisees.set(k, arr);
+  });
+
+  croisees.forEach((list, k) => {
+    const [capteurId, grandeur] = k.split(KEY_SEP);
+    const capteur = capteurById.get(capteurId);
+    if (!capteur || capteurEtat(capteur) !== 'service') return;
+    const seuil = ECART_PROFONDEURS[grandeur];
+    const meta = grandeurMeta(grandeur);
+
+    /* Instants où la sonde a transmis au moins deux profondeurs. */
+    const parInstant = new Map<string, MesureLite[]>();
+    list.forEach((m) => {
+      const arr = parInstant.get(m.mesure_at) ?? [];
+      arr.push(m);
+      parInstant.set(m.mesure_at, arr);
+    });
+
+    const points: Array<{ t: string; bas: MesureLite; haut: MesureLite; ecart: number }> = [];
+    parInstant.forEach((rows, t) => {
+      if (rows.length < 2) return;
+      const tri = [...rows].sort((a, b) => a.valeur - b.valeur);
+      const bas = tri[0];
+      const haut = tri[tri.length - 1];
+      const ecart = haut.valeur - bas.valeur;
+      if (ecart > seuil) points.push({ t, bas, haut, ecart });
+    });
+    if (!points.length) return;
+
+    points.sort((a, b) => ms(a.t) - ms(b.t));
+    const pire = points.reduce((a, b) => (b.ecart > a.ecart ? b : a));
+    const suspecte = fmtProfondeur(pire.bas.profondeur_m ?? null);
+    const temoin = fmtProfondeur(pire.haut.profondeur_m ?? null);
+
+    alertes.push({
+      id: `${k}-coherence`,
+      regle: 'incoherence',
+      gravite: 'surveiller',
+      capteurId,
+      capteurNom: nomDe(capteurId),
+      serial: capteur.serial_number ?? null,
+      grandeur,
+      profondeur_m: pire.bas.profondeur_m ?? null,
+      grandeurLabel: slotLabel(grandeur, pire.bas.profondeur_m ?? null),
+      debut: points[0].t,
+      fin: points[points.length - 1].t,
+      valeur: `${fmtMesure(pire.bas.valeur, grandeur, pire.bas.unite)} à ${suspecte} contre ${fmtMesure(pire.haut.valeur, grandeur, pire.haut.unite)} à ${temoin}`,
+      seuil: `Écart admis entre deux profondeurs : ${seuil} ${meta.unite} au plus`,
+      commentaire: `La même sonde lit ${fmtMesure(pire.bas.valeur, grandeur, pire.bas.unite)} à ${suspecte} alors qu'elle lit ${fmtMesure(pire.haut.valeur, grandeur, pire.haut.unite)} à ${temoin} au même instant — écart improbable sans transition. C'est le doute déjà signalé « à vérifier » sur l'accueil : voie de mesure ou contact au sol à contrôler.`,
+      occurrences: points.length,
+      serie: points.slice(-40).map((p) => ({ t: ms(p.t), v: p.bas.valeur, fautif: true })),
+    });
+  });
+
 
   /* 6 · Silence, calculé sur la cadence propre de chaque sonde. */
   const parCapteur = new Map<string, MesureLite[]>();

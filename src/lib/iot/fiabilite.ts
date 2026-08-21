@@ -1,4 +1,4 @@
-import { DOMAINE, USAGE } from '@/lib/iot/anomalies';
+import { DOMAINE, ECART_PROFONDEURS, USAGE } from '@/lib/iot/anomalies';
 import { fmtProfondeur, grandeurMeta } from '@/lib/iot/grandeurs';
 
 /**
@@ -21,10 +21,8 @@ export interface Verdict {
 
 const FIABLE: Verdict = { fiable: true, motif: null, regle: null };
 
-/** Écart maximal admis, en points, entre deux profondeurs d'une même sonde. */
-const ECART_PROFONDEURS: Record<string, number> = {
-  soil_moisture: 20,
-};
+/* Le seuil d'écart entre profondeurs vit dans `anomalies.ts` : accueil et
+   veille « Incohérence entre profondeurs » jugent avec la même règle. */
 
 export interface LectureLite {
   grandeur: string;

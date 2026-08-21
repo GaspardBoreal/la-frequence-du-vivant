@@ -1,19 +1,22 @@
 import React from 'react';
-import { AlertOctagon, Activity, Ban, Gauge, Minus, MoveUpRight, VolumeX } from 'lucide-react';
+import { AlertOctagon, Activity, Ban, Gauge, Layers, Minus, MoveUpRight, VolumeX } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import RuleCard from '@/components/iot/alerts/RuleCard';
 import { REGLES, type RegleKey } from '@/lib/iot/anomalies';
 
-const ICONES: Record<RegleKey, React.ComponentType<{ className?: string }>> = {
+export const ICONES_REGLES: Record<RegleKey, React.ComponentType<{ className?: string }>> = {
   hors_domaine: AlertOctagon,
   hors_usage: Gauge,
+  incoherence: Layers,
   aberrante: Activity,
   saut: MoveUpRight,
   figee: Minus,
   silence: VolumeX,
   ingestion: Ban,
 };
+
+const ICONES = ICONES_REGLES;
 
 interface Props {
   counts: Record<RegleKey, number>;
@@ -29,7 +32,7 @@ interface Props {
  * clic pour filtrer la liste. Le « ? » ouvre la fiche explicative.
  */
 export const RuleConstellation: React.FC<Props> = ({ counts, actif, onToggle, exemples }) => (
-  <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-4 sm:overflow-visible lg:grid-cols-7">
+  <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-4 sm:overflow-visible lg:grid-cols-8">
     {REGLES.map((r) => {
       const n = counts[r.key] ?? 0;
       const Icone = ICONES[r.key];
