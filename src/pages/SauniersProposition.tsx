@@ -211,7 +211,7 @@ const Section: React.FC<{
           {eyebrow}
         </p>
         <h2 className="mt-2 font-crimson text-3xl leading-tight text-foreground sm:text-4xl">
-          Un parcours riche en thématiques
+          {titre}
         </h2>
       </Reveal>
       <div className="mt-6">{children}</div>
@@ -301,7 +301,7 @@ const SauniersProposition: React.FC = () => {
       </header>
 
       {/* --------------------------- Ce qui existe déjà --------------------------- */}
-      <Section eyebrow="LE PROJET" titre="Nous ne touchons pas à votre première heure.">
+      <Section eyebrow="LE PROJET" titre="Un parcours riche en thématiques">
         <Reveal>
           <p className="text-[15px] leading-relaxed text-muted-foreground">
             Vos huit stations dans le village racontent le sel par le bâti, le port, la chaux, la
@@ -329,7 +329,7 @@ const SauniersProposition: React.FC = () => {
       </Section>
 
       {/* ------------------------------ La bascule ------------------------------ */}
-      <Section eyebrow="Notre apport" titre="La deuxième heure change la nature de la journée.">
+      <Section eyebrow="Notre apport" titre="L'observation du Vivant">
         <Reveal>
           <p className="text-[15px] leading-relaxed text-muted-foreground">
             Nous emmenons le groupe dans le marais et nous y faisons une chose simple : nous
