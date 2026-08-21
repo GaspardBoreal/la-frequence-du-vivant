@@ -132,7 +132,7 @@ const LIVRABLES = [
   {
     titre: 'Une page web à votre nom',
     detail:
-      'Une adresse publique, vos couleurs, votre logo. Le récit des huit stations, la carte du marais, les espèces relevées, la parole du saunier. Vous la partagez, vous ne la maintenez pas.',
+      'Une adresse publique, vos couleurs, votre logo. Le récit des huit stations, la carte du marais, les espèces relevées, la parole du saunier. Vous pouvez la partagez.',
   },
   {
     titre: 'La liste nommée du vivant du marais',
@@ -155,7 +155,7 @@ const BESOINS = [
   'Le tracé du marais que vous acceptez d’ouvrir, et quatre points d’arrêt.',
   'Un saunier volontaire pour être filmé et enregistré une quinzaine de minutes.',
   'Votre logo et vos couleurs, pour que la page soit la vôtre.',
-  'Une date. Nous nous alignons sur la vôtre, pas l’inverse.',
+  "La disponibilité d'un de vos collaborateurs pour un moment le 12 Septembre 2026.",
 ];
 
 /* ---------------------------------- atomes ---------------------------------- */
@@ -419,14 +419,14 @@ const SauniersProposition: React.FC = () => {
               {
                 h: '09 h 45',
                 d: '1 h 15',
-                t: 'Le village — vos huit stations',
+                t: 'Le village : vos huit stations',
                 icon: Footprints,
-                c: 'Du clocher au seuil du marais. Le sel raconté par le bâti et par les hommes. Rien n’est mesuré, tout est ressenti.',
+                c: 'Du clocher au seuil du marais. Le sel raconté par le bâti et par les hommes. Tout est ressenti.',
               },
               {
                 h: '11 h 00',
                 d: '1 h 45',
-                t: 'Le marais — les quatre éléments',
+                t: 'Le marais : les quatre éléments',
                 icon: Waves,
                 c: 'Quatre arrêts : la vasière, le circuit d’eau, le bousseau, l’aire saunante. À chaque arrêt, un geste, une mesure, une photo.',
               },
@@ -492,12 +492,10 @@ const SauniersProposition: React.FC = () => {
       </Section>
 
       {/* -------------------------------- Preuve -------------------------------- */}
-      <Section eyebrow="Ce n’est pas un essai" titre="La chaîne existe déjà, et elle tourne.">
+      <Section eyebrow="REJOIGNEZ LA DYNAMIQUE DES MARCHES DU VIVANT" titre="Plus de 60 marcheurs">
         <Reveal>
           <p className="text-[15px] leading-relaxed text-teal-900/80">
-            Nous ne construirons rien de neuf pour vous : la marche, la collecte, l’identification et
-            la page publique sont un dispositif éprouvé, en service. Les chiffres ci-dessous sont
-            recalculés à l’instant où vous lisez cette page.
+            Quelques chiffres pour découvrir les marches réalisées.
           </p>
         </Reveal>
         <Reveal delay={120}>
@@ -557,8 +555,8 @@ const SauniersProposition: React.FC = () => {
         </ul>
         <Reveal>
           <p className="mt-5 text-[14px] leading-relaxed text-teal-900/70">
-            Tout le reste — l’animation, le matériel, l’identification des espèces, la page publique,
-            l’archivage de la parole — est de notre côté.
+            Tout le reste, l’animation, le matériel, l’identification des espèces, la page publique,
+            l’archivage de la parole, est de notre côté.
           </p>
         </Reveal>
       </Section>
@@ -577,11 +575,12 @@ const SauniersProposition: React.FC = () => {
                 height={40}
               />
               <h2 className="mt-4 text-xl font-semibold leading-tight text-teal-950 sm:text-2xl">
-                Donnez-nous une date. Nous nous occupons du reste.
+                Contactez nos ambassadeurs locaux
               </h2>
               <p className="mx-auto mt-3 max-w-md text-[14px] leading-relaxed text-teal-900/70 !text-center">
-                Un repérage sur site avec un saunier suffit à caler le parcours du marais. Une
-                demi-journée de votre temps, une seule fois.
+                Laurence KARKI : 06 24 87 25 98
+                <br />
+                Laurent TRIPIED : 06 70 76 14 99
               </p>
               <a
                 href={MAILTO}
