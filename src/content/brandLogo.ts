@@ -16,7 +16,6 @@ import logoLight from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante-c
 import logoDark from '@/assets/brand/marches-du-vivant/logo-empreinte-vivante-sombre.png.asset.json';
 import lockupLight from '@/assets/brand/marches-du-vivant/logo-lockup-horizontal.png.asset.json';
 import lockupDark from '@/assets/brand/marches-du-vivant/logo-lockup-horizontal-clair.png.asset.json';
-import lockupVertical from '@/assets/brand/marches-du-vivant/logo-lockup-vertical.png.asset.json';
 import lockupVerticalOpt from '@/assets/brand/marches-du-vivant/logo-lockup-vertical-opt.png.asset.json';
 import logoIndex from '@/assets/brand/marches-du-vivant/logo-index-carre.png.asset.json';
 
