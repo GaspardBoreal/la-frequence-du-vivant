@@ -256,7 +256,7 @@ const SauniersProposition: React.FC = () => {
         </div>
 
         <div className="relative z-10 mx-auto w-full max-w-2xl">
-          <div className="relative w-[168px] sm:w-[196px]">
+          <div className="relative mx-auto w-[168px] sm:w-[196px]">
             <div className="pointer-events-none absolute -inset-6 rounded-full bg-emerald-400/10 blur-2xl" />
             <img
               src={BRAND_LOGO_LOCKUP_VERTICAL.path}
