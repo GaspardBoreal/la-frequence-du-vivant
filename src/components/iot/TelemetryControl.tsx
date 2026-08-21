@@ -8,6 +8,7 @@ import {
   useAllCapteurs, useTelemetryCounters, useTelemetryDeliveries, useTelemetryLive, useTelemetryPings, useTestDelivery,
 } from '@/hooks/iot/useIotTelemetry';
 import { useIotConsole } from '@/components/iot/console/IotConsoleContext';
+import { capteurEtat, etatMeta } from '@/lib/iot/grandeurs';
 
 
 const fmtAgo = (iso?: string | null) => {
