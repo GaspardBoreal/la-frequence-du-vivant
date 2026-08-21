@@ -28,6 +28,7 @@ export const AlertsPanel: React.FC<AnomalyFilters & { periodeLabel: string }> = 
 
   const [regle, setRegle] = React.useState<RegleKey | null>(null);
   const [ouvert, setOuvert] = React.useState<string | null>(null);
+  const [legende, setLegende] = React.useState(false);
   const [observatoire, setObservatoire] = React.useState<{ capteur: any; from: string; to: string } | null>(null);
 
   const alertes = data?.alertes ?? [];
