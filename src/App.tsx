@@ -350,6 +350,16 @@ function App() {
                 <AdminProprietes />
               </AdminAuth>
             } />
+            <Route path="/admin/proprietes/nouvelle" element={
+              <AdminAuth>
+                <AdminProprieteFiche />
+              </AdminAuth>
+            } />
+            <Route path="/admin/proprietes/:id" element={
+              <AdminAuth>
+                <AdminProprieteFiche />
+              </AdminAuth>
+            } />
             <Route path="/admin/iot" element={
               <AdminAuth>
                 <AdminIot />

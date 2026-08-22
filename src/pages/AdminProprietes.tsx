@@ -1,750 +1,450 @@
-import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useMemo } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import {
+  ArrowLeft, Plus, Trees, List, Map as MapIcon, RadioTower,
+  ArrowUp, ArrowDown, ChevronsUpDown, ChevronRight,
+} from 'lucide-react';
+
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from '@/components/ui/sheet';
+import { Card } from '@/components/ui/card';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import {
-  ArrowLeft, Plus, Pencil, Trash2, Save, Trees, MapPin, Building2, Users, CalendarDays, Star,
-} from 'lucide-react';
-import { toast } from 'sonner';
-
-type Propriete = {
-  id: string;
-  nom: string;
-  slug: string | null;
-  description: string | null;
-  adresse: string | null;
-  ville: string | null;
-  code_postal: string | null;
-  departement: string | null;
-  region: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  surface_hectares: number | null;
-  photo_hero_url: string | null;
-  owner_company_id: string | null;
-  main_walker_id: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-type MarcheurLite = { id: string; prenom: string | null; nom: string | null; ville: string | null };
-type CompanyLite = { id: string; denomination: string | null; nom_complet: string | null; ville: string | null };
-type MarcheEventLite = { id: string; title: string | null; date_marche: string | null };
-type LinkedMarcheur = { id: string; community_profile_id: string; role: 'proprietaire' | 'prestataire' | 'marcheur_historique'; is_main: boolean };
-type LinkedCompany = { id: string; company_id: string; role: 'gestionnaire' | 'prestataire' | 'lecture' };
-type LinkedEvent = { id: string; marche_event_id: string };
+import PaginationControls from '@/components/admin/marche-events/PaginationControls';
+import ProprietesKpiBar from '@/components/admin/proprietes/ProprietesKpiBar';
+import ProprietesFilters from '@/components/admin/proprietes/ProprietesFilters';
+import ProprietesMapView from '@/components/admin/proprietes/ProprietesMapView';
+import type {
+  ProprieteListRow, ProprietesFilterValues, ProprietesKpiCounts, ProprietesKpiKey,
+} from '@/components/admin/proprietes/types';
+import { DEFAULT_FILTERS, formatSurface } from '@/components/admin/proprietes/types';
 
 const sb = supabase as any;
 
-const EMPTY_FORM: Partial<Propriete> = {
-  nom: '', description: '', adresse: '', ville: '', code_postal: '',
-  departement: '', region: '', latitude: null, longitude: null,
-  surface_hectares: null, photo_hero_url: '', owner_company_id: null,
-  main_walker_id: null, is_active: true,
-};
+type CompanyLite = { id: string; denomination: string | null; nom_complet: string | null };
+type MarcheurLite = { id: string; prenom: string | null; nom: string | null };
+
+type SortKey = 'nom' | 'surface_hectares' | 'created_at';
+
+const LIST_COLUMNS =
+  'id, nom, slug, is_active, ville, code_postal, departement, region, surface_hectares, latitude, longitude, owner_company_id, main_walker_id, photo_hero_url, created_at';
+
+/** Nettoie une saisie pour le mini-langage .or() de PostgREST. */
+const escapeOr = (s: string) => s.replace(/[%,()."\\]/g, ' ').replace(/\s+/g, ' ').trim();
 
 const AdminProprietes: React.FC = () => {
-  const qc = useQueryClient();
-  const [editing, setEditing] = useState<Propriete | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState<Partial<Propriete>>(EMPTY_FORM);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const { data: proprietes = [], isLoading } = useQuery({
-    queryKey: ['admin-proprietes'],
-    queryFn: async () => {
-      const { data, error } = await sb.from('proprietes').select('*').order('nom');
-      if (error) throw error;
-      return data as Propriete[];
-    },
-  });
+  // ---- État piloté par l'URL (filtres partageables) -----------------------
+  const filters: ProprietesFilterValues = {
+    q: searchParams.get('q') ?? '',
+    statut: (searchParams.get('statut') as ProprietesFilterValues['statut']) || 'all',
+    region: searchParams.get('region') || 'all',
+    dept: searchParams.get('dept') || 'all',
+    entreprise: searchParams.get('entreprise') || 'all',
+    gps: (searchParams.get('gps') as ProprietesFilterValues['gps']) || 'all',
+    sondes: (searchParams.get('sondes') as ProprietesFilterValues['sondes']) || 'all',
+  };
+  const vue = searchParams.get('vue') === 'carte' ? 'carte' : 'table';
+  const tri: SortKey = (searchParams.get('tri') as SortKey) || 'nom';
+  const dir: 'asc' | 'desc' = searchParams.get('dir') === 'desc' ? 'desc' : 'asc';
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+  const pageSize = Math.max(10, parseInt(searchParams.get('ps') || '20', 10) || 20);
 
-  const { data: marcheurs = [] } = useQuery({
-    queryKey: ['admin-proprietes-marcheurs'],
-    queryFn: async () => {
-      const { data, error } = await sb
-        .from('community_profiles')
-        .select('id, prenom, nom, ville')
-        .not('user_id', 'is', null)
-        .order('prenom', { ascending: true })
-        .limit(2000);
-      if (error) throw error;
-      return data as MarcheurLite[];
-    },
-  });
+  const updateParams = (patch: Record<string, string | null>, resetPage = true) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([k, v]) => {
+      if (v == null || v === '' || v === 'all') next.delete(k);
+      else next.set(k, v);
+    });
+    if (resetPage) next.delete('page');
+    setSearchParams(next, { replace: true });
+  };
 
-  const [marcheurSearch, setMarcheurSearch] = useState('');
-  const [companySearch, setCompanySearch] = useState('');
-  const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  const setFilters = (v: ProprietesFilterValues) =>
+    updateParams({
+      q: v.q || null,
+      statut: v.statut,
+      region: v.region,
+      dept: v.dept,
+      entreprise: v.entreprise,
+      gps: v.gps,
+      sondes: v.sondes,
+    });
 
-  const { data: companies = [] } = useQuery({
+  // ---- Référentiels --------------------------------------------------------
+  const { data: companies = [] } = useQuery<CompanyLite[]>({
     queryKey: ['admin-proprietes-companies'],
     queryFn: async () => {
       const { data, error } = await sb
         .from('crm_companies')
-        .select('id, denomination, nom_complet, ville')
+        .select('id, denomination, nom_complet')
         .order('denomination')
         .limit(2000);
       if (error) throw error;
-      return data as CompanyLite[];
+      return (data ?? []) as CompanyLite[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 
-  const { data: events = [] } = useQuery({
-    queryKey: ['admin-proprietes-events'],
+  const { data: marcheurs = [] } = useQuery<MarcheurLite[]>({
+    queryKey: ['admin-proprietes-marcheurs'],
     queryFn: async () => {
       const { data, error } = await sb
-        .from('marche_events')
-        .select('id, title, date_marche')
-        .order('date_marche', { ascending: false })
-        .limit(500);
+        .from('community_profiles')
+        .select('id, prenom, nom')
+        .not('user_id', 'is', null)
+        .order('prenom', { ascending: true })
+        .limit(2000);
       if (error) throw error;
-      return data as MarcheEventLite[];
+      return (data ?? []) as MarcheurLite[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 
-  const [eventSearch, setEventSearch] = useState('');
-
-  const activeId = editing?.id;
-
-  const { data: linkedMarcheurs = [] } = useQuery({
-    queryKey: ['propriete-marcheurs', activeId],
-    enabled: !!activeId,
+  // ---- Sondes IoT par propriété (table petite, chargée entièrement) -------
+  const { data: sondesRows = [] } = useQuery<{ propriete_id: string | null }[]>({
+    queryKey: ['admin-proprietes-sondes'],
     queryFn: async () => {
       const { data, error } = await sb
-        .from('propriete_marcheurs')
-        .select('id, community_profile_id, role, is_main')
-        .eq('propriete_id', activeId);
+        .from('iot_capteurs')
+        .select('propriete_id')
+        .not('propriete_id', 'is', null)
+        .limit(5000);
       if (error) throw error;
-      return data as LinkedMarcheur[];
+      return (data ?? []) as { propriete_id: string | null }[];
     },
+    staleTime: 60 * 1000,
   });
 
-  const { data: linkedCompanies = [] } = useQuery({
-    queryKey: ['propriete-companies', activeId],
-    enabled: !!activeId,
+  const sondesCount = useMemo(() => {
+    const map: Record<string, number> = {};
+    sondesRows.forEach((r) => {
+      if (r.propriete_id) map[r.propriete_id] = (map[r.propriete_id] ?? 0) + 1;
+    });
+    return map;
+  }, [sondesRows]);
+  const idsAvecSondes = useMemo(() => Object.keys(sondesCount).sort(), [sondesCount]);
+
+  // ---- Facettes région / département (dérivées des données réelles) -------
+  const { data: facetRows = [] } = useQuery<{ region: string | null; departement: string | null }[]>({
+    queryKey: ['admin-proprietes-facets'],
     queryFn: async () => {
-      const { data, error } = await sb
-        .from('propriete_companies')
-        .select('id, company_id, role')
-        .eq('propriete_id', activeId);
+      const { data, error } = await sb.from('proprietes').select('region, departement').limit(5000);
       if (error) throw error;
-      return data as LinkedCompany[];
+      return (data ?? []) as { region: string | null; departement: string | null }[];
     },
+    staleTime: 5 * 60 * 1000,
   });
+  const regions = useMemo(
+    () => [...new Set(facetRows.map((r) => r.region).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'fr')),
+    [facetRows],
+  );
+  const departements = useMemo(
+    () => [...new Set(facetRows.map((r) => r.departement).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'fr')),
+    [facetRows],
+  );
 
-  const { data: linkedEvents = [] } = useQuery({
-    queryKey: ['propriete-events', activeId],
-    enabled: !!activeId,
+  // ---- KPI globaux (comptes exacts, requêtes HEAD légères) ----------------
+  const { data: kpis } = useQuery<ProprietesKpiCounts>({
+    queryKey: ['admin-proprietes-kpis', idsAvecSondes.length],
     queryFn: async () => {
-      const { data, error } = await sb
-        .from('propriete_marche_events')
-        .select('id, marche_event_id')
-        .eq('propriete_id', activeId);
-      if (error) throw error;
-      return data as LinkedEvent[];
-    },
-  });
-
-  const marcheurById = useMemo(() => Object.fromEntries(marcheurs.map(m => [m.id, m])), [marcheurs]);
-  const companyById = useMemo(() => Object.fromEntries(companies.map(c => [c.id, c])), [companies]);
-  const eventById = useMemo(() => Object.fromEntries(events.map(e => [e.id, e])), [events]);
-
-  const startCreate = () => {
-    setForm(EMPTY_FORM);
-    setEditing(null);
-    setCreating(true);
-  };
-
-  const startEdit = (p: Propriete) => {
-    setForm(p);
-    setEditing(p);
-    setCreating(false);
-  };
-
-  const closeSheet = () => {
-    setEditing(null);
-    setCreating(false);
-    setForm(EMPTY_FORM);
-  };
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (!form.nom?.trim()) throw new Error('Le nom est obligatoire');
-      const payload: any = {
-        nom: form.nom?.trim(),
-        description: form.description || null,
-        adresse: form.adresse || null,
-        ville: form.ville || null,
-        code_postal: form.code_postal || null,
-        departement: form.departement || null,
-        region: form.region || null,
-        latitude: form.latitude ?? null,
-        longitude: form.longitude ?? null,
-        surface_hectares: form.surface_hectares ?? null,
-        photo_hero_url: form.photo_hero_url || null,
-        owner_company_id: form.owner_company_id || null,
-        main_walker_id: form.main_walker_id || null,
-        is_active: form.is_active ?? true,
+      const head = async (build: (q: any) => any) => {
+        const { count, error } = await build(sb.from('proprietes').select('*', { count: 'exact', head: true }));
+        if (error) throw error;
+        return count ?? 0;
       };
-      if (editing?.id) {
-        const { data, error } = await sb.from('proprietes').update(payload).eq('id', editing.id).select().single();
-        if (error) throw error;
-        return data as Propriete;
-      } else {
-        const { data, error } = await sb.from('proprietes').insert(payload).select().single();
-        if (error) throw error;
-        return data as Propriete;
-      }
+      const [total, actives, geolocalisees] = await Promise.all([
+        head((q) => q),
+        head((q) => q.eq('is_active', true)),
+        head((q) => q.not('latitude', 'is', null).not('longitude', 'is', null)),
+      ]);
+      return {
+        total,
+        actives,
+        archivees: total - actives,
+        geolocalisees,
+        avecSondes: idsAvecSondes.length,
+      };
     },
-    onSuccess: (data) => {
-      toast.success(editing ? 'Propriété mise à jour' : 'Propriété créée');
-      qc.invalidateQueries({ queryKey: ['admin-proprietes'] });
-      qc.invalidateQueries({ queryKey: ['propriete-marcheurs', data.id] });
-      setEditing(data);
-      setCreating(false);
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Échec de la sauvegarde'),
+    staleTime: 60 * 1000,
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await sb.from('proprietes').delete().eq('id', id);
+  // ---- Application des filtres ---------------------------------------------
+  const applyFilters = (query: any): any => {
+    let q = query;
+    const search = escapeOr(filters.q);
+    if (search) {
+      q = q.or(`nom.ilike.%${search}%,ville.ilike.%${search}%,code_postal.ilike.%${search}%`);
+    }
+    if (filters.statut !== 'all') q = q.eq('is_active', filters.statut === 'actives');
+    if (filters.region !== 'all') q = q.eq('region', filters.region);
+    if (filters.dept !== 'all') q = q.eq('departement', filters.dept);
+    if (filters.entreprise !== 'all') q = q.eq('owner_company_id', filters.entreprise);
+    if (filters.gps === 'avec') q = q.not('latitude', 'is', null).not('longitude', 'is', null);
+    if (filters.gps === 'sans') q = q.or('latitude.is.null,longitude.is.null');
+    if (filters.sondes === 'avec') {
+      q = idsAvecSondes.length > 0
+        ? q.in('id', idsAvecSondes)
+        : q.eq('id', '00000000-0000-0000-0000-000000000000');
+    }
+    return q;
+  };
+
+  // ---- Liste paginée (vue Table) -------------------------------------------
+  const listQuery = useQuery<{ rows: ProprieteListRow[]; total: number }>({
+    queryKey: ['admin-proprietes-list', filters, tri, dir, page, pageSize, idsAvecSondes],
+    enabled: vue === 'table',
+    queryFn: async () => {
+      const from = (page - 1) * pageSize;
+      const { data, error, count } = await applyFilters(
+        sb.from('proprietes').select(LIST_COLUMNS, { count: 'exact' }),
+      )
+        .order(tri, { ascending: dir === 'asc', nullsFirst: false })
+        .range(from, from + pageSize - 1);
       if (error) throw error;
+      return { rows: (data ?? []) as ProprieteListRow[], total: count ?? 0 };
     },
-    onSuccess: () => {
-      toast.success('Propriété supprimée');
-      qc.invalidateQueries({ queryKey: ['admin-proprietes'] });
-      closeSheet();
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Échec de la suppression'),
+    placeholderData: (prev: { rows: ProprieteListRow[]; total: number } | undefined) => prev,
   });
 
-  // Marcheurs liés
-  const addMarcheur = useMutation({
-    mutationFn: async ({ community_profile_id, role }: { community_profile_id: string; role: LinkedMarcheur['role'] }) => {
-      const { error } = await sb.from('propriete_marcheurs').insert({
-        propriete_id: activeId, community_profile_id, role, is_main: false,
-      });
+  // ---- Ensemble filtré complet (vue Carte) ----------------------------------
+  const mapQuery = useQuery<ProprieteListRow[]>({
+    queryKey: ['admin-proprietes-map', filters, idsAvecSondes],
+    enabled: vue === 'carte',
+    queryFn: async () => {
+      const { data, error } = await applyFilters(sb.from('proprietes').select(LIST_COLUMNS))
+        .order('nom', { ascending: true })
+        .limit(1000);
       if (error) throw error;
+      return (data ?? []) as ProprieteListRow[];
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['propriete-marcheurs', activeId] }),
-    onError: (e: any) => toast.error(e?.message ?? 'Échec ajout marcheur'),
-  });
-  const removeMarcheur = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await sb.from('propriete_marcheurs').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['propriete-marcheurs', activeId] }),
-  });
-  const setMainMarcheur = useMutation({
-    mutationFn: async (link: LinkedMarcheur) => {
-      // clear previous main for this marcheur
-      await sb.from('propriete_marcheurs')
-        .update({ is_main: false })
-        .eq('community_profile_id', link.community_profile_id);
-      const { error } = await sb.from('propriete_marcheurs').update({ is_main: true }).eq('id', link.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success('Propriété principale définie');
-      qc.invalidateQueries({ queryKey: ['propriete-marcheurs', activeId] });
-    },
-    onError: (e: any) => toast.error(e?.message ?? 'Échec'),
+    placeholderData: (prev: ProprieteListRow[] | undefined) => prev,
   });
 
-  // Entreprises liées
-  const addCompany = useMutation({
-    mutationFn: async ({ company_id, role }: { company_id: string; role: LinkedCompany['role'] }) => {
-      const { error } = await sb.from('propriete_companies').insert({
-        propriete_id: activeId, company_id, role,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['propriete-companies', activeId] }),
-    onError: (e: any) => toast.error(e?.message ?? 'Échec ajout entreprise'),
-  });
-  const removeCompany = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await sb.from('propriete_companies').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['propriete-companies', activeId] }),
-  });
+  const companyById = useMemo(() => Object.fromEntries(companies.map((c) => [c.id, c])), [companies]);
+  const marcheurById = useMemo(() => Object.fromEntries(marcheurs.map((m) => [m.id, m])), [marcheurs]);
 
-  // Événements liés
-  const addEvent = useMutation({
-    mutationFn: async (marche_event_id: string) => {
-      const { error } = await sb.from('propriete_marche_events').insert({
-        propriete_id: activeId, marche_event_id,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['propriete-events', activeId] }),
-    onError: (e: any) => toast.error(e?.message ?? 'Échec ajout événement'),
-  });
-  const removeEvent = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await sb.from('propriete_marche_events').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['propriete-events', activeId] }),
-  });
+  const activeKpi: ProprietesKpiKey | null =
+    filters.statut === 'actives'
+      ? 'actives'
+      : filters.statut === 'archivees'
+        ? 'archivees'
+        : filters.sondes === 'avec'
+          ? 'sondes'
+          : filters.gps === 'avec'
+            ? 'geo'
+            : null;
 
-  const [marcheurToAdd, setMarcheurToAdd] = useState<string>('');
-  const [marcheurRoleToAdd, setMarcheurRoleToAdd] = useState<LinkedMarcheur['role']>('proprietaire');
-  const [companyToAdd, setCompanyToAdd] = useState<string>('');
-  const [companyRoleToAdd, setCompanyRoleToAdd] = useState<LinkedCompany['role']>('gestionnaire');
-  const [eventToAdd, setEventToAdd] = useState<string>('');
+  const onKpiToggle = (k: ProprietesKpiKey) => {
+    if (k === 'actives') updateParams({ statut: filters.statut === 'actives' ? null : 'actives' });
+    if (k === 'archivees') updateParams({ statut: filters.statut === 'archivees' ? null : 'archivees' });
+    if (k === 'geo') updateParams({ gps: filters.gps === 'avec' ? null : 'avec' });
+    if (k === 'sondes') updateParams({ sondes: filters.sondes === 'avec' ? null : 'avec' });
+  };
 
-  const sheetOpen = !!editing || creating;
+  const toggleSort = (key: SortKey) => {
+    if (tri === key) updateParams({ dir: dir === 'asc' ? 'desc' : 'asc' }, false);
+    else updateParams({ tri: key, dir: 'asc' });
+  };
+
+  const SortableHead: React.FC<{ k: SortKey; children: React.ReactNode; className?: string }> = ({ k, children, className }) => (
+    <TableHead className={className}>
+      <button
+        type="button"
+        onClick={() => toggleSort(k)}
+        className="inline-flex items-center gap-1 font-medium hover:text-foreground transition-colors"
+      >
+        {children}
+        {tri === k
+          ? (dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)
+          : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+      </button>
+    </TableHead>
+  );
+
+  const rows = listQuery.data?.rows ?? [];
+  const total = listQuery.data?.total ?? 0;
+  const entrepriseOptions = useMemo(
+    () => companies.map((c) => ({ id: c.id, nom: c.denomination ?? c.nom_complet ?? '(sans nom)' })),
+    [companies],
+  );
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-6 flex items-center justify-between gap-2">
           <Link to="/access-admin-gb2025">
-            <Button variant="outline" size="sm"><ArrowLeft className="h-4 w-4 mr-2" />Retour Admin</Button>
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="mr-2 h-4 w-4" />Retour Admin
+            </Button>
           </Link>
-          <Button onClick={startCreate}><Plus className="h-4 w-4 mr-2" />Nouvelle propriété</Button>
+          <Button onClick={() => navigate('/admin/proprietes/nouvelle')}>
+            <Plus className="mr-2 h-4 w-4" />Nouvelle propriété
+          </Button>
         </div>
 
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold flex items-center justify-center gap-3">
+        <div className="mb-6 text-center">
+          <h1 className="flex items-center justify-center gap-3 text-3xl font-bold">
             <Trees className="h-8 w-8 text-emerald-600" />
             Propriétés
           </h1>
-          <p className="text-muted-foreground mt-2 text-center">
-            Jardins, Vignobles, Exploitations regroupant plusieurs événements Marches du Vivant
+          <p className="mt-2 text-muted-foreground">
+            Jardins, vignobles et exploitations — console de gestion Fréquence Jardin
           </p>
         </div>
 
-        <Card className="p-4">
-          {isLoading ? (
-            <p className="text-muted-foreground py-8 text-center">Chargement…</p>
-          ) : proprietes.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
-              <Trees className="h-12 w-12 mx-auto mb-3 opacity-40" />
-              Aucune propriété. Créez la première.
+        <div className="space-y-4">
+          <ProprietesKpiBar
+            counts={kpis ?? { total: 0, actives: 0, archivees: 0, geolocalisees: 0, avecSondes: 0 }}
+            active={activeKpi}
+            onToggle={onKpiToggle}
+          />
+
+          <ProprietesFilters
+            values={filters}
+            onChange={setFilters}
+            regions={regions}
+            departements={departements}
+            entreprises={entrepriseOptions}
+          />
+
+          {/* Bascule Table | Carte */}
+          <div className="flex items-center justify-between">
+            <div className="inline-flex rounded-lg border border-border bg-card p-1">
+              <button
+                type="button"
+                onClick={() => updateParams({ vue: null }, false)}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  vue === 'table' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <List className="h-3.5 w-3.5" /> Table
+              </button>
+              <button
+                type="button"
+                onClick={() => updateParams({ vue: 'carte' }, false)}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  vue === 'carte' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <MapIcon className="h-3.5 w-3.5" /> Carte
+              </button>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Lieu</TableHead>
-                  <TableHead>Surface</TableHead>
-                  <TableHead>Entreprise propriétaire</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="w-16" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {proprietes.map((p) => (
-                  <TableRow key={p.id} className="cursor-pointer" onClick={() => startEdit(p)}>
-                    <TableCell className="font-medium">{p.nom}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {[p.ville, p.code_postal].filter(Boolean).join(' · ') || '—'}
-                    </TableCell>
-                    <TableCell className="text-sm">{p.surface_hectares ? `${p.surface_hectares} ha` : '—'}</TableCell>
-                    <TableCell className="text-sm">{p.owner_company_id ? (companyById[p.owner_company_id]?.denomination ?? '—') : '—'}</TableCell>
-                    <TableCell>
-                      {p.is_active
-                        ? <Badge variant="outline" className="border-emerald-500 text-emerald-700">Active</Badge>
-                        : <Badge variant="outline">Archivée</Badge>}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); startEdit(p); }}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </Card>
-      </div>
-
-      <Sheet open={sheetOpen} onOpenChange={(v) => { if (!v) closeSheet(); }}>
-        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <Trees className="h-5 w-5 text-emerald-600" />
-              {editing ? editing.nom : 'Nouvelle propriété'}
-            </SheetTitle>
-            <SheetDescription>
-              {editing?.slug ? <span className="font-mono text-xs">/{editing.slug}</span> : 'Renseignez les informations essentielles du lieu.'}
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="space-y-6 mt-6">
-            {/* Identité */}
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Identité</h3>
-              <div>
-                <Label>Nom *</Label>
-                <Input value={form.nom ?? ''} onChange={(e) => setForm(f => ({ ...f, nom: e.target.value }))} />
-              </div>
-              <div>
-                <Label>Description</Label>
-                <Textarea rows={3} value={form.description ?? ''} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} />
-              </div>
-              <div>
-                <Label>Photo hero (URL)</Label>
-                <Input value={form.photo_hero_url ?? ''} onChange={(e) => setForm(f => ({ ...f, photo_hero_url: e.target.value }))} placeholder="https://…" />
-              </div>
-            </section>
-
-            {/* Localisation */}
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-                <MapPin className="h-4 w-4" />Localisation
-              </h3>
-              <div>
-                <Label>Adresse</Label>
-                <Input value={form.adresse ?? ''} onChange={(e) => setForm(f => ({ ...f, adresse: e.target.value }))} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>Code postal</Label><Input value={form.code_postal ?? ''} onChange={(e) => setForm(f => ({ ...f, code_postal: e.target.value }))} /></div>
-                <div><Label>Ville</Label><Input value={form.ville ?? ''} onChange={(e) => setForm(f => ({ ...f, ville: e.target.value }))} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>Département</Label><Input value={form.departement ?? ''} onChange={(e) => setForm(f => ({ ...f, departement: e.target.value }))} /></div>
-                <div><Label>Région</Label><Input value={form.region ?? ''} onChange={(e) => setForm(f => ({ ...f, region: e.target.value }))} /></div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label>Latitude</Label>
-                  <Input type="number" step="0.000001" value={form.latitude ?? ''} onChange={(e) => setForm(f => ({ ...f, latitude: e.target.value === '' ? null : Number(e.target.value) }))} />
-                </div>
-                <div>
-                  <Label>Longitude</Label>
-                  <Input type="number" step="0.000001" value={form.longitude ?? ''} onChange={(e) => setForm(f => ({ ...f, longitude: e.target.value === '' ? null : Number(e.target.value) }))} />
-                </div>
-                <div>
-                  <Label>Surface (ha)</Label>
-                  <Input type="number" step="0.001" value={form.surface_hectares ?? ''} onChange={(e) => setForm(f => ({ ...f, surface_hectares: e.target.value === '' ? null : Number(e.target.value) }))} />
-                </div>
-              </div>
-            </section>
-
-            {/* Rattachements clés */}
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Rattachements principaux</h3>
-              <div>
-                <Label className="flex items-center gap-2"><Building2 className="h-4 w-4" />Entreprise propriétaire</Label>
-                <Select
-                  value={form.owner_company_id ?? '__none__'}
-                  onValueChange={(v) => setForm(f => ({ ...f, owner_company_id: v === '__none__' ? null : v }))}
-                >
-                  <SelectTrigger><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
-                  <SelectContent className="max-h-80">
-                    <div className="p-2 sticky top-0 bg-popover z-10 border-b">
-                      <Input
-                        autoFocus
-                        placeholder="Rechercher…"
-                        value={companySearch}
-                        onChange={(e) => setCompanySearch(e.target.value)}
-                        onKeyDown={(e) => e.stopPropagation()}
-                        className="h-8"
-                      />
-                    </div>
-                    <SelectItem value="__none__">— aucune —</SelectItem>
-                    {companies
-                      .filter(c => {
-                        if (!companySearch.trim()) return true;
-                        const q = norm(companySearch);
-                        return norm(`${c.denomination ?? ''} ${c.nom_complet ?? ''} ${c.ville ?? ''}`).includes(q);
-                      })
-                      .map(c => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.denomination ?? c.nom_complet ?? '(sans nom)'}{c.ville ? ` · ${c.ville}` : ''}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="flex items-center gap-2"><Users className="h-4 w-4" />Marcheur référent</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Le marcheur référent obtient automatiquement l’accès à l’espace Propriété et peut le choisir après connexion.
-                </p>
-                <Select
-                  value={form.main_walker_id ?? '__none__'}
-                  onValueChange={(v) => setForm(f => ({ ...f, main_walker_id: v === '__none__' ? null : v }))}
-                >
-                  <SelectTrigger><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
-                  <SelectContent className="max-h-80">
-                    <div className="p-2 sticky top-0 bg-popover z-10 border-b">
-                      <Input
-                        autoFocus
-                        placeholder="Rechercher…"
-                        value={marcheurSearch}
-                        onChange={(e) => setMarcheurSearch(e.target.value)}
-                        onKeyDown={(e) => e.stopPropagation()}
-                        className="h-8"
-                      />
-                    </div>
-                    <SelectItem value="__none__">— aucun —</SelectItem>
-                    {marcheurs
-                      .filter(m => {
-                        if (!marcheurSearch.trim()) return true;
-                        const q = norm(marcheurSearch);
-                        return norm(`${m.prenom ?? ''} ${m.nom ?? ''} ${m.ville ?? ''}`).includes(q);
-                      })
-                      .map(m => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.prenom ?? ''} {m.nom ?? ''}{m.ville ? ` · ${m.ville}` : ''}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </section>
-
-            <div className="flex items-center gap-2 pt-2 border-t">
-              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-                <Save className="h-4 w-4 mr-2" />
-                {editing ? 'Enregistrer' : 'Créer la propriété'}
-              </Button>
-              {editing && (
-                <Button variant="destructive" onClick={() => {
-                  if (confirm(`Supprimer la propriété "${editing.nom}" ?`)) deleteMutation.mutate(editing.id);
-                }}>
-                  <Trash2 className="h-4 w-4 mr-2" />Supprimer
-                </Button>
-              )}
+            <div className="text-xs text-muted-foreground tabular-nums">
+              {vue === 'table' ? `${total} propriété${total > 1 ? 's' : ''}` : `${(mapQuery.data ?? []).length} propriété${(mapQuery.data ?? []).length > 1 ? 's' : ''}`}
             </div>
-
-            {/* Sections liaisons — visibles seulement après création */}
-            {editing && (
-              <>
-                {/* Marcheurs rattachés */}
-                <section className="space-y-3 pt-4 border-t">
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-                    <Users className="h-4 w-4" />Marcheurs rattachés
-                  </h3>
-                  <div className="flex flex-wrap gap-2 items-end">
-                    <div className="flex-1 min-w-[180px]">
-                      <Label className="text-xs">Marcheur</Label>
-                      <Select value={marcheurToAdd} onValueChange={setMarcheurToAdd}>
-                        <SelectTrigger><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
-                        <SelectContent className="max-h-80">
-                          <div className="p-2 sticky top-0 bg-popover z-10 border-b">
-                            <Input
-                              autoFocus
-                              placeholder="Rechercher…"
-                              value={marcheurSearch}
-                              onChange={(e) => setMarcheurSearch(e.target.value)}
-                              onKeyDown={(e) => e.stopPropagation()}
-                              className="h-8"
-                            />
-                          </div>
-                          {marcheurs
-                            .filter(m => !linkedMarcheurs.some(l => l.community_profile_id === m.id))
-                            .filter(m => {
-                              if (!marcheurSearch.trim()) return true;
-                              const q = norm(marcheurSearch);
-                              return norm(`${m.prenom ?? ''} ${m.nom ?? ''} ${m.ville ?? ''}`).includes(q);
-                            })
-                            .map(m => (
-                              <SelectItem key={m.id} value={m.id}>
-                                {m.prenom ?? ''} {m.nom ?? ''}{m.ville ? ` · ${m.ville}` : ''}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Rôle</Label>
-                      <Select value={marcheurRoleToAdd} onValueChange={(v) => setMarcheurRoleToAdd(v as any)}>
-                        <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="proprietaire">Propriétaire</SelectItem>
-                          <SelectItem value="prestataire">Prestataire</SelectItem>
-                          <SelectItem value="marcheur_historique">Marcheur</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button size="sm" disabled={!marcheurToAdd} onClick={() => {
-                      addMarcheur.mutate({ community_profile_id: marcheurToAdd, role: marcheurRoleToAdd });
-                      setMarcheurToAdd('');
-                    }}><Plus className="h-4 w-4" /></Button>
-                  </div>
-                  <ul className="divide-y border rounded-md">
-                    {linkedMarcheurs.length === 0 && <li className="p-3 text-sm text-muted-foreground">Aucun marcheur rattaché.</li>}
-                    {linkedMarcheurs.map(l => {
-                      const m = marcheurById[l.community_profile_id];
-                      return (
-                        <li key={l.id} className="flex items-center justify-between gap-2 p-2 text-sm">
-                          <div className="flex items-center gap-2">
-                            {l.is_main && <Star className="h-4 w-4 text-amber-500 fill-amber-400" />}
-                            <span>{m ? `${m.prenom ?? ''} ${m.nom ?? ''}`.trim() : '(inconnu)'}</span>
-                            <Badge variant="outline" className="text-xs">{l.role}</Badge>
-                          </div>
-                          <div className="flex gap-1">
-                            {!l.is_main && (
-                              <Button size="sm" variant="ghost" onClick={() => setMainMarcheur.mutate(l)} title="Définir comme propriété principale de ce marcheur">
-                                <Star className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button size="sm" variant="ghost" onClick={() => removeMarcheur.mutate(l.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-
-                {/* Entreprises rattachées */}
-                <section className="space-y-3 pt-4 border-t">
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />Entreprises rattachées
-                  </h3>
-                  <div className="flex flex-wrap gap-2 items-end">
-                    <div className="flex-1 min-w-[180px]">
-                      <Label className="text-xs">Entreprise</Label>
-                      <Select value={companyToAdd} onValueChange={setCompanyToAdd}>
-                        <SelectTrigger><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
-                        <SelectContent className="max-h-80">
-                          <div className="p-2 sticky top-0 bg-popover z-10 border-b">
-                            <Input
-                              autoFocus
-                              placeholder="Rechercher…"
-                              value={companySearch}
-                              onChange={(e) => setCompanySearch(e.target.value)}
-                              onKeyDown={(e) => e.stopPropagation()}
-                              className="h-8"
-                            />
-                          </div>
-                          {companies
-                            .filter(c => !linkedCompanies.some(l => l.company_id === c.id))
-                            .filter(c => {
-                              if (!companySearch.trim()) return true;
-                              const q = norm(companySearch);
-                              return norm(`${c.denomination ?? ''} ${c.nom_complet ?? ''} ${c.ville ?? ''}`).includes(q);
-                            })
-                            .map(c => (
-                              <SelectItem key={c.id} value={c.id}>
-                                {c.denomination ?? c.nom_complet ?? '(sans nom)'}{c.ville ? ` · ${c.ville}` : ''}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Rôle</Label>
-                      <Select value={companyRoleToAdd} onValueChange={(v) => setCompanyRoleToAdd(v as any)}>
-                        <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="gestionnaire">Gestionnaire</SelectItem>
-                          <SelectItem value="prestataire">Prestataire</SelectItem>
-                          <SelectItem value="lecture">Lecture seule</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button size="sm" disabled={!companyToAdd} onClick={() => {
-                      addCompany.mutate({ company_id: companyToAdd, role: companyRoleToAdd });
-                      setCompanyToAdd('');
-                    }}><Plus className="h-4 w-4" /></Button>
-                  </div>
-                  <ul className="divide-y border rounded-md">
-                    {linkedCompanies.length === 0 && <li className="p-3 text-sm text-muted-foreground">Aucune entreprise rattachée.</li>}
-                    {linkedCompanies.map(l => {
-                      const c = companyById[l.company_id];
-                      return (
-                        <li key={l.id} className="flex items-center justify-between gap-2 p-2 text-sm">
-                          <div className="flex items-center gap-2">
-                            <span>{c?.denomination ?? c?.nom_complet ?? '(inconnu)'}</span>
-                            <Badge variant="outline" className="text-xs">{l.role}</Badge>
-                          </div>
-                          <Button size="sm" variant="ghost" onClick={() => removeCompany.mutate(l.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-
-                {/* Événements rattachés */}
-                <section className="space-y-3 pt-4 border-t pb-6">
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4" />Événements Marches du Vivant
-                  </h3>
-                  <div className="flex flex-wrap gap-2 items-end">
-                    <div className="flex-1 min-w-[220px]">
-                      <Select value={eventToAdd} onValueChange={setEventToAdd}>
-                        <SelectTrigger><SelectValue placeholder="Sélectionner un événement…" /></SelectTrigger>
-                        <SelectContent className="max-h-80">
-                          <div className="p-2 sticky top-0 bg-popover z-10 border-b">
-                            <Input
-                              autoFocus
-                              placeholder="Rechercher…"
-                              value={eventSearch}
-                              onChange={(e) => setEventSearch(e.target.value)}
-                              onKeyDown={(e) => e.stopPropagation()}
-                              className="h-8"
-                            />
-                          </div>
-                          {events
-                            .filter(e => !linkedEvents.some(l => l.marche_event_id === e.id))
-                            .filter(e => {
-                              if (!eventSearch.trim()) return true;
-                              return norm(e.title ?? '').includes(norm(eventSearch));
-                            })
-                            .map(e => (
-                              <SelectItem key={e.id} value={e.id}>
-                                {e.title ?? '(sans titre)'}{e.date_marche ? ` · ${new Date(e.date_marche).toLocaleDateString('fr-FR')}` : ''}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button size="sm" disabled={!eventToAdd} onClick={() => {
-                      addEvent.mutate(eventToAdd);
-                      setEventToAdd('');
-                    }}><Plus className="h-4 w-4" /></Button>
-                  </div>
-                  <ul className="divide-y border rounded-md">
-                    {linkedEvents.length === 0 && <li className="p-3 text-sm text-muted-foreground">Aucun événement rattaché.</li>}
-                    {linkedEvents.map(l => {
-                      const e = eventById[l.marche_event_id];
-                      return (
-                        <li key={l.id} className="flex items-center justify-between gap-2 p-2 text-sm">
-                          <span>{e?.title ?? '(inconnu)'}{e?.date_marche ? ` · ${new Date(e.date_marche).toLocaleDateString('fr-FR')}` : ''}</span>
-                          <Button size="sm" variant="ghost" onClick={() => removeEvent.mutate(l.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              </>
-            )}
           </div>
-        </SheetContent>
-      </Sheet>
+
+          {vue === 'carte' ? (
+            mapQuery.isLoading && !mapQuery.data ? (
+              <Card className="p-8 text-center text-muted-foreground">Chargement de la carte…</Card>
+            ) : (
+              <ProprietesMapView rows={mapQuery.data ?? []} sondesCount={sondesCount} />
+            )
+          ) : (
+            <Card className="overflow-hidden">
+              {listQuery.isLoading && !listQuery.data ? (
+                <p className="py-8 text-center text-muted-foreground">Chargement…</p>
+              ) : rows.length === 0 ? (
+                <div className="py-12 text-center text-muted-foreground">
+                  <Trees className="mx-auto mb-3 h-12 w-12 opacity-40" />
+                  {JSON.stringify(filters) === JSON.stringify(DEFAULT_FILTERS)
+                    ? 'Aucune propriété. Créez la première.'
+                    : 'Aucune propriété ne correspond aux filtres.'}
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <SortableHead k="nom">Nom</SortableHead>
+                          <TableHead>Lieu</TableHead>
+                          <SortableHead k="surface_hectares">Surface</SortableHead>
+                          <TableHead>Entreprise</TableHead>
+                          <TableHead className="hidden lg:table-cell">Marcheur référent</TableHead>
+                          <TableHead className="hidden md:table-cell">Sondes</TableHead>
+                          <TableHead>Statut</TableHead>
+                          <SortableHead k="created_at" className="hidden xl:table-cell">Création</SortableHead>
+                          <TableHead className="w-10" />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rows.map((p) => {
+                          const sondes = sondesCount[p.id] ?? 0;
+                          const referent = p.main_walker_id ? marcheurById[p.main_walker_id] : null;
+                          return (
+                            <TableRow
+                              key={p.id}
+                              className="cursor-pointer"
+                              onClick={() => navigate(`/admin/proprietes/${p.id}`)}
+                            >
+                              <TableCell>
+                                <div className="font-medium">{p.nom}</div>
+                                {p.slug && <div className="font-mono text-[11px] text-muted-foreground">/{p.slug}</div>}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {[p.code_postal, p.ville].filter(Boolean).join(' ') || '—'}
+                                {p.departement && <span className="hidden sm:inline"> · {p.departement}</span>}
+                              </TableCell>
+                              <TableCell className="text-sm">{formatSurface(p.surface_hectares)}</TableCell>
+                              <TableCell className="text-sm">
+                                {p.owner_company_id
+                                  ? (companyById[p.owner_company_id]?.denomination ?? companyById[p.owner_company_id]?.nom_complet ?? '—')
+                                  : '—'}
+                              </TableCell>
+                              <TableCell className="hidden text-sm lg:table-cell">
+                                {referent ? `${referent.prenom ?? ''} ${referent.nom ?? ''}`.trim() : '—'}
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                {sondes > 0 ? (
+                                  <Badge variant="outline" className="gap-1 text-xs">
+                                    <RadioTower className="h-3 w-3" />
+                                    {sondes}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {p.is_active ? (
+                                  <Badge variant="outline" className="border-emerald-500 text-emerald-700">Active</Badge>
+                                ) : (
+                                  <Badge variant="outline">Archivée</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="hidden text-xs text-muted-foreground xl:table-cell">
+                                {new Date(p.created_at).toLocaleDateString('fr-FR')}
+                              </TableCell>
+                              <TableCell>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="px-3">
+                    <PaginationControls
+                      page={page}
+                      pageSize={pageSize}
+                      total={total}
+                      onPageChange={(p) => updateParams({ page: String(p) }, false)}
+                      onPageSizeChange={(s) => updateParams({ ps: String(s) })}
+                    />
+                  </div>
+                </>
+              )}
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
