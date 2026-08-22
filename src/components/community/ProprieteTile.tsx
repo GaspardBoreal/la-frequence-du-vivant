@@ -1,11 +1,17 @@
 import { useMemo, useState } from 'react';
-import { TreePine, Sparkles } from 'lucide-react';
+import { TreePine, Sparkles, Radio } from 'lucide-react';
 import { useProprieteHeroPhotos } from '@/hooks/propriete/useProprieteHeroPhotos';
 import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
+
+interface SondesBadge {
+  actives: number;
+  maintenance?: number;
+}
 
 interface Props {
   propriete: ProprieteAccess;
   size?: number;
+  sondes?: SondesBadge;
 }
 
 /**
@@ -13,7 +19,7 @@ interface Props {
  * Cascade robuste : photo hero → 1re photo dérivée (events liés) → monogramme illustré.
  * onError sur chaque source pour ne jamais laisser un carré cassé.
  */
-export function ProprieteTile({ propriete: p, size = 64 }: Props) {
+export function ProprieteTile({ propriete: p, size = 64, sondes }: Props) {
   const [heroFailed, setHeroFailed] = useState(false);
   const { data: photos } = useProprieteHeroPhotos(p.id, null);
 
@@ -55,6 +61,22 @@ export function ProprieteTile({ propriete: p, size = 64 }: Props) {
   }, [p.nom]);
 
   const style: React.CSSProperties = { width: size, height: size };
+  const showSondesBadge = (sondes?.actives ?? 0) > 0;
+
+  const badge = showSondesBadge ? (
+    <div
+      className="absolute -top-1.5 -right-1.5 z-10 flex items-center gap-1 pl-1.5 pr-2 py-0.5 rounded-full text-[10px] font-bold text-white shadow-md shadow-black/30 ring-1 ring-white/30 bg-gradient-to-r from-emerald-600 to-amber-500"
+      title={`${sondes!.actives} sonde${sondes!.actives > 1 ? 's' : ''} active${sondes!.actives > 1 ? 's' : ''}${
+        (sondes?.maintenance ?? 0) > 0 ? ` · ${sondes!.maintenance} en maintenance` : ''
+      }`}
+    >
+      <span className="relative flex h-1.5 w-1.5">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-75 motion-safe:animate-ping" />
+        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
+      </span>
+      <span>{sondes!.actives}</span>
+    </div>
+  ) : null;
 
   if (showPhoto) {
     return (
@@ -62,6 +84,7 @@ export function ProprieteTile({ propriete: p, size = 64 }: Props) {
         className="relative shrink-0 rounded-2xl overflow-hidden ring-1 ring-amber-300/20 shadow-lg shadow-black/40"
         style={style}
       >
+        {badge}
         <img
           src={activePhoto!}
           alt=""
@@ -88,6 +111,7 @@ export function ProprieteTile({ propriete: p, size = 64 }: Props) {
       className="relative shrink-0 rounded-2xl overflow-hidden ring-1 ring-amber-300/30 shadow-lg shadow-black/40"
       style={{ ...style, background: gradient }}
     >
+      {badge}
       {/* Arc décoratif type feuille / colline */}
       <svg
         className="absolute inset-0 w-full h-full"
