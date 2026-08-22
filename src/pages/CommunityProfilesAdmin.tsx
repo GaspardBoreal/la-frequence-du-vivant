@@ -44,6 +44,7 @@ const CommunityProfilesAdmin: React.FC = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [adminOnly, setAdminOnly] = useState(false);
+  const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [marcheursSearch, setMarcheursSearch] = useState('');
   const [eventFilter, setEventFilter] = useState<string>('all');
   const [editing, setEditing] = useState<EditableProfile | null>(null);
@@ -216,7 +217,8 @@ const CommunityProfilesAdmin: React.FC = () => {
     const q = search.toLowerCase();
     const matchSearch = !q || `${p.prenom} ${p.nom} ${p.ville || ''}`.toLowerCase().includes(q);
     const matchAdmin = !adminOnly || adminUserIds?.has(p.user_id);
-    return matchSearch && matchAdmin;
+    const matchRole = !roleFilter || p.role === roleFilter;
+    return matchSearch && matchAdmin && matchRole;
   });
 
   const adminCount = adminUserIds?.size ?? 0;
