@@ -319,6 +319,18 @@ const CommunityProfilesAdmin: React.FC = () => {
               </div>
             )}
 
+            {roleFilter && (
+              <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-md bg-primary/10 border border-primary/30 text-sm">
+                <span className="text-foreground">
+                  Filtre actif : <strong>{roleConfig[roleFilter]?.label ?? roleFilter}</strong>
+                  {' '}· {filtered?.length ?? 0} marcheur·euse·s
+                </span>
+                <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => setRoleFilter(null)}>
+                  <X className="h-3.5 w-3.5 mr-1" />Effacer
+                </Button>
+              </div>
+            )}
+
             {adminOnly && (
               <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-md bg-primary/10 border border-primary/30 text-sm">
                 <ShieldCheck className="h-4 w-4 text-primary" />
