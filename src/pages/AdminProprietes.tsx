@@ -78,7 +78,7 @@ const AdminProprietes: React.FC = () => {
 
   // ---- Référentiels --------------------------------------------------------
   const { data: companies = [] } = useQuery<CompanyLite[]>({
-    queryKey: ['admin-proprietes-companies'],
+    queryKey: ['admin-proprietes', 'companies'],
     queryFn: async () => {
       const { data, error } = await sb
         .from('crm_companies')
@@ -92,7 +92,7 @@ const AdminProprietes: React.FC = () => {
   });
 
   const { data: marcheurs = [] } = useQuery<MarcheurLite[]>({
-    queryKey: ['admin-proprietes-marcheurs'],
+    queryKey: ['admin-proprietes', 'marcheurs'],
     queryFn: async () => {
       const { data, error } = await sb
         .from('community_profiles')
@@ -108,7 +108,7 @@ const AdminProprietes: React.FC = () => {
 
   // ---- Sondes IoT par propriété (table petite, chargée entièrement) -------
   const { data: sondesRows = [] } = useQuery<{ propriete_id: string | null }[]>({
-    queryKey: ['admin-proprietes-sondes'],
+    queryKey: ['admin-proprietes', 'sondes'],
     queryFn: async () => {
       const { data, error } = await sb
         .from('iot_capteurs')
@@ -132,7 +132,7 @@ const AdminProprietes: React.FC = () => {
 
   // ---- Facettes région / département (dérivées des données réelles) -------
   const { data: facetRows = [] } = useQuery<{ region: string | null; departement: string | null }[]>({
-    queryKey: ['admin-proprietes-facets'],
+    queryKey: ['admin-proprietes', 'facets'],
     queryFn: async () => {
       const { data, error } = await sb.from('proprietes').select('region, departement').limit(5000);
       if (error) throw error;
@@ -151,7 +151,7 @@ const AdminProprietes: React.FC = () => {
 
   // ---- KPI globaux (comptes exacts, requêtes HEAD légères) ----------------
   const { data: kpis } = useQuery<ProprietesKpiCounts>({
-    queryKey: ['admin-proprietes-kpis', idsAvecSondes.length],
+    queryKey: ['admin-proprietes', 'kpis', idsAvecSondes.length],
     queryFn: async () => {
       const head = async (build: (q: any) => any) => {
         const { count, error } = await build(sb.from('proprietes').select('*', { count: 'exact', head: true }));
@@ -197,7 +197,7 @@ const AdminProprietes: React.FC = () => {
 
   // ---- Liste paginée (vue Table) -------------------------------------------
   const listQuery = useQuery<{ rows: ProprieteListRow[]; total: number }>({
-    queryKey: ['admin-proprietes-list', filters, tri, dir, page, pageSize, idsAvecSondes],
+    queryKey: ['admin-proprietes', 'list', filters, tri, dir, page, pageSize, idsAvecSondes],
     enabled: vue === 'table',
     queryFn: async () => {
       const from = (page - 1) * pageSize;
@@ -214,7 +214,7 @@ const AdminProprietes: React.FC = () => {
 
   // ---- Ensemble filtré complet (vue Carte) ----------------------------------
   const mapQuery = useQuery<ProprieteListRow[]>({
-    queryKey: ['admin-proprietes-map', filters, idsAvecSondes],
+    queryKey: ['admin-proprietes', 'map', filters, idsAvecSondes],
     enabled: vue === 'carte',
     queryFn: async () => {
       const { data, error } = await applyFilters(sb.from('proprietes').select(LIST_COLUMNS))
