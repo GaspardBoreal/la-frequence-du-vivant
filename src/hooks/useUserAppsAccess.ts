@@ -42,7 +42,16 @@ export const useUserAppsAccess = (userId?: string) => {
     queryKey: ['user-apps-access', userId],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_user_apps_access');
-      if (error) throw error;
+      if (error) {
+        // Résilience : ne jamais bloquer l'écran de connexion si l'agrégat échoue
+        console.error('[useUserAppsAccess] RPC error', error);
+        return {
+          hasMarcheurAccess: true,
+          proprietesAccessibles: [],
+          proprietePrincipaleId: null,
+          partenairesIot: [],
+        };
+      }
       const raw = (data as any) ?? {};
       return {
         hasMarcheurAccess: !!raw.hasMarcheurAccess,
