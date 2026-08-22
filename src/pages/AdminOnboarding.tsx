@@ -379,13 +379,15 @@ const AdminOnboarding: React.FC = () => {
                 onChange={(e) => setTypeDraft({ ...typeDraft, sous_titre: e.target.value })}
               />
             </div>
-            <div>
-              <Label>Image de couverture (URL)</Label>
-              <Input
-                value={typeDraft?.image_url ?? ''}
-                onChange={(e) => setTypeDraft({ ...typeDraft, image_url: e.target.value })}
-              />
-            </div>
+            <ImageUploadField
+              label="Image de couverture"
+              value={typeDraft?.image_url ?? ''}
+              onChange={(url) => setTypeDraft({ ...typeDraft, image_url: url })}
+              buildPath={(ext) =>
+                `types/${typeDraft?.slug || slugify(typeDraft?.titre || 'sans-titre')}-${Date.now()}.${ext}`
+              }
+            />
+
             <div>
               <Label className="mb-2 block">Personae concernées</Label>
               <div className="flex flex-wrap gap-2">
