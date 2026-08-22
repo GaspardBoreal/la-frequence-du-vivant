@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { TreePine, Sparkles, Radio } from 'lucide-react';
+import { TreePine, Sparkles } from 'lucide-react';
 import { useProprieteHeroPhotos } from '@/hooks/propriete/useProprieteHeroPhotos';
 import type { ProprieteAccess } from '@/hooks/useUserAppsAccess';
 
