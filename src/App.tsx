@@ -109,6 +109,8 @@ const MarchesDuVivantExplorationMarcheur = lazyWithRetry(() => import('./pages/M
 const AdminOutilsHub = lazyWithRetry(() => import('./pages/AdminOutilsHub'));
 const AdminGpsControl = lazyWithRetry(() => import('./pages/AdminGpsControl'));
 const AdminSoilRegistryAudit = lazyWithRetry(() => import('./pages/AdminSoilRegistryAudit'));
+const AdminOnboarding = lazyWithRetry(() => import('./pages/AdminOnboarding'));
+const AdminParametrage = lazyWithRetry(() => import('./pages/AdminParametrage'));
 
 const AdminFrequences = lazyWithRetry(() => import('./pages/AdminFrequences'));
 const CommunityAffiliateLanding = lazyWithRetry(() => import('./pages/CommunityAffiliateLanding'));
