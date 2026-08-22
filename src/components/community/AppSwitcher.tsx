@@ -90,6 +90,8 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
         <div className="max-h-72 overflow-y-auto space-y-0.5">
           {proprietes.map((p: ProprieteAccess) => {
             const active = currentContext === p.slug;
+            const actives = p.capteurs_actifs ?? 0;
+            const maintenance = p.capteurs_maintenance ?? 0;
             return (
               <button
                 key={p.id}
@@ -100,7 +102,7 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
                   active && 'bg-muted/40'
                 )}
               >
-                <ProprieteTile propriete={p} size={36} />
+                <ProprieteTile propriete={p} size={36} sondes={actives > 0 ? { actives, maintenance } : undefined} />
 
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
@@ -113,6 +115,15 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({ userId, currentContext = 'mdv
                   </div>
                   <div className="text-[11px] text-muted-foreground truncate">
                     {p.ville ?? '—'} · {p.role}
+                    {actives > 0 && (
+                      <span className="ml-1.5 inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                        <Radio className="w-3 h-3" />
+                        {actives} sonde{actives > 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {maintenance > 0 && (
+                      <span className="ml-1 text-muted-foreground/70">· {maintenance} maintenance</span>
+                    )}
                   </div>
                 </div>
                 {defaultTarget === `propriete:${p.slug}` && <DefaultStar />}

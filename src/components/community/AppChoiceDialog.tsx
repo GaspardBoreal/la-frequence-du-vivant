@@ -148,26 +148,51 @@ export function AppChoiceDialog({ open, onOpenChange, prenom, proprietes, parten
           />
 
           {sortedProprietes.length > 0 && <SectionTitle>Vos jardins &amp; propriétés</SectionTitle>}
-          {sortedProprietes.map((p) => (
-            <Row
-              key={p.id}
-              target={`propriete:${p.slug}`}
-              title={p.nom}
-              subtitle={
-                <span className="inline-flex items-center gap-1">
-                  {p.ville && (
-                    <>
-                      <MapPin className="w-3 h-3 shrink-0" />
-                      {p.ville}
-                      <span className="opacity-50">·</span>
-                    </>
-                  )}
-                  {p.role}
-                </span>
-              }
-              icon={<ProprieteTile propriete={p} size={40} />}
-            />
-          ))}
+          {sortedProprietes.map((p) => {
+            const actives = p.capteurs_actifs ?? 0;
+            const maintenance = p.capteurs_maintenance ?? 0;
+            return (
+              <Row
+                key={p.id}
+                target={`propriete:${p.slug}`}
+                title={p.nom}
+                subtitle={
+                  <span className="inline-flex items-center gap-1">
+                    {p.ville && (
+                      <>
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        {p.ville}
+                        <span className="opacity-50">·</span>
+                      </>
+                    )}
+                    {p.role}
+                    {actives > 0 && (
+                      <>
+                        <span className="opacity-50">·</span>
+                        <span className="inline-flex items-center gap-1 text-emerald-200">
+                          <Radio className="w-3 h-3" />
+                          {actives} sonde{actives > 1 ? 's' : ''} active{actives > 1 ? 's' : ''}
+                        </span>
+                      </>
+                    )}
+                    {maintenance > 0 && (
+                      <span className="text-emerald-100/60">
+                        {' '}
+                        · {maintenance} en maintenance
+                      </span>
+                    )}
+                  </span>
+                }
+                icon={
+                  <ProprieteTile
+                    propriete={p}
+                    size={40}
+                    sondes={actives > 0 ? { actives, maintenance } : undefined}
+                  />
+                }
+              />
+            );
+          })}
 
           {sortedPartenaires.length > 0 && <SectionTitle>Vos espaces partenaires</SectionTitle>}
           {sortedPartenaires.map((f) => {
