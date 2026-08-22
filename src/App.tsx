@@ -450,6 +450,10 @@ function App() {
             <Route path="/adhesion" element={<Adhesion />} />
             <Route path="/admin/adhesions" element={<AdminAuth><AdhesionAdmin /></AdminAuth>} />
 
+            {/* Onboarding Fréquence Jardin */}
+            <Route path="/admin/onboarding" element={<AdminAuth><AdminOnboarding /></AdminAuth>} />
+            <Route path="/admin/parametrage" element={<AdminAuth><AdminParametrage /></AdminAuth>} />
+
             {/* Formations */}
             <Route path="/formations/isegcom-bordeaux" element={<IsegcomBordeaux />} />
 
