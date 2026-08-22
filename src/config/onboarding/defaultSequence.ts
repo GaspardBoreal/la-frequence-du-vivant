@@ -1,10 +1,3 @@
-import nourricier from '@/assets/onboarding/intention-nourricier.jpg';
-import verger from '@/assets/onboarding/intention-verger.jpg';
-import ville from '@/assets/onboarding/intention-ville.jpg';
-import beaute from '@/assets/onboarding/intention-beaute.jpg';
-import mixte from '@/assets/onboarding/intention-mixte.jpg';
-import aquatique from '@/assets/onboarding/intention-aquatique.jpg';
-import structure from '@/assets/onboarding/intention-structure.jpg';
 
 import { isBalconPersona, isEntreprise, type Persona } from './personas';
 import type { Answers, OnboardingQuestion, OnboardingSequence } from './schema';
@@ -114,13 +107,13 @@ export const DEFAULT_QUESTIONS: OnboardingQuestion[] = [
     chapter: 'Vos envies',
     accent: '--ds-verdict-oui',
     options: [
-      { value: 'nourricier', label: 'Jardin nourricier', hint: 'Légumes, herbes, récoltes', image: nourricier },
-      { value: 'verger_prairie', label: 'Verger et prairie', hint: 'Arbres fruitiers, herbes hautes', image: verger },
-      { value: 'ville_bacs', label: 'Jardin de ville en bacs', hint: 'Pots, jardinières, verticalité', image: ville },
-      { value: 'beaute', label: 'Jardin de beauté fleuri', hint: 'Floraisons, couleurs, parfums', image: beaute },
-      { value: 'mixte', label: 'Jardin mixte', hint: 'Nourricier, verger et prairie réunis', image: mixte },
-      { value: 'aquatique', label: 'Jardin d’eau', hint: 'Mare, berges, libellules', image: aquatique },
-      { value: 'structure', label: 'Jardin net et structuré', hint: 'Allées nettes, formes tenues', image: structure },
+      { value: 'nourricier', label: 'Jardin nourricier', hint: 'Légumes, herbes, récoltes' },
+      { value: 'verger_prairie', label: 'Verger et prairie', hint: 'Arbres fruitiers, herbes hautes' },
+      { value: 'ville_bacs', label: 'Jardin de ville en bacs', hint: 'Pots, jardinières, verticalité' },
+      { value: 'beaute', label: 'Jardin de beauté fleuri', hint: 'Floraisons, couleurs, parfums' },
+      { value: 'mixte', label: 'Jardin mixte', hint: 'Nourricier, verger et prairie réunis' },
+      { value: 'aquatique', label: 'Jardin d’eau', hint: 'Mare, berges, libellules' },
+      { value: 'structure', label: 'Jardin net et structuré', hint: 'Allées nettes, formes tenues' },
     ],
     variants: {
       ENTREPRISE_TERRAIN: { title: 'Quel site vous fait rêver ?', subtitle: 'L’image qui parle à vos équipes.' },
