@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Settings, Map, Sparkles, ArrowLeft, FileDown, Zap, Users, Briefcase, BarChart3, Kanban, Building2, Wrench, Heart, Radio } from 'lucide-react';
+import { Settings, Map, Sparkles, ArrowLeft, FileDown, Zap, Users, Briefcase, BarChart3, Kanban, Building2, Wrench, Heart, Radio, Sprout } from 'lucide-react';
 import ApiHealthBanner from '@/components/api-mcp/ApiHealthBanner';
 import Footer from '@/components/Footer';
 
@@ -239,6 +239,42 @@ const AdminAccess: React.FC = () => {
               <Button variant="outline" className="w-full">
                 <Heart className="h-4 w-4 mr-2" />
                 Accéder aux Adhésions
+              </Button>
+            </Link>
+          </Card>
+
+          {/* 10. Onboarding */}
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center mb-4">
+              <Sprout className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Onboarding</h2>
+            </div>
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
+              Gérer les types de jardins, les exemples de galerie
+              et les versions de la séquence d'onboarding.
+            </p>
+            <Link to="/admin/onboarding">
+              <Button variant="outline" className="w-full">
+                <Sprout className="h-4 w-4 mr-2" />
+                Accéder à l'Onboarding
+              </Button>
+            </Link>
+          </Card>
+
+          {/* 11. Paramétrage */}
+          <Card className="gaspard-card p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center mb-4">
+              <Settings className="h-8 w-8 text-accent mr-3" />
+              <h2 className="text-xl font-semibold text-foreground">Paramétrage</h2>
+            </div>
+            <p className="text-muted-foreground mb-4 min-h-[4rem]">
+              Checklist des secrets et des connexions nécessaires
+              au bon fonctionnement des services.
+            </p>
+            <Link to="/admin/parametrage">
+              <Button variant="outline" className="w-full">
+                <Settings className="h-4 w-4 mr-2" />
+                Accéder au Paramétrage
               </Button>
             </Link>
           </Card>

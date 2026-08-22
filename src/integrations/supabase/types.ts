@@ -783,6 +783,8 @@ export type Database = {
           motivation: string | null
           niveau_intimite_vivant: string | null
           nom: string
+          persona: string | null
+          persona_updated_at: string | null
           prenom: string
           public_event_consent: boolean
           recherche_prioritaire: string | null
@@ -825,6 +827,8 @@ export type Database = {
           motivation?: string | null
           niveau_intimite_vivant?: string | null
           nom: string
+          persona?: string | null
+          persona_updated_at?: string | null
           prenom: string
           public_event_consent?: boolean
           recherche_prioritaire?: string | null
@@ -867,6 +871,8 @@ export type Database = {
           motivation?: string | null
           niveau_intimite_vivant?: string | null
           nom?: string
+          persona?: string | null
+          persona_updated_at?: string | null
           prenom?: string
           public_event_consent?: boolean
           recherche_prioritaire?: string | null
@@ -6308,6 +6314,128 @@ export type Database = {
           target_key?: string
           target_kind?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      onboarding_flow_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          published_at: string | null
+          sequence: Json
+          statut: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          published_at?: string | null
+          sequence: Json
+          statut?: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          published_at?: string | null
+          sequence?: Json
+          statut?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      onboarding_garden_examples: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          position: number
+          publie: boolean
+          source_url: string | null
+          sous_titre: string | null
+          titre: string
+          type_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          position?: number
+          publie?: boolean
+          source_url?: string | null
+          sous_titre?: string | null
+          titre: string
+          type_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          position?: number
+          publie?: boolean
+          source_url?: string | null
+          sous_titre?: string | null
+          titre?: string
+          type_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_garden_examples_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_garden_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_garden_types: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          personas: string[]
+          position: number
+          slug: string
+          sous_titre: string | null
+          titre: string
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          personas?: string[]
+          position?: number
+          slug: string
+          sous_titre?: string | null
+          titre: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          personas?: string[]
+          position?: number
+          slug?: string
+          sous_titre?: string | null
+          titre?: string
+          updated_at?: string
+          visible?: boolean
         }
         Relationships: []
       }

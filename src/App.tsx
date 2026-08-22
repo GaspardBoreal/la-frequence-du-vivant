@@ -109,6 +109,8 @@ const MarchesDuVivantExplorationMarcheur = lazyWithRetry(() => import('./pages/M
 const AdminOutilsHub = lazyWithRetry(() => import('./pages/AdminOutilsHub'));
 const AdminGpsControl = lazyWithRetry(() => import('./pages/AdminGpsControl'));
 const AdminSoilRegistryAudit = lazyWithRetry(() => import('./pages/AdminSoilRegistryAudit'));
+const AdminOnboarding = lazyWithRetry(() => import('./pages/AdminOnboarding'));
+const AdminParametrage = lazyWithRetry(() => import('./pages/AdminParametrage'));
 
 const AdminFrequences = lazyWithRetry(() => import('./pages/AdminFrequences'));
 const CommunityAffiliateLanding = lazyWithRetry(() => import('./pages/CommunityAffiliateLanding'));
@@ -449,6 +451,10 @@ function App() {
             {/* Adhésion association */}
             <Route path="/adhesion" element={<Adhesion />} />
             <Route path="/admin/adhesions" element={<AdminAuth><AdhesionAdmin /></AdminAuth>} />
+
+            {/* Onboarding Fréquence Jardin */}
+            <Route path="/admin/onboarding" element={<AdminAuth><AdminOnboarding /></AdminAuth>} />
+            <Route path="/admin/parametrage" element={<AdminAuth><AdminParametrage /></AdminAuth>} />
 
             {/* Formations */}
             <Route path="/formations/isegcom-bordeaux" element={<IsegcomBordeaux />} />
