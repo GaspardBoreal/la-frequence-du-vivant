@@ -133,3 +133,7 @@ verify_jwt = false
 
 [functions.public-case-deviat]
 verify_jwt = false
+
+# Custom auth email hook — routes FJ vs LFDV branded emails via Resend
+[functions.auth-email-hook]
+verify_jwt = false
