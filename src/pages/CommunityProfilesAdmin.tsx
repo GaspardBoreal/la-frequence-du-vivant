@@ -266,20 +266,40 @@ const CommunityProfilesAdmin: React.FC = () => {
           <TabsContent value="communaute">
             {profiles && (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-3 mb-6">
-                <Card className="p-3 text-center">
+                <button
+                  type="button"
+                  onClick={() => { setRoleFilter(null); setAdminOnly(false); }}
+                  className={`p-3 text-center rounded-lg border transition-all ${
+                    !roleFilter && !adminOnly
+                      ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                      : 'border-border bg-card hover:border-primary/40 hover:bg-primary/5'
+                  }`}
+                  title="Afficher tous les profils"
+                >
                   <Users className="h-5 w-5 mx-auto mb-1 text-primary" />
                   <p className="text-2xl font-bold text-foreground">{profiles.length}</p>
                   <p className="text-xs text-muted-foreground">Total</p>
-                </Card>
+                </button>
                 {Object.entries(roleConfig).map(([key, config]) => {
                   const count = profiles.filter(p => p.role === key).length;
                   const Icon = config.icon;
+                  const active = roleFilter === key;
                   return (
-                    <Card key={key} className="p-3 text-center">
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setRoleFilter(active ? null : key)}
+                      className={`p-3 text-center rounded-lg border transition-all ${
+                        active
+                          ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                          : 'border-border bg-card hover:border-primary/40 hover:bg-primary/5'
+                      }`}
+                      title={active ? 'Cliquer pour retirer le filtre' : `Filtrer sur « ${config.label} »`}
+                    >
                       <Icon className={`h-5 w-5 mx-auto mb-1 ${config.color}`} />
                       <p className="text-2xl font-bold text-foreground">{count}</p>
                       <p className="text-xs text-muted-foreground">{config.label}</p>
-                    </Card>
+                    </button>
                   );
                 })}
                 <button
