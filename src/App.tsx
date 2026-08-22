@@ -96,6 +96,7 @@ const MarcheEventDetail = lazyWithRetry(() => import('./pages/MarcheEventDetail'
 const CommunityProfilesAdmin = lazyWithRetry(() => import('./pages/CommunityProfilesAdmin'));
 const OrganisateursAdmin = lazyWithRetry(() => import('./pages/OrganisateursAdmin'));
 const AdminProprietes = lazyWithRetry(() => import('./pages/AdminProprietes'));
+const AdminProprieteFiche = lazyWithRetry(() => import('./pages/AdminProprieteFiche'));
 const AdminIot = lazyWithRetry(() => import('./pages/AdminIot'));
 const AdminRoadmap = lazyWithRetry(() => import('./pages/AdminRoadmap'));
 const RoadmapPublic = lazyWithRetry(() => import('./pages/RoadmapPublic'));
