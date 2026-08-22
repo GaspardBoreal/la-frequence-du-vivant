@@ -9,6 +9,12 @@ export interface ProprieteAccess {
   photo_hero_url: string | null;
   role: string;
   is_main: boolean;
+  /** Nombre total de sondes liées à la propriété. */
+  capteurs_count?: number;
+  /** Sondes en service et actives (hors maintenance). */
+  capteurs_actifs?: number;
+  /** Sondes déclarées en maintenance. */
+  capteurs_maintenance?: number;
 }
 
 /** Fabricant de sondes dont l'utilisateur est partenaire habilité (ou admin). */
