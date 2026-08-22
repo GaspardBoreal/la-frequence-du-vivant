@@ -277,7 +277,10 @@ const AdminProprieteFiche: React.FC = () => {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['propriete-marcheurs', activeId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['propriete-marcheurs', activeId] });
+      qc.invalidateQueries({ queryKey: ['admin-proprietes'] });
+    },
     onError: (e: any) => toast.error(e?.message ?? 'Échec ajout marcheur'),
   });
   const removeMarcheur = useMutation({
@@ -285,7 +288,10 @@ const AdminProprieteFiche: React.FC = () => {
       const { error } = await sb.from('propriete_marcheurs').delete().eq('id', linkId);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['propriete-marcheurs', activeId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['propriete-marcheurs', activeId] });
+      qc.invalidateQueries({ queryKey: ['admin-proprietes'] });
+    },
   });
   const setMainMarcheur = useMutation({
     mutationFn: async (link: LinkedMarcheur) => {
@@ -298,6 +304,7 @@ const AdminProprieteFiche: React.FC = () => {
     onSuccess: () => {
       toast.success('Propriété principale définie');
       qc.invalidateQueries({ queryKey: ['propriete-marcheurs', activeId] });
+      qc.invalidateQueries({ queryKey: ['admin-proprietes'] });
     },
     onError: (e: any) => toast.error(e?.message ?? 'Échec'),
   });
@@ -309,7 +316,10 @@ const AdminProprieteFiche: React.FC = () => {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['propriete-companies', activeId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['propriete-companies', activeId] });
+      qc.invalidateQueries({ queryKey: ['admin-proprietes'] });
+    },
     onError: (e: any) => toast.error(e?.message ?? 'Échec ajout entreprise'),
   });
   const removeCompany = useMutation({
@@ -317,7 +327,10 @@ const AdminProprieteFiche: React.FC = () => {
       const { error } = await sb.from('propriete_companies').delete().eq('id', linkId);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['propriete-companies', activeId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['propriete-companies', activeId] });
+      qc.invalidateQueries({ queryKey: ['admin-proprietes'] });
+    },
   });
 
   const addEvent = useMutation({
@@ -327,7 +340,10 @@ const AdminProprieteFiche: React.FC = () => {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['propriete-events', activeId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['propriete-events', activeId] });
+      qc.invalidateQueries({ queryKey: ['admin-proprietes'] });
+    },
     onError: (e: any) => toast.error(e?.message ?? 'Échec ajout événement'),
   });
   const removeEvent = useMutation({
@@ -335,7 +351,10 @@ const AdminProprieteFiche: React.FC = () => {
       const { error } = await sb.from('propriete_marche_events').delete().eq('id', linkId);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['propriete-events', activeId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['propriete-events', activeId] });
+      qc.invalidateQueries({ queryKey: ['admin-proprietes'] });
+    },
   });
 
   const [marcheurToAdd, setMarcheurToAdd] = useState<string>('');
