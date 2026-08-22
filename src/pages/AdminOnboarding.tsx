@@ -26,6 +26,8 @@ import {
 import { PERSONAS, PERSONA_LABELS, type Persona } from '@/config/onboarding/personas';
 import { DEFAULT_SEQUENCE } from '@/config/onboarding/defaultSequence';
 import { buildSequence } from '@/config/onboarding/schema';
+import ImageUploadField from '@/components/onboarding/ImageUploadField';
+
 
 const slugify = (s: string) =>
   s
@@ -453,13 +455,15 @@ const AdminOnboarding: React.FC = () => {
                 onChange={(e) => setExampleDraft({ ...exampleDraft, sous_titre: e.target.value })}
               />
             </div>
-            <div>
-              <Label>Photo (URL)</Label>
-              <Input
-                value={exampleDraft?.image_url ?? ''}
-                onChange={(e) => setExampleDraft({ ...exampleDraft, image_url: e.target.value })}
-              />
-            </div>
+            <ImageUploadField
+              label="Photo de l’exemple"
+              value={exampleDraft?.image_url ?? ''}
+              onChange={(url) => setExampleDraft({ ...exampleDraft, image_url: url })}
+              buildPath={(ext) =>
+                `exemples/${slugify(types.find((t) => t.id === exampleDraft?.type_id)?.slug || types.find((t) => t.id === exampleDraft?.type_id)?.titre || 'sans-titre')}/${Date.now()}.${ext}`
+              }
+            />
+
             <div>
               <Label>URL source</Label>
               <Input
