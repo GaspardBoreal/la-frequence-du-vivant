@@ -237,7 +237,6 @@ Deno.serve(async (req) => {
     }
 
     const confirmationUrl = generateConfirmationURL(emailData);
-    const redirectTo = String(emailData.redirect_to || '');
     const siteUrl = getSiteUrl(redirectTo);
     const siteName =
       brand === 'fj' ? 'Fréquence Jardin' : 'Les Marches du Vivant';
