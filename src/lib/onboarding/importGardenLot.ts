@@ -137,7 +137,67 @@ async function findTypeRow(stableId: string) {
   return null;
 }
 
+/* ------------------------------------------------------------------ analyse */
+
+export interface LotTypeCandidate {
+  id: string;
+  slug: string;
+  titre: string;
+  stable_id: string | null;
+  position: number;
+  exemplesCount: number;
+}
+
+export interface LotAnalysis {
+  file: File;
+  manifest: LotManifest;
+  /** Type existant correspondant au manifeste (stable_id ou slug), s'il y en a un. */
+  matchedTypeId: string | null;
+  /** Tous les types du catalogue, ceux sans exemples en premier. */
+  candidates: LotTypeCandidate[];
+}
+
+/**
+ * Lit et valide un ZIP de lot SANS rien écrire : manifeste, type correspondant
+ * éventuel et catalogue des types candidats pour le rattachement manuel.
+ */
+export async function analyzeGardenLot(file: File): Promise<LotAnalysis> {
+  const zip = await JSZip.loadAsync(file);
+  const manifestEntry = zip.file(/(^|\/)[^/]*\.json$/i).find((e) => !e.dir);
+  if (!manifestEntry) throw new Error('Aucun fichier JSON trouvé dans le ZIP.');
+  const manifest = validateManifest(JSON.parse(await manifestEntry.async('string')));
+
+  const client = () => supabase as unknown as { from: (t: string) => any };
+  const [typesRes, exRes] = await Promise.all([
+    client()
+      .from('onboarding_garden_types')
+      .select('id, slug, titre, stable_id, position')
+      .order('position', { ascending: true }),
+    client().from('onboarding_garden_examples').select('type_id'),
+  ]);
+  if (typesRes.error) throw new Error(`Lecture des types : ${typesRes.error.message}`);
+
+  const counts = new Map<string, number>();
+  ((exRes?.data ?? []) as { type_id: string }[]).forEach((r) =>
+    counts.set(r.type_id, (counts.get(r.type_id) ?? 0) + 1),
+  );
+  const candidates: LotTypeCandidate[] = ((typesRes.data ?? []) as Omit<LotTypeCandidate, 'exemplesCount'>[])
+    .map((t) => ({ ...t, exemplesCount: counts.get(t.id) ?? 0 }))
+    .sort((a, b) => (a.exemplesCount === 0 ? 0 : 1) - (b.exemplesCount === 0 ? 0 : 1) || a.position - b.position);
+
+  const matched = await findTypeRow(manifest.garden_type.id);
+  return { file, manifest, matchedTypeId: matched?.id ?? null, candidates };
+}
+
 /* ------------------------------------------------------------------ import */
+
+export interface ImportOptions {
+  /**
+   * Identifiant du type auquel rattacher le lot (choisi par l'admin).
+   * Absent ou null : détection automatique (stable_id/slug), création si inconnu.
+   */
+  targetTypeId?: string | null;
+}
 
 /**
  * Importe un lot ZIP complet : validation, téléversement des images,
@@ -146,6 +206,7 @@ async function findTypeRow(stableId: string) {
 export async function importGardenLot(
   file: File,
   onProgress?: (message: string) => void,
+  options?: ImportOptions,
 ): Promise<LotReport> {
   const report: LotReport = {
     typeStableId: '',
