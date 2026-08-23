@@ -13,6 +13,7 @@ import RouteFallback from './components/RouteFallback';
 
 /* --- Chargées immédiatement : accueil + garde admin (léger) --- */
 import AdminAuth from './components/AdminAuth';
+import AuthHashHandler from './components/auth/AuthHashHandler';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 
@@ -177,6 +178,7 @@ function App() {
         <LanguageProvider>
           <AudioProvider>
             <BrowserRouter>
+            <AuthHashHandler />
             <TrophicFullscreenProvider>
             <DiscoverFullscreenProvider>
           <Suspense fallback={<RouteFallback />}>
