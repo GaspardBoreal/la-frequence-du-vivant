@@ -51,6 +51,58 @@ function getSiteUrl(redirectTo: string): string {
   }
 }
 
+type Brand = 'fj' | 'lfdv';
+type BrandSource = 'metadata' | 'redirect_to' | 'default';
+
+const DEFAULT_FJ_DOMAINS = ['frequence-jardin.lovable.app'];
+
+function getFjDomains(): string[] {
+  const extra = Deno.env.get('AUTH_EMAIL_FJ_DOMAINS') || '';
+  return [
+    ...DEFAULT_FJ_DOMAINS,
+    ...extra
+      .split(',')
+      .map((d) => d.trim().toLowerCase())
+      .filter(Boolean),
+  ];
+}
+
+function hostMatchesFj(host: string, domains: string[]): boolean {
+  const h = host.toLowerCase();
+  return domains.some(
+    (d) =>
+      h === d ||
+      h.endsWith(`.${d}`) ||
+      // Couvre les previews Lovable du projet FJ (id-preview--…frequence-jardin…)
+      (h.endsWith('.lovable.app') && h.includes('frequence-jardin'))
+  );
+}
+
+/**
+ * Résolution de marque, par ordre de fiabilité :
+ * 1. métadonnée posée par l'app à l'inscription/connexion ;
+ * 2. repli sur le domaine de redirection (couvre les comptes anciens
+ *    et le « mot de passe oublié », où la métadonnée peut manquer) ;
+ * 3. LFDV par défaut (aucune régression pour les marcheurs).
+ */
+function resolveBrand(
+  userMetadata: Record<string, unknown>,
+  redirectTo: string
+): { brand: Brand; brandSource: BrandSource } {
+  if (userMetadata.app === 'frequence-jardin') {
+    return { brand: 'fj', brandSource: 'metadata' };
+  }
+  try {
+    const host = new URL(redirectTo).hostname;
+    if (host && hostMatchesFj(host, getFjDomains())) {
+      return { brand: 'fj', brandSource: 'redirect_to' };
+    }
+  } catch {
+    // redirect_to absent ou invalide : on retombe sur le défaut
+  }
+  return { brand: 'lfdv', brandSource: 'default' };
+}
+
 function getVerifiedFromAddress(configuredAddress: string): string {
   const displayName = configuredAddress.match(/^\s*([^<]+?)\s*</)?.[1]?.trim();
   const email = configuredAddress.match(/<([^>]+)>/)?.[1] || configuredAddress;
@@ -176,7 +228,8 @@ Deno.serve(async (req) => {
     }
 
     const userMetadata = (user.user_metadata || {}) as Record<string, unknown>;
-    const brand = userMetadata.app === 'frequence-jardin' ? 'fj' : 'lfdv';
+    const redirectTo = String(emailData.redirect_to || '');
+    const { brand, brandSource } = resolveBrand(userMetadata, redirectTo);
     const templates = brand === 'fj' ? fjTemplates : lfdvTemplates;
     const Template = templates[action];
     if (!Template) {
@@ -184,7 +237,6 @@ Deno.serve(async (req) => {
     }
 
     const confirmationUrl = generateConfirmationURL(emailData);
-    const redirectTo = String(emailData.redirect_to || '');
     const siteUrl = getSiteUrl(redirectTo);
     const siteName =
       brand === 'fj' ? 'Fréquence Jardin' : 'Les Marches du Vivant';
@@ -208,6 +260,7 @@ Deno.serve(async (req) => {
       event: 'auth_email_send',
       action,
       brand,
+      brandSource,
       from,
       recipientDomain: recipient.split('@')[1] || 'unknown',
       siteUrl,
@@ -245,6 +298,7 @@ Deno.serve(async (req) => {
           body: resBody,
           action,
           brand,
+          brandSource,
           recipientDomain: recipient.split('@')[1] || 'unknown',
         })
       );
@@ -258,6 +312,7 @@ Deno.serve(async (req) => {
         event: 'auth_email_sent',
         action,
         brand,
+        brandSource,
         emailId,
         recipientDomain: recipient.split('@')[1] || 'unknown',
         timestamp: new Date().toISOString(),
