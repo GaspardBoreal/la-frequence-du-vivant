@@ -260,6 +260,7 @@ Deno.serve(async (req) => {
       event: 'auth_email_send',
       action,
       brand,
+      brandSource,
       from,
       recipientDomain: recipient.split('@')[1] || 'unknown',
       siteUrl,
