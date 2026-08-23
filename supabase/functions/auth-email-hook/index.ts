@@ -203,6 +203,18 @@ Deno.serve(async (req) => {
     const html = renderToStaticMarkup(element);
     const subject = getSubject(brand, action);
 
+    const from = getVerifiedFromAddress(fromAddress);
+    const requestLog = {
+      event: 'auth_email_send',
+      action,
+      brand,
+      from,
+      recipientDomain: recipient.split('@')[1] || 'unknown',
+      siteUrl,
+      timestamp: new Date().toISOString(),
+    };
+    console.log(JSON.stringify(requestLog));
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -210,19 +222,49 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: getVerifiedFromAddress(fromAddress),
+        from,
         to: recipient,
         subject,
         html,
       }),
     });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Resend error ${res.status}: ${errText}`);
+    const resBody = await res.text();
+    let resJson: Record<string, unknown> | null = null;
+    try {
+      resJson = JSON.parse(resBody);
+    } catch {
+      resJson = null;
     }
 
-    return jsonResponse({ sent: true });
+    if (!res.ok) {
+      console.error(
+        JSON.stringify({
+          event: 'auth_email_resend_error',
+          status: res.status,
+          body: resBody,
+          action,
+          brand,
+          recipientDomain: recipient.split('@')[1] || 'unknown',
+        })
+      );
+      throw new Error(`Resend error ${res.status}: ${resBody}`);
+    }
+
+    const emailId =
+      typeof resJson?.id === 'string' ? resJson.id : undefined;
+    console.log(
+      JSON.stringify({
+        event: 'auth_email_sent',
+        action,
+        brand,
+        emailId,
+        recipientDomain: recipient.split('@')[1] || 'unknown',
+        timestamp: new Date().toISOString(),
+      })
+    );
+
+    return jsonResponse({ sent: true, emailId });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[auth-email-hook] error:', message);
