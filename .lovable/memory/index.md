@@ -1,1 +1,2 @@
 - [Console admin Propriétés](mem://features/propriete/admin-console-proprietes) — KPI cliquables, filtres URL, Table|Carte, fiche plein écran, suppression à double confirmation ; schéma réel is_active/surface_hectares
+- [Lots exemples onboarding](mem://features/onboarding/lots-exemples-jardin) — Import ZIP admin (manifeste + images calibrées telles quelles), upsert par stable_id, RPC onboard_set_garden_style, galerie publique /jardin/demarrer
