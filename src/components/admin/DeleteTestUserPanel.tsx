@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { invokeAdminFunction } from '@/lib/adminFunctionInvoke';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,24 +31,11 @@ const DeleteTestUserPanel: React.FC = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const invokeMutation = useMutation({
-    mutationFn: async (vars: { email: string; dry_run: boolean }) => {
-      const { data, error } = await supabase.functions.invoke('admin-delete-user-cascade', {
-        body: { email: vars.email, dry_run: vars.dry_run },
-      });
-      if (error) {
-        let msg = error.message || 'Échec';
-        try {
-          const ctx: any = (error as any).context;
-          if (ctx && typeof ctx.json === 'function') {
-            const body = await ctx.json();
-            if (body?.error) msg = body.error;
-          }
-        } catch { /* noop */ }
-        throw new Error(msg);
-      }
-      if ((data as any)?.error) throw new Error((data as any).error);
-      return data as any;
-    },
+    mutationFn: (vars: { email: string; dry_run: boolean }) =>
+      invokeAdminFunction<any>('admin-delete-user-cascade', {
+        email: vars.email,
+        dry_run: vars.dry_run,
+      }),
   });
 
   const handleDryRun = async () => {
