@@ -229,7 +229,19 @@ export async function importGardenLot(
 
   // -- 1. Type de jardin ----------------------------------------------------
   const client = () => supabase as unknown as { from: (t: string) => any };
-  const existing = await findTypeRow(gt.id);
+  let existing: { id: string; slug: string; image_url: string | null } | null;
+  if (options?.targetTypeId) {
+    // Rattachement explicite choisi par l'admin : on vise ce type précis.
+    const res = await client()
+      .from('onboarding_garden_types')
+      .select('id, slug, image_url')
+      .eq('id', options.targetTypeId)
+      .maybeSingle();
+    if (!res?.data) throw new Error('Le type choisi pour le rattachement est introuvable.');
+    existing = res.data as { id: string; slug: string; image_url: string | null };
+  } else {
+    existing = await findTypeRow(gt.id);
+  }
   let typeId: string;
 
   const typePayload: Record<string, unknown> = {
