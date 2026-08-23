@@ -6,7 +6,7 @@ import { getSubject, ActionType } from '../_shared/email-templates/AuthEmail.tsx
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type, svix-id, svix-timestamp, svix-signature',
+    'authorization, x-client-info, apikey, content-type, svix-id, svix-timestamp, svix-signature, webhook-id, webhook-timestamp, webhook-signature',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
@@ -76,12 +76,17 @@ async function verifyWebhook(
   req: Request,
   secret: string
 ): Promise<Record<string, unknown>> {
-  const svixId = req.headers.get('svix-id');
-  const svixTimestamp = req.headers.get('svix-timestamp');
-  const svixSignature = req.headers.get('svix-signature');
+  // Supabase envoie les en-têtes Standard Webhooks (webhook-*) ;
+  // repli sur l'ancien nommage Svix (svix-*) pour compatibilité.
+  const svixId =
+    req.headers.get('webhook-id') || req.headers.get('svix-id');
+  const svixTimestamp =
+    req.headers.get('webhook-timestamp') || req.headers.get('svix-timestamp');
+  const svixSignature =
+    req.headers.get('webhook-signature') || req.headers.get('svix-signature');
 
   if (!svixId || !svixTimestamp || !svixSignature) {
-    throw new Error('Missing Svix headers');
+    throw new Error('Missing webhook signature headers');
   }
 
   const timestamp = parseInt(svixTimestamp, 10);
