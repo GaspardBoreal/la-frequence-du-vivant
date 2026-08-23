@@ -178,6 +178,7 @@ function App() {
         <LanguageProvider>
           <AudioProvider>
             <BrowserRouter>
+            <AuthHashHandler />
             <TrophicFullscreenProvider>
             <DiscoverFullscreenProvider>
           <Suspense fallback={<RouteFallback />}>
