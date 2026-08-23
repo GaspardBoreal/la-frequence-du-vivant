@@ -228,7 +228,8 @@ Deno.serve(async (req) => {
     }
 
     const userMetadata = (user.user_metadata || {}) as Record<string, unknown>;
-    const brand = userMetadata.app === 'frequence-jardin' ? 'fj' : 'lfdv';
+    const redirectTo = String(emailData.redirect_to || '');
+    const { brand, brandSource } = resolveBrand(userMetadata, redirectTo);
     const templates = brand === 'fj' ? fjTemplates : lfdvTemplates;
     const Template = templates[action];
     if (!Template) {
