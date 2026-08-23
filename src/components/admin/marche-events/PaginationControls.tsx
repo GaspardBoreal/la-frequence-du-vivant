@@ -9,11 +9,13 @@ interface Props {
   total: number;
   onPageChange: (p: number) => void;
   onPageSizeChange: (s: number) => void;
+  /** Tailles de page proposées (défaut : 10 · 20 · 50 · 100). */
+  pageSizeOptions?: number[];
 }
 
 const PAGE_SIZES = [10, 20, 50, 100];
 
-const PaginationControls: React.FC<Props> = ({ page, pageSize, total, onPageChange, onPageSizeChange }) => {
+const PaginationControls: React.FC<Props> = ({ page, pageSize, total, onPageChange, onPageSizeChange, pageSizeOptions = PAGE_SIZES }) => {
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, pageCount);
   const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
@@ -48,7 +50,7 @@ const PaginationControls: React.FC<Props> = ({ page, pageSize, total, onPageChan
         <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
           <SelectTrigger className="h-8 w-[80px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {PAGE_SIZES.map((s) => (
+            {pageSizeOptions.map((s) => (
               <SelectItem key={s} value={String(s)}>{s}</SelectItem>
             ))}
           </SelectContent>
