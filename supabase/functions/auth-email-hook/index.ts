@@ -298,6 +298,7 @@ Deno.serve(async (req) => {
           body: resBody,
           action,
           brand,
+          brandSource,
           recipientDomain: recipient.split('@')[1] || 'unknown',
         })
       );
