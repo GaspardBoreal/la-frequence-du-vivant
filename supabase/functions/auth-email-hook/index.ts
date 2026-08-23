@@ -311,6 +311,7 @@ Deno.serve(async (req) => {
         event: 'auth_email_sent',
         action,
         brand,
+        brandSource,
         emailId,
         recipientDomain: recipient.split('@')[1] || 'unknown',
         timestamp: new Date().toISOString(),
