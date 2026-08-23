@@ -44,10 +44,11 @@ export function resolveBrand(
 
   try {
     const redirectUrl = new URL(redirectTo);
-    if (redirectUrl.searchParams.get('auth_brand') === 'fj') {
+    const isFjHost = hostMatchesFj(redirectUrl.hostname, getFjDomains(extraDomains));
+    if (isFjHost && redirectUrl.searchParams.get('auth_brand') === 'fj') {
       return { brand: 'fj', brandSource: 'redirect_marker' };
     }
-    if (hostMatchesFj(redirectUrl.hostname, getFjDomains(extraDomains))) {
+    if (isFjHost) {
       return { brand: 'fj', brandSource: 'redirect_to' };
     }
   } catch {

@@ -38,6 +38,13 @@ Deno.test('keeps LFDV recovery emails unchanged', () => {
   );
 });
 
+Deno.test('ignores an FJ marker on a non-FJ domain', () => {
+  assertEquals(
+    resolveBrand({}, 'https://la-frequence-du-vivant.com/reset-password?auth_brand=fj'),
+    { brand: 'lfdv', brandSource: 'default' }
+  );
+});
+
 Deno.test('falls back safely for an invalid redirect', () => {
   assertEquals(resolveBrand({}, ''), { brand: 'lfdv', brandSource: 'default' });
   assertEquals(safeUrlHost('not-a-url'), null);
