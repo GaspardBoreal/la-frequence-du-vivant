@@ -51,6 +51,14 @@ function getSiteUrl(redirectTo: string): string {
   }
 }
 
+function getVerifiedFromAddress(configuredAddress: string): string {
+  const displayName = configuredAddress.match(/^\s*([^<]+?)\s*</)?.[1]?.trim();
+  const email = configuredAddress.match(/<([^>]+)>/)?.[1] || configuredAddress;
+  const localPart = email.trim().split('@')[0] || 'contact';
+  const verifiedEmail = `${localPart}@mail.la-frequence-du-vivant.com`;
+  return displayName ? `${displayName} <${verifiedEmail}>` : verifiedEmail;
+}
+
 function parseSecret(secret: string): Uint8Array {
   let s = secret;
   if (s.startsWith('v1,')) s = s.slice(3);
@@ -202,7 +210,7 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: fromAddress,
+        from: getVerifiedFromAddress(fromAddress),
         to: recipient,
         subject,
         html,
