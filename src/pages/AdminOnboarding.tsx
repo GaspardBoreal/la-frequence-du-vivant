@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Pencil, Trash2, ArrowUp, ArrowDown, Images, ListTree, Info, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, ArrowUp, ArrowDown, Images, ListTree, Info, Compass, LayoutGrid, Layers } from 'lucide-react';
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,9 @@ import { DEFAULT_SEQUENCE } from '@/config/onboarding/defaultSequence';
 import { buildSequence } from '@/config/onboarding/schema';
 import ImageUploadField from '@/components/onboarding/ImageUploadField';
 import LotImportCard from '@/components/onboarding/LotImportCard';
+import ExamplesTypeView from '@/components/onboarding/admin/ExamplesTypeView';
+import ExamplesVignetteView from '@/components/onboarding/admin/ExamplesVignetteView';
+import ExamplesBoussoleView from '@/components/onboarding/admin/ExamplesBoussoleView';
 
 
 const slugify = (s: string) =>
@@ -117,6 +120,28 @@ const AdminOnboarding: React.FC = () => {
   const [typeDraft, setTypeDraft] = useState<Partial<GardenType> | null>(null);
   const [exampleDraft, setExampleDraft] = useState<Partial<GardenExample> | null>(null);
   const [persona, setPersona] = useState<Persona>('PARTICULIER_PETIT');
+
+  // Sous-menu actif de l'onglet Exemples : « Type » (défaut), « Vignette »,
+  // « Boussole ». Persisté dans l'URL (?es=) pour rester partageable.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const subView = searchParams.get('es') ?? 'type';
+  const setSubView = (v: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (v === 'type') next.delete('es');
+    else next.set('es', v);
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleDeleteExample = async (e: GardenExample) => {
+    await deleteGardenExample(e.id);
+    void reload();
+  };
+  const handleSetCover = async (t: GardenType, e: GardenExample) => {
+    if (!e.image_url) return;
+    await saveGardenType({ id: t.id, image_url: e.image_url });
+    toast.success('Image de couverture mise à jour');
+    void reload();
+  };
 
   const previewAnswers = useMemo(() => {
     const base: Record<string, string | number> = {};
@@ -265,80 +290,52 @@ const AdminOnboarding: React.FC = () => {
 
           <TabsContent value="exemples" className="space-y-6">
             <LotImportCard onDone={() => void reload()} />
-            {types.length === 0 && <p className="text-sm text-muted-foreground">Créez d’abord un type de jardin.</p>}
-            {[...types]
-              .sort((a, b) => a.position - b.position)
-              .map((t) => {
-                const items = examples.filter((e) => e.type_id === t.id).sort((a, b) => a.position - b.position);
-                return (
-                  <Card key={t.id} className="p-4">
-                    <div className="mb-3 flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{t.titre}</p>
-                        <p className="text-sm text-muted-foreground">{items.length} exemple(s)</p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          setExampleDraft({ type_id: t.id, titre: '', position: items.length, publie: true })
-                        }
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Ajouter
-                      </Button>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {items.map((e) => (
-                        <div key={e.id} className="flex gap-3 rounded-xl border border-border/60 p-3">
-                          <div className="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
-                            {e.image_url && <img src={e.image_url} alt={e.titre} className="h-full w-full object-cover" />}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">{e.titre}</p>
-                            <p className="truncate text-xs text-muted-foreground">{e.sous_titre}</p>
-                            <div className="mt-1 flex items-center gap-2">
-                              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setExampleDraft(e)}>
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 px-2"
-                                onClick={async () => {
-                                  await deleteGardenExample(e.id);
-                                  void reload();
-                                }}
-                              >
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
-                              {e.image_url && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 px-2"
-                                  onClick={async () => {
-                                    await saveGardenType({ id: t.id, image_url: e.image_url });
-                                    toast.success('Image de couverture mise à jour');
-                                    void reload();
-                                  }}
-                                >
-                                  Couverture
-                                </Button>
-                              )}
-                              {e.source_url && (
-                                <a href={e.source_url} target="_blank" rel="noreferrer" className="text-muted-foreground">
-                                  <ExternalLink className="h-3.5 w-3.5" />
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                );
-              })}
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {(
+                [
+                  { id: 'type', label: 'Type', icon: Layers },
+                  { id: 'vignette', label: 'Vignette', icon: LayoutGrid },
+                  { id: 'boussole', label: 'Boussole', icon: Compass },
+                ] as const
+              ).map(({ id, label, icon: Icon }) => (
+                <Button
+                  key={id}
+                  size="sm"
+                  variant={subView === id ? 'default' : 'outline'}
+                  onClick={() => setSubView(id)}
+                  aria-pressed={subView === id}
+                >
+                  <Icon className="mr-1.5 h-4 w-4" />
+                  {label}
+                </Button>
+              ))}
+            </div>
+
+            {subView === 'vignette' ? (
+              <ExamplesVignetteView
+                types={types}
+                examples={examples}
+                onEdit={openExForm}
+                onDelete={(e) => void handleDeleteExample(e)}
+              />
+            ) : subView === 'boussole' ? (
+              <ExamplesBoussoleView
+                types={types}
+                examples={examples}
+                onEdit={openExForm}
+                onDelete={(e) => void handleDeleteExample(e)}
+              />
+            ) : (
+              <ExamplesTypeView
+                types={types}
+                examples={examples}
+                onAdd={openExForm}
+                onEdit={openExForm}
+                onDelete={(e) => void handleDeleteExample(e)}
+                onSetCover={(t, e) => void handleSetCover(t, e)}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="sequence" className="space-y-4">
