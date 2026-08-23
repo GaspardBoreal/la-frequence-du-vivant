@@ -6352,43 +6352,61 @@ export type Database = {
       }
       onboarding_garden_examples: {
         Row: {
+          ai_profile: Json | null
           created_at: string
           description: string | null
           id: string
+          image_alt: string | null
           image_url: string | null
+          keywords: string[]
           position: number
           publie: boolean
           source_url: string | null
           sous_titre: string | null
+          stable_id: string | null
+          thumbnail_url: string | null
           titre: string
           type_id: string
           updated_at: string
+          user_intent: string | null
         }
         Insert: {
+          ai_profile?: Json | null
           created_at?: string
           description?: string | null
           id?: string
+          image_alt?: string | null
           image_url?: string | null
+          keywords?: string[]
           position?: number
           publie?: boolean
           source_url?: string | null
           sous_titre?: string | null
+          stable_id?: string | null
+          thumbnail_url?: string | null
           titre: string
           type_id: string
           updated_at?: string
+          user_intent?: string | null
         }
         Update: {
+          ai_profile?: Json | null
           created_at?: string
           description?: string | null
           id?: string
+          image_alt?: string | null
           image_url?: string | null
+          keywords?: string[]
           position?: number
           publie?: boolean
           source_url?: string | null
           sous_titre?: string | null
+          stable_id?: string | null
+          thumbnail_url?: string | null
           titre?: string
           type_id?: string
           updated_at?: string
+          user_intent?: string | null
         }
         Relationships: [
           {
@@ -6402,37 +6420,55 @@ export type Database = {
       }
       onboarding_garden_types: {
         Row: {
+          baseline: string | null
+          climate_scope: string | null
           created_at: string
+          generation_logic: Json | null
           id: string
+          image_spec: Json | null
           image_url: string | null
+          locale: string | null
           personas: string[]
           position: number
           slug: string
           sous_titre: string | null
+          stable_id: string | null
           titre: string
           updated_at: string
           visible: boolean
         }
         Insert: {
+          baseline?: string | null
+          climate_scope?: string | null
           created_at?: string
+          generation_logic?: Json | null
           id?: string
+          image_spec?: Json | null
           image_url?: string | null
+          locale?: string | null
           personas?: string[]
           position?: number
           slug: string
           sous_titre?: string | null
+          stable_id?: string | null
           titre: string
           updated_at?: string
           visible?: boolean
         }
         Update: {
+          baseline?: string | null
+          climate_scope?: string | null
           created_at?: string
+          generation_logic?: Json | null
           id?: string
+          image_spec?: Json | null
           image_url?: string | null
+          locale?: string | null
           personas?: string[]
           position?: number
           slug?: string
           sous_titre?: string | null
+          stable_id?: string | null
           titre?: string
           updated_at?: string
           visible?: boolean

@@ -10,6 +10,13 @@ export interface GardenType {
   personas: string[] | null;
   position: number;
   visible: boolean;
+  /** Identifiant stable issu du lot JSON (ex. « jardin_nourricier »). */
+  stable_id?: string | null;
+  baseline?: string | null;
+  locale?: string | null;
+  climate_scope?: string | null;
+  image_spec?: Record<string, unknown> | null;
+  generation_logic?: Record<string, unknown> | null;
 }
 
 export interface GardenExample {
@@ -22,6 +29,13 @@ export interface GardenExample {
   source_url: string | null;
   position: number;
   publie: boolean;
+  /** Identifiant stable issu du lot JSON (ex. « potager_en_carres »). */
+  stable_id?: string | null;
+  thumbnail_url?: string | null;
+  image_alt?: string | null;
+  user_intent?: string | null;
+  keywords?: string[] | null;
+  ai_profile?: Record<string, unknown> | null;
 }
 
 type Loose = {

@@ -27,6 +27,7 @@ import { PERSONAS, PERSONA_LABELS, type Persona } from '@/config/onboarding/pers
 import { DEFAULT_SEQUENCE } from '@/config/onboarding/defaultSequence';
 import { buildSequence } from '@/config/onboarding/schema';
 import ImageUploadField from '@/components/onboarding/ImageUploadField';
+import LotImportCard from '@/components/onboarding/LotImportCard';
 
 
 const slugify = (s: string) =>
@@ -62,6 +63,53 @@ const emptyType: Partial<GardenType> = {
   personas: [],
   position: 0,
   visible: true,
+};
+
+/**
+ * Zone de saisie JSON tolérante : le texte est libre, l'objet n'est propagé
+ * que s'il est valide (vide = null). Le `key` côté parent force la
+ * réinitialisation quand on édite une autre ligne.
+ */
+const JsonTextarea: React.FC<{
+  label: string;
+  value: Record<string, unknown> | null | undefined;
+  onChange: (v: Record<string, unknown> | null) => void;
+  rows?: number;
+}> = ({ label, value, onChange, rows = 4 }) => {
+  const [text, setText] = useState(() => (value ? JSON.stringify(value, null, 2) : ''));
+  const [invalid, setInvalid] = useState(false);
+  return (
+    <div>
+      <Label>{label}</Label>
+      <Textarea
+        rows={rows}
+        value={text}
+        onChange={(e) => {
+          const t = e.target.value;
+          setText(t);
+          if (!t.trim()) {
+            setInvalid(false);
+            onChange(null);
+            return;
+          }
+          try {
+            const parsed = JSON.parse(t);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+              setInvalid(false);
+              onChange(parsed as Record<string, unknown>);
+            } else {
+              setInvalid(true);
+            }
+          } catch {
+            setInvalid(true);
+          }
+        }}
+        className={`font-mono text-xs ${invalid ? 'border-destructive' : ''}`}
+        placeholder="{ … }"
+      />
+      {invalid && <p className="mt-1 text-xs text-destructive">JSON objet invalide — non enregistré tel quel.</p>}
+    </div>
+  );
 };
 
 const AdminOnboarding: React.FC = () => {
@@ -216,6 +264,7 @@ const AdminOnboarding: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="exemples" className="space-y-6">
+            <LotImportCard onDone={() => void reload()} />
             {types.length === 0 && <p className="text-sm text-muted-foreground">Créez d’abord un type de jardin.</p>}
             {[...types]
               .sort((a, b) => a.position - b.position)
@@ -365,7 +414,7 @@ const AdminOnboarding: React.FC = () => {
 
       {/* Formulaire type de jardin */}
       <Dialog open={Boolean(typeDraft)} onOpenChange={(o) => !o && setTypeDraft(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{typeDraft?.id ? 'Modifier le type' : 'Nouveau type de jardin'}</DialogTitle>
           </DialogHeader>
@@ -416,6 +465,62 @@ const AdminOnboarding: React.FC = () => {
                 })}
               </div>
             </div>
+
+            <div className="space-y-3 rounded-xl border border-border/60 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Métadonnées éditoriales (lots d'exemples)
+              </p>
+              <div>
+                <Label>Identifiant stable</Label>
+                <Input
+                  value={typeDraft?.stable_id ?? ''}
+                  onChange={(e) => setTypeDraft({ ...typeDraft, stable_id: e.target.value || null })}
+                  placeholder="jardin_nourricier"
+                  className="font-mono text-xs"
+                />
+              </div>
+              <div>
+                <Label>Promesse (baseline)</Label>
+                <Input
+                  value={typeDraft?.baseline ?? ''}
+                  onChange={(e) => setTypeDraft({ ...typeDraft, baseline: e.target.value || null })}
+                  placeholder="Nourrir sa famille en beauté"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Locale</Label>
+                  <Input
+                    value={typeDraft?.locale ?? ''}
+                    onChange={(e) => setTypeDraft({ ...typeDraft, locale: e.target.value || null })}
+                    placeholder="fr-FR"
+                  />
+                </div>
+                <div>
+                  <Label>Périmètre climat</Label>
+                  <Input
+                    value={typeDraft?.climate_scope ?? ''}
+                    onChange={(e) => setTypeDraft({ ...typeDraft, climate_scope: e.target.value || null })}
+                    placeholder="métropole"
+                  />
+                </div>
+              </div>
+              <JsonTextarea
+                key={`spec-${typeDraft?.id ?? 'new'}`}
+                label="Spec images (JSON)"
+                rows={3}
+                value={typeDraft?.image_spec}
+                onChange={(v) => setTypeDraft({ ...typeDraft, image_spec: v })}
+              />
+              <JsonTextarea
+                key={`logic-${typeDraft?.id ?? 'new'}`}
+                label="Logique de génération (JSON)"
+                rows={5}
+                value={typeDraft?.generation_logic}
+                onChange={(v) => setTypeDraft({ ...typeDraft, generation_logic: v })}
+              />
+            </div>
+
             <div className="flex items-center justify-between">
               <Label htmlFor="visible">Visible dans le parcours</Label>
               <Switch
@@ -436,7 +541,7 @@ const AdminOnboarding: React.FC = () => {
 
       {/* Formulaire exemple */}
       <Dialog open={Boolean(exampleDraft)} onOpenChange={(o) => !o && setExampleDraft(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{exampleDraft?.id ? 'Modifier l’exemple' : 'Nouvel exemple'}</DialogTitle>
           </DialogHeader>
@@ -462,6 +567,70 @@ const AdminOnboarding: React.FC = () => {
               buildPath={(ext) =>
                 `exemples/${slugify(types.find((t) => t.id === exampleDraft?.type_id)?.slug || types.find((t) => t.id === exampleDraft?.type_id)?.titre || 'sans-titre')}/${Date.now()}.${ext}`
               }
+            />
+            <ImageUploadField
+              label="Vignette (360 × 240)"
+              value={exampleDraft?.thumbnail_url ?? ''}
+              onChange={(url) => setExampleDraft({ ...exampleDraft, thumbnail_url: url })}
+              buildPath={(ext) =>
+                `exemples/${slugify(types.find((t) => t.id === exampleDraft?.type_id)?.slug || 'sans-titre')}/vignette-${Date.now()}.${ext}`
+              }
+            />
+            <div>
+              <Label>Texte alternatif de l'image</Label>
+              <Textarea
+                rows={2}
+                value={exampleDraft?.image_alt ?? ''}
+                onChange={(e) => setExampleDraft({ ...exampleDraft, image_alt: e.target.value || null })}
+              />
+            </div>
+            <div>
+              <Label>Intention jardinier</Label>
+              <Textarea
+                rows={2}
+                value={exampleDraft?.user_intent ?? ''}
+                onChange={(e) => setExampleDraft({ ...exampleDraft, user_intent: e.target.value || null })}
+                placeholder="Je veux nourrir ma famille…"
+              />
+            </div>
+            <div>
+              <Label>Mots-clés (séparés par des virgules)</Label>
+              <Input
+                value={(exampleDraft?.keywords ?? []).join(', ')}
+                onChange={(e) =>
+                  setExampleDraft({
+                    ...exampleDraft,
+                    keywords: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
+                  })
+                }
+                placeholder="légumes, famille, autonomie"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Position</Label>
+                <Input
+                  type="number"
+                  value={exampleDraft?.position ?? 0}
+                  onChange={(e) => setExampleDraft({ ...exampleDraft, position: Number(e.target.value) || 0 })}
+                />
+              </div>
+              <div>
+                <Label>Identifiant stable</Label>
+                <Input
+                  value={exampleDraft?.stable_id ?? ''}
+                  onChange={(e) => setExampleDraft({ ...exampleDraft, stable_id: e.target.value || null })}
+                  placeholder="potager_en_carres"
+                  className="font-mono text-xs"
+                />
+              </div>
+            </div>
+            <JsonTextarea
+              key={`ai-${exampleDraft?.id ?? 'new'}`}
+              label="Profil IA (JSON)"
+              rows={5}
+              value={exampleDraft?.ai_profile}
+              onChange={(v) => setExampleDraft({ ...exampleDraft, ai_profile: v })}
             />
 
             <div>
