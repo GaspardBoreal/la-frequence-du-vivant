@@ -51,6 +51,14 @@ function getSiteUrl(redirectTo: string): string {
   }
 }
 
+function getVerifiedFromAddress(configuredAddress: string): string {
+  const displayName = configuredAddress.match(/^\s*([^<]+?)\s*</)?.[1]?.trim();
+  const email = configuredAddress.match(/<([^>]+)>/)?.[1] || configuredAddress;
+  const localPart = email.trim().split('@')[0] || 'contact';
+  const verifiedEmail = `${localPart}@mail.la-frequence-du-vivant.com`;
+  return displayName ? `${displayName} <${verifiedEmail}>` : verifiedEmail;
+}
+
 function parseSecret(secret: string): Uint8Array {
   let s = secret;
   if (s.startsWith('v1,')) s = s.slice(3);
@@ -116,11 +124,13 @@ async function verifyWebhook(
     String.fromCharCode(...new Uint8Array(sigBuffer))
   );
 
-  const provided = svixSignature
-    .split(/[,\s]+/)
-    .map((s) => s.trim())
-    .filter((s) => s.startsWith('v1,'))
-    .map((s) => s.slice(3));
+  // Standard Webhooks encode chaque signature sous la forme `v1,<base64>`.
+  // Ne pas scinder sur la virgule : cela séparait auparavant `v1` de sa
+  // signature et rendait toute vérification impossible.
+  const provided = Array.from(
+    svixSignature.matchAll(/(?:^|\s)v1,([^\s]+)/g),
+    (match) => match[1]
+  );
 
   const valid = provided.some((sig) => timingSafeEqual(sig, expected));
   if (!valid) {
@@ -200,7 +210,7 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: fromAddress,
+        from: getVerifiedFromAddress(fromAddress),
         to: recipient,
         subject,
         html,
