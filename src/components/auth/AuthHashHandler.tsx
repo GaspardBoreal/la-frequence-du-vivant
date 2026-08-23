@@ -44,6 +44,22 @@ const AuthHashHandler: React.FC = () => {
       return;
     }
 
+    // Lien de confirmation (inscription, magic link, changement d'email) arrivé
+    // sur une mauvaise page : la page de connexion sait détecter la session,
+    // router vers mon-espace et consommer un éventuel code événement (?event=).
+    const linkType = params.get('type');
+    if (
+      params.get('access_token') &&
+      (linkType === 'signup' || linkType === 'magiclink' || linkType === 'email_change')
+    ) {
+      const path = window.location.pathname;
+      if (path !== LOGIN_PATH && !path.startsWith('/admin')) {
+        // Préserve un éventuel ?event=CODE présent dans l'URL courante
+        window.location.replace(`${LOGIN_PATH}${window.location.search}${hash}`);
+      }
+      return;
+    }
+
     // Lien expiré ou déjà consommé
     if (params.get('error')) {
       setLinkExpired(true);
