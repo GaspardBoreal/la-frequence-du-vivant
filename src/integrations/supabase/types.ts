@@ -10645,6 +10645,10 @@ export type Database = {
         Returns: Json
       }
       onboard_join_propriete: { Args: { _code: string }; Returns: Json }
+      onboard_set_garden_style: {
+        Args: { _propriete_id: string; _style: Json }
+        Returns: Json
+      }
       peek_event_invitation: { Args: { _token: string }; Returns: Json }
       peek_event_signup_link: { Args: { _code: string }; Returns: Json }
       reattribute_media:

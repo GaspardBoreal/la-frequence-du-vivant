@@ -36,7 +36,7 @@ export default function GardenExampleViewer({ examples, index, onNavigate, onClo
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="h-[100dvh] w-screen max-w-none gap-0 overflow-hidden border-0 bg-black/95 p-0 sm:h-[92dvh] sm:max-w-4xl sm:rounded-2xl">
+      <DialogContent className="h-[100dvh] w-screen max-w-none gap-0 overflow-hidden border-0 bg-black/95 p-0 sm:h-[92dvh] sm:max-w-4xl sm:rounded-2xl [&>button]:hidden">
         <DialogTitle className="sr-only">
           {current ? `${current.titre} — exemple de jardin` : 'Exemple de jardin'}
         </DialogTitle>

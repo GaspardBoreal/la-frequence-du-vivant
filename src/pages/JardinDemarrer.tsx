@@ -3,14 +3,18 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
-  Sprout, KeyRound, MapPin, Star, ArrowRight, Loader2, Crosshair, Copy, Check, Share2,
+  Sprout, KeyRound, MapPin, Star, ArrowRight, Loader2, Crosshair, Copy, Check, Share2, Sparkles,
 } from 'lucide-react';
 
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useUserAppsAccess } from '@/hooks/useUserAppsAccess';
+import { supabase } from '@/integrations/supabase/client';
 import {
   useCreatePropriete, useJoinPropriete, useCreateInvitation, type InvitationRole,
 } from '@/hooks/propriete/useOnboardPropriete';
+import GardenExampleGallery, {
+  type GardenStyleSelection,
+} from '@/components/onboarding/GardenExampleGallery';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -141,6 +145,7 @@ function CreateGardenCard() {
   const [codePostal, setCodePostal] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [locating, setLocating] = useState(false);
+  const [style, setStyle] = useState<GardenStyleSelection | null>(null);
 
   const locate = () => {
     if (!navigator.geolocation) {
@@ -177,7 +182,25 @@ function CreateGardenCard() {
         longitude: coords?.lon ?? null,
       },
       {
-        onSuccess: (res) => {
+        onSuccess: async (res) => {
+          if (style && res.id) {
+            const { error } = await (
+              supabase as unknown as {
+                rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+              }
+            ).rpc('onboard_set_garden_style', {
+              _propriete_id: res.id,
+              _style: {
+                type_stable_id: style.typeStableId,
+                type_slug: style.typeSlug,
+                example_stable_id: style.exampleStableId,
+                example_title: style.exampleTitle,
+                thumbnail: style.thumbnail,
+                selected_at: new Date().toISOString(),
+              },
+            });
+            if (error) console.warn('[onboarding] style non mémorisé :', error.message);
+          }
           toast.success(`« ${res.nom} » est né. Bienvenue.`);
           navigate(`/propriete/${res.slug}`);
         },
@@ -249,6 +272,31 @@ function CreateGardenCard() {
             ? `Position enregistrée (${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)})`
             : 'Situer le jardin depuis ma position'}
         </button>
+
+        <details className="rounded-xl border border-emerald-400/15 bg-white/[0.03]">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-xs text-emerald-100/80 transition-colors hover:text-emerald-50 [&::-webkit-details-marker]:hidden">
+            <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
+            {style ? (
+              <span className="flex min-w-0 items-center gap-2">
+                {style.thumbnail && (
+                  <img src={style.thumbnail} alt="" className="h-6 w-9 rounded object-cover" />
+                )}
+                <span className="truncate">
+                  Modèle choisi : <strong className="text-emerald-50">{style.exampleTitle}</strong>
+                </span>
+              </span>
+            ) : (
+              'Choisir un modèle de jardin qui vous inspire (optionnel)'
+            )}
+          </summary>
+          <div className="border-t border-white/10 p-3">
+            <GardenExampleGallery
+              defaultTypeStableId="jardin_nourricier"
+              selected={style}
+              onSelect={setStyle}
+            />
+          </div>
+        </details>
 
         <Button
           type="submit"
