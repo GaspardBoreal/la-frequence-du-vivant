@@ -29,6 +29,7 @@ const CrmShell = lazyWithRetry(() => import('./layouts/CrmShell'));
 const AdminLogin = lazyWithRetry(() => import('./pages/AdminLogin'));
 const OAuthConsent = lazyWithRetry(() => import('./pages/OAuthConsent'));
 const AdminResetPassword = lazyWithRetry(() => import('./pages/AdminResetPassword'));
+const MarchesDuVivantResetPassword = lazyWithRetry(() => import('./pages/MarchesDuVivantResetPassword'));
 const MarcheDetail = lazyWithRetry(() => import('./pages/MarcheDetail'));
 const MarcheDetailBio = lazyWithRetry(() => import('./pages/MarcheDetailBio'));
 const MarchesTechnoSensibles = lazyWithRetry(() => import('./pages/MarchesTechnoSensibles'));
@@ -212,6 +213,7 @@ function App() {
             <Route path="/marches-du-vivant/carnets-de-terrain" element={<CarnetsDeTerrainGalerie />} />
             <Route path="/marches-du-vivant/carnets-de-terrain/:slug" element={<CarnetDeTerrain />} />
             <Route path="/marches-du-vivant/connexion" element={<MarchesDuVivantConnexion />} />
+            <Route path="/marches-du-vivant/reset-password" element={<MarchesDuVivantResetPassword />} />
             <Route path="/marches-du-vivant/rejoindre/:token" element={<CommunityAffiliateLanding />} />
             <Route path="/marches-du-vivant/mon-espace" element={<MarchesDuVivantMonEspace />} />
             <Route path="/marches-du-vivant/mon-espace/exploration/:explorationId" element={<MarchesDuVivantExplorationMarcheur />} />
