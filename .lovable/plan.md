@@ -1,38 +1,29 @@
-# Email de confirmation non reçu — diagnostic et correctif
+# Validation DNS mail + finalisation délivrabilité
 
-## Diagnostic (vérifié dans les logs et le code)
+## Résultat des tests (déjà exécutés — tout est bon)
 
-- Log Auth Supabase 07:54:35 : `user_confirmation_requested` pour aurelien.dript@gmail.com → **« Hook ran successfully »**, inscription retournée en 200.
-- Code du hook `auth-email-hook` relu : le chemin `signup` / marque `lfdv` est complet (template présent, destinataire = `user.email`, expéditeur réécrit sur le sous-domaine vérifié `mail.la-frequence-du-vivant.com`).
-- Point décisif : **si Resend avait refusé l'envoi, le hook lèverait une erreur 500 et l'inscription elle-même aurait échoué**. L'inscription a réussi → Resend a accepté l'email.
-- Conclusion : l'email est parti. Le problème est côté **livraison** (spam, bounce, ou simple délai — seulement 5 min s'étaient écoulées au moment du signalement). Le domaine d'envoi a 24 h : aucune réputation, Gmail filtre souvent le premier envoi d'un nouveau domaine.
-- Lacune constatée : le hook ne logge rien en cas de succès → impossible aujourd'hui de tracer un envoi sans ouvrir le dashboard Resend.
+Requêtes DNS en direct sur `la-frequence-du-vivant.com` :
 
-## Étape 1 — Vérifications immédiates (2 min, toi)
+| Enregistrement | Valeur résolue | Statut |
+|---|---|---|
+| `_dmarc.mail` TXT | `v=DMARC1; p=none; rua=mailto:dmarc@la-frequence-du-vivant.com` | OK — exactement la valeur attendue |
+| `resend._domainkey.mail` TXT | clé DKIM `p=MIGfMA0G...` | OK |
+| `send.mail` MX | `10 feedback-smtp.eu-west-1.amazonses.com` | OK |
+| `send.mail` TXT | `v=spf1 include:amazonses.com ~all` | OK |
 
-1. Chez Aurélien : vérifier **Courrier indésirable / Spam** et l'onglet **Promotions** de Gmail (pas seulement la boîte de réception). Si l'email y est : « Non spam » + répondre à l'email entraîne Gmail.
-2. Cliquer sur **« Renvoyer l'email de confirmation »** depuis l'écran « Vérifiez votre boîte mail » (bouton déjà présent sur ta copie d'écran) et surveiller ~10 min (délai/graylisting possible sur domaine neuf).
+Copies 1 et 2 validées : le formulaire IONOS était correctement rempli (nom `_dmarc.mail`, type TXT, TTL 2 h) et l'enregistrement est déjà propagé mondialement.
 
-## Étape 2 — Vérification décisive côté Resend (toi, 2 min)
+## Ce que ça change
 
-Dashboard Resend → **Logs / Emails** : retrouver le message vers `aurelien.dript@gmail.com` de 09:54 (heure de Paris) et lire son statut :
-- **Delivered** → c'est du filtrage Gmail (étape 1).
-- **Bounced / Suppressed** → la raison exacte y est écrite (adresse invalide, boîte pleine…) ; me la copier et je corrige en conséquence.
+La chaîne d'authentification email est maintenant complète : **SPF + DKIM + DMARC**. Gmail et les autres webmails disposent de tous les signaux pour sortir progressivement les emails LFDV/FJ du dossier spam au fur et à mesure que le domaine `mail.la-frequence-du-vivant.com` se forge une réputation (quelques jours à quelques semaines d'envois réguliers).
 
-## Étape 3 — Traçabilité du hook (moi, code)
+## Actions restantes (facultatives, sans code)
 
-Dans `supabase/functions/auth-email-hook/index.ts` :
-- Logger en cas de succès : action, domaine du destinataire (adresse masquée), `id` de l'email retourné par Resend.
-- Logger déjà présent en cas d'erreur, conservé ; ajouter le corps d'erreur Resend dans le message.
-- Redéployer la fonction. Résultat : chaque prochain test sera traçable depuis les logs Lovable/Supabase sans ouvrir Resend.
-
-## Étape 4 — Délivrabilité long terme (toi, IONOS, recommandé)
-
-Ajouter l'enregistrement **DMARC** recommandé par Resend (il manque à la config actuelle : seuls DKIM, MX et SPF ont été créés) :
-- Type `TXT`, hôte `_dmarc.mail`, valeur `v=DMARC1; p=none;`
-- Améliore le placement en boîte de réception pour ce domaine tout neuf.
+1. **Boîte `dmarc@`** : l'adresse `dmarc@la-frequence-du-vivant.com` recevra des rapports DMARC XML quotidiens des webmails. Soit créer cette boîte/alias chez IONOS, soit laisser tel quel (aucun impact sur la délivrabilité, juste pas de rapports reçus).
+2. **Test end-to-end de traçabilité** : refaire un « mot de passe oublié » sur LFDV, puis vérifier dans les logs de l'Edge Function `auth-email-hook` que la nouvelle ligne de log structurée apparaît (action, marque, domaine destinataire, `emailId` Resend). L'`emailId` permet de retrouver l'email en 1 clic dans le dashboard Resend → Logs.
+3. **Poursuite des 3 flux d'inscription** (déjà validés techniquement) : LFDV simple, QR code événement, Fréquence Jardin. Surveiller le placement boîte de réception vs spam sur les prochains envois.
 
 ## Détails techniques
 
-- Un seul fichier modifié : `supabase/functions/auth-email-hook/index.ts` (~6 lignes de logs). Aucune migration SQL, aucun secret, aucun changement de template.
-- Hors périmètre : si l'étape 2 révèle un bounce spécifique, correctif décidé à ce moment-là selon la raison affichée par Resend.
+- Aucune modification de code ni de base de données dans ce plan — la partie code (logs structurés du hook) est déjà déployée.
+- Le plan se limite à valider le test end-to-end de l'étape 2 ci-dessus via les logs de l'Edge Function une fois que tu auras déclenché un envoi.
