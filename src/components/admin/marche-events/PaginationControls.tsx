@@ -50,7 +50,7 @@ const PaginationControls: React.FC<Props> = ({ page, pageSize, total, onPageChan
         <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
           <SelectTrigger className="h-8 w-[80px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {PAGE_SIZES.map((s) => (
+            {pageSizeOptions.map((s) => (
               <SelectItem key={s} value={String(s)}>{s}</SelectItem>
             ))}
           </SelectContent>
