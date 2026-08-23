@@ -196,6 +196,40 @@ const MarchesDuVivantConnexion = () => {
     };
   }, [nextParam]);
 
+  /**
+   * Arrivée directe depuis un email de confirmation (lien signup / magiclink) :
+   * le hash initial porte `type=signup|magiclink|email_change`. Capturé en ref
+   * synchrone car le SDK Supabase consomme le hash avant les effets React.
+   * Sans destination explicite (?next / ?event / ?invitation), on route le
+   * nouvel inscrit vers mon-espace dès que la session est active — sinon il
+   * resterait sur un formulaire de connexion alors qu'il est déjà connecté.
+   */
+  const cameFromEmailConfirm = useRef(
+    /[#&]type=(signup|magiclink|email_change)/.test(window.location.hash)
+  );
+
+  useEffect(() => {
+    if (!cameFromEmailConfirm.current) return;
+    if (nextParam || searchParams.get('event') || searchParams.get('invitation')) return;
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      toast.success('Votre compte est confirmé, bienvenue ! 🌿');
+      navigate('/marches-du-vivant/mon-espace');
+    };
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) go();
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) go();
+    });
+    return () => {
+      sub.subscription.unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
