@@ -143,6 +143,13 @@ const AdminOnboarding: React.FC = () => {
     void reload();
   };
 
+  // Ouvre le formulaire d'exemple : soit en création rattachée à un type
+  // (onAdd), soit en édition d'un exemple existant (onEdit).
+  const openExForm = (target: GardenType | GardenExample, nextPosition?: number) => {
+    if ('type_id' in target) setExampleDraft({ ...target });
+    else setExampleDraft({ type_id: target.id, position: nextPosition ?? 0, publie: true });
+  };
+
   const previewAnswers = useMemo(() => {
     const base: Record<string, string | number> = {};
     if (persona === 'URBAIN_BALCON' || persona === 'ENTREPRISE_URBAINE') base.lieu = 'balcon';
