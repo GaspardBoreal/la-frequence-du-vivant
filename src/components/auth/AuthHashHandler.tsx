@@ -9,6 +9,7 @@ import { MailWarning, ArrowLeft, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 const RESET_PATH = '/marches-du-vivant/reset-password';
+const LOGIN_PATH = '/marches-du-vivant/connexion';
 
 /**
  * Filet de sécurité pour les liens d'authentification Supabase.
@@ -16,6 +17,9 @@ const RESET_PATH = '/marches-du-vivant/reset-password';
  * - `#access_token=...&type=recovery` arrivant sur une mauvaise page (ex. racine,
  *   quand l'URL de redirection n'est pas whitelistée) → redirection pleine page vers
  *   la page de réinitialisation, hash conservé (le SDK consomme la session recovery).
+ * - `#access_token=...&type=signup|magiclink|email_change` arrivant sur une mauvaise
+ *   page → redirection vers la page de connexion, hash conservé : la page détecte la
+ *   session et route vers mon-espace / consomme le code événement éventuel.
  * - `#error=access_denied&error_code=otp_expired` (lien expiré, déjà utilisé ou
  *   pré-chargé par un webmail/antivirus) → écran clair avec renvoi d'un nouvel email.
  */
