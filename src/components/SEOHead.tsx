@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
@@ -11,6 +10,8 @@ interface SEOHeadProps {
   canonicalUrl?: string;
   /** Empêche l'indexation de la page par les moteurs et IA (noindex, follow) */
   noIndex?: boolean;
+  /** Schémas JSON-LD supplémentaires à injecter dans le <head>. */
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 const SITE_ORIGIN = 'https://la-frequence-du-vivant.com';
@@ -24,10 +25,16 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   ogImage,
   canonicalUrl = `${SITE_ORIGIN}/`,
   noIndex = false,
+  jsonLd,
 }) => {
   const resolvedOg = ogImage
     ? (ogImage.startsWith('http') ? ogImage : `${SITE_ORIGIN}${ogImage.startsWith('/') ? '' : '/'}${ogImage}`)
     : DEFAULT_OG;
+
+  const extraLd = React.useMemo(() => {
+    if (!jsonLd) return [];
+    return Array.isArray(jsonLd) ? jsonLd : [jsonLd];
+  }, [jsonLd]);
 
   return (
     <Helmet>
@@ -68,6 +75,11 @@ const SEOHead: React.FC<SEOHeadProps> = ({
           },
         })}
       </script>
+      {extraLd.map((node, i) => (
+        <script key={i} type="application/ld+json">
+          {JSON.stringify(node)}
+        </script>
+      ))}
     </Helmet>
   );
 };
