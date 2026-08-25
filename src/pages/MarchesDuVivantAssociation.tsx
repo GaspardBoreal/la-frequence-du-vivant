@@ -132,11 +132,17 @@ const MarchesDuVivantAssociation = () => {
         <script type="application/ld+json">{JSON.stringify({
           "@context": "https://schema.org",
           "@type": "NGO",
+          "@id": "https://la-frequence-du-vivant.com/#organization",
           "name": "La Fréquence du Vivant",
           "url": "https://la-frequence-du-vivant.com/",
           "logo": "https://la-frequence-du-vivant.com/favicon.png",
           "description": "Association loi 1901 porteuse des Marches du Vivant, immersions territoriales mêlant bioacoustique, science participative et prose poétique.",
-          "founder": { "@type": "Person", "name": "Laurent Tripied", "alternateName": "Gaspard Boréal", "url": "https://www.gaspardboreal.com" },
+          "founder": { "@type": "Person", "name": "Gaspard Boréal", "url": "https://www.gaspardboreal.com", "sameAs": ["https://www.gaspardboreal.com"] },
+          "member": [
+            { "@type": "Person", "name": "Laurent Tripied", "jobTitle": "Président", "sameAs": ["https://www.linkedin.com/in/laurenttripied/"], "affiliation": { "@type": "Organization", "name": "La Fréquence du Vivant", "url": "https://la-frequence-du-vivant.com/" } },
+            { "@type": "Person", "name": "Laurence Karki", "jobTitle": "Vice-Présidente", "sameAs": ["https://www.linkedin.com/in/laurence-karki-43153620/"], "affiliation": { "@type": "Organization", "name": "La Fréquence du Vivant", "url": "https://la-frequence-du-vivant.com/" } },
+            { "@type": "Person", "name": "Victor Boixeda", "jobTitle": "Responsable Relations Publiques", "sameAs": ["https://www.linkedin.com/in/victor-boixeda-a70b8138b/"], "affiliation": { "@type": "Organization", "name": "La Fréquence du Vivant", "url": "https://la-frequence-du-vivant.com/" } }
+          ],
           "areaServed": ["Charente", "Nouvelle-Aquitaine", "Occitanie", "Pays de la Loire", "Bretagne"],
           "sameAs": ["https://www.gaspardboreal.com", "https://bziiit.com", "https://piloterra.fr"]
         })}</script>
