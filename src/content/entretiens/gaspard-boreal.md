@@ -28,7 +28,7 @@ GB. : Ce qui est extrêmement intéressant dans la poésie japonaise, c'est que 
 
 Je pratiquais le haïku depuis longtemps, mais je n'avais pas compris, avant ce périple et ces travaux sur la Fréquence du Vivant, que le haïku s'inscrivait dans une tradition beaucoup plus large : le kigo, le mot de saison, c'est-à-dire qu'on écrit sur ce qu'on voit. Je me suis dit que c'était parfaitement adapté à ce que je cherchais à faire : marcher, observer, écrire sur ce que j'observe.
 
-J'ai regardé du côté des troubadours, de la poésie occitane, mais je n'ai pas trouvé dans mes travaux un tel ancrage dans le réel. Il y a le kigo, le mot de saison, il y a le haïku qui, dans sa forme classique, intègre le mot de saison et réagit sur ce qui est observé, que ce soit un animal, une plante, un fleuve, une montagne, un ciel, un soleil. Et il y a cette pratique de la marche qui existait dans la tradition japonaise. C'est pour ça que je m'y suis attaché. Dans la Fréquence du Vivant, il y a tout un autre volet que je n'ai pas encore réussi à intégrer aux travaux collectifs : celui des fables. Mais ce sera une prochaine étape.
+J'ai regardé du côté des troubadours, de la poésie occitane, mais je n'ai pas trouvé dans mes travaux un tel ancrage dans le réel. Il y a le Ginkō, le kigo (le mot de saison), il y a le haïku qui, dans sa forme classique, intègre le mot de saison et réagit sur ce qui est observé, que ce soit un animal, une plante, un fleuve, une montagne, un ciel, un soleil. Et il y a cette pratique de la marche qui existait dans la tradition japonaise. C'est pour ça que je m'y suis attaché.
 
 **En tant qu'auteur, quelle est la différence entre observer une espèce pour la science et l'écouter pour un texte ?**
 
