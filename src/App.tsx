@@ -137,6 +137,8 @@ const TrustTableRonde = lazyWithRetry(() => import('./pages/TrustTableRonde'));
 
 const AgentIA = lazyWithRetry(() => import('./pages/AgentIA'));
 const AgentIAFiche = lazyWithRetry(() => import('./pages/AgentIAFiche'));
+const EntretiensIndex = lazyWithRetry(() => import('./pages/EntretiensIndex'));
+const EntretienDetail = lazyWithRetry(() => import('./pages/EntretienDetail'));
 const InterregSudoeMdv = lazyWithRetry(() => import('./pages/InterregSudoeMdv'));
 const ApprendreMarchePage = lazyWithRetry(() => import('./pages/ApprendreMarchePage'));
 const ImmersiveGardenFiche = lazyWithRetry(() => import('./pages/ImmersiveGardenFiche'));
