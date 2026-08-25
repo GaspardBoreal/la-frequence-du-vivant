@@ -150,14 +150,9 @@ const PartnersSoilAcoustics: React.FC = () => {
         <div className="sa-topbar">
           <div className="sa-topbar__inner">
             <div className="sa-topbar__brand">
-              <img
-                src={lockupDark.url}
-                alt="Les Marches du Vivant — La Fréquence du Vivant"
-                style={{ height: 30, width: 'auto' }}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-              />
               <span>La Fréquence du Vivant × Soil Acoustics</span>
             </div>
+
 
             <div className="sa-topbar__actions">
               <div className="sa-lang" role="group" aria-label="Language">
