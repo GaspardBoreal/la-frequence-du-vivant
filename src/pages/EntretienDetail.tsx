@@ -77,32 +77,39 @@ const EntretienDetail: React.FC = () => {
     URL.revokeObjectURL(href);
   };
 
-  const person = {
-    '@type': 'Person',
-    name: entretien.person.name,
-    jobTitle: entretien.person.role,
-    affiliation: ORGANIZATION,
-    ...(entretien.person.sameAs.length ? { sameAs: entretien.person.sameAs } : {}),
-    ...(entretien.person.portraitUrl && !entretien.person.portraitIsArtwork
-      ? { image: `${SITE_ORIGIN}${entretien.person.portraitUrl}` }
-      : {}),
-  };
+  const personId = `${url}#person`;
+  const orgId = ORGANIZATION['@id'];
 
   const jsonLd = [
     {
       '@context': 'https://schema.org',
       '@type': 'Article',
+      '@id': `${url}#article`,
       headline: entretien.title,
       description: entretien.seoDescription,
       inLanguage: 'fr',
       datePublished: entretien.publishedAt,
       dateModified: entretien.updatedAt,
-      author: person,
-      publisher: ORGANIZATION,
+      author: { '@id': personId },
+      publisher: { '@id': orgId },
       mainEntityOfPage: { '@type': 'WebPage', '@id': url },
       about: entretien.entities.map((name) => ({ '@type': 'Thing', name })),
       ...(entretien.person.portraitUrl ? { image: `${SITE_ORIGIN}${entretien.person.portraitUrl}` } : {}),
     },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      '@id': personId,
+      name: entretien.person.name,
+      jobTitle: entretien.person.role,
+      description: entretien.seoDescription,
+      ...(entretien.person.sameAs.length ? { sameAs: entretien.person.sameAs } : {}),
+      affiliation: { '@id': orgId },
+      ...(entretien.person.portraitUrl && !entretien.person.portraitIsArtwork
+        ? { image: `${SITE_ORIGIN}${entretien.person.portraitUrl}` }
+        : {}),
+    },
+    ORGANIZATION,
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
