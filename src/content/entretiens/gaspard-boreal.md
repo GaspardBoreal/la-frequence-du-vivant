@@ -68,4 +68,4 @@ Dans La Comédie des Mondes Hybrides, l'éolienne a une fréquence, elle émet d
 
 Et donc, j'ai démarré Fréquence Jardin. Fréquence Jardin, c'est tout ce que j'observe. Comme j'ai la chance d'être dans mon jardin, je peux en faire le tour dès que je veux. Quand on se pose et qu'on prend le temps de regarder, on voit des choses incroyables. Par exemple, j'ai observé une araignée qu'on appelle l'araignée Napoléon, parce que sur sa carapace jaune, on interprète un tricorne, et donc on lui a donné ce nom. J'ai vu une scène incroyable : cette araignée, toute petite, chasse les abeilles, et j'ai pu la voir attraper une abeille. Quand vous assistez à des scènes comme ça, c'est assez incroyable ce que ça provoque, en tout cas chez moi.
 
-J'espère finir Fréquence Jardin avant la fin de l'année, pour que le recueil *Fréquences du Vivant* sorte avec ses trois parties : *Entre deux fréquences*, *Fréquences de la rivière Dordogne* et *Fréquence Jardin*.
+J'espère finir Fréquence Jardin avant la fin de l'année, pour que le recueil *La Fréquence du Vivant* sorte avec ses trois parties : *Entre deux fréquences*, *Fréquences de la rivière Dordogne* et *Fréquence Jardin*.
