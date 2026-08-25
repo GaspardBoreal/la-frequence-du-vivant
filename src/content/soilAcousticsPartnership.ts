@@ -191,7 +191,7 @@ export const soilAcousticsContent: Record<SaLang, SaContent> = {
         },
         {
           title: 'Une communauté déjà en marche',
-          body: 'Plus de cent ambassadeurs, formés à la collecte de données biodiversité, parcourent déjà nos territoires partenaires.',
+          body: 'Plus de cent ambassadeurs LES MARCHES DU VIVANT, formés à la collecte de données biodiversité, parcourent déjà nos territoires partenaires.',
         },
       ],
     },
