@@ -892,34 +892,145 @@
 }
 
 
-/* ---------- IMPRESSION : une section par page A4 paysage ---------- */
+/* ---------- IMPRESSION : une section = une page A4 paysage ---------- */
 
 @media print {
   @page { size: A4 landscape; margin: 0; }
 
-  html, body { background: #fff; }
+  html, body {
+    background: #fff !important;
+    margin: 0;
+    padding: 0;
+  }
 
   .lfdv-sa {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    counter-reset: sa-page;
+    font-size: 11px;
+    line-height: 1.42;
   }
 
   .lfdv-sa .sa-topbar { display: none !important; }
-  .lfdv-sa .sa-reveal { opacity: 1 !important; transform: none !important; }
-  .lfdv-sa .sa-ring { animation: none; opacity: 0.4; }
-
-  .lfdv-sa .sa-hero,
-  .lfdv-sa .sa-block {
-    break-after: page;
-    page-break-after: always;
-    padding: 42px 0;
-    min-height: 0;
+  .lfdv-sa .sa-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
   }
-  .lfdv-sa .sa-cta { break-after: auto; page-break-after: auto; }
-
+  .lfdv-sa .sa-ring { animation: none; opacity: 0.35; }
   .lfdv-sa .sa-app-card:hover,
   .lfdv-sa .sa-btn:hover { transform: none; box-shadow: none; }
 
-  .lfdv-sa .sa-hero h1 { font-size: 38px; }
-  .lfdv-sa .sa-section-title { font-size: 28px; }
+  /* --- Le gabarit de page --- */
+  .lfdv-sa .sa-hero,
+  .lfdv-sa .sa-block {
+    position: relative;
+    width: 297mm;
+    height: 209.6mm;      /* < 210mm : évite la page fantôme */
+    min-height: 0;
+    max-height: 209.6mm;
+    overflow: hidden;
+    margin: 0;
+    padding: 15mm 16mm 17mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: page;
+    page-break-after: always;
+    counter-increment: sa-page;
+  }
+  .lfdv-sa .sa-block:last-child,
+  .lfdv-sa .sa-cta {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .lfdv-sa .sa-wrap {
+    max-width: none;
+    width: 100%;
+    padding: 0;
+  }
+
+  /* Filet + pied de page discret, répété sur chaque page */
+  .lfdv-sa .sa-hero::after,
+  .lfdv-sa .sa-block::after {
+    content: "La Fréquence du Vivant × Soil Acoustics · " counter(sa-page) "/10";
+    position: absolute;
+    left: 16mm;
+    right: 16mm;
+    bottom: 8mm;
+    padding-top: 3mm;
+    border-top: 0.4pt solid var(--sa-line);
+    font-family: var(--sa-body);
+    font-size: 8pt;
+    letter-spacing: 0.06em;
+    color: var(--sa-muted);
+    text-transform: none;
+  }
+  .lfdv-sa .sa-hero::after { color: rgba(255, 255, 255, 0.65); border-top-color: rgba(255, 255, 255, 0.25); }
+  .lfdv-sa .sa-status::after,
+  .lfdv-sa .sa-constat::after { border-top-color: var(--sa-line); }
+
+  /* --- Typographie recalibrée pour le papier --- */
+  .lfdv-sa .sa-hero h1 { font-size: 30pt; line-height: 1.06; margin-bottom: 6mm; }
+  .lfdv-sa .sa-hero__lead { font-size: 12pt; line-height: 1.45; }
+  .lfdv-sa .sa-hero__sign { font-size: 9.5pt; }
+  .lfdv-sa .sa-section-title { font-size: 20pt; line-height: 1.12; margin: 0 0 4mm; }
+  .lfdv-sa .sa-section-sub { font-size: 10.5pt; margin-bottom: 6mm; }
+  .lfdv-sa .sa-eyebrow { font-size: 7.5pt; margin-bottom: 3mm; }
+  .lfdv-sa h3 { font-size: 11.5pt; margin: 0 0 2mm; }
+  .lfdv-sa p, .lfdv-sa li { font-size: 9.5pt; }
+  .lfdv-sa .sa-stat__value { font-size: 22pt; line-height: 1; }
+  .lfdv-sa .sa-stat__label { font-size: 8pt; }
+
+  /* --- Densité des grilles --- */
+  .lfdv-sa .sa-cards,
+  .lfdv-sa .sa-stats,
+  .lfdv-sa .sa-triple,
+  .lfdv-sa .sa-apps__grid,
+  .lfdv-sa .sa-facing,
+  .lfdv-sa .sa-seeking__grid,
+  .lfdv-sa .sa-give__grid,
+  .lfdv-sa .sa-steps { gap: 5mm; margin-top: 4mm; }
+
+  .lfdv-sa .sa-card,
+  .lfdv-sa .sa-tech-card,
+  .lfdv-sa .sa-app-card,
+  .lfdv-sa .sa-seek-card,
+  .lfdv-sa .sa-give-card,
+  .lfdv-sa .sa-facing__col,
+  .lfdv-sa .sa-step,
+  .lfdv-sa .sa-callout,
+  .lfdv-sa .sa-cta__box,
+  .lfdv-sa .sa-footer-note {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+  }
+
+  .lfdv-sa .sa-card,
+  .lfdv-sa .sa-tech-card,
+  .lfdv-sa .sa-app-card,
+  .lfdv-sa .sa-seek-card,
+  .lfdv-sa .sa-facing__col { padding: 5mm; }
+
+  .lfdv-sa .sa-icon-circle { width: 30px; height: 30px; margin-bottom: 2mm; }
+  .lfdv-sa .sa-icon-circle svg { width: 15px; height: 15px; }
+  .lfdv-sa .sa-callout { margin-top: 5mm; padding: 4mm 5mm; }
+  .lfdv-sa .sa-facing__list li { margin-bottom: 2mm; }
+  .lfdv-sa .sa-step__list li { margin-bottom: 1.5mm; }
+  .lfdv-sa .sa-status__note,
+  .lfdv-sa .sa-give__note { margin-top: 5mm; font-size: 9pt; }
+
+  /* --- Dernière page : CTA + signature tiennent ensemble --- */
+  .lfdv-sa .sa-cta__box { padding: 7mm 8mm; margin-bottom: 5mm; }
+  .lfdv-sa .sa-cta__box h2 { font-size: 17pt; }
+  .lfdv-sa .sa-btn { padding: 3mm 6mm; font-size: 10pt; }
+  .lfdv-sa .sa-footer-note { margin-top: 4mm; padding-top: 4mm; }
+  .lfdv-sa .sa-quote { font-size: 10pt; }
+  .lfdv-sa .sa-credit { margin-top: 3mm; font-size: 8pt; }
 }
+
