@@ -136,7 +136,7 @@ export const entretiens: Entretien[] = [
       keyPoints: [
         "La Fréquence du Vivant est née d'une remontée à pied de la rivière Dordogne, du Bec d'Ambès au Mont-Dore, pendant deux semaines.",
         "Le nom vient de l'idée que tout le vivant émet une onde, d'un ver de terre à un arbre, y compris hors du champ de l'oreille humaine.",
-        "Le projet s'appuie sur la géopoétique japonaise : le Ginkō « marche poétique » du XXIIième siècle, le kigo, le mot de saison, et le haïku, tradition de marche et d'écriture remontant à Bashō.",
+        "Le projet s'appuie sur la géopoétique japonaise : le Ginkō « marche poétique » du XIIième siècle, le kigo, le mot de saison, et le haïku, tradition de marche et d'écriture remontant à Bashō.",
         "Il prolonge La Confession muette, recueil consacré à la créativité face aux limites planétaires.",
         "Gaspard Boréal est l'auteur et le créateur du projet ; la structuration associative et le dispositif des Marches du Vivant sont portés par Laurent Tripied et Laurence Karki.",
       ],
