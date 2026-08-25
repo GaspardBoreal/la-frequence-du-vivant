@@ -202,7 +202,7 @@ export const soilAcousticsContent: Record<SaLang, SaContent> = {
       credit: 'En savoir plus sur Soil Acoustics ↗',
       features: [
         'Un enregistreur de terrain que nos ambassadeurs pourraient utiliser pendant les Marches du Vivant.',
-        "Une lecture de l'activité du sol, en complément de nos relevés de température et d'humidité à 4 profondeurs.",
+        "Une lecture de l'activité du sol, en complément de nos relevés de température et d'humidité à 3 profondeurs. (15 / 30 / 60 cm)",
         "Une piste d'intégration à notre Pack Vivant, si la collaboration se confirme.",
       ],
     },
