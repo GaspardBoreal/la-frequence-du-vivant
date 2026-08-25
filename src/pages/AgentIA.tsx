@@ -520,22 +520,6 @@ const AgentIA: React.FC = () => {
         </div>
       </section>
 
-      {/* Structure rappel */}
-      <section className="container mx-auto px-4 py-16 max-w-5xl">
-        <h2 className="text-2xl font-bold mb-2 text-muted-foreground">Structure de la fiche</h2>
-        <p className="text-sm text-muted-foreground mb-6 italic">6 sections standardisées — modèle bziiit × PiloTerra applicable à tout agent IA responsable.</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {sections.map((s) => (
-            <div key={s.num} className="flex gap-3 p-3 rounded-lg border border-border">
-              <span className="text-primary font-bold">{s.num}</span>
-              <div>
-                <div className="font-semibold text-sm">{s.title}</div>
-                <div className="text-xs text-muted-foreground">{s.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* CTA */}
       <section className="container mx-auto px-4 py-20 max-w-4xl text-center">
