@@ -1038,7 +1038,8 @@
   .lfdv-sa .sa-footer-note { gap: 10mm; flex-wrap: nowrap; align-items: flex-end; }
   .lfdv-sa .sa-signature { flex: 0 0 auto; max-width: 45%; font-size: 9pt; }
   .lfdv-sa .sa-signature strong { font-size: 11pt; }
-  .lfdv-sa .sa-signature__links { gap: 6mm; }
+  .lfdv-sa .sa-signature__links { gap: 6mm; padding-right: 2mm; }
+  .lfdv-sa .sa-signature a { letter-spacing: 0; }
 
 }
 
