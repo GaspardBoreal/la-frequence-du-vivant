@@ -166,21 +166,18 @@ const PartnersSoilAcoustics: React.FC = () => {
           </div>
         </div>
 
-        {/* ---------- HERO ---------- */}
+        {/* ---------- 1. HERO ---------- */}
         <div className="sa-hero">
           <div className="sa-wrap sa-hero__grid">
             <div>
               <p className="sa-eyebrow">{t.hero.eyebrow}</p>
               <h1>{t.hero.title}</h1>
-              <p className="sa-hero__lead">
-                {t.hero.leadBefore}
-                <strong>{t.hero.leadStrong}</strong>
-                {t.hero.leadAfter}
-              </p>
+              <p className="sa-hero__lead">{t.hero.lead}</p>
               <span className="sa-badge">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
                 {t.hero.badge}
               </span>
+              <p className="sa-hero__sign">{t.hero.signature}</p>
               <div className="sa-hero__ctas">
                 <a className="sa-btn sa-btn--primary" href={CALENDLY_URL} target="_blank" rel="noopener noreferrer">
                   {t.hero.ctaPrimary}
@@ -194,15 +191,16 @@ const PartnersSoilAcoustics: React.FC = () => {
           </div>
         </div>
 
-        {/* ---------- CONSTAT ---------- */}
+        {/* ---------- 2. ENJEUX ET OPPORTUNITÉS ---------- */}
         <div className="sa-block sa-constat">
           <div className="sa-wrap">
             <div className="sa-reveal">
-              <p className="sa-eyebrow">{t.constat.eyebrow}</p>
-              <h2 className="sa-section-title">{t.constat.title}</h2>
+              <p className="sa-eyebrow">{t.stakes.eyebrow}</p>
+              <h2 className="sa-section-title">{t.stakes.title}</h2>
+              <p className="sa-section-sub">{t.stakes.subtitle}</p>
             </div>
             <div className="sa-cards">
-              {t.constat.cards.map((card, i) => (
+              {t.stakes.cards.map((card, i) => (
                 <div className="sa-card sa-reveal" key={card.title}>
                   <div className="sa-icon-circle">{ConstatIcons[i]}</div>
                   <h3>{card.title}</h3>
@@ -210,46 +208,58 @@ const PartnersSoilAcoustics: React.FC = () => {
                 </div>
               ))}
             </div>
+            <div className="sa-stats sa-reveal">
+              {t.stakes.stats.map((s) => (
+                <div className="sa-stat" key={s.label}>
+                  <span className="sa-stat__value">{s.value}</span>
+                  <span className="sa-stat__label">{s.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* ---------- EXPLORE ---------- */}
+        {/* ---------- 3. PLATEFORME ---------- */}
         <div className="sa-block sa-explore">
           <div className="sa-wrap">
             <div className="sa-reveal">
-              <p className="sa-eyebrow">{t.explore.eyebrow}</p>
-              <h2 className="sa-section-title">{t.explore.title}</h2>
+              <p className="sa-eyebrow">{t.platform.eyebrow}</p>
+              <h2 className="sa-section-title">{t.platform.title}</h2>
             </div>
-            <div className="sa-explore__grid">
-              <div className="sa-explore__body sa-reveal">
-                <p>{t.explore.body}</p>
-                <a className="sa-explore__credit" href={SOIL_ACOUSTICS_URL} target="_blank" rel="noopener noreferrer">
-                  {t.explore.credit}
-                </a>
-              </div>
-              <ul className="sa-feature-list sa-reveal">
-                {t.explore.features.map((f) => (
-                  <li key={f}>
-                    <CheckIcon />
-                    {f}
-                  </li>
-                ))}
-              </ul>
+            <div className="sa-triple">
+              {t.platform.columns.map((col) => (
+                <div className="sa-tech-card sa-reveal" key={col.title}>
+                  <h3>{col.title}</h3>
+                  <ul>
+                    {col.items.map((item) => (
+                      <li key={item}>
+                        <CheckIcon />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <div className="sa-callout sa-reveal">
+              <h3>{t.platform.missingTitle}</h3>
+              <p>{t.platform.missingBody}</p>
             </div>
           </div>
         </div>
 
-        {/* ---------- APPLICATIONS ---------- */}
+        {/* ---------- 4. QUATRE APPLICATIONS ---------- */}
         <div className="sa-block sa-apps">
           <div className="sa-wrap">
             <div className="sa-reveal">
               <p className="sa-eyebrow">{t.apps.eyebrow}</p>
               <h2 className="sa-section-title">{t.apps.title}</h2>
             </div>
-            <div className="sa-apps__grid">
+            <div className="sa-apps__grid sa-apps__grid--4">
               {t.apps.cards.map((card, i) => (
                 <div className="sa-app-card sa-reveal" key={card.title}>
-                  <div className="sa-icon-circle">{AppIcons[i]}</div>
+                  <div className="sa-icon-circle">{AppIcons[i % AppIcons.length]}</div>
+                  <span className="sa-pill">{card.audience}</span>
                   <h3>{card.title}</h3>
                   <p>{card.body}</p>
                 </div>
@@ -258,28 +268,149 @@ const PartnersSoilAcoustics: React.FC = () => {
           </div>
         </div>
 
-        {/* ---------- STATUT ---------- */}
-        <div className="sa-block sa-status">
+        {/* ---------- 5. LA PIÈCE MANQUANTE ---------- */}
+        <div className="sa-block sa-piece">
           <div className="sa-wrap">
             <div className="sa-reveal">
-              <p className="sa-eyebrow">{t.status.eyebrow}</p>
-              <h2 className="sa-section-title">{t.status.title}</h2>
+              <p className="sa-eyebrow">{t.missingPiece.eyebrow}</p>
+              <h2 className="sa-section-title">{t.missingPiece.title}</h2>
             </div>
-            <div className="sa-steps">
-              {t.status.steps.map((step, i) => (
-                <div className={`sa-step sa-reveal${i === 1 ? ' sa-step--current' : ''}`} key={step.title}>
-                  <span className="sa-step__dot">{step.dot}</span>
-                  <span className="sa-step__tag">{step.tag}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.body}</p>
-                </div>
-              ))}
+            <div className="sa-facing">
+              <div className="sa-facing__col sa-reveal">
+                <h3>{t.missingPiece.left.title}</h3>
+                <ul className="sa-facing__list">
+                  {t.missingPiece.left.items.map((item) => (
+                    <li key={item}>
+                      <CheckIcon />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="sa-facing__col sa-facing__col--accent sa-reveal">
+                <h3>{t.missingPiece.right.title}</h3>
+                <ul className="sa-facing__list">
+                  {t.missingPiece.right.items.map((item) => (
+                    <li key={item.label}>
+                      <CheckIcon />
+                      <span>
+                        <strong>{item.label}</strong> {item.body}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-            <p className="sa-status__note">{t.status.note}</p>
           </div>
         </div>
 
-        {/* ---------- CTA ---------- */}
+        {/* ---------- 6. CE QUE NOUS RECHERCHONS ---------- */}
+        <div className="sa-block sa-seeking">
+          <div className="sa-wrap">
+            <div className="sa-reveal">
+              <p className="sa-eyebrow">{t.seeking.eyebrow}</p>
+              <h2 className="sa-section-title">{t.seeking.title}</h2>
+            </div>
+            <div className="sa-seeking__grid">
+              {t.seeking.items.map((item, i) => (
+                <div className={`sa-seek-card sa-reveal${item.priority ? ' sa-seek-card--priority' : ''}`} key={item.title}>
+                  <span className="sa-seek-card__num">{i + 1}</span>
+                  <div>
+                    <h3>
+                      {item.title}
+                      {item.priority && <span className="sa-tag">{t.seeking.priorityTag}</span>}
+                    </h3>
+                    <p>{item.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ---------- 7. CE QUE NOUS APPORTONS ---------- */}
+        <div className="sa-block sa-giveback">
+          <div className="sa-wrap">
+            <div className="sa-reveal">
+              <p className="sa-eyebrow">{t.giveBack.eyebrow}</p>
+              <h2 className="sa-section-title">{t.giveBack.title}</h2>
+            </div>
+            <div className="sa-give__grid">
+              {t.giveBack.stats.map((s) => (
+                <div className="sa-give-card sa-reveal" key={s.label}>
+                  <span className="sa-stat__value">{s.value}</span>
+                  <span className="sa-stat__label">{s.label}</span>
+                  <p>{s.body}</p>
+                </div>
+              ))}
+            </div>
+            <p className="sa-give__note sa-reveal">{t.giveBack.note}</p>
+          </div>
+        </div>
+
+        {/* ---------- 8. CALENDRIER ---------- */}
+        <div className="sa-block sa-status">
+          <div className="sa-wrap">
+            <div className="sa-reveal">
+              <p className="sa-eyebrow">{t.timeline.eyebrow}</p>
+              <h2 className="sa-section-title">{t.timeline.title}</h2>
+            </div>
+            <div className="sa-steps sa-steps--4">
+              {t.timeline.steps.map((step, i) => (
+                <div className={`sa-step sa-reveal${i === 0 ? ' sa-step--current' : ''}`} key={step.month}>
+                  <span className="sa-step__dot">{i + 1}</span>
+                  <span className="sa-step__tag">{step.month}</span>
+                  <h3>{step.tag}</h3>
+                  <ul className="sa-step__list">
+                    {step.items.map((it) => (
+                      <li key={it}>{it}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <p className="sa-status__note">{t.timeline.note}</p>
+          </div>
+        </div>
+
+        {/* ---------- 9. PROPOSITION DE PILOTE ---------- */}
+        <div className="sa-block sa-pilot">
+          <div className="sa-wrap">
+            <div className="sa-reveal">
+              <p className="sa-eyebrow">{t.pilot.eyebrow}</p>
+              <h2 className="sa-section-title">{t.pilot.title}</h2>
+            </div>
+            <div className="sa-facing">
+              <div className="sa-facing__col sa-reveal">
+                <h3>{t.pilot.left.title}</h3>
+                <ul className="sa-facing__list">
+                  {t.pilot.left.items.map((item) => (
+                    <li key={item}>
+                      <CheckIcon />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="sa-facing__col sa-facing__col--accent sa-reveal">
+                <h3>{t.pilot.right.title}</h3>
+                <ul className="sa-facing__list">
+                  {t.pilot.right.items.map((item) => (
+                    <li key={item}>
+                      <CheckIcon />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="sa-callout sa-reveal">
+              <p>{t.pilot.commitment}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ---------- 10. CLÔTURE ---------- */}
         <div className="sa-block sa-cta" id="talk">
           <div className="sa-wrap">
             <div className="sa-cta__box sa-reveal">
@@ -304,13 +435,23 @@ const PartnersSoilAcoustics: React.FC = () => {
                 <br />
                 {t.footer.author}
               </p>
-              <p className="sa-credit">
-                {t.footer.creditBefore}
-                <a href={SOIL_ACOUSTICS_URL} target="_blank" rel="noopener noreferrer"></a>
-              </p>
+              <div className="sa-signature">
+                <strong>{t.footer.name}</strong>
+                <span>{t.footer.role}</span>
+                <a href={`tel:${t.footer.phone.replace(/\s/g, '')}`}>{t.footer.phone}</a>
+                <span className="sa-signature__links">
+                  {SOIL_ACOUSTICS_FOOTER_LINKS.map((l) => (
+                    <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer">
+                      {l.label}
+                    </a>
+                  ))}
+                </span>
+              </div>
             </div>
+            <p className="sa-credit">{t.footer.credit}</p>
           </div>
         </div>
+
       </div>
     </>
   );
