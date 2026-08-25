@@ -211,7 +211,7 @@ export const soilAcousticsContent: Record<SaLang, SaContent> = {
       title: 'Trois terrains déjà prêts à accueillir une nouvelle fréquence',
       cards: [
         {
-          title: 'Marches du Vivant',
+          title: 'Les Marches du Vivant',
           body: "Un nouveau geste d'écoute pendant nos marches de sensibilisation, aux côtés de la bioacoustique aérienne que nous pratiquons déjà.",
         },
         {
@@ -220,7 +220,7 @@ export const soilAcousticsContent: Record<SaLang, SaContent> = {
         },
         {
           title: 'Fréquence Vignoble',
-          body: "Une lecture fine de la vie du sol pour les domaines viticoles — un terrain où l'acoustique du sol a déjà fait ses preuves ailleurs en Europe.",
+          body: "Une lecture fine de la vie du sol pour les domaines viticoles, un terrain où l'acoustique du sol a déjà fait ses preuves ailleurs en Europe.",
         },
       ],
     },
