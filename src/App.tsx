@@ -431,7 +431,9 @@ function App() {
             <Route path="/partenaires/:slug/:date" element={<PartenaireFeuilleDeRoute />} />
             <Route path="/partenaires/:slug" element={<PartenaireAudit />} />
             <Route path="/sauniers" element={<SauniersProposition />} />
+            <Route path="/saunier" element={<SauniersProposition />} />
             <Route path="/partners/soil-acoustics" element={<PartnersSoilAcoustics />} />
+
 
 
             <Route path="/api-mcp" element={<ApiMcpPublic />} />
