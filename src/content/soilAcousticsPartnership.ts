@@ -169,12 +169,11 @@ export const soilAcousticsContent: Record<SaLang, SaContent> = {
     topbar: { brand: 'La Fréquence du Vivant × Soil Acoustics', pdf: 'Version PDF' },
     hero: {
       eyebrow: 'Partenariat en discussion',
-      title: 'Écouter aussi ce qui vit sous nos pas.',
-      leadBefore: 'La Fréquence du Vivant explore une collaboration avec ',
-      leadStrong: 'Soil Acoustics',
-      leadAfter:
-        " (Royaume-Uni) pour donner une voix à la biodiversité du sol — vers de terre, larves, méso-faune — aux côtés de nos marches et des capteurs déjà déployés sur plus de cent sites.",
-      badge: 'En discussion depuis août 2026 · aucun engagement finalisé à ce stade',
+      title: 'Écouter le sol ensemble.',
+      leadBefore: 'Proposition de collaboration Soil Acoustics (Royaume-Uni) x\u00a0La Fréquence du Vivant\u00a0(France) pour donner une voix à la biodiversité du sol [vers de terre, larves, méso-faune ...] aux côtés de nos marches et des capteurs déjà déployés sur plus de cent sites.',
+      leadStrong: '',
+      leadAfter: '',
+      badge: 'Contexte / Enjeux / Opportunités\u00a0',
       ctaPrimary: 'Réserver un créneau de 30 minutes',
       ctaGhost: 'Soil Acoustics ↗',
     },
