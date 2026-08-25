@@ -149,7 +149,7 @@ const PartnersSoilAcoustics: React.FC = () => {
         {/* ---------- Barre utilitaire ---------- */}
         <div className="sa-topbar">
           <div className="sa-topbar__inner">
-            <div className="sa-topbar__brand" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="sa-topbar__brand">
               <img
                 src={lockupDark.url}
                 alt="Les Marches du Vivant — La Fréquence du Vivant"
