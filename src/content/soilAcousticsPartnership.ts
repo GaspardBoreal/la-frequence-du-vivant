@@ -169,12 +169,11 @@ export const soilAcousticsContent: Record<SaLang, SaContent> = {
     topbar: { brand: 'La Fréquence du Vivant × Soil Acoustics', pdf: 'Version PDF' },
     hero: {
       eyebrow: 'Partenariat en discussion',
-      title: 'Écouter aussi ce qui vit sous nos pas.',
-      leadBefore: 'La Fréquence du Vivant explore une collaboration avec ',
-      leadStrong: 'Soil Acoustics',
-      leadAfter:
-        " (Royaume-Uni) pour donner une voix à la biodiversité du sol — vers de terre, larves, méso-faune — aux côtés de nos marches et des capteurs déjà déployés sur plus de cent sites.",
-      badge: 'En discussion depuis août 2026 · aucun engagement finalisé à ce stade',
+      title: 'Écouter le sol ensemble.',
+      leadBefore: 'Proposition de collaboration Soil Acoustics (Royaume-Uni) x\u00a0La Fréquence du Vivant\u00a0(France) pour donner une voix à la biodiversité du sol [vers de terre, larves, méso-faune ...] aux côtés de nos marches et des capteurs déjà déployés sur plus de cent sites.',
+      leadStrong: '',
+      leadAfter: '',
+      badge: 'Contexte / Enjeux / Opportunités\u00a0',
       ctaPrimary: 'Réserver un créneau de 30 minutes',
       ctaGhost: 'Soil Acoustics ↗',
     },
@@ -192,7 +191,7 @@ export const soilAcousticsContent: Record<SaLang, SaContent> = {
         },
         {
           title: 'Une communauté déjà en marche',
-          body: 'Plus de cent ambassadeurs, formés à la collecte de données biodiversité, parcourent déjà nos territoires partenaires.',
+          body: 'Plus de cent ambassadeurs LES MARCHES DU VIVANT, formés à la collecte de données biodiversité, parcourent déjà nos territoires partenaires.',
         },
       ],
     },
@@ -212,7 +211,7 @@ export const soilAcousticsContent: Record<SaLang, SaContent> = {
       title: 'Trois terrains déjà prêts à accueillir une nouvelle fréquence',
       cards: [
         {
-          title: 'Marches du Vivant',
+          title: 'Les Marches du Vivant',
           body: "Un nouveau geste d'écoute pendant nos marches de sensibilisation, aux côtés de la bioacoustique aérienne que nous pratiquons déjà.",
         },
         {
@@ -221,7 +220,7 @@ export const soilAcousticsContent: Record<SaLang, SaContent> = {
         },
         {
           title: 'Fréquence Vignoble',
-          body: "Une lecture fine de la vie du sol pour les domaines viticoles — un terrain où l'acoustique du sol a déjà fait ses preuves ailleurs en Europe.",
+          body: "Une lecture fine de la vie du sol pour les domaines viticoles, un terrain où l'acoustique du sol a déjà fait ses preuves ailleurs en Europe.",
         },
       ],
     },
@@ -248,19 +247,19 @@ export const soilAcousticsContent: Record<SaLang, SaContent> = {
           body: "Sous réserve d'accord entre les deux parties.",
         },
       ],
-      note: "Cette page sera mise à jour au fil des échanges. Aucune date n'est garantie.",
+      note: 'Cette page sera mise à jour au fil des échanges selon les retours et objectifs validés par Soil acoustics x La Fréquence du Vivant',
     },
     cta: {
       title: 'Échangeons de vive voix',
-      body: "Choisissez le créneau qui vous convient — 30 minutes pour parcourir la donnée, le pilote et les conditions d'un partenariat.",
+      body: "Choisissez le créneau qui vous convient :\n30 minutes pour parcourir la donnée, le pilote et les conditions d'un partenariat.",
       primary: 'Réserver un créneau sur Calendly',
       secondary: 'Nous écrire directement',
       hint: 'Laurent Tripied · Fondateur, La Fréquence du Vivant',
     },
     footer: {
       quote: '« Écouter un territoire, c\'est déjà commencer à le défendre. »',
-      author: '— Manifeste fondateur, La Fréquence du Vivant',
-      creditBefore: 'Technologie évoquée : Soil Acoustics Ltd. (Royaume-Uni) — ',
+      author: 'Manifeste fondateur, La Fréquence du Vivant',
+      creditBefore: 'Technologie évoquée :\nSoil Acoustics Ltd. (Royaume-Uni) — ',
     },
   },
 };
