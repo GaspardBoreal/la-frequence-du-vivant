@@ -987,6 +987,10 @@
     transition: none !important;
   }
   .lfdv-sa .sa-ring { animation: none; opacity: 0.35; }
+  .lfdv-sa .sa-probe { animation: none !important; transform: translateY(110px); }
+  .lfdv-sa .sa-depth,
+  .lfdv-sa .sa-trace { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .lfdv-sa .sa-plant { animation: none !important; }
   .lfdv-sa .sa-app-card:hover,
   .lfdv-sa .sa-btn:hover { transform: none; box-shadow: none; }
 
