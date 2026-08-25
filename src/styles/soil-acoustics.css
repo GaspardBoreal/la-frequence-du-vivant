@@ -1035,5 +1035,10 @@
   .lfdv-sa .sa-footer-note { margin-top: 4mm; padding-top: 4mm; }
   .lfdv-sa .sa-quote { font-size: 10pt; }
   .lfdv-sa .sa-credit { margin-top: 3mm; font-size: 8pt; }
+  .lfdv-sa .sa-footer-note { gap: 10mm; flex-wrap: nowrap; align-items: flex-end; }
+  .lfdv-sa .sa-signature { flex: 0 0 auto; max-width: 45%; font-size: 9pt; }
+  .lfdv-sa .sa-signature strong { font-size: 11pt; }
+  .lfdv-sa .sa-signature__links { gap: 6mm; }
+
 }
 
