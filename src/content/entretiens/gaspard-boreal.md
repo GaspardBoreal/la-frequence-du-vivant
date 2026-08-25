@@ -14,7 +14,7 @@ J'ai ressentie le besoin, pour que ce nouveau projet soit plus ancré dans le r�
 
 L'idée, c'était justement que je pressentais que ce périple allait me ramener à reconsidérer un certain nombre de points de vue, à revenir à la source pour réinterroger ce qui fait les valeurs de base de nos croyances. Ça, c'est l'origine du sujet. Après, comment j'en suis arrivé à « La Fréquence du Vivant » ? C'est la réunion de deux dimensions. La première, c'est qu'il y a un volet très sonore dans les travaux que je fais, d'autant plus avec ce qu'a révélé la Fréquence du Vivant. Un son, c'est une onde, et une onde, c'est une fréquence. Et tous les vivants ont une onde. C'est évidemment facile à comprendre quand un oiseau chante : il y a une onde ; quand une abeille bourdonne, il y a une onde.
 
-Mais il y en a aussi pour des choses que l'on entend moins bien, parce qu'on n'a pas le capteur sonore, l'oreille, adapté à la fréquence qui parle. Et j'ai découvert au fur et à mesure des travaux que tout le vivant émettait une onde, jusqu'à un ver de terre ou une plante, et bien sûr des arbres.
+Mais il y en a aussi pour des espèces que l'on entend moins bien, parce qu'on n'a pas le capteur sonore, l'oreille, adapté à la fréquence qui parle. Et j'ai découvert au fur et à mesure des travaux que tout le vivant émettait une onde, jusqu'à un ver de terre ou une plante, et bien sûr des arbres.
 
 **Votre marche de 480 kilomètres le long de la Dordogne a donné naissance au recueil *Fréquences de la rivière Dordogne*. Comment ce texte a-t-il fait germer un projet collectif ?**
 
