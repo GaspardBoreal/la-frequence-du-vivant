@@ -129,6 +129,7 @@ const PublicAuditFrugal = lazyWithRetry(() => import('./pages/PublicAuditFrugal'
 const PartenaireAudit = lazyWithRetry(() => import('./pages/PartenaireAudit'));
 const PartenaireOffre = lazyWithRetry(() => import('./pages/PartenaireOffre'));
 const SauniersProposition = lazyWithRetry(() => import('./pages/SauniersProposition'));
+const PartnersSoilAcoustics = lazyWithRetry(() => import('./pages/PartnersSoilAcoustics'));
 const PartenaireFeuilleDeRoute = lazyWithRetry(() => import('./pages/PartenaireFeuilleDeRoute'));
 const TrustInFrequenceVivant = lazyWithRetry(() => import('./pages/TrustInFrequenceVivant'));
 const PartenaireIot = lazyWithRetry(() => import('./pages/PartenaireIot'));
@@ -431,6 +432,8 @@ function App() {
             <Route path="/partenaires/:slug" element={<PartenaireAudit />} />
             <Route path="/sauniers" element={<SauniersProposition />} />
             <Route path="/saunier" element={<SauniersProposition />} />
+            <Route path="/partners/soil-acoustics" element={<PartnersSoilAcoustics />} />
+
 
 
             <Route path="/api-mcp" element={<ApiMcpPublic />} />
