@@ -259,7 +259,7 @@ export const soilAcousticsContent: Record<SaLang, SaContent> = {
     footer: {
       quote: '« Écouter un territoire, c\'est déjà commencer à le défendre. »',
       author: 'Manifeste fondateur, La Fréquence du Vivant',
-      creditBefore: 'Technologie évoquée :\nSoil Acoustics Ltd. (Royaume-Uni) — ',
+      creditBefore: 'Technologie évoquée : Soil Acoustics Ltd. (Royaume-Uni) / La Fréquence du Vivant (France)',
     },
   },
 };

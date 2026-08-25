@@ -311,7 +311,7 @@ const PartnersSoilAcoustics: React.FC = () => {
               </p>
               <p className="sa-credit">
                 {t.footer.creditBefore}
-                <a href={SOIL_ACOUSTICS_URL} target="_blank" rel="noopener noreferrer">Les Marches du Vivant — immersions territoriales | La Fréquence du Vivant\u00a0↗</a>
+                <a href={SOIL_ACOUSTICS_URL} target="_blank" rel="noopener noreferrer"></a>
               </p>
             </div>
           </div>
