@@ -137,6 +137,8 @@ const TrustTableRonde = lazyWithRetry(() => import('./pages/TrustTableRonde'));
 
 const AgentIA = lazyWithRetry(() => import('./pages/AgentIA'));
 const AgentIAFiche = lazyWithRetry(() => import('./pages/AgentIAFiche'));
+const EntretiensIndex = lazyWithRetry(() => import('./pages/EntretiensIndex'));
+const EntretienDetail = lazyWithRetry(() => import('./pages/EntretienDetail'));
 const InterregSudoeMdv = lazyWithRetry(() => import('./pages/InterregSudoeMdv'));
 const ApprendreMarchePage = lazyWithRetry(() => import('./pages/ApprendreMarchePage'));
 const ImmersiveGardenFiche = lazyWithRetry(() => import('./pages/ImmersiveGardenFiche'));
@@ -187,6 +189,8 @@ function App() {
 
             <Route path="/" element={<Index />} />
             <Route path="/agent-ia" element={<AgentIA />} />
+            <Route path="/entretiens" element={<EntretiensIndex />} />
+            <Route path="/entretiens/:slug" element={<EntretienDetail />} />
             <Route path="/agent-ia/fiche" element={<AgentIAFiche />} />
             <Route path="/interreg-sudoe-mdv" element={<InterregSudoeMdv />} />
             <Route path="/offre-VDT-MDV" element={<OffreVdtMdv />} />

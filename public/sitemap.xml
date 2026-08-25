@@ -27,6 +27,16 @@
   <url><loc>https://la-frequence-du-vivant.com/galerie-fleuve</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://la-frequence-du-vivant.com/jardin/deviat-jardin-monde-du-11-03-26-a-aujourd-hui-2026-06-30</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://la-frequence-du-vivant.com/etude-de-sol</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://la-frequence-du-vivant.com/entretiens</loc><lastmod>2026-08-25</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://la-frequence-du-vivant.com/entretiens/gaspard-boreal-naissance-la-frequence-du-vivant</loc><lastmod>2026-08-25</lastmod><changefreq>monthly</changefreq><priority>0.9</priority>
+    <image:image><image:loc>https://la-frequence-du-vivant.com/__l5e/assets-v1/04583591-b13f-4b7c-ac72-b80a39eee6cf/gaspard-boreal.png</image:loc><image:title>Gaspard Boréal — La Fréquence du Vivant</image:title><image:caption>Œuvre associée à Gaspard Boréal, auteur et créateur de La Fréquence du Vivant.</image:caption></image:image>
+  </url>
+  <url><loc>https://la-frequence-du-vivant.com/entretiens/laurent-tripied-marches-du-vivant-frequence-jardin</loc><lastmod>2026-08-25</lastmod><changefreq>monthly</changefreq><priority>0.9</priority>
+    <image:image><image:loc>https://la-frequence-du-vivant.com/__l5e/assets-v1/e6f59a04-067b-4f3e-89af-3b4fc08b9f2b/laurent-tripied.jpg</image:loc><image:title>Laurent Tripied — président de La Fréquence du Vivant</image:title><image:caption>Laurent Tripied, président de l'association La Fréquence du Vivant, porteur des Marches du Vivant et de Fréquence Jardin.</image:caption></image:image>
+  </url>
+  <url><loc>https://la-frequence-du-vivant.com/entretiens/piloterra-open-source-biodiversite</loc><lastmod>2026-08-25</lastmod><changefreq>monthly</changefreq><priority>0.9</priority>
+    <image:image><image:loc>https://la-frequence-du-vivant.com/__l5e/assets-v1/e6f59a04-067b-4f3e-89af-3b4fc08b9f2b/laurent-tripied.jpg</image:loc><image:title>Laurent Tripied — PiloTerra</image:title><image:caption>Laurent Tripied présente PiloTerra, plateforme d'intelligence artificielle frugale pour le monde agricole.</image:caption></image:image>
+  </url>
   <url><loc>https://la-frequence-du-vivant.com/roadmap/frequence-jardin</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://la-frequence-du-vivant.com/roadmap/frequence-jardin/logo/germination</loc><changefreq>monthly</changefreq><priority>0.6</priority>
     <image:image><image:loc>https://la-frequence-du-vivant.com/__l5e/assets-v1/5e277dd6-5b25-4f51-8a37-8dd2cca407f6/logo-germination.png</image:loc><image:title>Germination en fréquence — logo Fréquence Jardin</image:title><image:caption>Logo Fréquence Jardin — Germination en fréquence, identité visuelle de La Fréquence du Vivant</image:caption></image:image>

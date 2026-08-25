@@ -3,6 +3,24 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 
+/** Identifiant d'ancre stable dérivé du texte d'un titre (accents supprimés). */
+const headingId = (children: React.ReactNode): string | undefined => {
+  const text = React.Children.toArray(children)
+    .map((c) => (typeof c === 'string' || typeof c === 'number' ? String(c) : ''))
+    .join('')
+    .trim();
+  if (!text) return undefined;
+  return (
+    text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 70) || undefined
+  );
+};
+
 /**
  * Rendu éditorial partagé d'un audit partenaire (Markdown GFM).
  * Utilisé dans le CRM (drawer) et sur la page publique /partenaires/:slug.
@@ -24,7 +42,10 @@ export const PartnerAuditContent: React.FC<{
       remarkPlugins={[remarkGfm]}
       components={{
         h2: ({ children }) => (
-          <h2 className="mt-8 border-b border-border/60 pb-2 text-2xl font-semibold tracking-tight text-foreground first:mt-0">
+          <h2
+            id={headingId(children)}
+            className="mt-8 scroll-mt-24 border-b border-border/60 pb-2 text-2xl font-semibold tracking-tight text-foreground first:mt-0"
+          >
             {children}
           </h2>
         ),
