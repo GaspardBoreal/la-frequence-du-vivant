@@ -333,6 +333,46 @@ const MarchesDuVivantAssociation = () => {
           </div>
         </section>
 
+        {/* Entretiens de l'équipe */}
+        <section className="py-16 px-6 border-t border-border/20">
+          <div className="max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="mb-10"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <MessagesSquare className="h-5 w-5 text-primary" />
+                <h2 className="font-crimson text-3xl text-foreground">Ils racontent l'association</h2>
+              </div>
+              <p className="text-muted-foreground">
+                Entretiens sources avec les fondateurs et contributeurs de La Fréquence du Vivant.
+              </p>
+            </motion.div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <Link to="/entretiens/gaspard-boreal-naissance-la-frequence-du-vivant" className="group block rounded-2xl border border-border/30 bg-card/40 p-6 transition hover:border-primary/50">
+                <p className="text-xs uppercase tracking-wider text-primary mb-2">Entretien</p>
+                <h3 className="font-crimson text-xl text-foreground mb-2">La naissance de La Fréquence du Vivant</h3>
+                <p className="text-sm text-muted-foreground mb-4">Gaspard Boréal raconte le cheminement poétique, scientifique et technologique qui a donné naissance à la démarche.</p>
+                <span className="inline-flex items-center gap-1 text-sm text-primary group-hover:underline">Lire l'entretien <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+              </Link>
+              <Link to="/entretiens/laurent-tripied-marches-du-vivant-frequence-jardin" className="group block rounded-2xl border border-border/30 bg-card/40 p-6 transition hover:border-primary/50">
+                <p className="text-xs uppercase tracking-wider text-primary mb-2">Entretien</p>
+                <h3 className="font-crimson text-xl text-foreground mb-2">Pourquoi créer Les Marches du Vivant et Fréquence Jardin ?</h3>
+                <p className="text-sm text-muted-foreground mb-4">Laurent Tripied détaille le protocole, la gamification, les acteurs et la prochaine étape.</p>
+                <span className="inline-flex items-center gap-1 text-sm text-primary group-hover:underline">Lire l'entretien <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+              </Link>
+              <Link to="/entretiens" className="group block rounded-2xl border border-border/30 bg-card/40 p-6 transition hover:border-primary/50 md:col-span-2">
+                <p className="text-xs uppercase tracking-wider text-primary mb-2">Série</p>
+                <h3 className="font-crimson text-xl text-foreground mb-2">Tous les entretiens</h3>
+                <p className="text-sm text-muted-foreground mb-4">Laurence Karki, Victor Boixeda, bziiit et PiloTerra à paraître.</p>
+                <span className="inline-flex items-center gap-1 text-sm text-primary group-hover:underline">Découvrir <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* Parcours Ambassadeur */}
         <section className="py-16 px-6">
           <div className="max-w-4xl mx-auto">
