@@ -1,6 +1,6 @@
 # Pourquoi créer Les Marches du Vivant et Fréquence Jardin ? Entretien avec Laurent Tripied
 
-Président de La Fréquence du Vivant, Laurent Tripied détaille le protocole scientifique et ludique des Marches du Vivant, les acteurs qui y font aujourd'hui appel (monde agricole, domaines viticoles, collectivités), et les prochaines étapes de développement de la communauté. Il présente ensuite Fréquence Jardin, le dispositif né en partenariat avec le Conseil National de l'Agroécologie, qui applique aux jardins particuliers et aux entreprises tout ce que La Fréquence du Vivant a appris sur la mesure de la biodiversité, l'analyse de sol et l'intelligence artificielle frugale.
+Président de La Fréquence du Vivant, Laurent Tripied détaille le protocole scientifique et ludique des Marches du Vivant, les acteurs qui y font aujourd'hui appel (monde agricole, domaines viticoles, collectivités), et les prochaines étapes de développement de la communauté. Il présente ensuite Fréquence Jardin, le dispositif né en partenariat avec Ver de terre production, qui applique aux jardins particuliers et aux entreprises tout ce que La Fréquence du Vivant a appris sur la mesure de la biodiversité, l'analyse de sol et l'intelligence artificielle frugale.
 
 ---
 
