@@ -591,6 +591,281 @@
   border-bottom: 1px solid currentColor;
 }
 
+/* ---------- BLOCS ISSUS DU DECK ---------- */
+
+.lfdv-sa .sa-section-sub {
+  margin: 10px 0 0;
+  font-size: 16px;
+  color: var(--sa-muted);
+  max-width: 60ch;
+}
+.lfdv-sa .sa-status .sa-section-sub { color: #C9D5BC; }
+
+.lfdv-sa .sa-hero__sign {
+  margin: 18px 0 0;
+  font-size: 13px;
+  color: #B9C9A6;
+}
+
+/* chiffres clés */
+.lfdv-sa .sa-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-top: 40px;
+  border-top: 1px solid var(--sa-line);
+  padding-top: 28px;
+}
+
+.lfdv-sa .sa-stat { display: flex; flex-direction: column; gap: 4px; }
+
+.lfdv-sa .sa-stat__value {
+  font-family: var(--sa-display);
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 600;
+  color: var(--sa-forest);
+  line-height: 1;
+}
+
+.lfdv-sa .sa-stat__label {
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  color: var(--sa-muted);
+}
+
+/* trois colonnes techniques */
+.lfdv-sa .sa-triple {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  margin-top: 40px;
+}
+
+.lfdv-sa .sa-tech-card {
+  background: var(--sa-paper);
+  border: 1px solid var(--sa-line);
+  border-radius: 16px;
+  padding: 26px 22px;
+}
+
+.lfdv-sa .sa-tech-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+
+.lfdv-sa .sa-tech-card ul,
+.lfdv-sa .sa-facing__list,
+.lfdv-sa .sa-step__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lfdv-sa .sa-tech-card li,
+.lfdv-sa .sa-facing__list li {
+  display: flex;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--sa-muted);
+  padding: 7px 0;
+}
+
+.lfdv-sa .sa-tech-card svg,
+.lfdv-sa .sa-facing__list svg { flex: none; margin-top: 3px; color: var(--sa-amber); }
+
+/* encart */
+.lfdv-sa .sa-callout {
+  margin-top: 32px;
+  border-left: 4px solid var(--sa-amber);
+  background: var(--sa-paper);
+  border-radius: 0 14px 14px 0;
+  padding: 22px 24px;
+}
+.lfdv-sa .sa-callout h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+.lfdv-sa .sa-callout p { margin: 0; font-size: 14px; color: var(--sa-muted); }
+
+/* applications */
+.lfdv-sa .sa-apps__grid--4 { grid-template-columns: repeat(2, 1fr); }
+
+.lfdv-sa .sa-pill {
+  display: inline-block;
+  margin: 14px 0 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--sa-moss-tint);
+  color: var(--sa-forest);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* colonnes face à face */
+.lfdv-sa .sa-piece { background: var(--sa-tint); }
+.lfdv-sa .sa-pilot { background: var(--sa-tint); }
+
+.lfdv-sa .sa-facing {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  margin-top: 40px;
+}
+
+.lfdv-sa .sa-facing__col {
+  background: var(--sa-paper);
+  border: 1px solid var(--sa-line);
+  border-radius: 16px;
+  padding: 26px 24px;
+}
+
+.lfdv-sa .sa-facing__col--accent {
+  background: var(--sa-forest-dark);
+  border-color: transparent;
+}
+.lfdv-sa .sa-facing__col--accent h3 { color: var(--sa-paper); }
+.lfdv-sa .sa-facing__col--accent li { color: #C9D5BC; }
+.lfdv-sa .sa-facing__col--accent strong { color: var(--sa-moss); }
+
+.lfdv-sa .sa-facing__col h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+
+/* ce que nous recherchons */
+.lfdv-sa .sa-seeking { background: var(--sa-paper); }
+
+.lfdv-sa .sa-seeking__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 40px;
+}
+
+.lfdv-sa .sa-seek-card {
+  display: flex;
+  gap: 16px;
+  border: 1px solid var(--sa-line);
+  border-radius: 16px;
+  padding: 24px 22px;
+}
+
+.lfdv-sa .sa-seek-card--priority {
+  border-color: var(--sa-amber);
+  background: #FFFBF2;
+}
+
+.lfdv-sa .sa-seek-card__num {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--sa-forest);
+  color: var(--sa-paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+.lfdv-sa .sa-seek-card--priority .sa-seek-card__num { background: var(--sa-amber); color: #241505; }
+
+.lfdv-sa .sa-seek-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lfdv-sa .sa-tag {
+  font-family: var(--sa-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--sa-amber);
+  color: #241505;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.lfdv-sa .sa-seek-card p { margin: 0; font-size: 13.5px; color: var(--sa-muted); }
+
+/* ce que nous apportons */
+.lfdv-sa .sa-giveback { background: var(--sa-tint); }
+
+.lfdv-sa .sa-give__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-top: 40px;
+}
+
+.lfdv-sa .sa-give-card {
+  background: var(--sa-paper);
+  border-radius: 16px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lfdv-sa .sa-give-card p { margin: 10px 0 0; font-size: 13px; color: var(--sa-muted); }
+
+.lfdv-sa .sa-give__note {
+  margin-top: 28px;
+  font-size: 14px;
+  color: var(--sa-ink);
+  border-left: 4px solid var(--sa-moss);
+  padding-left: 16px;
+  max-width: 78ch;
+}
+
+/* calendrier 4 mois */
+.lfdv-sa .sa-steps--4 { grid-template-columns: repeat(4, 1fr); }
+.lfdv-sa .sa-steps--4::before { left: 6%; right: 6%; }
+
+.lfdv-sa .sa-step__list li {
+  font-size: 13px;
+  color: #C9D5BC;
+  padding: 3px 0 3px 14px;
+  position: relative;
+}
+.lfdv-sa .sa-step__list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 11px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sa-moss);
+}
+
+/* signature de clôture */
+.lfdv-sa .sa-signature {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+  color: var(--sa-muted);
+  text-align: right;
+}
+.lfdv-sa .sa-signature strong {
+  font-family: var(--sa-display);
+  font-size: 16px;
+  color: var(--sa-forest);
+}
+.lfdv-sa .sa-signature a { color: var(--sa-soil); text-decoration: none; font-weight: 600; }
+.lfdv-sa .sa-signature__links { display: flex; gap: 14px; justify-content: flex-end; flex-wrap: wrap; }
+
+@media (max-width: 980px) {
+  .lfdv-sa .sa-triple,
+  .lfdv-sa .sa-seeking__grid,
+  .lfdv-sa .sa-facing,
+  .lfdv-sa .sa-apps__grid--4 { grid-template-columns: 1fr; }
+  .lfdv-sa .sa-stats,
+  .lfdv-sa .sa-give__grid { grid-template-columns: repeat(2, 1fr); }
+  .lfdv-sa .sa-steps--4 { grid-template-columns: 1fr 1fr; }
+}
+
 @media (max-width: 860px) {
   .lfdv-sa .sa-block { padding: 64px 0; }
   .lfdv-sa .sa-hero__grid,
@@ -601,12 +876,21 @@
   .lfdv-sa .sa-cards,
   .lfdv-sa .sa-apps__grid { grid-template-columns: 1fr; }
   .lfdv-sa .sa-steps { grid-template-columns: 1fr; gap: 32px; }
+  .lfdv-sa .sa-steps--4 { grid-template-columns: 1fr; }
   .lfdv-sa .sa-steps::before { display: none; }
   .lfdv-sa .sa-cta__box { grid-template-columns: 1fr; padding: 32px 24px; }
   .lfdv-sa .sa-footer-note { flex-direction: column; }
+  .lfdv-sa .sa-signature,
+  .lfdv-sa .sa-signature__links { text-align: left; justify-content: flex-start; }
   .lfdv-sa .sa-topbar__brand { display: none; }
   .lfdv-sa .sa-topbar__inner { justify-content: flex-end; }
 }
+
+@media (max-width: 520px) {
+  .lfdv-sa .sa-stats,
+  .lfdv-sa .sa-give__grid { grid-template-columns: 1fr; }
+}
+
 
 /* ---------- IMPRESSION : une section par page A4 paysage ---------- */
 
