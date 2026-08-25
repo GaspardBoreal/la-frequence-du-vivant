@@ -98,6 +98,6 @@ Classés par rapport effet / effort.
 
 ## 7. Ce qu'il me faut de vous
 
-- Les 3 entretiens restants (Laurence, Victor, bziiit) quand ils seront prêts. Je pose la structure et publie les 3 disponibles dès maintenant.
-- Trancher : Ver de terre production ou Conseil National de l'Agroécologie pour Fréquence Jardin.
-- Portraits photo des 4 personnes, et URL des profils (LinkedIn, sites) pour les `sameAs`.
+- Les 3 entretiens restants (Laurence, Victor, bziiit) quand ils seront prêts. Je pose la structure et publie les 3 entretiens déjà disponibles dès l'approbation du plan.
+- Portraits photo des 4 personnes et URL des profils (LinkedIn, sites personnels, PiloTerra) pour les `sameAs`.
+- Une décision sur la fréquence de publication : une page tous les 15 jours est recommandée pour éviter le signal "contenu de masse".
