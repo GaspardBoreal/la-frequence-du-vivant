@@ -12,8 +12,10 @@ import {
   soilAcousticsContent,
   CALENDLY_URL,
   SOIL_ACOUSTICS_URL,
+  SOIL_ACOUSTICS_FOOTER_LINKS,
   CONTACT_EMAIL,
   type SaLang,
+
 } from '@/content/soilAcousticsPartnership';
 import '@/styles/soil-acoustics.css';
 
