@@ -42,37 +42,101 @@ const ListenVisual = () => (
     <svg viewBox="0 0 520 400" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <clipPath id="sa-clip"><rect x="0" y="0" width="520" height="400" rx="18" /></clipPath>
+        <linearGradient id="sa-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#22420F" />
+          <stop offset="100%" stopColor="#1A330B" />
+        </linearGradient>
+        <linearGradient id="sa-deep" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3B2A18" />
+          <stop offset="100%" stopColor="#201306" />
+        </linearGradient>
       </defs>
       <g clipPath="url(#sa-clip)">
         <rect width="520" height="400" fill="#16290A" />
-        <rect y="0" width="520" height="176" fill="#1E3A0E" />
-        <rect y="176" width="520" height="70" fill="#3B2A18" />
-        <rect y="246" width="520" height="80" fill="#31210F" />
-        <rect y="326" width="520" height="74" fill="#28190A" />
-        <g fill="#9DB86D" opacity="0.18">
+        <rect y="0" width="520" height="176" fill="url(#sa-sky)" />
+        <rect y="176" width="520" height="224" fill="url(#sa-deep)" />
+
+        {/* strates : filets fins plutôt que blocs */}
+        <g stroke="#F2C57C" strokeWidth="0.75" opacity="0.16">
+          <path d="M0 230 H520" /><path d="M0 286 H520" /><path d="M0 352 H520" />
+        </g>
+        <path d="M0 176 H520" stroke="#F2C57C" strokeWidth="1.2" opacity="0.45" />
+
+        {/* grain minéral */}
+        <g fill="#D9C6A3" opacity="0.13">
           <circle cx="120" cy="205" r="2.4" /><circle cx="330" cy="215" r="1.8" />
-          <circle cx="205" cy="270" r="2.1" /><circle cx="400" cy="290" r="1.6" />
-          <circle cx="90" cy="300" r="2" /><circle cx="290" cy="340" r="1.7" />
-          <circle cx="440" cy="200" r="1.6" /><circle cx="160" cy="355" r="2.2" />
+          <circle cx="205" cy="270" r="2.1" /><circle cx="400" cy="292" r="1.6" />
+          <circle cx="90" cy="300" r="2" /><circle cx="292" cy="340" r="1.7" />
+          <circle cx="452" cy="248" r="1.6" /><circle cx="160" cy="356" r="2.2" />
+          <circle cx="60" cy="252" r="1.4" /><circle cx="368" cy="368" r="1.5" />
         </g>
-        <g stroke="#9DB86D" strokeWidth="2.5" strokeLinecap="round" opacity="0.8">
-          <path d="M150 176 q4 -18 -3 -30" />
-          <path d="M168 176 q-3 -14 5 -24" />
-          <path d="M370 176 q4 -20 -4 -32" />
+
+        {/* deux plantes, horloges désynchronisées */}
+        <g className="sa-plant sa-plant--a" stroke="#9DB86D" strokeWidth="2.4" strokeLinecap="round" fill="none">
+          <path d="M150 176 q3 -22 -4 -38" />
+          <path d="M150 158 q-14 -4 -18 -16" />
+          <path d="M148 146 q14 -6 17 -18" />
         </g>
-        <g fill="none" stroke="#D9952B" strokeWidth="2">
-          <circle className="sa-ring sa-ring--1" cx="260" cy="176" r="34" />
-          <circle className="sa-ring sa-ring--2" cx="260" cy="176" r="34" />
-          <circle className="sa-ring sa-ring--3" cx="260" cy="176" r="34" />
-          <circle className="sa-ring sa-ring--4" cx="260" cy="176" r="34" />
+        <g className="sa-plant sa-plant--b" stroke="#B7CE8A" strokeWidth="2.4" strokeLinecap="round" fill="none">
+          <path d="M372 176 q4 -26 -5 -44" />
+          <path d="M372 152 q15 -6 19 -19" />
+          <path d="M369 136 q-13 -5 -16 -15" />
         </g>
-        <circle cx="260" cy="176" r="5" fill="#F2C57C" />
-        <rect x="256" y="150" width="8" height="30" rx="3" fill="#EDF2E4" />
-        <circle cx="260" cy="148" r="7" fill="#EDF2E4" />
+
+        {/* traces du vivant, symboliques, par palier */}
+        <g className="sa-trace sa-trace--15" stroke="#9DB86D" fill="none" strokeLinecap="round">
+          <path d="M300 214 q22 6 34 -8 M300 214 q18 18 38 16 M300 214 q-4 20 -18 26" strokeWidth="1.1" opacity="0.85" />
+          <path d="M196 226 q-20 -6 -30 4" strokeWidth="1.1" opacity="0.7" />
+          <circle cx="224" cy="208" r="2" fill="#F2C57C" stroke="none" />
+          <circle cx="336" cy="230" r="1.6" fill="#F2C57C" stroke="none" />
+        </g>
+        <g className="sa-trace sa-trace--30" stroke="#D9952B" fill="none" strokeLinecap="round">
+          <path d="M298 268 q26 -14 44 2 q-16 20 -38 12" strokeWidth="1.6" opacity="0.9" />
+          <circle cx="200" cy="272" r="7" strokeWidth="1" opacity="0.55" />
+          <circle cx="186" cy="288" r="4.5" strokeWidth="1" opacity="0.45" />
+          <circle cx="214" cy="290" r="3" strokeWidth="1" opacity="0.4" />
+          <circle cx="352" cy="256" r="2" fill="#F2C57C" stroke="none" />
+        </g>
+        <g className="sa-trace sa-trace--60" stroke="#B7CE8A" fill="none" strokeLinecap="round">
+          <path d="M300 336 q-30 10 -44 30 M300 336 q28 14 36 34 M300 336 q4 26 -6 40" strokeWidth="1" opacity="0.7" />
+          <path d="M180 344 l14 10 l-6 14" strokeWidth="1" opacity="0.45" />
+          <path d="M392 352 l-12 12 l8 12" strokeWidth="1" opacity="0.4" />
+          <circle cx="248" cy="366" r="1.6" fill="#F2C57C" stroke="none" />
+        </g>
+
+        {/* cotes de profondeur */}
+        <g className="sa-depth sa-depth--15">
+          <path d="M34 230 H108" stroke="#F2C57C" strokeWidth="0.8" opacity="0.55" />
+          <text x="34" y="222" fill="#F2C57C" fontSize="12" letterSpacing="2.4" opacity="0.8">15 CM</text>
+        </g>
+        <g className="sa-depth sa-depth--30">
+          <path d="M34 286 H108" stroke="#F2C57C" strokeWidth="0.8" opacity="0.55" />
+          <text x="34" y="278" fill="#F2C57C" fontSize="12" letterSpacing="2.4" opacity="0.8">30 CM</text>
+        </g>
+        <g className="sa-depth sa-depth--60">
+          <path d="M34 352 H108" stroke="#F2C57C" strokeWidth="0.8" opacity="0.55" />
+          <text x="34" y="344" fill="#F2C57C" fontSize="12" letterSpacing="2.4" opacity="0.8">60 CM</text>
+        </g>
+
+        {/* la sonde et son écoute, solidaires */}
+        <g className="sa-probe">
+          <path d="M260 120 V176" stroke="#EDF2E4" strokeWidth="2" opacity="0.55" />
+          <rect x="256" y="120" width="8" height="52" rx="4" fill="#EDF2E4" />
+          <circle cx="260" cy="116" r="7" fill="#EDF2E4" />
+          <path d="M256 172 L260 184 L264 172 Z" fill="#F2C57C" />
+          <g fill="none" stroke="#D9952B" strokeWidth="2">
+            <circle className="sa-ring sa-ring--1" cx="260" cy="182" r="34" />
+            <circle className="sa-ring sa-ring--2" cx="260" cy="182" r="34" />
+            <circle className="sa-ring sa-ring--3" cx="260" cy="182" r="34" />
+            <circle className="sa-ring sa-ring--4" cx="260" cy="182" r="34" />
+          </g>
+          <circle cx="260" cy="182" r="4" fill="#F2C57C" />
+        </g>
       </g>
     </svg>
   </div>
 );
+
 
 const PartnersSoilAcoustics: React.FC = () => {
   const [params, setParams] = useSearchParams();

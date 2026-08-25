@@ -293,10 +293,78 @@
   100% { transform: scale(1.18); opacity: 0; }
 }
 
+/* --- la descente : 15 / 30 / 60 cm, boucle de 12 s --- */
+
+.lfdv-sa .sa-probe {
+  animation: sa-descend 12s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes sa-descend {
+  0%,  8%   { transform: translateY(0); }
+  16%, 30%  { transform: translateY(54px); }
+  38%, 52%  { transform: translateY(110px); }
+  60%, 78%  { transform: translateY(176px); }
+  90%, 100% { transform: translateY(0); }
+}
+
+/* --- les cotes de profondeur --- */
+
+.lfdv-sa .sa-depth {
+  opacity: 0;
+  animation: sa-depth-in 12s ease-in-out infinite;
+}
+.lfdv-sa .sa-depth--15 { animation-delay: 0s; }
+.lfdv-sa .sa-depth--30 { animation-delay: -9.36s; } /* palier -30 : décalé de 2.64 s */
+.lfdv-sa .sa-depth--60 { animation-delay: -8.16s; } /* palier -60 : décalé de 3.84 s */
+
+@keyframes sa-depth-in {
+  0%, 12%   { opacity: 0; }
+  18%, 70%  { opacity: 1; }
+  84%, 100% { opacity: 0; }
+}
+
+/* --- les traces du vivant --- */
+
+.lfdv-sa .sa-trace {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sa-trace-in 12s ease-in-out infinite;
+}
+.lfdv-sa .sa-trace--15 { animation-delay: 0s; }
+.lfdv-sa .sa-trace--30 { animation-delay: -9.4s; }
+.lfdv-sa .sa-trace--60 { animation-delay: -6.8s; }
+
+@keyframes sa-trace-in {
+  0%,  14%  { opacity: 0; transform: scale(0.9); }
+  22%, 30%  { opacity: 1; transform: scale(1); }
+  40%, 100% { opacity: 0; transform: scale(1.04); }
+}
+
+/* --- deux plantes, deux horloges : jamais calées sur la sonde --- */
+
+.lfdv-sa .sa-plant {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+.lfdv-sa .sa-plant--a { animation: sa-grow 9s ease-in-out infinite; }
+.lfdv-sa .sa-plant--b { animation: sa-grow 14s ease-in-out infinite -3.5s; }
+
+@keyframes sa-grow {
+  0%   { transform: scaleY(0.42) scaleX(0.78); opacity: 0.6; }
+  55%  { transform: scaleY(1) scaleX(1);       opacity: 1; }
+  100% { transform: scaleY(0.42) scaleX(0.78); opacity: 0.6; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lfdv-sa .sa-ring { animation: none; opacity: 0.35; }
+  .lfdv-sa .sa-probe { animation: none; transform: translateY(110px); }
+  .lfdv-sa .sa-depth { animation: none; opacity: 1; }
+  .lfdv-sa .sa-trace { animation: none; opacity: 1; }
+  .lfdv-sa .sa-plant { animation: none; }
   .lfdv-sa .sa-reveal { opacity: 1; transform: none; transition: none; }
 }
+
 
 /* ---------- CONSTAT ---------- */
 
@@ -919,6 +987,10 @@
     transition: none !important;
   }
   .lfdv-sa .sa-ring { animation: none; opacity: 0.35; }
+  .lfdv-sa .sa-probe { animation: none !important; transform: translateY(110px); }
+  .lfdv-sa .sa-depth,
+  .lfdv-sa .sa-trace { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .lfdv-sa .sa-plant { animation: none !important; }
   .lfdv-sa .sa-app-card:hover,
   .lfdv-sa .sa-btn:hover { transform: none; box-shadow: none; }
 
