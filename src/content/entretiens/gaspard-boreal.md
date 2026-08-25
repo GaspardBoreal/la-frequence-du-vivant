@@ -48,7 +48,7 @@ C'est cet organe technologique qui permet d'entendre des fréquences que nous ne
 
 Je me suis beaucoup posé la question du singulier ou du pluriel. Est-ce que c'est « les fréquences du vivant » ou « la fréquence du vivant » ? Ça m'a pris un certain temps de statuer. Je me suis dit que si je partais sur les fréquences, il y aurait toujours le risque d'en omettre quelques-unes. Je me suis dit que tout ce qui vit a une fréquence. Ce n'est pas toujours la même : quand on court, on a une pulsation différente de quand on est fatigué. Mais le singulier, pour moi, c'était pour dire que le vivant a une fréquence.
 
-**Le 24 janvier 2026, vous avez transmis cette vision à vos futurs collaborateurs de l'association La Comédie des Mondes Hybrides, Laurent et Laurence. Qu'est-ce qui, dans votre récit, les a convaincus de porter ce projet à plus grande échelle ?**
+**Le 24 janvier 2026, vous avez transmis cette vision à vos futurs collaborateurs de l'association La Fréquence du Vivant, Laurent et Laurence. Qu'est-ce qui, dans votre récit, les a convaincus de porter ce projet à plus grande échelle ?**
 
 Il faudra le valider avec eux bien sûr, mais je crois que c'est justement le fait d'y adjoindre le protocole des marches. Si je reste sur la Fréquence du Vivant, je crois que c'est ce qui est écrit dans notre raison d'être : la reconnexion. On a besoin de reconnexion à la nature, pour employer un mot que j'aime peu, mais en tout cas je parle de reconnexion à la nature et de reconnexion au vivant. Je pense que c'est la première chose qui les a intéressés : cette volonté de faciliter, de regrouper le plus grand nombre autour de la reconnexion et du partage.
 
