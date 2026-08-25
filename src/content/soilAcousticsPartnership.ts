@@ -247,19 +247,19 @@ export const soilAcousticsContent: Record<SaLang, SaContent> = {
           body: "Sous réserve d'accord entre les deux parties.",
         },
       ],
-      note: "Cette page sera mise à jour au fil des échanges. Aucune date n'est garantie.",
+      note: 'Cette page sera mise à jour au fil des échanges selon les retours et objectifs validés par Soil acoustics x La Fréquence du Vivant',
     },
     cta: {
       title: 'Échangeons de vive voix',
-      body: "Choisissez le créneau qui vous convient — 30 minutes pour parcourir la donnée, le pilote et les conditions d'un partenariat.",
+      body: "Choisissez le créneau qui vous convient :\n30 minutes pour parcourir la donnée, le pilote et les conditions d'un partenariat.",
       primary: 'Réserver un créneau sur Calendly',
       secondary: 'Nous écrire directement',
       hint: 'Laurent Tripied · Fondateur, La Fréquence du Vivant',
     },
     footer: {
       quote: '« Écouter un territoire, c\'est déjà commencer à le défendre. »',
-      author: '— Manifeste fondateur, La Fréquence du Vivant',
-      creditBefore: 'Technologie évoquée : Soil Acoustics Ltd. (Royaume-Uni) — ',
+      author: 'Manifeste fondateur, La Fréquence du Vivant',
+      creditBefore: 'Technologie évoquée :\nSoil Acoustics Ltd. (Royaume-Uni) — ',
     },
   },
 };
