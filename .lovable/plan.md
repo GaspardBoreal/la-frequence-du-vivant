@@ -11,7 +11,7 @@ Ce qui fonctionne :
 
 Trois corrections à apporter :
 - **L'article Laurent porte deux offres** (Marches du Vivant + Fréquence Jardin). Sur le plan des intentions de recherche, ce sont deux requêtes disjointes. Recommandation : garder **un seul entretien** (le contenu est déjà écrit et cohérent), mais le publier avec **deux ancres profondes** (`#marches-du-vivant`, `#frequence-jardin`), deux blocs `FAQPage` non fusionnés, et deux liens entrants distincts depuis `/marches-du-vivant` et `/roadmap/frequence-jardin`. Une scission en deux articles est possible en v2 si les volumes le justifient.
-- **Incohérence de partenaire** entre le brief (« Conseil National de l'Agroécologie » dans le chapô du fichier) et le cocon (« Ver de terre production »). À trancher avant publication : le nom cité doit être identique partout, sinon deux entités partenaires concurrentes.
+- **Incohérence de partenaire tranchée** : le partenaire de Fréquence Jardin cité dans l'entretien Laurent est désormais **Ver de terre production**. Il faut harmoniser ce nom dans le chapô, les liens entrants et tout le balisage.
 - **Numéro 4 (Victor) et 5 (bziiit)** : ce sont les deux plus faibles en volume mais les plus utiles en conversion et en maillage d'entités. À publier en dernier.
 
 ## 2. Ce qu'on publie ici (la-frequence-du-vivant.com)
@@ -98,6 +98,6 @@ Classés par rapport effet / effort.
 
 ## 7. Ce qu'il me faut de vous
 
-- Les 3 entretiens restants (Laurence, Victor, bziiit) quand ils seront prêts. Je pose la structure et publie les 3 disponibles dès maintenant.
-- Trancher : Ver de terre production ou Conseil National de l'Agroécologie pour Fréquence Jardin.
-- Portraits photo des 4 personnes, et URL des profils (LinkedIn, sites) pour les `sameAs`.
+- Les 3 entretiens restants (Laurence, Victor, bziiit) quand ils seront prêts. Je pose la structure et publie les 3 entretiens déjà disponibles dès l'approbation du plan.
+- Portraits photo des 4 personnes et URL des profils (LinkedIn, sites personnels, PiloTerra) pour les `sameAs`.
+- Une décision sur la fréquence de publication : une page tous les 15 jours est recommandée pour éviter le signal "contenu de masse".
