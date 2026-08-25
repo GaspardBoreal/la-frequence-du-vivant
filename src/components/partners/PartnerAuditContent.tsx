@@ -24,7 +24,10 @@ export const PartnerAuditContent: React.FC<{
       remarkPlugins={[remarkGfm]}
       components={{
         h2: ({ children }) => (
-          <h2 className="mt-8 border-b border-border/60 pb-2 text-2xl font-semibold tracking-tight text-foreground first:mt-0">
+          <h2
+            id={headingId(children)}
+            className="mt-8 scroll-mt-24 border-b border-border/60 pb-2 text-2xl font-semibold tracking-tight text-foreground first:mt-0"
+          >
             {children}
           </h2>
         ),
