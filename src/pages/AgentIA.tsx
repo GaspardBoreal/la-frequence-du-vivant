@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Download, ArrowLeft, Sparkles, Leaf, Users, ShieldCheck, MapPin, Database, Activity, Microscope, UserPlus } from 'lucide-react';
+import { Download, ArrowLeft, Sparkles, Leaf, Users, ShieldCheck, MapPin, Database, Activity, Microscope, UserPlus, MessagesSquare, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -485,6 +485,31 @@ const AgentIA: React.FC = () => {
               <p className="text-sm text-muted-foreground leading-relaxed">{p.desc}</p>
             </Card>
           ))}
+        </div>
+      </section>
+
+      {/* Entretiens autour de l'agent */}
+      <section className="container mx-auto px-4 py-16 max-w-6xl">
+        <div className="flex items-center gap-3 mb-6">
+          <MessagesSquare className="h-6 w-6 text-primary" />
+          <h2 className="text-3xl md:text-4xl font-bold">Entretiens autour de l'agent</h2>
+        </div>
+        <p className="text-muted-foreground mb-6 max-w-3xl">
+          Les personnes et organisations à l'origine de l'agent racontent la démarche, l'open source et l'IA responsable.
+        </p>
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="p-6 border-primary/20">
+            <h3 className="font-bold text-lg mb-2">PiloTerra et la biodiversité en open source</h3>
+            <p className="text-sm text-muted-foreground mb-4">Laurent Tripied explique pourquoi PiloTerra est le lieu naturel pour héberger et diffuser les travaux ouverts des Marches du Vivant.</p>
+            <Link to="/entretiens/piloterra-open-source-biodiversite" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+              Lire l'entretien <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </Card>
+          <Card className="p-6 border-primary/20">
+            <h3 className="font-bold text-lg mb-2">bziiit et l'IA responsable</h3>
+            <p className="text-sm text-muted-foreground mb-4">Pourquoi une entreprise d'IA responsable soutient un projet de mesure de la biodiversité.</p>
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">À paraître</span>
+          </Card>
         </div>
       </section>
 

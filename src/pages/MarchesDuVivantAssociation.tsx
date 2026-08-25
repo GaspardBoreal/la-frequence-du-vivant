@@ -3,7 +3,7 @@ import PublicTopBar from '@/components/layout/PublicTopBar';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Heart, Lightbulb, Compass, Users, ChevronDown, ArrowRight, Footprints, Eye, Shield, Sparkles } from 'lucide-react';
+import { ArrowLeft, Heart, Lightbulb, Compass, Users, ChevronDown, ArrowRight, Footprints, Eye, Shield, Sparkles, MessagesSquare } from 'lucide-react';
 import Footer from '@/components/Footer';
 import AdhesionDialog from '@/components/adhesion/AdhesionDialog';
 import ContributeurCard, { ContributeurData } from '@/components/marches-vivant/ContributeurCard';
@@ -23,6 +23,7 @@ const contributeurs: ContributeurData[] = [
     bio: 'IA frugale & responsable | Agriculture + création | Dispositifs utiles, sobres, désirables | Ateliers, formations, conférences.',
     linkedin: 'https://www.linkedin.com/in/laurenttripied/',
     couleur: 'emerald',
+    entretienUrl: '/entretiens/laurent-tripied-marches-du-vivant-frequence-jardin',
   },
   {
     nom: 'Laurence Karki',
@@ -44,6 +45,7 @@ const contributeurs: ContributeurData[] = [
     bio: 'Ateliers d\'écoute du vivant | Soundwalks & récit de territoire | Outils numériques sobres | Résidences, conférences, collaborations.',
     linkedin: 'https://www.gaspardboreal.com/',
     couleur: 'purple',
+    entretienUrl: '/entretiens/gaspard-boreal-naissance-la-frequence-du-vivant',
   },
 ];
 
@@ -130,11 +132,17 @@ const MarchesDuVivantAssociation = () => {
         <script type="application/ld+json">{JSON.stringify({
           "@context": "https://schema.org",
           "@type": "NGO",
+          "@id": "https://la-frequence-du-vivant.com/#organization",
           "name": "La Fréquence du Vivant",
           "url": "https://la-frequence-du-vivant.com/",
           "logo": "https://la-frequence-du-vivant.com/favicon.png",
           "description": "Association loi 1901 porteuse des Marches du Vivant, immersions territoriales mêlant bioacoustique, science participative et prose poétique.",
-          "founder": { "@type": "Person", "name": "Laurent Tripied", "alternateName": "Gaspard Boréal", "url": "https://www.gaspardboreal.com" },
+          "founder": { "@type": "Person", "name": "Gaspard Boréal", "url": "https://www.gaspardboreal.com", "sameAs": ["https://www.gaspardboreal.com"] },
+          "member": [
+            { "@type": "Person", "name": "Laurent Tripied", "jobTitle": "Président", "sameAs": ["https://www.linkedin.com/in/laurenttripied/"], "affiliation": { "@type": "Organization", "name": "La Fréquence du Vivant", "url": "https://la-frequence-du-vivant.com/" } },
+            { "@type": "Person", "name": "Laurence Karki", "jobTitle": "Vice-Présidente", "sameAs": ["https://www.linkedin.com/in/laurence-karki-43153620/"], "affiliation": { "@type": "Organization", "name": "La Fréquence du Vivant", "url": "https://la-frequence-du-vivant.com/" } },
+            { "@type": "Person", "name": "Victor Boixeda", "jobTitle": "Responsable Relations Publiques", "sameAs": ["https://www.linkedin.com/in/victor-boixeda-a70b8138b/"], "affiliation": { "@type": "Organization", "name": "La Fréquence du Vivant", "url": "https://la-frequence-du-vivant.com/" } }
+          ],
           "areaServed": ["Charente", "Nouvelle-Aquitaine", "Occitanie", "Pays de la Loire", "Bretagne"],
           "sameAs": ["https://www.gaspardboreal.com", "https://bziiit.com", "https://piloterra.fr"]
         })}</script>
@@ -321,6 +329,46 @@ const MarchesDuVivantAssociation = () => {
                   index={index}
                 />
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Entretiens de l'équipe */}
+        <section className="py-16 px-6 border-t border-border/20">
+          <div className="max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="mb-10"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <MessagesSquare className="h-5 w-5 text-primary" />
+                <h2 className="font-crimson text-3xl text-foreground">Ils racontent l'association</h2>
+              </div>
+              <p className="text-muted-foreground">
+                Entretiens sources avec les fondateurs et contributeurs de La Fréquence du Vivant.
+              </p>
+            </motion.div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <Link to="/entretiens/gaspard-boreal-naissance-la-frequence-du-vivant" className="group block rounded-2xl border border-border/30 bg-card/40 p-6 transition hover:border-primary/50">
+                <p className="text-xs uppercase tracking-wider text-primary mb-2">Entretien</p>
+                <h3 className="font-crimson text-xl text-foreground mb-2">La naissance de La Fréquence du Vivant</h3>
+                <p className="text-sm text-muted-foreground mb-4">Gaspard Boréal raconte le cheminement poétique, scientifique et technologique qui a donné naissance à la démarche.</p>
+                <span className="inline-flex items-center gap-1 text-sm text-primary group-hover:underline">Lire l'entretien <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+              </Link>
+              <Link to="/entretiens/laurent-tripied-marches-du-vivant-frequence-jardin" className="group block rounded-2xl border border-border/30 bg-card/40 p-6 transition hover:border-primary/50">
+                <p className="text-xs uppercase tracking-wider text-primary mb-2">Entretien</p>
+                <h3 className="font-crimson text-xl text-foreground mb-2">Pourquoi créer Les Marches du Vivant et Fréquence Jardin ?</h3>
+                <p className="text-sm text-muted-foreground mb-4">Laurent Tripied détaille le protocole, la gamification, les acteurs et la prochaine étape.</p>
+                <span className="inline-flex items-center gap-1 text-sm text-primary group-hover:underline">Lire l'entretien <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+              </Link>
+              <Link to="/entretiens" className="group block rounded-2xl border border-border/30 bg-card/40 p-6 transition hover:border-primary/50 md:col-span-2">
+                <p className="text-xs uppercase tracking-wider text-primary mb-2">Série</p>
+                <h3 className="font-crimson text-xl text-foreground mb-2">Tous les entretiens</h3>
+                <p className="text-sm text-muted-foreground mb-4">Laurence Karki, Victor Boixeda, bziiit et PiloTerra à paraître.</p>
+                <span className="inline-flex items-center gap-1 text-sm text-primary group-hover:underline">Découvrir <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+              </Link>
             </div>
           </div>
         </section>

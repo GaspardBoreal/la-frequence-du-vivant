@@ -1,6 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Linkedin, ExternalLink } from 'lucide-react';
+import { Linkedin, ExternalLink, ArrowRight, MessagesSquare } from 'lucide-react';
 
 export interface ContributeurData {
   nom: string;
@@ -9,6 +10,7 @@ export interface ContributeurData {
   linkedin?: string;
   photo?: string;
   couleur?: 'emerald' | 'orange' | 'blue' | 'purple';
+  entretienUrl?: string;
 }
 
 interface ContributeurCardProps {
@@ -78,27 +80,40 @@ const ContributeurCard: React.FC<ContributeurCardProps> = ({
             </p>
           )}
 
-          {contributeur.linkedin && (
-            <a
-              href={contributeur.linkedin}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {contributeur.linkedin.includes('linkedin.com') ? (
-                <>
-                  <Linkedin className="w-4 h-4" />
-                  <span>LinkedIn</span>
-                </>
-              ) : (
-                <>
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Site de l'auteur</span>
-                </>
-              )}
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
+          <div className="flex flex-wrap items-center gap-3 mt-3">
+            {contributeur.linkedin && (
+              <a
+                href={contributeur.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {contributeur.linkedin.includes('linkedin.com') ? (
+                  <>
+                    <Linkedin className="w-4 h-4" />
+                    <span>LinkedIn</span>
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Site de l'auteur</span>
+                  </>
+                )}
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+
+            {contributeur.entretienUrl && (
+              <Link
+                to={contributeur.entretienUrl}
+                className="inline-flex items-center gap-1 text-xs text-primary hover:text-foreground transition-colors"
+              >
+                <MessagesSquare className="w-4 h-4" />
+                <span>Lire l'entretien</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>
