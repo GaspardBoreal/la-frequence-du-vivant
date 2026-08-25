@@ -7,7 +7,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import SEOHead from '@/components/SEOHead';
-import lockupDark from '@/assets/brand/marches-du-vivant/logo-lockup-horizontal-clair.png.asset.json';
+
 import {
   soilAcousticsContent,
   CALENDLY_URL,
