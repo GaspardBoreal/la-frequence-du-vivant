@@ -23,6 +23,7 @@ const contributeurs: ContributeurData[] = [
     bio: 'IA frugale & responsable | Agriculture + création | Dispositifs utiles, sobres, désirables | Ateliers, formations, conférences.',
     linkedin: 'https://www.linkedin.com/in/laurenttripied/',
     couleur: 'emerald',
+    entretienUrl: '/entretiens/laurent-tripied-marches-du-vivant-frequence-jardin',
   },
   {
     nom: 'Laurence Karki',
@@ -44,6 +45,7 @@ const contributeurs: ContributeurData[] = [
     bio: 'Ateliers d\'écoute du vivant | Soundwalks & récit de territoire | Outils numériques sobres | Résidences, conférences, collaborations.',
     linkedin: 'https://www.gaspardboreal.com/',
     couleur: 'purple',
+    entretienUrl: '/entretiens/gaspard-boreal-naissance-la-frequence-du-vivant',
   },
 ];
 

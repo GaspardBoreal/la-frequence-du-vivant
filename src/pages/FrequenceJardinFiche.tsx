@@ -164,6 +164,25 @@ const FrequenceJardinFiche: React.FC = () => {
           </div>
         </header>
 
+        {/* Entretien à l'origine */}
+        <section className="container mx-auto px-4 mb-12 max-w-4xl">
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <MessagesSquare className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">À l'origine de Fréquence Jardin</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Laurent Tripied détaille le dispositif, le partenariat avec Ver de terre production et la prochaine étape.
+            </p>
+            <Link
+              to="/entretiens/laurent-tripied-marches-du-vivant-frequence-jardin"
+              className="group inline-flex items-center gap-2 text-sm text-primary hover:underline"
+            >
+              Lire l'entretien <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </Link>
+          </div>
+        </section>
+
         {/* Carte d'identité */}
         <section className="mb-14 overflow-hidden rounded-2xl border border-border/60 bg-card/50">
           <div className="border-b border-border/60 px-5 py-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
