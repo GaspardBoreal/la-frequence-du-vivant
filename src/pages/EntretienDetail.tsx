@@ -18,10 +18,18 @@ import {
 } from '@/content/entretiens';
 
 const ORGANIZATION = {
+  '@context': 'https://schema.org',
   '@type': 'Organization',
+  '@id': `${SITE_ORIGIN}/#organization`,
   name: 'La Fréquence du Vivant',
   url: `${SITE_ORIGIN}/`,
-  sameAs: ['https://piloterra.fr/agents/les-marches-du-vivant'],
+  logo: `${SITE_ORIGIN}/favicon.png`,
+  sameAs: [
+    'https://www.gaspardboreal.com',
+    'https://bziiit.com',
+    'https://piloterra.fr',
+    'https://piloterra.fr/agents/les-marches-du-vivant',
+  ],
 };
 
 /** Ajoute un identifiant d'ancre à chaque question du corps Markdown. */
