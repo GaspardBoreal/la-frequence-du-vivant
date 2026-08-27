@@ -40,7 +40,7 @@ Le deuxième volet, c'est un peu ce que je cherche à faire à travers les trava
 
 On peut explorer des univers qu'on ne sait pas encore expliquer, sans s'interdire aucune limite, à part l'intuition de celui qui écrit. Et la poésie a cette faculté de le transcender, comme cette fameuse phrase courte de Paul Éluard : « La Terre est bleue comme une orange. » Quand il a écrit ça, c'était dans les années 1930, on n'avait encore jamais vu d'image de la Terre depuis la lune ni depuis un satellite. Cette image n'existait pas. Et un poète écrit « la Terre est bleue comme une orange ». C'est fantastique d'arriver, mentalement, à représenter quelque chose que scientifiquement on n'est pas encore capable d'expliquer. C'est ça, la liberté. Je pense qu'il n'y a pas d'espace plus libre que l'espace poétique.
 
-**Comment votre travail s'inscrit-il dans La Comédie des Mondes Hybrides ?**
+**Comment votre travail s'inscrit-il dans " La Comédie des Mondes Hybrides" ?**
 
 GB. : Dans "La Fréquence du Vivant" la machine est moins présente qu'elle ne l'était dans La Confession muette, par exemple. Ici ce qui m'a intéressé, c'est le capteur : si on veut entendre mastiquer un ver de terre, il va falloir s'équiper de capteurs. Si on veut l'entendre se déplacer, il va falloir s'équiper de capteurs. Dans ce projet, c'est plutôt le capteur senseur qui matérialise la dimension de "La Comédie des Mondes Hybrides", j'aime bien à ce titre le mot anglais: le "sensor".
 
