@@ -16,7 +16,7 @@ L'idée, c'était justement que je pressentais que ce périple allait me ramener
 
 Mais il y en a aussi pour des espèces que l'on entend moins bien, parce qu'on n'a pas le capteur sonore, l'oreille, adapté à la fréquence qui parle. Et j'ai découvert au fur et à mesure des travaux que tout le vivant émettait une onde, jusqu'à un ver de terre ou une plante, et bien sûr des arbres.
 
-**Votre marche de 480 kilomètres le long de la Dordogne a donné naissance au recueil *Fréquences de la rivière Dordogne*. Comment ce texte a-t-il fait germer un projet collectif ?**
+**Votre marche de 480 kilomètres le long de la Dordogne a donné naissance au recueil de textes "Fréquences de la rivière Dordogne". Comment ce texte a-t-il fait germer un projet collectif ?**
 
 GB. : J'aurais pu rester sur un travail d'auteur et me contenter de cela. En fait, quand j'ai remonté la rivière Dordogne, j'ai pu rencontrer un certain nombre de personnes et parler avec elles. Par les échanges que j'ai eus, j'ai observé quelque chose qui est sûrement évident, mais que je n'intégrais pas dans ma façon de travailler : prenez trois personnes, faites-les observer quelque chose, et on est trois à voir des choses différentes. Je me suis dit que c'était quand même assez merveilleux : si on arrive à faire cohabiter, à faire marcher ensemble des personnes, on enrichit une perception par des points de vue multiples, par les parcours, les compétences, les croyances de chacun.
 
