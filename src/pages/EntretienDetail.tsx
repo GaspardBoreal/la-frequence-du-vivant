@@ -184,6 +184,11 @@ const EntretienDetail: React.FC = () => {
             <div className="text-sm">
               <p className="font-medium text-foreground">{entretien.person.name}</p>
               <p className="text-muted-foreground">{entretien.person.role}</p>
+              {entretien.interviewer && (
+                <p className="mt-1 text-xs text-muted-foreground/80">
+                  Entretien mené par {entretien.interviewer.name}, {entretien.interviewer.role.split(' de ')[0]?.toLowerCase()} de La Fréquence du Vivant
+                </p>
+              )}
             </div>
           </div>
           <p className="mt-6 text-[15px] leading-relaxed text-foreground/85">{entretien.chapo}</p>
