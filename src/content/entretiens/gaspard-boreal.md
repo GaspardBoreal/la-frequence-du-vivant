@@ -1,6 +1,6 @@
 # Comment est née La Fréquence du Vivant ? Entretien avec Gaspard Boréal
 
-Auteur et créateur de La Fréquence du Vivant, Gaspard Boréal revient sur la genèse du projet : une marche de deux semaines le long de la Dordogne, la découverte de la géopoétique japonaise, et la manière dont un travail littéraire solitaire s'est transformé en une aventure collective portée aujourd'hui par toute une communauté. Il raconte aussi le lien entre ses travaux précédents, notamment "La Confession muette", et la naissance du nom « La Fréquence du Vivant », avant de dévoiler les contours de sa prochaine création, Fréquence Jardin.
+Auteur et créateur de La Fréquence du Vivant, Gaspard Boréal revient sur la genèse du projet : une marche de deux semaines le long de la Dordogne, la découverte de la géopoétique japonaise, et la manière dont un travail littéraire solitaire s'est transformé en une aventure collective portée aujourd'hui par toute une communauté. Il raconte aussi le lien entre ses travaux précédents, notamment "La Confession muette", et la naissance du nom « La Fréquence du Vivant », avant de dévoiler les contours de sa prochaine création, "Fréquence Jardin Monde."
 
 ---
 
