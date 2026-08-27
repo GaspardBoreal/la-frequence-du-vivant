@@ -29,6 +29,8 @@ export interface Entretien {
   seoDescription: string;
   chapo: string;
   person: EntretienPerson;
+  /** Interviewer qui a mené l'entretien (mention discrète, crédit éditorial). */
+  interviewer?: EntretienPerson;
   publishedAt: string;
   updatedAt: string;
   /** Faits courts et citables, extraits du texte — bloc « À retenir ». */
@@ -131,6 +133,7 @@ export const entretiens: Entretien[] = [
       seoDescription:
         "Gaspard Boréal, auteur et créateur de La Fréquence du Vivant, raconte la remontée de la Dordogne, la géopoétique japonaise et le passage d'un travail d'auteur à une aventure collective.",
       person: GASPARD,
+      interviewer: VICTOR,
       publishedAt: '2026-08-25',
       updatedAt: '2026-08-25',
       keyPoints: [
