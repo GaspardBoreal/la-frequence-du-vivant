@@ -15,8 +15,8 @@ Intention du jardin
 [ Le jardin ]   [ Le projet ]        ← sélecteur, sticky sur mobile
 ```
 
-- **« Le jardin »** — la description : phrase de portrait, carte « Le jardin qui vous ressemble » (exemple choisi/refusé), vos premiers gestes, profil détecté + date de mise à jour, puis les questions des chapitres **Vous / Votre lieu / Vos envies / Vos moyens** (cartes éditables, inchangées).
-- **« Le projet »** — ce qui fait travailler : la carte **« Le problème à résoudre »** (texte libre repris mot pour mot, éditable via la question `priorite`) et la carte **« Les six prochains mois »** (objectif, déjà cliquable). Si aucun des deux n'est renseigné, un état vide invitant à poser le cap. Le badge global « n / N renseignés » reste en tête, commun aux deux vues.
+- **« Le jardin »** — la description : phrase de portrait, carte « Le jardin qui vous ressemble » (exemple choisi/refusé), profil détecté + date de mise à jour, puis les questions des chapitres **Vous / Votre lieu / Vos envies / Vos moyens** (cartes éditables, inchangées).
+- **« Le projet »** — ce qui fait travailler : la carte **« Le problème à résoudre »** (texte libre repris mot pour mot, éditable via la question `priorite`), la carte **« Les six prochains mois »** (objectif, déjà cliquable), puis la section **« Vos premiers gestes »** (déplacée ici : ce sont des actions, pas une description). Si rien n'est renseigné, un état vide invitant à poser le cap. Le badge global « n / N renseignés » reste en tête, commun aux deux vues.
 
 Titres proposés : **« Le jardin »** et **« Le projet »** (courts, complémentaires du titre « Intention du jardin » conservé en en-tête). Le bandeau « pas encore passé par le parcours d'accueil » reste visible en haut des deux vues.
 
