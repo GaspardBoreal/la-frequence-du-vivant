@@ -44,4 +44,4 @@ Reprise dans LFDV de la 5e carte ajoutée dans le parcours public OFJ.
 
 ## Question ouverte
 
-`onboarding_flow_versions` étant vide, faut-il en plus publier une première version en base à partir de la séquence v5 (pour que `/admin/onboarding` parte d'une base à jour), ou laisser la table vide tant que personne n'a publié ?
+`onboarding_flow_versions` étant vide, faut-il en plus publier une première version en base à partir de la séquence v5 (pour que `/admin/onboarding` parte d'une base à jour) : OUI
