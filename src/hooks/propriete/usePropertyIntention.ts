@@ -63,6 +63,7 @@ export interface PropertyIntention {
   hasOnboarding: boolean;
   gardenExample: StoredGardenExample | null;
   gestures: IntentionGesture[];
+  gesturesMeta: GesturesMeta | null;
   portrait: string | null;
   raw: Record<string, unknown>;
 }
