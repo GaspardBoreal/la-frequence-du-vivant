@@ -156,57 +156,70 @@ export const GardenExamplePicker: React.FC<Props> = ({
             </p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((e) => {
+              {items.map((e, idx) => {
                 const on = e.id === selected;
                 const img = e.thumbnail_url ?? e.image_url;
                 return (
-                  <button
-                    key={e.id}
-                    type="button"
-                    onClick={() => setSelected(e.id)}
-                    aria-pressed={on}
-                    className={cn(
-                      'group overflow-hidden rounded-2xl border text-left transition-all',
-                      on
-                        ? 'border-amber-500 ring-2 ring-amber-500/40'
-                        : 'border-border/70 hover:border-amber-500/50',
+                  <div key={e.id} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setSelected(e.id)}
+                      aria-pressed={on}
+                      className={cn(
+                        'group block w-full overflow-hidden rounded-2xl border text-left transition-all',
+                        on
+                          ? 'border-amber-500 ring-2 ring-amber-500/40'
+                          : 'border-border/70 hover:border-amber-500/50',
+                      )}
+                    >
+                      <div className="relative h-32 w-full bg-muted/40">
+                        {img ? (
+                          <img
+                            src={img}
+                            alt={e.image_alt ?? e.titre}
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-muted-foreground">
+                            <ImageOff className="h-5 w-5" />
+                          </div>
+                        )}
+                        {on && (
+                          <span className="absolute right-2 top-2 rounded-full bg-amber-500 p-1 text-white shadow">
+                            <Check className="h-3.5 w-3.5" />
+                          </span>
+                        )}
+                      </div>
+                      <div className="space-y-1.5 p-3">
+                        <p className="text-sm font-medium text-foreground">{e.titre}</p>
+                        {e.sous_titre && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">{e.sous_titre}</p>
+                        )}
+                        {(e.keywords?.length ?? 0) > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {e.keywords!.slice(0, 3).map((k) => (
+                              <Badge key={k} variant="secondary" className="text-[10px] font-normal">
+                                {k}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Regarder avant de choisir : la loupe n'engage aucune sélection. */}
+                    {img && (
+                      <button
+                        type="button"
+                        onClick={(ev) => { ev.stopPropagation(); setViewing(idx); }}
+                        aria-label={`Voir « ${e.titre} » en grand`}
+                        className="absolute left-2 top-2 rounded-full bg-black/55 p-1.5 text-white backdrop-blur transition-colors hover:bg-black/75"
+                      >
+                        <Maximize2 className="h-3.5 w-3.5" />
+                      </button>
                     )}
-                  >
-                    <div className="relative h-32 w-full bg-muted/40">
-                      {img ? (
-                        <img
-                          src={img}
-                          alt={e.image_alt ?? e.titre}
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-muted-foreground">
-                          <ImageOff className="h-5 w-5" />
-                        </div>
-                      )}
-                      {on && (
-                        <span className="absolute right-2 top-2 rounded-full bg-amber-500 p-1 text-white shadow">
-                          <Check className="h-3.5 w-3.5" />
-                        </span>
-                      )}
-                    </div>
-                    <div className="space-y-1.5 p-3">
-                      <p className="text-sm font-medium text-foreground">{e.titre}</p>
-                      {e.sous_titre && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">{e.sous_titre}</p>
-                      )}
-                      {(e.keywords?.length ?? 0) > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {e.keywords!.slice(0, 3).map((k) => (
-                            <Badge key={k} variant="secondary" className="text-[10px] font-normal">
-                              {k}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
