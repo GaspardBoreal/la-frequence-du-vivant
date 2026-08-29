@@ -247,12 +247,13 @@ export const useSaveGardenExample = (proprieteId?: string) => {
 
       return callSaveOnboarding(proprieteId, { garden_example, updated_at: now });
     },
-    onSuccess: (fresh) => {
+    onSuccess: async (fresh) => {
       qc.setQueryData(['propriete-intention', proprieteId], fresh);
-      qc.invalidateQueries({ queryKey: ['propriete-intention', proprieteId] });
+      await qc.refetchQueries({ queryKey: ['propriete-intention', proprieteId], exact: true });
       qc.invalidateQueries({ queryKey: ['onboarding-garden-example'] });
       qc.invalidateQueries({ queryKey: ['propriete-fiche', proprieteId] });
     },
+
   });
 };
 
