@@ -156,7 +156,28 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
             <SelectItem value="avec">Avec sondes IoT</SelectItem>
           </SelectContent>
         </Select>
+
+        <Select value={values.periode} onValueChange={(v) => set('periode', v as ProprietesFilterValues['periode'])}>
+          <SelectTrigger><SelectValue placeholder="Période" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Création : tout</SelectItem>
+            <SelectItem value="aujourdhui">Aujourd'hui</SelectItem>
+            <SelectItem value="hier">Hier</SelectItem>
+            <SelectItem value="7j">7 derniers jours</SelectItem>
+            <SelectItem value="mois">Mois en cours</SelectItem>
+            <SelectItem value="trimestre">Trimestre en cours</SelectItem>
+            <SelectItem value="annee">Année en cours</SelectItem>
+            <SelectItem value="plage">Plage personnalisée</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
+      {values.periode === 'plage' && (
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:max-w-md">
+          <DatePick value={values.du} onChange={(iso) => set('du', iso)} placeholder="Du…" />
+          <DatePick value={values.au} onChange={(iso) => set('au', iso)} placeholder="Au…" />
+        </div>
+      )}
     </div>
   );
 };
