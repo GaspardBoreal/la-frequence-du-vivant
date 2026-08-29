@@ -144,6 +144,7 @@ const normalize = (raw: unknown): PropertyIntention => {
     hasOnboarding: Object.keys(answers).length > 0,
     gardenExample,
     gestures,
+    gesturesMeta,
     portrait,
     raw: prefs,
   };
