@@ -154,7 +154,15 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
         </div>
       </div>
 
-      {!intention?.hasOnboarding && (
+      {lectureKO && (
+        <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-foreground">
+          Vos réponses n'ont pas pu être relues : {(error as Error).message}. Rechargez la page —
+          rien n'est perdu, tout est conservé en base.
+        </div>
+      )}
+
+      {!lectureKO && !intention?.hasOnboarding && (
+
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
           <div className="flex items-start gap-3">
             <Sparkles className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
