@@ -34,9 +34,20 @@ const renderValue = (v: unknown): string => {
  * parcours d'accueil, avec ses métadonnées relues à la source (la fiche
  * `onboarding_garden_examples` peut avoir évolué depuis le choix).
  */
-export const GardenExampleCard: React.FC<Props> = ({ stored }) => {
+export const GardenExampleCard: React.FC<Props> = ({ stored, proprieteId, canEdit = false }) => {
   const { data: live } = useGardenExample(stored?.id ?? null);
   const [openMeta, setOpenMeta] = useState(false);
+  const [picking, setPicking] = useState(false);
+
+  const editable = canEdit && !!proprieteId;
+  const picker = editable ? (
+    <GardenExamplePicker
+      proprieteId={proprieteId!}
+      open={picking}
+      onOpenChange={setPicking}
+      currentId={stored?.id ?? null}
+    />
+  ) : null;
 
   if (!stored || stored.refused) {
     return (
@@ -50,14 +61,21 @@ export const GardenExampleCard: React.FC<Props> = ({ stored }) => {
                 : 'Aucun jardin-exemple retenu pour ce jardin.'}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              L'image choisie pendant le parcours d'accueil sert de repère à la palette végétale et
-              à l'IA de jardin. Elle pourra être renseignée lors d'un prochain passage.
+              L'image choisie sert de repère à la palette végétale et à l'IA de jardin.
             </p>
+            {editable && (
+              <Button size="sm" variant="outline" className="mt-3" onClick={() => setPicking(true)}>
+                <Images className="mr-2 h-4 w-4" />
+                Choisir un jardin-exemple
+              </Button>
+            )}
           </div>
         </div>
+        {picker}
       </div>
     );
   }
+
 
   const titre = live?.titre ?? stored.titre ?? 'Jardin-exemple';
   const sousTitre = live?.sous_titre ?? stored.sousTitre;
