@@ -1,10 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import { Search, RotateCcw } from 'lucide-react';
+import { format, parseISO, isValid } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { Search, RotateCcw, CalendarIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 import type { ProprietesFilterValues } from './types';
 import { DEFAULT_FILTERS } from './types';
+
+const toDate = (iso: string): Date | undefined => {
+  if (!iso) return undefined;
+  const d = parseISO(iso);
+  return isValid(d) ? d : undefined;
+};
+
+const DatePick: React.FC<{
+  value: string;
+  onChange: (iso: string) => void;
+  placeholder: string;
+}> = ({ value, onChange, placeholder }) => (
+  <Popover>
+    <PopoverTrigger asChild>
+      <Button
+        variant="outline"
+        className={cn('w-full justify-start text-left font-normal', !value && 'text-muted-foreground')}
+      >
+        <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+        <span className="truncate">{value ? format(parseISO(value), 'dd MMM yyyy', { locale: fr }) : placeholder}</span>
+      </Button>
+    </PopoverTrigger>
+    <PopoverContent className="w-auto p-0" align="start">
+      <Calendar
+        mode="single"
+        locale={fr}
+        selected={toDate(value)}
+        onSelect={(d) => onChange(d ? format(d, 'yyyy-MM-dd') : '')}
+        initialFocus
+        className={cn('p-3 pointer-events-auto')}
+      />
+    </PopoverContent>
+  </Popover>
+);
 
 interface Props {
   values: ProprietesFilterValues;
@@ -61,7 +100,7 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
         )}
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
         <Select value={values.statut} onValueChange={(v) => set('statut', v as ProprietesFilterValues['statut'])}>
           <SelectTrigger><SelectValue placeholder="Statut" /></SelectTrigger>
           <SelectContent>
