@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import {
   usePropertyIntention, useCanEditIntention, useSaveIntention,
 } from '@/hooks/propriete/usePropertyIntention';
+import { useGardenGestures } from '@/hooks/propriete/useGardenGestures';
 import { DEFAULT_SEQUENCE } from '@/config/onboarding/defaultSequence';
 import { buildSequence, CHAPTERS, type AnswerValue, type OnboardingQuestion } from '@/config/onboarding/schema';
 import { PERSONA_LABELS } from '@/config/onboarding/personas';
