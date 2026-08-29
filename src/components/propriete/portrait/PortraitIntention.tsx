@@ -46,7 +46,7 @@ const readableAnswer = (
  * (problème à résoudre, cap à six mois, premiers gestes). Mobile d'abord.
  */
 export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }) => {
-  const { data: intention, isLoading } = usePropertyIntention(proprieteId);
+  const { data: intention, isLoading, error } = usePropertyIntention(proprieteId);
   const { data: canEdit = false } = useCanEditIntention(proprieteId);
   const save = useSaveIntention(proprieteId);
   const [editing, setEditing] = useState<OnboardingQuestion | null>(null);
