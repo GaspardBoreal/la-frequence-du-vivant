@@ -108,6 +108,8 @@ const FrequenceJardinLogo = lazyWithRetry(() => import('./pages/FrequenceJardinL
 const EtudeDeSolPublique = lazyWithRetry(() => import('./pages/EtudeDeSolPublique'));
 const ProprieteEspace = lazyWithRetry(() => import('./pages/ProprieteEspace'));
 const JardinDemarrer = lazyWithRetry(() => import('./pages/JardinDemarrer'));
+const JardinBienvenue = lazyWithRetry(() => import('./pages/JardinBienvenue'));
+
 const MarchesDuVivantExplorationMarcheur = lazyWithRetry(() => import('./pages/MarchesDuVivantExplorationMarcheur'));
 const AdminOutilsHub = lazyWithRetry(() => import('./pages/AdminOutilsHub'));
 const AdminGpsControl = lazyWithRetry(() => import('./pages/AdminGpsControl'));
@@ -389,6 +391,8 @@ function App() {
 
             <Route path="/propriete/:slug" element={<ProprieteEspace />} />
             <Route path="/jardin/demarrer" element={<JardinDemarrer />} />
+            <Route path="/jardin/bienvenue" element={<JardinBienvenue />} />
+
 
             <Route path="/admin/outils" element={
               <AdminAuth>
