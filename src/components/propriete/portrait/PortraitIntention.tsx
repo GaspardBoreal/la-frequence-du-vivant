@@ -46,7 +46,7 @@ const readableAnswer = (
  * (problème à résoudre, cap à six mois, premiers gestes). Mobile d'abord.
  */
 export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }) => {
-  const { data: intention, isLoading } = usePropertyIntention(proprieteId);
+  const { data: intention, isLoading, error } = usePropertyIntention(proprieteId);
   const { data: canEdit = false } = useCanEditIntention(proprieteId);
   const save = useSaveIntention(proprieteId);
   const [editing, setEditing] = useState<OnboardingQuestion | null>(null);
@@ -101,6 +101,8 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
   }
 
   const projetVide = !probleme && !objectifLabel && (intention?.gestures.length ?? 0) === 0;
+  const lectureKO = !!error;
+
 
   return (
     <div className="space-y-5">
@@ -152,7 +154,15 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
         </div>
       </div>
 
-      {!intention?.hasOnboarding && (
+      {lectureKO && (
+        <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-foreground">
+          Vos réponses n'ont pas pu être relues : {(error as Error).message}. Rechargez la page —
+          rien n'est perdu, tout est conservé en base.
+        </div>
+      )}
+
+      {!lectureKO && !intention?.hasOnboarding && (
+
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
           <div className="flex items-start gap-3">
             <Sparkles className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />

@@ -125,20 +125,33 @@ const normalize = (raw: unknown): PropertyIntention => {
   };
 };
 
-export const usePropertyIntention = (proprieteId?: string) =>
-  useQuery({
+/** Un état vide ne doit jamais effacer un état déjà renseigné à l'écran. */
+const isEmptyIntention = (i: PropertyIntention) =>
+  Object.keys(i.answers).length === 0 && !i.gardenExample && i.gestures.length === 0 && !i.portrait;
+
+export const usePropertyIntention = (proprieteId?: string) => {
+  const qc = useQueryClient();
+  return useQuery({
     queryKey: ['propriete-intention', proprieteId],
     enabled: !!proprieteId,
     queryFn: async (): Promise<PropertyIntention> => {
-      const { data, error } = await supabase
-        .from('proprietes')
-        .select('onboarding_preferences')
-        .eq('id', proprieteId!)
-        .maybeSingle();
+      // Lecture par la même voie sécurisée que l'écriture : les droits ne peuvent plus diverger.
+      const { data, error } = await (supabase as unknown as {
+        rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+      }).rpc('get_propriete_onboarding', { _propriete_id: proprieteId });
       if (error) throw new Error(error.message);
-      return normalize((data as { onboarding_preferences?: unknown } | null)?.onboarding_preferences);
+
+      const fresh = normalize(data);
+      const cached = qc.getQueryData<PropertyIntention>(['propriete-intention', proprieteId]);
+      if (cached && !isEmptyIntention(cached) && isEmptyIntention(fresh)) {
+        console.warn('[intention] relecture vide ignorée — état courant conservé', { proprieteId });
+        return cached;
+      }
+      return fresh;
     },
   });
+};
+
 
 /** L'utilisateur courant peut-il modifier l'intention (propriétaire ou admin) ? */
 export const useCanEditIntention = (proprieteId?: string) =>
@@ -198,11 +211,13 @@ export const useSaveIntention = (proprieteId?: string) => {
       return callSaveOnboarding(proprieteId, patch);
     },
     // L'écran se met à jour avec l'état renvoyé par la base, sans attendre la relecture.
-    onSuccess: (fresh) => {
+    onSuccess: async (fresh) => {
       qc.setQueryData(['propriete-intention', proprieteId], fresh);
-      qc.invalidateQueries({ queryKey: ['propriete-intention', proprieteId] });
+      // La relecture est attendue : l'écran ne peut pas retomber sur « À compléter ».
+      await qc.refetchQueries({ queryKey: ['propriete-intention', proprieteId], exact: true });
       qc.invalidateQueries({ queryKey: ['propriete-fiche', proprieteId] });
     },
+
   });
 };
 
@@ -232,12 +247,13 @@ export const useSaveGardenExample = (proprieteId?: string) => {
 
       return callSaveOnboarding(proprieteId, { garden_example, updated_at: now });
     },
-    onSuccess: (fresh) => {
+    onSuccess: async (fresh) => {
       qc.setQueryData(['propriete-intention', proprieteId], fresh);
-      qc.invalidateQueries({ queryKey: ['propriete-intention', proprieteId] });
+      await qc.refetchQueries({ queryKey: ['propriete-intention', proprieteId], exact: true });
       qc.invalidateQueries({ queryKey: ['onboarding-garden-example'] });
       qc.invalidateQueries({ queryKey: ['propriete-fiche', proprieteId] });
     },
+
   });
 };
 
