@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Compass, Pencil, Sparkles, Loader2, Target } from 'lucide-react';
+import { Compass, Pencil, Sparkles, Loader2, Target, Footprints } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { DEFAULT_SEQUENCE } from '@/config/onboarding/defaultSequence';
 import { buildSequence, CHAPTERS, type AnswerValue, type OnboardingQuestion } from '@/config/onboarding/schema';
 import { PERSONA_LABELS } from '@/config/onboarding/personas';
 import { IntentionQuestionEditor } from './IntentionQuestionEditor';
+import { GardenExampleCard } from './GardenExampleCard';
 
 interface Props {
   proprieteId: string;
@@ -106,6 +107,30 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
             </div>
           </div>
         </div>
+      )}
+
+      {intention?.portrait && (
+        <p className="rounded-2xl border-l-2 border-amber-500/50 bg-card/60 px-5 py-4 font-serif italic text-base text-foreground/90">
+          {intention.portrait}
+        </p>
+      )}
+
+      {intention?.hasOnboarding && <GardenExampleCard stored={intention.gardenExample} />}
+
+      {(intention?.gestures.length ?? 0) > 0 && (
+        <section className="space-y-2">
+          <h3 className="text-sm font-medium text-foreground/80 flex items-center gap-2">
+            <Footprints className="h-4 w-4 text-amber-600" /> Vos premiers gestes
+          </h3>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {intention!.gestures.map((g, i) => (
+              <div key={`${g.title}-${i}`} className="rounded-2xl border border-border/70 bg-card p-4">
+                <p className="text-sm font-medium text-foreground">{g.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{g.detail}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {objectif && (
