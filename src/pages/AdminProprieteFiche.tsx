@@ -18,6 +18,14 @@ import {
 } from '@/components/ui/select';
 import { ImageUploadField } from '@/components/onboarding/ImageUploadField';
 import { geocodeAddress } from '@/utils/geocoding';
+import {
+  REGION_LABELS,
+  canonicalDepartement,
+  canonicalRegion,
+  departementsForRegion,
+  geoFromCodePostal,
+  regionLabelFromDepartement,
+} from '@/utils/frenchGeoLookup';
 import ProprietePositionPicker from '@/components/admin/proprietes/ProprietePositionPicker';
 import DeleteProprieteDialog from '@/components/admin/proprietes/DeleteProprieteDialog';
 import { cn } from '@/lib/utils';
