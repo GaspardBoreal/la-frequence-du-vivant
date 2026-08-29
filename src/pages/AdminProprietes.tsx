@@ -80,6 +80,9 @@ const AdminProprietes: React.FC = () => {
       entreprise: v.entreprise,
       gps: v.gps,
       sondes: v.sondes,
+      periode: v.periode,
+      du: v.periode === 'plage' ? v.du || null : null,
+      au: v.periode === 'plage' ? v.au || null : null,
     });
 
   // ---- Référentiels --------------------------------------------------------
