@@ -101,6 +101,8 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
   }
 
   const projetVide = !probleme && !objectifLabel && (intention?.gestures.length ?? 0) === 0;
+  const lectureKO = !!error;
+
 
   return (
     <div className="space-y-5">
