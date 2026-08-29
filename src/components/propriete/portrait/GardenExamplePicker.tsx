@@ -257,6 +257,14 @@ export const GardenExamplePicker: React.FC<Props> = ({
           </div>
         </div>
       </DialogContent>
+
+      <GardenExampleViewer
+        examples={items}
+        index={viewing}
+        onNavigate={setViewing}
+        onClose={() => setViewing(null)}
+        typeLabel={currentTypeLabel}
+      />
     </Dialog>
   );
 };
