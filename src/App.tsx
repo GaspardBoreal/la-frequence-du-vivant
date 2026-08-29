@@ -391,6 +391,8 @@ function App() {
 
             <Route path="/propriete/:slug" element={<ProprieteEspace />} />
             <Route path="/jardin/demarrer" element={<JardinDemarrer />} />
+            <Route path="/jardin/bienvenue" element={<JardinBienvenue />} />
+
 
             <Route path="/admin/outils" element={
               <AdminAuth>
