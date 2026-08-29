@@ -4,7 +4,7 @@
  * défilantes, grille 1 colonne, actions collées en bas.
  */
 import React, { useMemo, useState } from 'react';
-import { Check, ImageOff, Loader2, X } from 'lucide-react';
+import { Check, ImageOff, Loader2, Maximize2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useOnboardingGallery, type GardenExample } from '@/hooks/onboarding/useOnboardingConfig';
 import { useSaveGardenExample } from '@/hooks/propriete/usePropertyIntention';
+import GardenExampleViewer from '@/components/onboarding/GardenExampleViewer';
 
 interface Props {
   proprieteId: string;
@@ -19,13 +20,18 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   /** Exemple actuellement retenu, pour pré-sélection. */
   currentId?: string | null;
+  /** Famille de jardin à pré-filtrer (ex. « nourricier » après la question du rêve). */
+  initialTypeSlug?: string | null;
 }
 
-export const GardenExamplePicker: React.FC<Props> = ({ proprieteId, open, onOpenChange, currentId }) => {
+export const GardenExamplePicker: React.FC<Props> = ({
+  proprieteId, open, onOpenChange, currentId, initialTypeSlug,
+}) => {
   const { types, examples, loading } = useOnboardingGallery();
   const save = useSaveGardenExample(proprieteId);
   const [typeId, setTypeId] = useState<string | 'all'>('all');
   const [selected, setSelected] = useState<string | null>(currentId ?? null);
+  const [viewing, setViewing] = useState<number | null>(null);
 
   React.useEffect(() => {
     if (open) setSelected(currentId ?? null);
@@ -35,6 +41,14 @@ export const GardenExamplePicker: React.FC<Props> = ({ proprieteId, open, onOpen
     () => [...types].filter((t) => t.visible !== false).sort((a, b) => a.position - b.position),
     [types],
   );
+
+  // Ouverture depuis la question « Quel jardin vous fait rêver ? » : on montre
+  // d'emblée la famille rêvée, sans obliger à retrouver le filtre.
+  React.useEffect(() => {
+    if (!open) return;
+    const wanted = initialTypeSlug ? visibleTypes.find((t) => t.slug === initialTypeSlug) : null;
+    setTypeId(wanted ? wanted.id : 'all');
+  }, [open, initialTypeSlug, visibleTypes]);
 
   const items = useMemo(
     () =>
@@ -46,9 +60,13 @@ export const GardenExamplePicker: React.FC<Props> = ({ proprieteId, open, onOpen
   );
 
   const current = items.find((e) => e.id === selected) ?? examples.find((e) => e.id === selected) ?? null;
+  const currentTypeLabel = typeId === 'all'
+    ? undefined
+    : visibleTypes.find((t) => t.id === typeId)?.titre;
 
   const commit = async (example: GardenExample | null) => {
     try {
+      const slug = example ? visibleTypes.find((t) => t.id === example.type_id)?.slug ?? null : null;
       await save.mutateAsync({
         example: example
           ? {
@@ -60,8 +78,13 @@ export const GardenExamplePicker: React.FC<Props> = ({ proprieteId, open, onOpen
               keywords: example.keywords ?? [],
               vignette: example.thumbnail_url ?? example.image_url ?? null,
               aiProfile: example.ai_profile ?? null,
+              typeId: example.type_id ?? null,
+              typeSlug: slug,
             }
           : null,
+        // Choisir l'image renseigne « Quel jardin vous fait rêver ? ».
+        // Un refus n'efface jamais une réponse déjà donnée.
+        answers: slug ? { style: slug } : undefined,
       });
       toast.success(example ? 'Jardin-exemple mis à jour' : 'Choix enregistré : aucun ne vous ressemble');
       onOpenChange(false);
@@ -133,57 +156,70 @@ export const GardenExamplePicker: React.FC<Props> = ({ proprieteId, open, onOpen
             </p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((e) => {
+              {items.map((e, idx) => {
                 const on = e.id === selected;
                 const img = e.thumbnail_url ?? e.image_url;
                 return (
-                  <button
-                    key={e.id}
-                    type="button"
-                    onClick={() => setSelected(e.id)}
-                    aria-pressed={on}
-                    className={cn(
-                      'group overflow-hidden rounded-2xl border text-left transition-all',
-                      on
-                        ? 'border-amber-500 ring-2 ring-amber-500/40'
-                        : 'border-border/70 hover:border-amber-500/50',
+                  <div key={e.id} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setSelected(e.id)}
+                      aria-pressed={on}
+                      className={cn(
+                        'group block w-full overflow-hidden rounded-2xl border text-left transition-all',
+                        on
+                          ? 'border-amber-500 ring-2 ring-amber-500/40'
+                          : 'border-border/70 hover:border-amber-500/50',
+                      )}
+                    >
+                      <div className="relative h-32 w-full bg-muted/40">
+                        {img ? (
+                          <img
+                            src={img}
+                            alt={e.image_alt ?? e.titre}
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-muted-foreground">
+                            <ImageOff className="h-5 w-5" />
+                          </div>
+                        )}
+                        {on && (
+                          <span className="absolute right-2 top-2 rounded-full bg-amber-500 p-1 text-white shadow">
+                            <Check className="h-3.5 w-3.5" />
+                          </span>
+                        )}
+                      </div>
+                      <div className="space-y-1.5 p-3">
+                        <p className="text-sm font-medium text-foreground">{e.titre}</p>
+                        {e.sous_titre && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">{e.sous_titre}</p>
+                        )}
+                        {(e.keywords?.length ?? 0) > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {e.keywords!.slice(0, 3).map((k) => (
+                              <Badge key={k} variant="secondary" className="text-[10px] font-normal">
+                                {k}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Regarder avant de choisir : la loupe n'engage aucune sélection. */}
+                    {img && (
+                      <button
+                        type="button"
+                        onClick={(ev) => { ev.stopPropagation(); setViewing(idx); }}
+                        aria-label={`Voir « ${e.titre} » en grand`}
+                        className="absolute left-2 top-2 rounded-full bg-black/55 p-1.5 text-white backdrop-blur transition-colors hover:bg-black/75"
+                      >
+                        <Maximize2 className="h-3.5 w-3.5" />
+                      </button>
                     )}
-                  >
-                    <div className="relative h-32 w-full bg-muted/40">
-                      {img ? (
-                        <img
-                          src={img}
-                          alt={e.image_alt ?? e.titre}
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-muted-foreground">
-                          <ImageOff className="h-5 w-5" />
-                        </div>
-                      )}
-                      {on && (
-                        <span className="absolute right-2 top-2 rounded-full bg-amber-500 p-1 text-white shadow">
-                          <Check className="h-3.5 w-3.5" />
-                        </span>
-                      )}
-                    </div>
-                    <div className="space-y-1.5 p-3">
-                      <p className="text-sm font-medium text-foreground">{e.titre}</p>
-                      {e.sous_titre && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">{e.sous_titre}</p>
-                      )}
-                      {(e.keywords?.length ?? 0) > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {e.keywords!.slice(0, 3).map((k) => (
-                            <Badge key={k} variant="secondary" className="text-[10px] font-normal">
-                              {k}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -221,6 +257,14 @@ export const GardenExamplePicker: React.FC<Props> = ({ proprieteId, open, onOpen
           </div>
         </div>
       </DialogContent>
+
+      <GardenExampleViewer
+        examples={items}
+        index={viewing}
+        onNavigate={setViewing}
+        onClose={() => setViewing(null)}
+        typeLabel={currentTypeLabel}
+      />
     </Dialog>
   );
 };

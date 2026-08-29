@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { ChevronDown, ExternalLink, ImageOff, Images, Sparkles } from 'lucide-react';
+import { ChevronDown, ExternalLink, ImageOff, Images, Maximize2, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useGardenExample } from '@/hooks/propriete/useGardenExample';
 import type { StoredGardenExample } from '@/hooks/propriete/usePropertyIntention';
+import type { GardenExample } from '@/hooks/onboarding/useOnboardingConfig';
+import GardenExampleViewer from '@/components/onboarding/GardenExampleViewer';
 import { GardenExamplePicker } from './GardenExamplePicker';
 
 interface Props {
@@ -13,6 +15,12 @@ interface Props {
   proprieteId?: string;
   /** L'utilisateur peut-il changer le jardin-exemple ? */
   canEdit?: boolean;
+  /** Libellé de la famille de jardin associée (réponse « Quel jardin vous fait rêver ? »). */
+  styleLabel?: string | null;
+  /** Incrémenter cette valeur ouvre la galerie (ex. après avoir répondu au rêve). */
+  openPickerSignal?: number;
+  /** Famille à pré-filtrer à l'ouverture pilotée. */
+  pickerTypeSlug?: string | null;
 }
 
 
@@ -34,18 +42,33 @@ const renderValue = (v: unknown): string => {
  * parcours d'accueil, avec ses métadonnées relues à la source (la fiche
  * `onboarding_garden_examples` peut avoir évolué depuis le choix).
  */
-export const GardenExampleCard: React.FC<Props> = ({ stored, proprieteId, canEdit = false }) => {
+export const GardenExampleCard: React.FC<Props> = ({
+  stored, proprieteId, canEdit = false, styleLabel, openPickerSignal = 0, pickerTypeSlug,
+}) => {
   const { data: live } = useGardenExample(stored?.id ?? null);
   const [openMeta, setOpenMeta] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [zoom, setZoom] = useState(false);
+  const [forcedSlug, setForcedSlug] = useState<string | null>(null);
 
   const editable = canEdit && !!proprieteId;
+
+  // Ouverture pilotée depuis la question « Quel jardin vous fait rêver ? ».
+  React.useEffect(() => {
+    if (openPickerSignal > 0 && editable) {
+      setForcedSlug(pickerTypeSlug ?? null);
+      setPicking(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openPickerSignal]);
+
   const picker = editable ? (
     <GardenExamplePicker
       proprieteId={proprieteId!}
       open={picking}
-      onOpenChange={setPicking}
+      onOpenChange={(v) => { setPicking(v); if (!v) setForcedSlug(null); }}
       currentId={stored?.id ?? null}
+      initialTypeSlug={forcedSlug}
     />
   ) : null;
 
@@ -85,16 +108,36 @@ export const GardenExampleCard: React.FC<Props> = ({ stored, proprieteId, canEdi
   const aiProfile = live?.ai_profile ?? stored.aiProfile;
   const changed = Boolean(live && stored.titre && live.titre && live.titre !== stored.titre);
 
+  // Image en grand : on réutilise la visionneuse du parcours d'accueil.
+  const viewerItem = {
+    id: stored.id ?? 'stored',
+    titre,
+    sous_titre: sousTitre ?? null,
+    user_intent: intention ?? null,
+    image_url: live?.image_url ?? stored.vignette ?? null,
+    image_alt: live?.image_alt ?? null,
+  } as unknown as GardenExample;
+
   return (
     <section className="rounded-2xl border border-border/70 bg-card overflow-hidden">
       <div className="grid sm:grid-cols-[minmax(0,220px)_1fr]">
         {image ? (
-          <img
-            src={image}
-            alt={live?.image_alt ?? `Jardin-exemple retenu : ${titre}`}
-            loading="lazy"
-            className="h-44 w-full object-cover sm:h-full"
-          />
+          <button
+            type="button"
+            onClick={() => setZoom(true)}
+            aria-label={`Voir « ${titre} » en grand`}
+            className="group relative block h-44 w-full overflow-hidden sm:h-full"
+          >
+            <img
+              src={image}
+              alt={live?.image_alt ?? `Jardin-exemple retenu : ${titre}`}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <span className="absolute right-2 top-2 rounded-full bg-black/55 p-1.5 text-white backdrop-blur">
+              <Maximize2 className="h-3.5 w-3.5" />
+            </span>
+          </button>
         ) : (
           <div className="flex h-44 items-center justify-center bg-muted/40 text-muted-foreground sm:h-full">
             <ImageOff className="h-6 w-6" />
@@ -113,6 +156,13 @@ export const GardenExampleCard: React.FC<Props> = ({ stored, proprieteId, canEdi
               </Button>
             )}
           </div>
+
+          {styleLabel && (
+            <Badge variant="outline" className="border-amber-500/40 text-[11px] text-amber-700 dark:text-amber-300">
+              {styleLabel}
+            </Badge>
+          )}
+
 
 
           <div>
@@ -208,6 +258,14 @@ export const GardenExampleCard: React.FC<Props> = ({ stored, proprieteId, canEdi
         </div>
       </div>
       {picker}
+      <GardenExampleViewer
+        examples={[viewerItem]}
+        index={zoom ? 0 : null}
+        onNavigate={() => {}}
+        onClose={() => setZoom(false)}
+        typeLabel={styleLabel ?? undefined}
+      />
+
     </section>
   );
 

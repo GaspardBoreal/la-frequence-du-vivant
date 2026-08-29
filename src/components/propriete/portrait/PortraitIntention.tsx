@@ -50,6 +50,8 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
   const { data: canEdit = false } = useCanEditIntention(proprieteId);
   const save = useSaveIntention(proprieteId);
   const [editing, setEditing] = useState<OnboardingQuestion | null>(null);
+  const [pickerSignal, setPickerSignal] = useState(0);
+  const [pickerSlug, setPickerSlug] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const section: IntentionSection = searchParams.get('intention') === 'projet' ? 'projet' : 'jardin';
@@ -62,6 +64,15 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
 
   const answers = intention?.answers ?? {};
   const persona = intention?.persona ?? 'PARTICULIER_PETIT';
+
+  /** Libellé lisible du rêve de jardin, affiché sur l'image retenue. */
+  const styleLabel = useMemo(() => {
+    const v = answers.style;
+    if (typeof v !== 'string') return null;
+    const q = DEFAULT_SEQUENCE.questions.find((x) => x.id === 'style');
+    return q?.options?.find((o) => o.value === v)?.label ?? null;
+  }, [answers]);
+
 
   /** Écrans réellement pertinents pour cette persona. */
   const questions = useMemo(
@@ -86,7 +97,17 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
     save.mutate(
       { answers: patch, version: DEFAULT_SEQUENCE.version },
       {
-        onSuccess: () => { toast.success('Intention mise à jour'); setEditing(null); },
+        onSuccess: () => {
+          toast.success('Intention mise à jour');
+          // Répondre au rêve doit remettre l'image en cohérence : si la famille
+          // choisie ne correspond plus au jardin-exemple, on rouvre la galerie.
+          const nextStyle = typeof patch.style === 'string' ? patch.style : null;
+          if (nextStyle && canEdit && intention?.gardenExample?.typeSlug !== nextStyle) {
+            setPickerSlug(nextStyle);
+            setPickerSignal((n) => n + 1);
+          }
+          setEditing(null);
+        },
         onError: (e) => toast.error(e.message),
       },
     );
@@ -191,7 +212,11 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
             stored={intention?.gardenExample ?? null}
             proprieteId={proprieteId}
             canEdit={canEdit}
+            styleLabel={styleLabel}
+            openPickerSignal={pickerSignal}
+            pickerTypeSlug={pickerSlug}
           />
+
 
 
           <div className="rounded-2xl border border-border/70 bg-card/60 px-4 py-3 text-xs text-muted-foreground">
