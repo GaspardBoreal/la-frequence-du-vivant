@@ -161,9 +161,21 @@ export interface SaveIntentionInput {
   version?: number;
 }
 
+/** Appel typé de la RPC : elle renvoie l'objet `onboarding_preferences` complet. */
+const callSaveOnboarding = async (
+  proprieteId: string,
+  patch: Record<string, unknown>,
+): Promise<PropertyIntention> => {
+  const { data, error } = await (supabase as unknown as {
+    rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+  }).rpc('save_propriete_onboarding', { _propriete_id: proprieteId, _patch: patch });
+  if (error) throw new Error(error.message);
+  return normalize(data);
+};
+
 export const useSaveIntention = (proprieteId?: string) => {
   const qc = useQueryClient();
-  return useMutation<void, Error, SaveIntentionInput>({
+  return useMutation<PropertyIntention, Error, SaveIntentionInput>({
     mutationFn: async ({ answers, persona, version }) => {
       if (!proprieteId) throw new Error('Jardin inconnu');
 
@@ -183,13 +195,13 @@ export const useSaveIntention = (proprieteId?: string) => {
       if (version != null) patch.version = version;
       if (!current?.completedAt) patch.completed_at = new Date().toISOString();
 
-      const { error } = await (supabase as unknown as {
-        rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
-      }).rpc('save_propriete_onboarding', { _propriete_id: proprieteId, _patch: patch });
-      if (error) throw new Error(error.message);
+      return callSaveOnboarding(proprieteId, patch);
     },
-    onSuccess: () => {
+    // L'écran se met à jour avec l'état renvoyé par la base, sans attendre la relecture.
+    onSuccess: (fresh) => {
+      qc.setQueryData(['propriete-intention', proprieteId], fresh);
       qc.invalidateQueries({ queryKey: ['propriete-intention', proprieteId] });
+      qc.invalidateQueries({ queryKey: ['propriete-fiche', proprieteId] });
     },
   });
 };
@@ -210,7 +222,7 @@ export interface SaveGardenExampleInput {
 
 export const useSaveGardenExample = (proprieteId?: string) => {
   const qc = useQueryClient();
-  return useMutation<void, Error, SaveGardenExampleInput>({
+  return useMutation<PropertyIntention, Error, SaveGardenExampleInput>({
     mutationFn: async ({ example }) => {
       if (!proprieteId) throw new Error('Jardin inconnu');
       const now = new Date().toISOString();
@@ -218,18 +230,14 @@ export const useSaveGardenExample = (proprieteId?: string) => {
         ? { ...example, chosenAt: now, refused: false, source: 'lfdv_portrait' }
         : { refused: true, chosenAt: now, source: 'lfdv_portrait' };
 
-      const { error } = await (supabase as unknown as {
-        rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
-      }).rpc('save_propriete_onboarding', {
-        _propriete_id: proprieteId,
-        _patch: { garden_example, updated_at: now },
-      });
-      if (error) throw new Error(error.message);
+      return callSaveOnboarding(proprieteId, { garden_example, updated_at: now });
     },
-    onSuccess: () => {
+    onSuccess: (fresh) => {
+      qc.setQueryData(['propriete-intention', proprieteId], fresh);
       qc.invalidateQueries({ queryKey: ['propriete-intention', proprieteId] });
       qc.invalidateQueries({ queryKey: ['onboarding-garden-example'] });
       qc.invalidateQueries({ queryKey: ['propriete-fiche', proprieteId] });
     },
   });
 };
+
