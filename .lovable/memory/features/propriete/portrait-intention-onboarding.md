@@ -16,3 +16,8 @@ type: feature
 - Portrait › Intention affiche désormais : phrase de portrait, carte « Le jardin qui vous ressemble » (`GardenExampleCard` + hook `useGardenExample` relisant `onboarding_garden_examples`, RLS publique si `publie`), et « Vos premiers gestes ».
 - L'écriture conserve `storedPersona` (plus de recalcul qui écrasait la persona OFJ).
 - Restes côté OFJ : passer en `flow_version: 4` pour poser `objectif_6_mois`, et tracer le refus de galerie via `garden_example: { refused: true }` au lieu de `null`.
+
+## Changement du jardin-exemple (LFDV)
+- Carte « Le jardin qui vous ressemble » désormais éditable : bouton Changer / Choisir → `GardenExamplePicker.tsx` (filtres par type, grille visuelle, « Aucun ne me ressemble »).
+- Lecture publique de `onboarding_garden_types`/`onboarding_garden_examples` ; écriture via `useSaveGardenExample` → RPC `save_propriete_onboarding` avec patch `{ garden_example }` (marqué `source: 'lfdv_portrait'`).
+- Le jardin-exemple (titre, intention, mots-clés, profil IA) est injecté dans le contexte chat `site.intention`.
