@@ -120,6 +120,16 @@ const normalize = (raw: unknown): PropertyIntention => {
   const gardenExample = normalizeGardenExample(prefs.garden_example);
   const gestures = normalizeGestures(prefs.gestures);
   const portrait = str(prefs.portrait);
+  const rawMeta = prefs.gestures_meta && typeof prefs.gestures_meta === 'object'
+    ? (prefs.gestures_meta as Record<string, unknown>)
+    : null;
+  const gesturesMeta: GesturesMeta | null = rawMeta
+    ? {
+        generatedAt: str(rawMeta.generated_at) ?? str(rawMeta.generatedAt),
+        fingerprint: str(rawMeta.fingerprint),
+        source: str(rawMeta.source),
+      }
+    : null;
 
   return {
     answers,
