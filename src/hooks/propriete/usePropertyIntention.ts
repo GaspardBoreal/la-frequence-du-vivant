@@ -301,3 +301,29 @@ export const useSaveGardenExample = (proprieteId?: string) => {
   });
 };
 
+
+/** Écriture des trois gestes rédigés par l'IA de jardin, avec leur empreinte. */
+export interface SaveGesturesInput {
+  gestures: IntentionGesture[];
+  fingerprint: string;
+  source?: string;
+}
+
+export const useSaveGestures = (proprieteId?: string) => {
+  const qc = useQueryClient();
+  return useMutation<PropertyIntention, Error, SaveGesturesInput>({
+    mutationFn: async ({ gestures, fingerprint, source }) => {
+      if (!proprieteId) throw new Error('Jardin inconnu');
+      const now = new Date().toISOString();
+      return callSaveOnboarding(proprieteId, {
+        gestures,
+        gestures_meta: { generated_at: now, fingerprint, source: source ?? 'ia_jardin' },
+        updated_at: now,
+      });
+    },
+    onSuccess: (fresh) => {
+      qc.setQueryData(['propriete-intention', proprieteId], fresh);
+      qc.invalidateQueries({ queryKey: ['propriete-fiche', proprieteId] });
+    },
+  });
+};
