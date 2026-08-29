@@ -440,7 +440,8 @@ export function useProprieteChatProviders(proprieteId?: string): {
             probleme_declare: probleme || null,
             objectif_6_mois: a.objectif_6_mois ?? null,
             temps_disponible: a.temps ?? null,
-            gestes: (intention.gestures ?? []).map((g) => g.title),
+            gestes: (intention.gestures ?? []).map((g) => (g.detail ? `${g.title} — ${g.detail}` : g.title)),
+            gestes_rediges_le: intention.gesturesMeta?.generatedAt ?? null,
             jardin_exemple: intention.gardenExample && !intention.gardenExample.refused
               ? {
                   titre: intention.gardenExample.titre,
