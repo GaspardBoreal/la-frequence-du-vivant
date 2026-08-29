@@ -10638,6 +10638,7 @@ export type Database = {
         Returns: undefined
       }
       normalize_species_alias_key: { Args: { p_name: string }; Returns: string }
+      onboard_claim_from_metadata: { Args: never; Returns: Json }
       onboard_create_propriete: {
         Args: {
           _code_postal?: string
