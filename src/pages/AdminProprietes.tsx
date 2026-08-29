@@ -21,6 +21,7 @@ import type {
   ProprieteListRow, ProprietesFilterValues, ProprietesKpiCounts, ProprietesKpiKey,
 } from '@/components/admin/proprietes/types';
 import { DEFAULT_FILTERS, formatSurface, resolvePeriodeRange } from '@/components/admin/proprietes/types';
+import { canonicalDepartement, canonicalRegion } from '@/utils/frenchGeoLookup';
 
 const sb = supabase as any;
 
