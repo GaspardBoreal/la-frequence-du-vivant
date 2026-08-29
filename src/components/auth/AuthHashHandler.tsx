@@ -53,12 +53,13 @@ const AuthHashHandler: React.FC = () => {
       (linkType === 'signup' || linkType === 'magiclink' || linkType === 'email_change')
     ) {
       const path = window.location.pathname;
-      if (path !== LOGIN_PATH && !path.startsWith('/admin')) {
+      if (path !== LOGIN_PATH && !path.startsWith('/admin') && !path.startsWith('/jardin/')) {
         // Préserve un éventuel ?event=CODE présent dans l'URL courante
         window.location.replace(`${LOGIN_PATH}${window.location.search}${hash}`);
       }
       return;
     }
+
 
     // Lien expiré ou déjà consommé
     if (params.get('error')) {
