@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
-import { ChevronDown, ExternalLink, ImageOff, Sparkles } from 'lucide-react';
+import { ChevronDown, ExternalLink, ImageOff, Images, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useGardenExample } from '@/hooks/propriete/useGardenExample';
 import type { StoredGardenExample } from '@/hooks/propriete/usePropertyIntention';
+import { GardenExamplePicker } from './GardenExamplePicker';
 
 interface Props {
   /** Copie figée au moment du choix, telle que versée par le parcours d'accueil. */
   stored: StoredGardenExample | null;
+  /** Identifiant du jardin, pour enregistrer un nouveau choix. */
+  proprieteId?: string;
+  /** L'utilisateur peut-il changer le jardin-exemple ? */
+  canEdit?: boolean;
 }
+
 
 const prettyKey = (k: string) =>
   k.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
@@ -27,9 +34,20 @@ const renderValue = (v: unknown): string => {
  * parcours d'accueil, avec ses métadonnées relues à la source (la fiche
  * `onboarding_garden_examples` peut avoir évolué depuis le choix).
  */
-export const GardenExampleCard: React.FC<Props> = ({ stored }) => {
+export const GardenExampleCard: React.FC<Props> = ({ stored, proprieteId, canEdit = false }) => {
   const { data: live } = useGardenExample(stored?.id ?? null);
   const [openMeta, setOpenMeta] = useState(false);
+  const [picking, setPicking] = useState(false);
+
+  const editable = canEdit && !!proprieteId;
+  const picker = editable ? (
+    <GardenExamplePicker
+      proprieteId={proprieteId!}
+      open={picking}
+      onOpenChange={setPicking}
+      currentId={stored?.id ?? null}
+    />
+  ) : null;
 
   if (!stored || stored.refused) {
     return (
@@ -43,14 +61,21 @@ export const GardenExampleCard: React.FC<Props> = ({ stored }) => {
                 : 'Aucun jardin-exemple retenu pour ce jardin.'}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              L'image choisie pendant le parcours d'accueil sert de repère à la palette végétale et
-              à l'IA de jardin. Elle pourra être renseignée lors d'un prochain passage.
+              L'image choisie sert de repère à la palette végétale et à l'IA de jardin.
             </p>
+            {editable && (
+              <Button size="sm" variant="outline" className="mt-3" onClick={() => setPicking(true)}>
+                <Images className="mr-2 h-4 w-4" />
+                Choisir un jardin-exemple
+              </Button>
+            )}
           </div>
         </div>
+        {picker}
       </div>
     );
   }
+
 
   const titre = live?.titre ?? stored.titre ?? 'Jardin-exemple';
   const sousTitre = live?.sous_titre ?? stored.sousTitre;
@@ -77,9 +102,18 @@ export const GardenExampleCard: React.FC<Props> = ({ stored }) => {
         )}
 
         <div className="p-5 space-y-3">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-amber-600">
-            <Sparkles className="h-4 w-4" /> Le jardin qui vous ressemble
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-amber-600">
+              <Sparkles className="h-4 w-4" /> Le jardin qui vous ressemble
+            </div>
+            {editable && (
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setPicking(true)}>
+                <Images className="mr-1.5 h-3.5 w-3.5" />
+                Changer
+              </Button>
+            )}
           </div>
+
 
           <div>
             <h3 className="font-serif italic text-lg text-foreground">{titre}</h3>
@@ -173,8 +207,10 @@ export const GardenExampleCard: React.FC<Props> = ({ stored }) => {
           )}
         </div>
       </div>
+      {picker}
     </section>
   );
+
 };
 
 export default GardenExampleCard;

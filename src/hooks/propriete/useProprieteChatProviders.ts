@@ -438,7 +438,18 @@ export function useProprieteChatProviders(proprieteId?: string): {
             objectif_6_mois: a.objectif_6_mois ?? null,
             temps_disponible: a.temps ?? null,
             gestes: (intention.gestures ?? []).map((g) => g.title),
+            jardin_exemple: intention.gardenExample && !intention.gardenExample.refused
+              ? {
+                  titre: intention.gardenExample.titre,
+                  intention: intention.gardenExample.intention,
+                  mots_cles: intention.gardenExample.keywords,
+                  profil: intention.gardenExample.aiProfile,
+                }
+              : intention.gardenExample?.refused
+                ? 'aucun jardin-exemple ne lui ressemble'
+                : null,
           },
+
         }),
       );
     }

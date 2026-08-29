@@ -177,7 +177,12 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
             </p>
           )}
 
-          {intention?.hasOnboarding && <GardenExampleCard stored={intention.gardenExample} />}
+          <GardenExampleCard
+            stored={intention?.gardenExample ?? null}
+            proprieteId={proprieteId}
+            canEdit={canEdit}
+          />
+
 
           <div className="rounded-2xl border border-border/70 bg-card/60 px-4 py-3 text-xs text-muted-foreground">
             Profil détecté : <span className="text-foreground font-medium">{PERSONA_LABELS[persona]}</span>
