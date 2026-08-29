@@ -176,7 +176,8 @@ export const useSaveIntention = (proprieteId?: string) => {
 
       const patch: Record<string, unknown> = {
         answers: merged,
-        persona: persona ?? detectPersona(merged),
+        // La persona déclarée par le parcours d'accueil prime : ne jamais l'écraser.
+        persona: persona ?? current?.storedPersona ?? detectPersona(merged),
         updated_at: new Date().toISOString(),
       };
       if (version != null) patch.version = version;
