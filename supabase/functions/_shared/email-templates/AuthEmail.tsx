@@ -69,12 +69,12 @@ const contentMap: Record<'fj' | 'lfdv', Record<ActionType, EmailContent>> = {
       buttonText: 'Confirmer mon inscription',
     },
     recovery: {
-      subject: 'Réinitialisez votre mot de passe — Fréquence Jardin',
-      title: 'Réinitialisez votre mot de passe',
-      body: 'Nous avons reçu une demande de réinitialisation pour votre compte Fréquence Jardin. Cliquez ci-dessous pour choisir un nouveau mot de passe.',
-      buttonText: 'Réinitialiser mon mot de passe',
-      footer: 'Si vous n\'avez pas fait cette demande, vous pouvez ignorer cet email.',
+      subject: 'Réinitialiser votre mot de passe — Fréquence Jardin',
+      title: 'Un nouveau mot de passe pour votre jardin',
+      body: 'Vous avez demandé à réinitialiser votre mot de passe. Ce lien est valable une heure. Si ce n\'est pas vous, ignorez simplement cet e-mail.',
+      buttonText: 'Choisir un nouveau mot de passe',
     },
+
     magiclink: {
       subject: 'Votre lien de connexion — Fréquence Jardin',
       title: 'Votre lien de connexion',
