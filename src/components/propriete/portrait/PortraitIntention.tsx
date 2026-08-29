@@ -284,20 +284,20 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
           >
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-amber-600">
-                <Stethoscope className="h-4 w-4" /> Le problème à résoudre
+                <Stethoscope className="h-4 w-4" /> Votre priorité
               </div>
               {canEdit && priorite && <Pencil className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />}
             </div>
-            {probleme ? (
-              <>
-                <p className="mt-2 font-serif italic text-base md:text-lg text-foreground">« {probleme} »</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Cette phrase est transmise telle quelle à l'IA de jardin et à la clinique.
-                </p>
-              </>
+            {prioriteLabel ? (
+              <p className="mt-2 font-serif italic text-base md:text-lg text-foreground">{prioriteLabel}</p>
             ) : (
               <p className="mt-2 text-sm italic text-muted-foreground/70">
-                Plantation qui ne prend pas, sol, arbres, maladie… Cliquez pour le décrire.
+                Résoudre un problème, embellir, nourrir, accueillir le vivant… Cliquez pour choisir.
+              </p>
+            )}
+            {probleme && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Cette phrase est transmise telle quelle à l'IA de jardin et à la clinique.
               </p>
             )}
           </button>
