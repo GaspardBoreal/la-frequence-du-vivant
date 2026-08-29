@@ -26,6 +26,9 @@ export interface StoredGardenExample {
   vignette: string | null;
   chosenAt: string | null;
   aiProfile: Record<string, unknown> | null;
+  /** Famille de jardin (type de la galerie) — même vocabulaire que la réponse `style`. */
+  typeId: string | null;
+  typeSlug: string | null;
   /** L'utilisateur a explicitement répondu « Aucun ne me ressemble ». */
   refused: boolean;
 }
