@@ -175,10 +175,13 @@ export const TabPortrait: React.FC<Props> = ({
         <div className="flex items-center gap-1 rounded-full bg-muted/40 p-1 w-fit border border-border/60">
           <SubTabPill active={subTab === 'galerie'} onClick={() => setSubTab('galerie')} icon={Images} label="Galerie" />
           <SubTabPill active={subTab === 'cadastre'} onClick={() => setSubTab('cadastre')} icon={MapIcon} label="Cadastre" />
+          <SubTabPill active={subTab === 'intention'} onClick={() => setSubTab('intention')} icon={Compass} label="Intention" />
         </div>
       )}
 
-      {subTab === 'cadastre' ? (
+      {subTab === 'intention' ? (
+        <PortraitIntention proprieteId={proprieteId} proprieteNom={proprieteNom} />
+      ) : subTab === 'cadastre' ? (
         <PortraitCadastre
           proprieteId={proprieteId}
           proprieteNom={proprieteNom}
@@ -188,6 +191,7 @@ export const TabPortrait: React.FC<Props> = ({
           proprieteCenter={proprieteCenter}
         />
       ) : (
+
         <>
           {/* En-tête */}
           <div className="flex items-start justify-between gap-3 flex-wrap">
