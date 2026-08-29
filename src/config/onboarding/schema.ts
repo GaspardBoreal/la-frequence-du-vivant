@@ -17,12 +17,25 @@ export type TileIcon =
   | 'repas'
   | 'ruche';
 
+/** Texte libre demandé quand une option précise est retenue. */
+export interface OptionFollowUp {
+  /** Clé de stockage dans `answers` (ex. `priorite_probleme`). */
+  answerId: string;
+  label: string;
+  placeholder?: string;
+  /** La réponse est indispensable pour valider l'écran. */
+  required?: boolean;
+  multiline?: boolean;
+}
+
 export interface OnboardingOption {
   value: string;
   label: string;
   hint?: string;
   image?: string;
   icon?: TileIcon;
+  /** Précision en texte libre ouverte par ce choix. */
+  followUp?: OptionFollowUp;
 }
 
 export type QuestionKind = 'single' | 'multi' | 'gallery' | 'tiles' | 'slider' | 'surface';
