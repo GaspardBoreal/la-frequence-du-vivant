@@ -37,11 +37,32 @@ export interface UserAppsAccess {
   partenairesIot: PartenaireIotAccess[];
 }
 
+/**
+ * Filet de rattrapage Fréquence Jardin : si le compte porte les métadonnées OFJ
+ * mais qu'aucune propriété n'est accessible (confirmation ouverte ailleurs que
+ * sur /jardin/bienvenue), on matérialise le jardin une seule fois.
+ */
+const claimFrequenceJardinIfNeeded = async (): Promise<boolean> => {
+  const { data: userData } = await supabase.auth.getUser();
+  const meta = (userData.user?.user_metadata ?? {}) as Record<string, unknown>;
+  if (meta.app !== 'frequence-jardin') return false;
+
+  const { data, error } = await supabase.rpc('onboard_claim_from_metadata');
+  if (error) {
+    console.warn('[useUserAppsAccess] claim OFJ échoué', error.message);
+    return false;
+  }
+  const result = (data ?? {}) as { slug?: string; created?: boolean };
+  return !!result.slug;
+};
+
 export const useUserAppsAccess = (userId?: string) => {
   return useQuery<UserAppsAccess>({
     queryKey: ['user-apps-access', userId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_user_apps_access');
+      const fetchAccess = async () => await supabase.rpc('get_user_apps_access');
+
+      let { data, error } = await fetchAccess();
       if (error) {
         // Résilience : ne jamais bloquer l'écran de connexion si l'agrégat échoue
         console.error('[useUserAppsAccess] RPC error', error);
@@ -52,7 +73,16 @@ export const useUserAppsAccess = (userId?: string) => {
           partenairesIot: [],
         };
       }
-      const raw = (data as any) ?? {};
+
+      let raw = (data as any) ?? {};
+      if (((raw.proprietesAccessibles ?? []) as unknown[]).length === 0) {
+        const claimed = await claimFrequenceJardinIfNeeded();
+        if (claimed) {
+          const retry = await fetchAccess();
+          if (!retry.error) raw = (retry.data as any) ?? raw;
+        }
+      }
+
       return {
         hasMarcheurAccess: !!raw.hasMarcheurAccess,
         proprietesAccessibles: (raw.proprietesAccessibles ?? []) as ProprieteAccess[],
@@ -64,3 +94,4 @@ export const useUserAppsAccess = (userId?: string) => {
     staleTime: 5 * 60 * 1000,
   });
 };
+
