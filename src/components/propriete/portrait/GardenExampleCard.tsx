@@ -209,8 +209,8 @@ export const GardenExampleCard: React.FC<Props> = ({ stored, proprieteId, canEdi
       </div>
       {picker}
     </section>
-
   );
+
 };
 
 export default GardenExampleCard;
