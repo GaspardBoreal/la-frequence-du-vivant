@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter,
 } from '@/components/ui/sheet';
@@ -61,12 +63,27 @@ export const IntentionQuestionEditor: React.FC<Props> = ({
   const multiple = question.kind === 'multi' || question.kind === 'tiles';
   const selected = asArray(draft[question.id] as AnswerValue | undefined);
 
+  /** Option retenue ouvrant une précision en texte libre (ex. « Résoudre un problème »). */
+  const followUpOption = (question.options ?? []).find(
+    (o) => o.followUp && (multiple ? selected.includes(o.value) : draft[question.id] === o.value),
+  );
+  const followUp = followUpOption?.followUp ?? null;
+  const followUpValue = followUp ? String(draft[followUp.answerId] ?? values[followUp.answerId] ?? '') : '';
+  const followUpMissing = !!followUp?.required && !followUpValue.trim();
+
   const toggle = (value: string) => {
     if (multiple) {
       const next = selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value];
       setDraft((d) => ({ ...d, [question.id]: next }));
     } else {
-      setDraft((d) => ({ ...d, [question.id]: value }));
+      setDraft((d) => {
+        const next = { ...d, [question.id]: value };
+        // Une précision ne survit jamais au choix qu'elle accompagnait.
+        (question.options ?? []).forEach((o) => {
+          if (o.followUp && o.value !== value) next[o.followUp.answerId] = null;
+        });
+        return next;
+      });
     }
   };
 
@@ -103,6 +120,34 @@ export const IntentionQuestionEditor: React.FC<Props> = ({
                   </button>
                 );
               })}
+            </div>
+          )}
+
+          {followUp && (
+            <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
+              <label className="text-sm font-medium text-foreground" htmlFor="intention-follow-up">
+                {followUp.label}
+              </label>
+              {followUp.multiline === false ? (
+                <Input
+                  id="intention-follow-up"
+                  className="mt-2"
+                  value={followUpValue}
+                  placeholder={followUp.placeholder}
+                  onChange={(e) => setDraft((d) => ({ ...d, [followUp.answerId]: e.target.value }))}
+                />
+              ) : (
+                <Textarea
+                  id="intention-follow-up"
+                  className="mt-2 min-h-[96px]"
+                  value={followUpValue}
+                  placeholder={followUp.placeholder}
+                  onChange={(e) => setDraft((d) => ({ ...d, [followUp.answerId]: e.target.value }))}
+                />
+              )}
+              {followUpMissing && (
+                <p className="mt-2 text-xs text-amber-600">Une phrase suffit — c'est elle qui guidera le diagnostic.</p>
+              )}
             </div>
           )}
 
@@ -155,7 +200,7 @@ export const IntentionQuestionEditor: React.FC<Props> = ({
 
         <SheetFooter className="flex-row gap-2 sm:justify-between">
           <Button variant="ghost" onClick={onClose} disabled={saving}>Annuler</Button>
-          <Button onClick={() => onSave(draft)} disabled={saving}>
+          <Button onClick={() => onSave(draft)} disabled={saving || followUpMissing}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Enregistrer
           </Button>

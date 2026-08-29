@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Compass, Pencil, Sparkles, Loader2, Target, Footprints } from 'lucide-react';
+import { Compass, Pencil, Sparkles, Loader2, Target, Footprints, Stethoscope } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,13 +18,23 @@ interface Props {
 }
 
 /** Libellé lisible d'une réponse, à partir des options de la question. */
-const readableAnswer = (q: OnboardingQuestion, value: AnswerValue | undefined): string | null => {
+const readableAnswer = (
+  q: OnboardingQuestion,
+  value: AnswerValue | undefined,
+  answers: Record<string, AnswerValue> = {},
+): string | null => {
   if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) return null;
   if (q.kind === 'slider' && q.slider) return `${value} ${q.slider.unit}`;
   const labelOf = (v: string) => q.options?.find((o) => o.value === v)?.label ?? v;
-  if (Array.isArray(value)) return value.map(labelOf).join(' · ');
+  /** Le texte libre du jardinier est repris mot pour mot, jamais traduit. */
+  const precisionOf = (v: string) => {
+    const key = q.options?.find((o) => o.value === v)?.followUp?.answerId;
+    const raw = key ? answers[key] : undefined;
+    return typeof raw === 'string' && raw.trim() ? ` — « ${raw.trim()} »` : '';
+  };
+  if (Array.isArray(value)) return value.map((v) => labelOf(v) + precisionOf(v)).join(' · ');
   if (typeof value === 'number') return String(value);
-  return labelOf(value);
+  return labelOf(value) + precisionOf(value);
 };
 
 /**
@@ -53,8 +63,11 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
       : answers[q.id] != null,
   ).length;
 
+  const rawProbleme = answers.priorite_probleme;
+  const probleme = typeof rawProbleme === 'string' && rawProbleme.trim() ? rawProbleme.trim() : null;
+
   const objectif = questions.find((q) => q.id === 'objectif_6_mois');
-  const objectifLabel = objectif ? readableAnswer(objectif, answers.objectif_6_mois) : null;
+  const objectifLabel = objectif ? readableAnswer(objectif, answers.objectif_6_mois, answers) : null;
 
   const handleSave = (patch: Record<string, AnswerValue | null>) => {
     save.mutate(
@@ -133,6 +146,18 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
         </section>
       )}
 
+      {probleme && (
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-5">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-amber-600">
+            <Stethoscope className="h-4 w-4" /> Le problème à résoudre
+          </div>
+          <p className="mt-2 font-serif italic text-lg text-foreground">« {probleme} »</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Cette phrase est transmise telle quelle à l'IA de jardin et à la clinique.
+          </p>
+        </div>
+      )}
+
       {objectif && (
         <button
           type="button"
@@ -169,7 +194,7 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
                       answers[q.surface.totalId] != null ? `${answers[q.surface.totalId]} m² au total` : null,
                       answers[q.surface.freeId] != null ? `${answers[q.surface.freeId]} m² disponibles` : null,
                     ].filter(Boolean).join(' · ') || null
-                  : readableAnswer(q, answers[q.id]);
+                  : readableAnswer(q, answers[q.id], answers);
 
                 return (
                   <button
