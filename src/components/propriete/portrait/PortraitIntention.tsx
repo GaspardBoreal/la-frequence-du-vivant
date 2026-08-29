@@ -49,6 +49,13 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
   const { data: intention, isLoading, error } = usePropertyIntention(proprieteId);
   const { data: canEdit = false } = useCanEditIntention(proprieteId);
   const save = useSaveIntention(proprieteId);
+  const {
+    gestures,
+    generatedAt: gesturesGeneratedAt,
+    isGenerating: gesturesLoading,
+    error: gesturesError,
+    regenerate: regenerateGestures,
+  } = useGardenGestures(proprieteId, canEdit);
   const [editing, setEditing] = useState<OnboardingQuestion | null>(null);
   const [pickerSignal, setPickerSignal] = useState(0);
   const [pickerSlug, setPickerSlug] = useState<string | null>(null);
