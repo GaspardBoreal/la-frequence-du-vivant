@@ -203,7 +203,11 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
             stored={intention?.gardenExample ?? null}
             proprieteId={proprieteId}
             canEdit={canEdit}
+            styleLabel={styleLabel}
+            openPickerSignal={pickerSignal}
+            pickerTypeSlug={pickerSlug}
           />
+
 
 
           <div className="rounded-2xl border border-border/70 bg-card/60 px-4 py-3 text-xs text-muted-foreground">
