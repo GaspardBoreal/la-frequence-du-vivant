@@ -424,6 +424,8 @@ export function useProprieteChatProviders(proprieteId?: string): {
       list.push(
         provider({
           id: 'site.intention',
+          group: 'Propriété',
+          emoji: '🎯',
           label: probleme ? 'Intention · problème à résoudre' : 'Intention du jardinier',
           hint: probleme
             ? 'Priorité déclarée et problème décrit par le jardinier'
