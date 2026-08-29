@@ -102,9 +102,18 @@ export const GardenExampleCard: React.FC<Props> = ({ stored, proprieteId, canEdi
         )}
 
         <div className="p-5 space-y-3">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-amber-600">
-            <Sparkles className="h-4 w-4" /> Le jardin qui vous ressemble
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-amber-600">
+              <Sparkles className="h-4 w-4" /> Le jardin qui vous ressemble
+            </div>
+            {editable && (
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setPicking(true)}>
+                <Images className="mr-1.5 h-3.5 w-3.5" />
+                Changer
+              </Button>
+            )}
           </div>
+
 
           <div>
             <h3 className="font-serif italic text-lg text-foreground">{titre}</h3>
