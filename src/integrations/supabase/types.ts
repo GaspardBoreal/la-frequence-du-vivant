@@ -9630,6 +9630,10 @@ export type Database = {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
       }
+      can_edit_propriete_onboarding: {
+        Args: { _propriete_id: string }
+        Returns: boolean
+      }
       can_initialize_admin_system: { Args: never; Returns: boolean }
       can_upload_convivialite: {
         Args: { _exploration_id: string; _user_id: string }
@@ -10640,6 +10644,7 @@ export type Database = {
           _latitude?: number
           _longitude?: number
           _nom: string
+          _preferences?: Json
           _ville?: string
         }
         Returns: Json
@@ -10745,6 +10750,10 @@ export type Database = {
       }
       roadmap_week_is_public: { Args: { _week_id: string }; Returns: boolean }
       round_coord: { Args: { _v: number }; Returns: number }
+      save_propriete_onboarding: {
+        Args: { _patch: Json; _propriete_id: string }
+        Returns: Json
+      }
       search_community_profiles_for_invite: {
         Args: { _event_id: string; _search: string }
         Returns: {

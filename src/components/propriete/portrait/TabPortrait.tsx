@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles, Map as MapIcon } from 'lucide-react';
+import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles, Map as MapIcon, Compass } from 'lucide-react';
 import { PortraitCadastre } from './PortraitCadastre';
+import { PortraitIntention } from './PortraitIntention';
+
 import {
   GALLERY_MAX,
   useCanCurateGallery,
@@ -28,7 +30,7 @@ interface Props {
 }
 
 type ViewMode = 'bento' | 'motion' | 'constellation';
-type SubTab = 'galerie' | 'cadastre';
+type SubTab = 'galerie' | 'cadastre' | 'intention';
 
 const keyOf = (c: { source_table: string; source_id: string }) =>
   `${c.source_table}::${c.source_id}`;
@@ -173,10 +175,13 @@ export const TabPortrait: React.FC<Props> = ({
         <div className="flex items-center gap-1 rounded-full bg-muted/40 p-1 w-fit border border-border/60">
           <SubTabPill active={subTab === 'galerie'} onClick={() => setSubTab('galerie')} icon={Images} label="Galerie" />
           <SubTabPill active={subTab === 'cadastre'} onClick={() => setSubTab('cadastre')} icon={MapIcon} label="Cadastre" />
+          <SubTabPill active={subTab === 'intention'} onClick={() => setSubTab('intention')} icon={Compass} label="Intention" />
         </div>
       )}
 
-      {subTab === 'cadastre' ? (
+      {subTab === 'intention' ? (
+        <PortraitIntention proprieteId={proprieteId} proprieteNom={proprieteNom} />
+      ) : subTab === 'cadastre' ? (
         <PortraitCadastre
           proprieteId={proprieteId}
           proprieteNom={proprieteNom}
@@ -186,6 +191,7 @@ export const TabPortrait: React.FC<Props> = ({
           proprieteCenter={proprieteCenter}
         />
       ) : (
+
         <>
           {/* En-tête */}
           <div className="flex items-start justify-between gap-3 flex-wrap">
