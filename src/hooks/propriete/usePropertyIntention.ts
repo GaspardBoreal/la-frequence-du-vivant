@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { detectPersona, type Persona } from '@/config/onboarding/personas';
+import { detectPersona, PERSONA_LABELS, type Persona } from '@/config/onboarding/personas';
 import type { Answers, AnswerValue } from '@/config/onboarding/schema';
 
 /**
@@ -10,7 +10,10 @@ import type { Answers, AnswerValue } from '@/config/onboarding/schema';
  * la table `proprietes` restant fermée en écriture aux non-admins.
  */
 
-const META_KEYS = new Set(['answers', 'persona', 'version', 'completed_at', 'updated_at', 'source']);
+const META_KEYS = new Set([
+  'answers', 'persona', 'version', 'completed_at', 'updated_at', 'source',
+  'persona_label', 'flow_source', 'flow_version', 'garden_example', 'gestures', 'portrait',
+]);
 
 /** Jardin-exemple retenu à l'écran « Lequel vous ressemble le plus ? ». */
 export interface StoredGardenExample {
