@@ -87,9 +87,14 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
   ).length;
 
   const rawProbleme = answers.priorite_probleme;
-  const probleme = typeof rawProbleme === 'string' && rawProbleme.trim() ? rawProbleme.trim() : null;
+  // Le texte libre n'a de sens que si la priorité est bien « Résoudre un problème ».
+  const probleme = answers.priorite === 'resoudre_probleme'
+    && typeof rawProbleme === 'string' && rawProbleme.trim()
+    ? rawProbleme.trim()
+    : null;
 
   const priorite = questions.find((q) => q.id === 'priorite');
+  const prioriteLabel = priorite ? readableAnswer(priorite, answers.priorite, answers) : null;
   const objectif = questions.find((q) => q.id === 'objectif_6_mois');
   const objectifLabel = objectif ? readableAnswer(objectif, answers.objectif_6_mois, answers) : null;
 
