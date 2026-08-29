@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { ChevronDown, ExternalLink, ImageOff, Images, Sparkles } from 'lucide-react';
+import { ChevronDown, ExternalLink, ImageOff, Images, Maximize2, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useGardenExample } from '@/hooks/propriete/useGardenExample';
 import type { StoredGardenExample } from '@/hooks/propriete/usePropertyIntention';
+import type { GardenExample } from '@/hooks/onboarding/useOnboardingConfig';
+import GardenExampleViewer from '@/components/onboarding/GardenExampleViewer';
 import { GardenExamplePicker } from './GardenExamplePicker';
 
 interface Props {
@@ -13,6 +15,12 @@ interface Props {
   proprieteId?: string;
   /** L'utilisateur peut-il changer le jardin-exemple ? */
   canEdit?: boolean;
+  /** Libellé de la famille de jardin associée (réponse « Quel jardin vous fait rêver ? »). */
+  styleLabel?: string | null;
+  /** Incrémenter cette valeur ouvre la galerie (ex. après avoir répondu au rêve). */
+  openPickerSignal?: number;
+  /** Famille à pré-filtrer à l'ouverture pilotée. */
+  pickerTypeSlug?: string | null;
 }
 
 
@@ -34,18 +42,33 @@ const renderValue = (v: unknown): string => {
  * parcours d'accueil, avec ses métadonnées relues à la source (la fiche
  * `onboarding_garden_examples` peut avoir évolué depuis le choix).
  */
-export const GardenExampleCard: React.FC<Props> = ({ stored, proprieteId, canEdit = false }) => {
+export const GardenExampleCard: React.FC<Props> = ({
+  stored, proprieteId, canEdit = false, styleLabel, openPickerSignal = 0, pickerTypeSlug,
+}) => {
   const { data: live } = useGardenExample(stored?.id ?? null);
   const [openMeta, setOpenMeta] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [zoom, setZoom] = useState(false);
+  const [forcedSlug, setForcedSlug] = useState<string | null>(null);
 
   const editable = canEdit && !!proprieteId;
+
+  // Ouverture pilotée depuis la question « Quel jardin vous fait rêver ? ».
+  React.useEffect(() => {
+    if (openPickerSignal > 0 && editable) {
+      setForcedSlug(pickerTypeSlug ?? null);
+      setPicking(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openPickerSignal]);
+
   const picker = editable ? (
     <GardenExamplePicker
       proprieteId={proprieteId!}
       open={picking}
-      onOpenChange={setPicking}
+      onOpenChange={(v) => { setPicking(v); if (!v) setForcedSlug(null); }}
       currentId={stored?.id ?? null}
+      initialTypeSlug={forcedSlug}
     />
   ) : null;
 
