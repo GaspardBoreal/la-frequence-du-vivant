@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles, Map as MapIcon } from 'lucide-react';
+import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles, Map as MapIcon, Compass } from 'lucide-react';
 import { PortraitCadastre } from './PortraitCadastre';
+import { PortraitIntention } from './PortraitIntention';
+
 import {
   GALLERY_MAX,
   useCanCurateGallery,
@@ -28,7 +30,7 @@ interface Props {
 }
 
 type ViewMode = 'bento' | 'motion' | 'constellation';
-type SubTab = 'galerie' | 'cadastre';
+type SubTab = 'galerie' | 'cadastre' | 'intention';
 
 const keyOf = (c: { source_table: string; source_id: string }) =>
   `${c.source_table}::${c.source_id}`;
