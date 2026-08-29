@@ -193,3 +193,43 @@ export const useSaveIntention = (proprieteId?: string) => {
     },
   });
 };
+
+/** Jardin-exemple choisi (ou refusé) depuis le Portrait, côté LFDV. */
+export interface SaveGardenExampleInput {
+  example: {
+    id: string;
+    stableId: string | null;
+    titre: string | null;
+    sousTitre: string | null;
+    intention: string | null;
+    keywords: string[];
+    vignette: string | null;
+    aiProfile: Record<string, unknown> | null;
+  } | null;
+}
+
+export const useSaveGardenExample = (proprieteId?: string) => {
+  const qc = useQueryClient();
+  return useMutation<void, Error, SaveGardenExampleInput>({
+    mutationFn: async ({ example }) => {
+      if (!proprieteId) throw new Error('Jardin inconnu');
+      const now = new Date().toISOString();
+      const garden_example = example
+        ? { ...example, chosenAt: now, refused: false, source: 'lfdv_portrait' }
+        : { refused: true, chosenAt: now, source: 'lfdv_portrait' };
+
+      const { error } = await (supabase as unknown as {
+        rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+      }).rpc('save_propriete_onboarding', {
+        _propriete_id: proprieteId,
+        _patch: { garden_example, updated_at: now },
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['propriete-intention', proprieteId] });
+      qc.invalidateQueries({ queryKey: ['onboarding-garden-example'] });
+      qc.invalidateQueries({ queryKey: ['propriete-fiche', proprieteId] });
+    },
+  });
+};
