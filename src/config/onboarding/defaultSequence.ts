@@ -393,10 +393,38 @@ export const DEFAULT_QUESTIONS: OnboardingQuestion[] = [
       },
     },
   },
+  {
+    id: 'objectif_6_mois',
+    title: 'Quel objectif pour les six prochains mois ?',
+    subtitle: 'Un seul cap — c’est lui qui rythmera vos gestes.',
+    kind: 'single',
+    chapter: 'Vos moyens',
+    accent: '--primary',
+    optional: true,
+    options: [
+      { value: 'premiere_recolte', label: 'Faire ma première récolte', hint: 'Quelque chose à cueillir avant six mois' },
+      { value: 'preparer_sol', label: 'Préparer et nourrir le sol', hint: 'Paillage, compost, couverture vivante' },
+      { value: 'structurer', label: 'Structurer les espaces', hint: 'Carrés, allées, bacs, arrosage' },
+      { value: 'planter_perenne', label: 'Planter du pérenne', hint: 'Arbres, arbustes, vivaces' },
+      { value: 'faire_revenir_vivant', label: 'Faire revenir le vivant', hint: 'Mare, haies, refuges, fleurs' },
+      { value: 'comprendre', label: 'Comprendre mon jardin', hint: 'Observer, mesurer, apprendre avant d’agir' },
+    ],
+    variants: {
+      ENTREPRISE_TERRAIN: {
+        title: 'Quel objectif pour le site dans les six prochains mois ?',
+        subtitle: 'Un cap partageable avec vos équipes.',
+      },
+      COLLECTIVITE: {
+        title: 'Quel objectif pour les six prochains mois ?',
+        subtitle: 'Un cap lisible par les habitants.',
+      },
+    },
+  },
 ];
 
 export const DEFAULT_SEQUENCE: OnboardingSequence = {
-  version: 3,
+  version: 4,
   label: 'Séquence par défaut — personae 2026',
   questions: DEFAULT_QUESTIONS,
 };
+
