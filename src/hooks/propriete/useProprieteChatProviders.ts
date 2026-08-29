@@ -420,7 +420,10 @@ export function useProprieteChatProviders(proprieteId?: string): {
     // problème décrit en toutes lettres (texte libre repris mot pour mot).
     if (intention?.hasOnboarding) {
       const a = intention.answers ?? {};
-      const probleme = typeof a.priorite_probleme === 'string' ? a.priorite_probleme.trim() : '';
+      // Le texte libre n'est transmis que s'il correspond bien à la priorité en cours.
+      const probleme = a.priorite === 'resoudre_probleme' && typeof a.priorite_probleme === 'string'
+        ? a.priorite_probleme.trim()
+        : '';
       list.push(
         provider({
           id: 'site.intention',
