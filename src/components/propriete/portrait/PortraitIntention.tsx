@@ -227,7 +227,10 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
           </div>
 
           {CHAPTERS.map((chapter) => {
-            const items = questions.filter((q) => q.chapter === chapter && q.id !== 'objectif_6_mois');
+            // La priorité (et son texte libre) appartient au sous-onglet « Le projet ».
+            const items = questions.filter(
+              (q) => q.chapter === chapter && q.id !== 'objectif_6_mois' && q.id !== 'priorite',
+            );
             if (items.length === 0) return null;
             return (
               <section key={chapter} className="space-y-2">
