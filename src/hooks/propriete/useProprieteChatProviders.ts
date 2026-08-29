@@ -7,6 +7,7 @@ import { useProprieteParcelles } from '@/hooks/propriete/usePropertyParcelles';
 import { usePropertySynthesis } from '@/hooks/propriete/usePropertySynthesis';
 import { usePropertyObservation } from '@/hooks/propriete/usePropertyObservation';
 import { usePropertyFloraMatched } from '@/hooks/propriete/usePropertyFloraMatched';
+import { usePropertyIntention } from '@/hooks/propriete/usePropertyIntention';
 import { placedSamples, buildOuvrageSoilDossier, mergeSamples } from '@/lib/soilLinkEngine';
 import { geometryAreaM2, geometryCenter, measureFor } from '@/components/propriete/palette/studio/geoMetrics';
 import { payloadBytes } from '@/lib/chatContextCost';
@@ -53,6 +54,7 @@ export function useProprieteChatProviders(proprieteId?: string): {
   const { state: synthesis } = usePropertySynthesis(proprieteId);
   const { state: observation } = usePropertyObservation(proprieteId);
   const flora = usePropertyFloraMatched(proprieteId);
+  const { intention } = usePropertyIntention(proprieteId);
 
   const focusObjet = useMemo(
     () => (focus.objetId ? (objets ?? []).find((o) => o.id === focus.objetId) ?? null : null),
@@ -414,6 +416,31 @@ export function useProprieteChatProviders(proprieteId?: string): {
       );
     }
 
+    // Intention du jardinier : priorités déclarées et, le cas échéant, le
+    // problème décrit en toutes lettres (texte libre repris mot pour mot).
+    if (intention?.hasOnboarding) {
+      const a = intention.answers ?? {};
+      const probleme = typeof a.priorite_probleme === 'string' ? a.priorite_probleme.trim() : '';
+      list.push(
+        provider({
+          id: 'site.intention',
+          label: probleme ? 'Intention · problème à résoudre' : 'Intention du jardinier',
+          hint: probleme
+            ? 'Priorité déclarée et problème décrit par le jardinier'
+            : 'Réponses du parcours d’accueil (priorités, objectif, portrait)',
+          payload: {
+            persona: intention.personaLabel ?? intention.persona ?? null,
+            portrait: intention.portrait ?? null,
+            priorite: a.priorite ?? null,
+            probleme_declare: probleme || null,
+            objectif_6_mois: a.objectif_6_mois ?? null,
+            temps_disponible: a.temps ?? null,
+            gestes: (intention.gestures ?? []).map((g) => g.title),
+          },
+        }),
+      );
+    }
+
     return {
       providers: list,
       providersTitle: focusObjet
@@ -436,5 +463,6 @@ export function useProprieteChatProviders(proprieteId?: string): {
     focus.radiusM,
     focus.selectedObjetIds,
     focus.ouvrageDetail,
+    intention,
   ]);
 }
