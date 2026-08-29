@@ -40,6 +40,13 @@ export interface IntentionGesture {
   sketch?: string | null;
 }
 
+/** Trace de la dernière rédaction des gestes (empreinte des réponses ayant servi). */
+export interface GesturesMeta {
+  generatedAt: string | null;
+  fingerprint: string | null;
+  source: string | null;
+}
+
 export interface PropertyIntention {
   /** Réponses normalisées, quel que soit le format d'écriture d'origine. */
   answers: Answers;
