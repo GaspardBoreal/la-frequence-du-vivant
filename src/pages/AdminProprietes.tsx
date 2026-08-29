@@ -20,7 +20,7 @@ import ProprietesMapView from '@/components/admin/proprietes/ProprietesMapView';
 import type {
   ProprieteListRow, ProprietesFilterValues, ProprietesKpiCounts, ProprietesKpiKey,
 } from '@/components/admin/proprietes/types';
-import { DEFAULT_FILTERS, formatSurface } from '@/components/admin/proprietes/types';
+import { DEFAULT_FILTERS, formatSurface, resolvePeriodeRange } from '@/components/admin/proprietes/types';
 
 const sb = supabase as any;
 
@@ -48,10 +48,16 @@ const AdminProprietes: React.FC = () => {
     entreprise: searchParams.get('entreprise') || 'all',
     gps: (searchParams.get('gps') as ProprietesFilterValues['gps']) || 'all',
     sondes: (searchParams.get('sondes') as ProprietesFilterValues['sondes']) || 'all',
+    periode: (searchParams.get('periode') as ProprietesFilterValues['periode']) || 'all',
+    du: searchParams.get('du') ?? '',
+    au: searchParams.get('au') ?? '',
   };
   const vue = searchParams.get('vue') === 'carte' ? 'carte' : 'table';
-  const tri: SortKey = (searchParams.get('tri') as SortKey) || 'nom';
-  const dir: 'asc' | 'desc' = searchParams.get('dir') === 'desc' ? 'desc' : 'asc';
+  const tri: SortKey = (searchParams.get('tri') as SortKey) || 'created_at';
+  const dir: 'asc' | 'desc' =
+    searchParams.get('dir') === 'asc' || searchParams.get('dir') === 'desc'
+      ? (searchParams.get('dir') as 'asc' | 'desc')
+      : 'desc';
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
   const pageSize = Math.max(10, parseInt(searchParams.get('ps') || '20', 10) || 20);
 
@@ -74,6 +80,9 @@ const AdminProprietes: React.FC = () => {
       entreprise: v.entreprise,
       gps: v.gps,
       sondes: v.sondes,
+      periode: v.periode,
+      du: v.periode === 'plage' ? v.du || null : null,
+      au: v.periode === 'plage' ? v.au || null : null,
     });
 
   // ---- Référentiels --------------------------------------------------------
@@ -187,6 +196,8 @@ const AdminProprietes: React.FC = () => {
     if (filters.entreprise !== 'all') q = q.eq('owner_company_id', filters.entreprise);
     if (filters.gps === 'avec') q = q.not('latitude', 'is', null).not('longitude', 'is', null);
     if (filters.gps === 'sans') q = q.or('latitude.is.null,longitude.is.null');
+    const periodeRange = resolvePeriodeRange(filters.periode, filters.du, filters.au);
+    if (periodeRange) q = q.gte('created_at', periodeRange.from).lte('created_at', periodeRange.to);
     if (filters.sondes === 'avec') {
       q = idsAvecSondes.length > 0
         ? q.in('id', idsAvecSondes)
