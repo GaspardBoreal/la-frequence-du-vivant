@@ -1,12 +1,33 @@
 
 import { isBalconPersona, isEntreprise, type Persona } from './personas';
-import type { Answers, OnboardingQuestion, OnboardingSequence } from './schema';
+import type { Answers, OnboardingOption, OnboardingQuestion, OnboardingSequence } from './schema';
 
 /** Priorités alimentaires : elles déclenchent récolte et envies. */
 const PRIORITES_ALIMENTAIRES = ['legumes_famille', 'autonomie', 'fruits_peu_temps', 'production_familiale'];
 
 const veutManger = (a: Answers, persona: Persona) =>
   !isEntreprise(persona) && PRIORITES_ALIMENTAIRES.includes(String(a.priorite ?? ''));
+
+/** Cinquième carte commune : le jardinier vient d'abord régler un problème. */
+const PROBLEME_FOLLOW_UP = {
+  answerId: 'priorite_probleme',
+  label: 'Dites-nous en deux mots ce qui ne va pas',
+  placeholder: 'Ex. : ma haie de charmilles ne reprend pas, soigner mes grands arbres…',
+  required: true,
+  multiline: true,
+} as const;
+
+const RESOUDRE_PROBLEME: OnboardingOption = {
+  value: 'resoudre_probleme',
+  label: 'Résoudre un problème',
+  hint: 'Plantation qui ne prend pas, sol, arbres, maladie…',
+  followUp: { ...PROBLEME_FOLLOW_UP },
+};
+
+const RESOUDRE_PROBLEME_SITE: OnboardingOption = {
+  ...RESOUDRE_PROBLEME,
+  label: 'Résoudre un problème sur le site',
+};
 
 const hoursLabel = (v: number) => {
   if (v <= 0.5) return 'Une petite demi-heure, à peine un passage';
@@ -162,9 +183,6 @@ export const DEFAULT_QUESTIONS: OnboardingQuestion[] = [
           { value: 'terroir', label: 'Conserver une production de terroir', hint: 'Variétés et usages locaux' },
           RESOUDRE_PROBLEME_SITE,
         ],
-      },
-      COLLECTIVITE: {
-        options: undefined,
       },
     },
   },
@@ -430,8 +448,8 @@ export const DEFAULT_QUESTIONS: OnboardingQuestion[] = [
 ];
 
 export const DEFAULT_SEQUENCE: OnboardingSequence = {
-  version: 4,
-  label: 'Séquence par défaut — personae 2026',
+  version: 5,
+  label: 'Séquence par défaut — personae 2026 (5e priorité : résoudre un problème)',
   questions: DEFAULT_QUESTIONS,
 };
 
