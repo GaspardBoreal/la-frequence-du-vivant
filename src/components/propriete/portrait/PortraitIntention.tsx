@@ -326,19 +326,59 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
             </button>
           )}
 
-          {(intention?.gestures.length ?? 0) > 0 && (
+          {(gestures.length > 0 || gesturesLoading) && (
             <section className="space-y-2">
-              <h3 className="text-sm font-medium text-foreground/80 flex items-center gap-2">
-                <Footprints className="h-4 w-4 text-amber-600" /> Vos premiers gestes
-              </h3>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {intention!.gestures.map((g, i) => (
-                  <div key={`${g.title}-${i}`} className="rounded-2xl border border-border/70 bg-card p-4">
-                    <p className="text-sm font-medium text-foreground">{g.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{g.detail}</p>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <h3 className="text-sm font-medium text-foreground/80 flex items-center gap-2">
+                  <Footprints className="h-4 w-4 text-amber-600" /> Vos premiers gestes
+                  {gesturesLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                </h3>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => void regenerateGestures()}
+                    disabled={gesturesLoading}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border/70 px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                  >
+                    <RefreshCw className={cn('h-3 w-3', gesturesLoading && 'animate-spin')} />
+                    Régénérer
+                  </button>
+                )}
               </div>
+
+              {gesturesLoading && gestures.length === 0 ? (
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="rounded-2xl border border-border/70 bg-card p-4 animate-pulse">
+                      <div className="h-3.5 w-2/3 rounded bg-muted" />
+                      <div className="mt-2 h-3 w-full rounded bg-muted/70" />
+                      <div className="mt-1 h-3 w-4/5 rounded bg-muted/70" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {gestures.map((g, i) => (
+                    <div key={`${g.title}-${i}`} className="rounded-2xl border border-border/70 bg-card p-4">
+                      <p className="text-sm font-medium text-foreground">{g.title}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{g.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {gesturesError ? (
+                <p className="text-xs text-destructive">
+                  {gesturesError} — vos gestes précédents restent affichés.
+                </p>
+              ) : (
+                gesturesGeneratedAt && (
+                  <p className="text-xs text-muted-foreground">
+                    Rédigés par l'IA de jardin le{' '}
+                    {new Date(gesturesGeneratedAt).toLocaleDateString('fr-FR')}, d'après vos réponses.
+                  </p>
+                )
+              )}
             </section>
           )}
         </>
