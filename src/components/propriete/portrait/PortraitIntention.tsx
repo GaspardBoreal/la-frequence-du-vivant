@@ -65,6 +65,15 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
   const answers = intention?.answers ?? {};
   const persona = intention?.persona ?? 'PARTICULIER_PETIT';
 
+  /** Libellé lisible du rêve de jardin, affiché sur l'image retenue. */
+  const styleLabel = useMemo(() => {
+    const v = answers.style;
+    if (typeof v !== 'string') return null;
+    const q = DEFAULT_SEQUENCE.questions.find((x) => x.id === 'style');
+    return q?.options?.find((o) => o.value === v)?.label ?? null;
+  }, [answers]);
+
+
   /** Écrans réellement pertinents pour cette persona. */
   const questions = useMemo(
     () => buildSequence(DEFAULT_SEQUENCE.questions, answers, persona),
