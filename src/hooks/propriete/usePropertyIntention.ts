@@ -211,11 +211,13 @@ export const useSaveIntention = (proprieteId?: string) => {
       return callSaveOnboarding(proprieteId, patch);
     },
     // L'écran se met à jour avec l'état renvoyé par la base, sans attendre la relecture.
-    onSuccess: (fresh) => {
+    onSuccess: async (fresh) => {
       qc.setQueryData(['propriete-intention', proprieteId], fresh);
-      qc.invalidateQueries({ queryKey: ['propriete-intention', proprieteId] });
+      // La relecture est attendue : l'écran ne peut pas retomber sur « À compléter ».
+      await qc.refetchQueries({ queryKey: ['propriete-intention', proprieteId], exact: true });
       qc.invalidateQueries({ queryKey: ['propriete-fiche', proprieteId] });
     },
+
   });
 };
 
