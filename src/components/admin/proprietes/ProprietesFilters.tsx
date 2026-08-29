@@ -72,6 +72,15 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
   const set = <K extends keyof ProprietesFilterValues>(k: K, v: ProprietesFilterValues[K]) =>
     onChange({ ...values, [k]: v });
 
+  // Départements restreints à la région sélectionnée
+  const visibleDepartements = useMemo(
+    () =>
+      values.region === 'all'
+        ? departements
+        : departements.filter((d) => regionLabelFromDepartement(d) === values.region),
+    [departements, values.region],
+  );
+
   const isDirty = JSON.stringify({ ...values, q: values.q }) !== JSON.stringify(DEFAULT_FILTERS);
 
   return (
