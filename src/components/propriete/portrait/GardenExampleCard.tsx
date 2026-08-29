@@ -207,7 +207,9 @@ export const GardenExampleCard: React.FC<Props> = ({ stored, proprieteId, canEdi
           )}
         </div>
       </div>
+      {picker}
     </section>
+
   );
 };
 
