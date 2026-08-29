@@ -107,22 +107,19 @@ export const resolvePeriodeRange = (
     }
   }
   if (!fromDay) return null;
-  // bornes en heure de Paris converties en ISO UTC (inclusives)
-  const from = new Date(`${fromDay}T00:00:00+02:00`);
-  const to = new Date(`${toDay}T23:59:59.999+02:00`);
-  const parisOffset = (dt: Date) => {
-    const p = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Paris', timeZoneName: 'shortOffset' })
-      .formatToParts(dt).find((x) => x.type === 'timeZoneName')?.value ?? 'GMT+2';
-    const mm = p.match(/GMT([+-])(\d+)/);
+  // bornes jour en heure de Paris converties en ISO UTC (inclusives)
+  const parisOffsetHours = (dayStr: string): number => {
+    const probe = new Date(`${dayStr}T12:00:00Z`);
+    const tz = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Paris', timeZoneName: 'shortOffset' })
+      .formatToParts(probe).find((x) => x.type === 'timeZoneName')?.value ?? 'GMT+2';
+    const mm = tz.match(/GMT([+-])(\d+)/);
     return mm ? (mm[1] === '+' ? 1 : -1) * +mm[2] : 2;
   };
-  const toIso = (dayStr: string, endOfDay: boolean) => {
-    const probe = new Date(`${dayStr}T12:00:00Z`);
-    const off = parisOffset(probe);
+  const toIso = (dayStr: string, endOfDay: boolean): string => {
+    const off = parisOffsetHours(dayStr);
     const local = new Date(`${dayStr}T${endOfDay ? '23:59:59.999' : '00:00:00.000'}Z`);
     return new Date(local.getTime() - off * 3600_000).toISOString();
   };
-  void from; void to;
   return { from: toIso(fromDay, false), to: toIso(toDay, true) };
 };
 

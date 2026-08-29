@@ -48,10 +48,16 @@ const AdminProprietes: React.FC = () => {
     entreprise: searchParams.get('entreprise') || 'all',
     gps: (searchParams.get('gps') as ProprietesFilterValues['gps']) || 'all',
     sondes: (searchParams.get('sondes') as ProprietesFilterValues['sondes']) || 'all',
+    periode: (searchParams.get('periode') as ProprietesFilterValues['periode']) || 'all',
+    du: searchParams.get('du') ?? '',
+    au: searchParams.get('au') ?? '',
   };
   const vue = searchParams.get('vue') === 'carte' ? 'carte' : 'table';
-  const tri: SortKey = (searchParams.get('tri') as SortKey) || 'nom';
-  const dir: 'asc' | 'desc' = searchParams.get('dir') === 'desc' ? 'desc' : 'asc';
+  const tri: SortKey = (searchParams.get('tri') as SortKey) || 'created_at';
+  const dir: 'asc' | 'desc' =
+    searchParams.get('dir') === 'asc' || searchParams.get('dir') === 'desc'
+      ? (searchParams.get('dir') as 'asc' | 'desc')
+      : 'desc';
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
   const pageSize = Math.max(10, parseInt(searchParams.get('ps') || '20', 10) || 20);
 
