@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Compass, Pencil, Sparkles, Loader2, Target, Footprints, Stethoscope, Sprout, Flag } from 'lucide-react';
+import { Compass, Pencil, Sparkles, Loader2, Target, Footprints, Stethoscope, Sprout, Flag, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
