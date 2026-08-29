@@ -237,20 +237,39 @@ export interface SaveGardenExampleInput {
     keywords: string[];
     vignette: string | null;
     aiProfile: Record<string, unknown> | null;
+    typeId?: string | null;
+    typeSlug?: string | null;
   } | null;
+  /** Réponses à écrire dans le même geste (ex. `style` déduit de la famille choisie). */
+  answers?: Record<string, AnswerValue | null>;
 }
 
 export const useSaveGardenExample = (proprieteId?: string) => {
   const qc = useQueryClient();
   return useMutation<PropertyIntention, Error, SaveGardenExampleInput>({
-    mutationFn: async ({ example }) => {
+    mutationFn: async ({ example, answers }) => {
       if (!proprieteId) throw new Error('Jardin inconnu');
       const now = new Date().toISOString();
       const garden_example = example
         ? { ...example, chosenAt: now, refused: false, source: 'lfdv_portrait' }
         : { refused: true, chosenAt: now, source: 'lfdv_portrait' };
 
-      return callSaveOnboarding(proprieteId, { garden_example, updated_at: now });
+      const patch: Record<string, unknown> = { garden_example, updated_at: now };
+
+      // L'image et la question « Quel jardin vous fait rêver ? » disent la même chose :
+      // elles s'écrivent ensemble pour ne jamais diverger à l'écran.
+      if (answers && Object.keys(answers).length > 0) {
+        const current = qc.getQueryData<PropertyIntention>(['propriete-intention', proprieteId]);
+        const merged: Record<string, AnswerValue> = { ...(current?.answers ?? {}) };
+        Object.entries(answers).forEach(([k, v]) => {
+          if (v === null || v === '' || (Array.isArray(v) && v.length === 0)) delete merged[k];
+          else merged[k] = v;
+        });
+        patch.answers = merged;
+        patch.persona = current?.storedPersona ?? detectPersona(merged);
+      }
+
+      return callSaveOnboarding(proprieteId, patch);
     },
     onSuccess: async (fresh) => {
       qc.setQueryData(['propriete-intention', proprieteId], fresh);
