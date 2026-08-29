@@ -44,16 +44,19 @@ export function resolveBrand(
 
   try {
     const redirectUrl = new URL(redirectTo);
-    const isFjHost = hostMatchesFj(redirectUrl.hostname, getFjDomains(extraDomains));
-    if (isFjHost && redirectUrl.searchParams.get('auth_brand') === 'fj') {
+    // Le marqueur explicite prime : le parcours FJ peut atterrir sur LFDV
+    // (création du jardin) tout en conservant la marque Fréquence Jardin.
+    // La valeur reste validée par la liste blanche Supabase.
+    if (redirectUrl.searchParams.get('auth_brand') === 'fj') {
       return { brand: 'fj', brandSource: 'redirect_marker' };
     }
-    if (isFjHost) {
+    if (hostMatchesFj(redirectUrl.hostname, getFjDomains(extraDomains))) {
       return { brand: 'fj', brandSource: 'redirect_to' };
     }
   } catch {
     // An absent or invalid redirect deliberately falls back to LFDV.
   }
+
 
   return { brand: 'lfdv', brandSource: 'default' };
 }
