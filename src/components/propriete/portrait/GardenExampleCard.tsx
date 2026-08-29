@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
-import { ChevronDown, ExternalLink, ImageOff, Sparkles } from 'lucide-react';
+import { ChevronDown, ExternalLink, ImageOff, Images, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useGardenExample } from '@/hooks/propriete/useGardenExample';
 import type { StoredGardenExample } from '@/hooks/propriete/usePropertyIntention';
+import { GardenExamplePicker } from './GardenExamplePicker';
 
 interface Props {
   /** Copie figée au moment du choix, telle que versée par le parcours d'accueil. */
   stored: StoredGardenExample | null;
+  /** Identifiant du jardin, pour enregistrer un nouveau choix. */
+  proprieteId?: string;
+  /** L'utilisateur peut-il changer le jardin-exemple ? */
+  canEdit?: boolean;
 }
+
 
 const prettyKey = (k: string) =>
   k.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
