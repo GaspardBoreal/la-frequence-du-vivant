@@ -86,7 +86,17 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
     save.mutate(
       { answers: patch, version: DEFAULT_SEQUENCE.version },
       {
-        onSuccess: () => { toast.success('Intention mise à jour'); setEditing(null); },
+        onSuccess: () => {
+          toast.success('Intention mise à jour');
+          // Répondre au rêve doit remettre l'image en cohérence : si la famille
+          // choisie ne correspond plus au jardin-exemple, on rouvre la galerie.
+          const nextStyle = typeof patch.style === 'string' ? patch.style : null;
+          if (nextStyle && canEdit && intention?.gardenExample?.typeSlug !== nextStyle) {
+            setPickerSlug(nextStyle);
+            setPickerSignal((n) => n + 1);
+          }
+          setEditing(null);
+        },
         onError: (e) => toast.error(e.message),
       },
     );
