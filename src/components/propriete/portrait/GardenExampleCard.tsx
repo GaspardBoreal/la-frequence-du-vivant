@@ -258,6 +258,14 @@ export const GardenExampleCard: React.FC<Props> = ({
         </div>
       </div>
       {picker}
+      <GardenExampleViewer
+        examples={[viewerItem]}
+        index={zoom ? 0 : null}
+        onNavigate={() => {}}
+        onClose={() => setZoom(false)}
+        typeLabel={styleLabel ?? undefined}
+      />
+
     </section>
   );
 
