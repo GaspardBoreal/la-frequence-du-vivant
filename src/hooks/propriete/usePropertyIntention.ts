@@ -75,6 +75,8 @@ const normalizeGardenExample = (raw: unknown): StoredGardenExample | null => {
     vignette: str(g.vignette) ?? str(g.thumbnail_url) ?? str(g.image_url),
     chosenAt: str(g.chosenAt) ?? str(g.chosen_at),
     aiProfile: g.aiProfile && typeof g.aiProfile === 'object' ? (g.aiProfile as Record<string, unknown>) : null,
+    typeId: str(g.typeId) ?? str(g.type_id),
+    typeSlug: str(g.typeSlug) ?? str(g.type_slug),
     refused: g.refused === true,
   };
 };
