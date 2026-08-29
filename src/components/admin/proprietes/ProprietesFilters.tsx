@@ -110,9 +110,16 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
           </SelectContent>
         </Select>
 
-        <Select value={values.region} onValueChange={(v) => set('region', v)}>
+        <Select
+          value={values.region}
+          onValueChange={(v) => {
+            const deptStillValid =
+              values.dept === 'all' || v === 'all' || regionLabelFromDepartement(values.dept) === v;
+            onChange({ ...values, region: v, dept: deptStillValid ? values.dept : 'all' });
+          }}
+        >
           <SelectTrigger><SelectValue placeholder="Région" /></SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-72">
             <SelectItem value="all">Toutes régions</SelectItem>
             {regions.map((r) => (
               <SelectItem key={r} value={r}>{r}</SelectItem>
@@ -122,9 +129,9 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
 
         <Select value={values.dept} onValueChange={(v) => set('dept', v)}>
           <SelectTrigger><SelectValue placeholder="Département" /></SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-72">
             <SelectItem value="all">Tous départements</SelectItem>
-            {departements.map((d) => (
+            {visibleDepartements.map((d) => (
               <SelectItem key={d} value={d}>{d}</SelectItem>
             ))}
           </SelectContent>
