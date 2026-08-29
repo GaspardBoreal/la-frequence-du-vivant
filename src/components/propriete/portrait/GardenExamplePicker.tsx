@@ -4,7 +4,7 @@
  * défilantes, grille 1 colonne, actions collées en bas.
  */
 import React, { useMemo, useState } from 'react';
-import { Check, ImageOff, Loader2, X } from 'lucide-react';
+import { Check, ImageOff, Loader2, Maximize2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useOnboardingGallery, type GardenExample } from '@/hooks/onboarding/useOnboardingConfig';
 import { useSaveGardenExample } from '@/hooks/propriete/usePropertyIntention';
+import GardenExampleViewer from '@/components/onboarding/GardenExampleViewer';
 
 interface Props {
   proprieteId: string;
@@ -19,13 +20,18 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   /** Exemple actuellement retenu, pour pré-sélection. */
   currentId?: string | null;
+  /** Famille de jardin à pré-filtrer (ex. « nourricier » après la question du rêve). */
+  initialTypeSlug?: string | null;
 }
 
-export const GardenExamplePicker: React.FC<Props> = ({ proprieteId, open, onOpenChange, currentId }) => {
+export const GardenExamplePicker: React.FC<Props> = ({
+  proprieteId, open, onOpenChange, currentId, initialTypeSlug,
+}) => {
   const { types, examples, loading } = useOnboardingGallery();
   const save = useSaveGardenExample(proprieteId);
   const [typeId, setTypeId] = useState<string | 'all'>('all');
   const [selected, setSelected] = useState<string | null>(currentId ?? null);
+  const [viewing, setViewing] = useState<number | null>(null);
 
   React.useEffect(() => {
     if (open) setSelected(currentId ?? null);
@@ -35,6 +41,14 @@ export const GardenExamplePicker: React.FC<Props> = ({ proprieteId, open, onOpen
     () => [...types].filter((t) => t.visible !== false).sort((a, b) => a.position - b.position),
     [types],
   );
+
+  // Ouverture depuis la question « Quel jardin vous fait rêver ? » : on montre
+  // d'emblée la famille rêvée, sans obliger à retrouver le filtre.
+  React.useEffect(() => {
+    if (!open) return;
+    const wanted = initialTypeSlug ? visibleTypes.find((t) => t.slug === initialTypeSlug) : null;
+    setTypeId(wanted ? wanted.id : 'all');
+  }, [open, initialTypeSlug, visibleTypes]);
 
   const items = useMemo(
     () =>
@@ -46,9 +60,13 @@ export const GardenExamplePicker: React.FC<Props> = ({ proprieteId, open, onOpen
   );
 
   const current = items.find((e) => e.id === selected) ?? examples.find((e) => e.id === selected) ?? null;
+  const currentTypeLabel = typeId === 'all'
+    ? undefined
+    : visibleTypes.find((t) => t.id === typeId)?.titre;
 
   const commit = async (example: GardenExample | null) => {
     try {
+      const slug = example ? visibleTypes.find((t) => t.id === example.type_id)?.slug ?? null : null;
       await save.mutateAsync({
         example: example
           ? {
@@ -60,8 +78,13 @@ export const GardenExamplePicker: React.FC<Props> = ({ proprieteId, open, onOpen
               keywords: example.keywords ?? [],
               vignette: example.thumbnail_url ?? example.image_url ?? null,
               aiProfile: example.ai_profile ?? null,
+              typeId: example.type_id ?? null,
+              typeSlug: slug,
             }
           : null,
+        // Choisir l'image renseigne « Quel jardin vous fait rêver ? ».
+        // Un refus n'efface jamais une réponse déjà donnée.
+        answers: slug ? { style: slug } : undefined,
       });
       toast.success(example ? 'Jardin-exemple mis à jour' : 'Choix enregistré : aucun ne vous ressemble');
       onOpenChange(false);
