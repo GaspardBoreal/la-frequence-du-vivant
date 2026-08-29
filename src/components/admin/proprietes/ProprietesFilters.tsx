@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { regionLabelFromDepartement } from '@/utils/frenchGeoLookup';
 import { format, parseISO, isValid } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Search, RotateCcw, CalendarIcon } from 'lucide-react';
