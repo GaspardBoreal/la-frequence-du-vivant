@@ -12,7 +12,8 @@ import type { Answers, AnswerValue } from '@/config/onboarding/schema';
 
 const META_KEYS = new Set([
   'answers', 'persona', 'version', 'completed_at', 'updated_at', 'source',
-  'persona_label', 'flow_source', 'flow_version', 'garden_example', 'gestures', 'portrait',
+  'persona_label', 'flow_source', 'flow_version', 'garden_example', 'gestures',
+  'gestures_meta', 'portrait',
 ]);
 
 /** Jardin-exemple retenu à l'écran « Lequel vous ressemble le plus ? ». */
