@@ -134,7 +134,7 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
     );
   }
 
-  const projetVide = !probleme && !objectifLabel && (intention?.gestures.length ?? 0) === 0;
+  const projetVide = !prioriteLabel && !objectifLabel && gestures.length === 0;
   const lectureKO = !!error;
 
 
