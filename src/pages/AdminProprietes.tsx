@@ -196,6 +196,8 @@ const AdminProprietes: React.FC = () => {
     if (filters.entreprise !== 'all') q = q.eq('owner_company_id', filters.entreprise);
     if (filters.gps === 'avec') q = q.not('latitude', 'is', null).not('longitude', 'is', null);
     if (filters.gps === 'sans') q = q.or('latitude.is.null,longitude.is.null');
+    const periodeRange = resolvePeriodeRange(filters.periode, filters.du, filters.au);
+    if (periodeRange) q = q.gte('created_at', periodeRange.from).lte('created_at', periodeRange.to);
     if (filters.sondes === 'avec') {
       q = idsAvecSondes.length > 0
         ? q.in('id', idsAvecSondes)
