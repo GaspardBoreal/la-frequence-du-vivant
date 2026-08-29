@@ -420,7 +420,10 @@ export function useProprieteChatProviders(proprieteId?: string): {
     // problème décrit en toutes lettres (texte libre repris mot pour mot).
     if (intention?.hasOnboarding) {
       const a = intention.answers ?? {};
-      const probleme = typeof a.priorite_probleme === 'string' ? a.priorite_probleme.trim() : '';
+      // Le texte libre n'est transmis que s'il correspond bien à la priorité en cours.
+      const probleme = a.priorite === 'resoudre_probleme' && typeof a.priorite_probleme === 'string'
+        ? a.priorite_probleme.trim()
+        : '';
       list.push(
         provider({
           id: 'site.intention',
@@ -437,7 +440,8 @@ export function useProprieteChatProviders(proprieteId?: string): {
             probleme_declare: probleme || null,
             objectif_6_mois: a.objectif_6_mois ?? null,
             temps_disponible: a.temps ?? null,
-            gestes: (intention.gestures ?? []).map((g) => g.title),
+            gestes: (intention.gestures ?? []).map((g) => (g.detail ? `${g.title} — ${g.detail}` : g.title)),
+            gestes_rediges_le: intention.gesturesMeta?.generatedAt ?? null,
             jardin_exemple: intention.gardenExample && !intention.gardenExample.refused
               ? {
                   titre: intention.gardenExample.titre,

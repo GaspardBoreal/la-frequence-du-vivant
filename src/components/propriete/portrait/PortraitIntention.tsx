@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Compass, Pencil, Sparkles, Loader2, Target, Footprints, Stethoscope, Sprout, Flag } from 'lucide-react';
+import { Compass, Pencil, Sparkles, Loader2, Target, Footprints, Stethoscope, Sprout, Flag, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import {
   usePropertyIntention, useCanEditIntention, useSaveIntention,
 } from '@/hooks/propriete/usePropertyIntention';
+import { useGardenGestures } from '@/hooks/propriete/useGardenGestures';
 import { DEFAULT_SEQUENCE } from '@/config/onboarding/defaultSequence';
 import { buildSequence, CHAPTERS, type AnswerValue, type OnboardingQuestion } from '@/config/onboarding/schema';
 import { PERSONA_LABELS } from '@/config/onboarding/personas';
@@ -49,6 +50,13 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
   const { data: intention, isLoading, error } = usePropertyIntention(proprieteId);
   const { data: canEdit = false } = useCanEditIntention(proprieteId);
   const save = useSaveIntention(proprieteId);
+  const {
+    gestures,
+    generatedAt: gesturesGeneratedAt,
+    isGenerating: gesturesLoading,
+    error: gesturesError,
+    regenerate: regenerateGestures,
+  } = useGardenGestures(proprieteId, canEdit);
   const [editing, setEditing] = useState<OnboardingQuestion | null>(null);
   const [pickerSignal, setPickerSignal] = useState(0);
   const [pickerSlug, setPickerSlug] = useState<string | null>(null);
@@ -87,9 +95,14 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
   ).length;
 
   const rawProbleme = answers.priorite_probleme;
-  const probleme = typeof rawProbleme === 'string' && rawProbleme.trim() ? rawProbleme.trim() : null;
+  // Le texte libre n'a de sens que si la priorité est bien « Résoudre un problème ».
+  const probleme = answers.priorite === 'resoudre_probleme'
+    && typeof rawProbleme === 'string' && rawProbleme.trim()
+    ? rawProbleme.trim()
+    : null;
 
   const priorite = questions.find((q) => q.id === 'priorite');
+  const prioriteLabel = priorite ? readableAnswer(priorite, answers.priorite, answers) : null;
   const objectif = questions.find((q) => q.id === 'objectif_6_mois');
   const objectifLabel = objectif ? readableAnswer(objectif, answers.objectif_6_mois, answers) : null;
 
@@ -121,7 +134,7 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
     );
   }
 
-  const projetVide = !probleme && !objectifLabel && (intention?.gestures.length ?? 0) === 0;
+  const projetVide = !prioriteLabel && !objectifLabel && gestures.length === 0;
   const lectureKO = !!error;
 
 
@@ -227,7 +240,10 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
           </div>
 
           {CHAPTERS.map((chapter) => {
-            const items = questions.filter((q) => q.chapter === chapter && q.id !== 'objectif_6_mois');
+            // La priorité (et son texte libre) appartient au sous-onglet « Le projet ».
+            const items = questions.filter(
+              (q) => q.chapter === chapter && q.id !== 'objectif_6_mois' && q.id !== 'priorite',
+            );
             if (items.length === 0) return null;
             return (
               <section key={chapter} className="space-y-2">
@@ -281,20 +297,20 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
           >
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-amber-600">
-                <Stethoscope className="h-4 w-4" /> Le problème à résoudre
+                <Stethoscope className="h-4 w-4" /> Votre priorité
               </div>
               {canEdit && priorite && <Pencil className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />}
             </div>
-            {probleme ? (
-              <>
-                <p className="mt-2 font-serif italic text-base md:text-lg text-foreground">« {probleme} »</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Cette phrase est transmise telle quelle à l'IA de jardin et à la clinique.
-                </p>
-              </>
+            {prioriteLabel ? (
+              <p className="mt-2 font-serif italic text-base md:text-lg text-foreground">{prioriteLabel}</p>
             ) : (
               <p className="mt-2 text-sm italic text-muted-foreground/70">
-                Plantation qui ne prend pas, sol, arbres, maladie… Cliquez pour le décrire.
+                Résoudre un problème, embellir, nourrir, accueillir le vivant… Cliquez pour choisir.
+              </p>
+            )}
+            {probleme && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Cette phrase est transmise telle quelle à l'IA de jardin et à la clinique.
               </p>
             )}
           </button>
@@ -318,19 +334,59 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
             </button>
           )}
 
-          {(intention?.gestures.length ?? 0) > 0 && (
+          {(gestures.length > 0 || gesturesLoading) && (
             <section className="space-y-2">
-              <h3 className="text-sm font-medium text-foreground/80 flex items-center gap-2">
-                <Footprints className="h-4 w-4 text-amber-600" /> Vos premiers gestes
-              </h3>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {intention!.gestures.map((g, i) => (
-                  <div key={`${g.title}-${i}`} className="rounded-2xl border border-border/70 bg-card p-4">
-                    <p className="text-sm font-medium text-foreground">{g.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{g.detail}</p>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <h3 className="text-sm font-medium text-foreground/80 flex items-center gap-2">
+                  <Footprints className="h-4 w-4 text-amber-600" /> Vos premiers gestes
+                  {gesturesLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                </h3>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => void regenerateGestures()}
+                    disabled={gesturesLoading}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border/70 px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                  >
+                    <RefreshCw className={cn('h-3 w-3', gesturesLoading && 'animate-spin')} />
+                    Régénérer
+                  </button>
+                )}
               </div>
+
+              {gesturesLoading && gestures.length === 0 ? (
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="rounded-2xl border border-border/70 bg-card p-4 animate-pulse">
+                      <div className="h-3.5 w-2/3 rounded bg-muted" />
+                      <div className="mt-2 h-3 w-full rounded bg-muted/70" />
+                      <div className="mt-1 h-3 w-4/5 rounded bg-muted/70" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {gestures.map((g, i) => (
+                    <div key={`${g.title}-${i}`} className="rounded-2xl border border-border/70 bg-card p-4">
+                      <p className="text-sm font-medium text-foreground">{g.title}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{g.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {gesturesError ? (
+                <p className="text-xs text-destructive">
+                  {gesturesError} — vos gestes précédents restent affichés.
+                </p>
+              ) : (
+                gesturesGeneratedAt && (
+                  <p className="text-xs text-muted-foreground">
+                    Rédigés par l'IA de jardin le{' '}
+                    {new Date(gesturesGeneratedAt).toLocaleDateString('fr-FR')}, d'après vos réponses.
+                  </p>
+                )
+              )}
             </section>
           )}
         </>

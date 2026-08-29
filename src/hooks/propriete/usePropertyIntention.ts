@@ -12,7 +12,8 @@ import type { Answers, AnswerValue } from '@/config/onboarding/schema';
 
 const META_KEYS = new Set([
   'answers', 'persona', 'version', 'completed_at', 'updated_at', 'source',
-  'persona_label', 'flow_source', 'flow_version', 'garden_example', 'gestures', 'portrait',
+  'persona_label', 'flow_source', 'flow_version', 'garden_example', 'gestures',
+  'gestures_meta', 'portrait',
 ]);
 
 /** Jardin-exemple retenu à l'écran « Lequel vous ressemble le plus ? ». */
@@ -39,6 +40,13 @@ export interface IntentionGesture {
   sketch?: string | null;
 }
 
+/** Trace de la dernière rédaction des gestes (empreinte des réponses ayant servi). */
+export interface GesturesMeta {
+  generatedAt: string | null;
+  fingerprint: string | null;
+  source: string | null;
+}
+
 export interface PropertyIntention {
   /** Réponses normalisées, quel que soit le format d'écriture d'origine. */
   answers: Answers;
@@ -55,6 +63,7 @@ export interface PropertyIntention {
   hasOnboarding: boolean;
   gardenExample: StoredGardenExample | null;
   gestures: IntentionGesture[];
+  gesturesMeta: GesturesMeta | null;
   portrait: string | null;
   raw: Record<string, unknown>;
 }
@@ -111,6 +120,16 @@ const normalize = (raw: unknown): PropertyIntention => {
   const gardenExample = normalizeGardenExample(prefs.garden_example);
   const gestures = normalizeGestures(prefs.gestures);
   const portrait = str(prefs.portrait);
+  const rawMeta = prefs.gestures_meta && typeof prefs.gestures_meta === 'object'
+    ? (prefs.gestures_meta as Record<string, unknown>)
+    : null;
+  const gesturesMeta: GesturesMeta | null = rawMeta
+    ? {
+        generatedAt: str(rawMeta.generated_at) ?? str(rawMeta.generatedAt),
+        fingerprint: str(rawMeta.fingerprint),
+        source: str(rawMeta.source),
+      }
+    : null;
 
   return {
     answers,
@@ -125,6 +144,7 @@ const normalize = (raw: unknown): PropertyIntention => {
     hasOnboarding: Object.keys(answers).length > 0,
     gardenExample,
     gestures,
+    gesturesMeta,
     portrait,
     raw: prefs,
   };
@@ -281,3 +301,29 @@ export const useSaveGardenExample = (proprieteId?: string) => {
   });
 };
 
+
+/** Écriture des trois gestes rédigés par l'IA de jardin, avec leur empreinte. */
+export interface SaveGesturesInput {
+  gestures: IntentionGesture[];
+  fingerprint: string;
+  source?: string;
+}
+
+export const useSaveGestures = (proprieteId?: string) => {
+  const qc = useQueryClient();
+  return useMutation<PropertyIntention, Error, SaveGesturesInput>({
+    mutationFn: async ({ gestures, fingerprint, source }) => {
+      if (!proprieteId) throw new Error('Jardin inconnu');
+      const now = new Date().toISOString();
+      return callSaveOnboarding(proprieteId, {
+        gestures,
+        gestures_meta: { generated_at: now, fingerprint, source: source ?? 'ia_jardin' },
+        updated_at: now,
+      });
+    },
+    onSuccess: (fresh) => {
+      qc.setQueryData(['propriete-intention', proprieteId], fresh);
+      qc.invalidateQueries({ queryKey: ['propriete-fiche', proprieteId] });
+    },
+  });
+};
