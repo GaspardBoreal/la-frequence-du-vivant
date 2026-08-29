@@ -8,7 +8,7 @@ Conséquence : aujourd'hui, aucune donnée d'onboarding n'est consultable — no
 
 ## Ce que je propose
 
-Un seul et même endroit sert les deux cas (propriété née de l'onboarding, propriété créée autrement) : un sous-onglet **« Intention »** dans **Mon projet › Portrait**, à côté de Galerie et Cadastre.
+Un seul et même endroit sert les deux cas (propriété née de l'onboarding, propriété créée autrement) : un sous-onglet **« Intention »** dans **Mon projet › Portrait**, à côté de Galerie et Cadastre, modifiable afin de permettre d'actualiser / modifier l'ensemble des critères de l'onbording.
 
 ```text
 Mon projet ▾
