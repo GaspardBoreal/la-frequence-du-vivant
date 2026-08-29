@@ -18,6 +18,14 @@ import {
 } from '@/components/ui/select';
 import { ImageUploadField } from '@/components/onboarding/ImageUploadField';
 import { geocodeAddress } from '@/utils/geocoding';
+import {
+  REGION_LABELS,
+  canonicalDepartement,
+  canonicalRegion,
+  departementsForRegion,
+  geoFromCodePostal,
+  regionLabelFromDepartement,
+} from '@/utils/frenchGeoLookup';
 import ProprietePositionPicker from '@/components/admin/proprietes/ProprietePositionPicker';
 import DeleteProprieteDialog from '@/components/admin/proprietes/DeleteProprieteDialog';
 import { cn } from '@/lib/utils';
@@ -514,12 +522,67 @@ const AdminProprieteFiche: React.FC = () => {
               <Input value={form.adresse ?? ''} onChange={(e) => setForm((f) => ({ ...f, adresse: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Code postal</Label><Input value={form.code_postal ?? ''} onChange={(e) => setForm((f) => ({ ...f, code_postal: e.target.value }))} /></div>
+              <div>
+                <Label>Code postal</Label>
+                <Input
+                  value={form.code_postal ?? ''}
+                  onChange={(e) => {
+                    const cp = e.target.value;
+                    setForm((f) => {
+                      const guess = geoFromCodePostal(cp);
+                      return {
+                        ...f,
+                        code_postal: cp,
+                        departement: f.departement || guess.departement || null,
+                        region: f.region || guess.region || null,
+                      };
+                    });
+                  }}
+                />
+              </div>
               <div><Label>Ville</Label><Input value={form.ville ?? ''} onChange={(e) => setForm((f) => ({ ...f, ville: e.target.value }))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Département</Label><Input value={form.departement ?? ''} onChange={(e) => setForm((f) => ({ ...f, departement: e.target.value }))} /></div>
-              <div><Label>Région</Label><Input value={form.region ?? ''} onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))} /></div>
+              <div>
+                <Label>Département</Label>
+                <Select
+                  value={canonicalDepartement(form.departement) ?? ''}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, departement: v, region: regionLabelFromDepartement(v) ?? f.region }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={form.departement ? `${form.departement} (à normaliser)` : 'Sélectionner…'} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {departementsForRegion(form.region).map((d) => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Région</Label>
+                <Select
+                  value={canonicalRegion(form.region) ?? ''}
+                  onValueChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      region: v,
+                      departement: regionLabelFromDepartement(f.departement) === v ? f.departement : null,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={form.region ? `${form.region} (à normaliser)` : 'Sélectionner…'} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {REGION_LABELS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div>

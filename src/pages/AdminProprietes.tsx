@@ -21,6 +21,7 @@ import type {
   ProprieteListRow, ProprietesFilterValues, ProprietesKpiCounts, ProprietesKpiKey,
 } from '@/components/admin/proprietes/types';
 import { DEFAULT_FILTERS, formatSurface, resolvePeriodeRange } from '@/components/admin/proprietes/types';
+import { canonicalDepartement, canonicalRegion } from '@/utils/frenchGeoLookup';
 
 const sb = supabase as any;
 
@@ -149,12 +150,27 @@ const AdminProprietes: React.FC = () => {
     },
     staleTime: 5 * 60 * 1000,
   });
+  // Libellés ramenés au référentiel officiel (mêmes listes que les fiches marche)
   const regions = useMemo(
-    () => [...new Set(facetRows.map((r) => r.region).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'fr')),
+    () =>
+      [
+        ...new Set(
+          facetRows
+            .map((r) => canonicalRegion(r.region) ?? r.region ?? '')
+            .filter(Boolean),
+        ),
+      ].sort((a, b) => a.localeCompare(b, 'fr')),
     [facetRows],
   );
   const departements = useMemo(
-    () => [...new Set(facetRows.map((r) => r.departement).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'fr')),
+    () =>
+      [
+        ...new Set(
+          facetRows
+            .map((r) => canonicalDepartement(r.departement) ?? r.departement ?? '')
+            .filter(Boolean),
+        ),
+      ].sort((a, b) => a.localeCompare(b, 'fr')),
     [facetRows],
   );
 

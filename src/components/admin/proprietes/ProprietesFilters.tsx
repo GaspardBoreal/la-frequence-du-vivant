@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { regionLabelFromDepartement } from '@/utils/frenchGeoLookup';
 import { format, parseISO, isValid } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Search, RotateCcw, CalendarIcon } from 'lucide-react';
@@ -71,6 +72,15 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
   const set = <K extends keyof ProprietesFilterValues>(k: K, v: ProprietesFilterValues[K]) =>
     onChange({ ...values, [k]: v });
 
+  // Départements restreints à la région sélectionnée
+  const visibleDepartements = useMemo(
+    () =>
+      values.region === 'all'
+        ? departements
+        : departements.filter((d) => regionLabelFromDepartement(d) === values.region),
+    [departements, values.region],
+  );
+
   const isDirty = JSON.stringify({ ...values, q: values.q }) !== JSON.stringify(DEFAULT_FILTERS);
 
   return (
@@ -110,9 +120,16 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
           </SelectContent>
         </Select>
 
-        <Select value={values.region} onValueChange={(v) => set('region', v)}>
+        <Select
+          value={values.region}
+          onValueChange={(v) => {
+            const deptStillValid =
+              values.dept === 'all' || v === 'all' || regionLabelFromDepartement(values.dept) === v;
+            onChange({ ...values, region: v, dept: deptStillValid ? values.dept : 'all' });
+          }}
+        >
           <SelectTrigger><SelectValue placeholder="Région" /></SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-72">
             <SelectItem value="all">Toutes régions</SelectItem>
             {regions.map((r) => (
               <SelectItem key={r} value={r}>{r}</SelectItem>
@@ -122,9 +139,9 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
 
         <Select value={values.dept} onValueChange={(v) => set('dept', v)}>
           <SelectTrigger><SelectValue placeholder="Département" /></SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-72">
             <SelectItem value="all">Tous départements</SelectItem>
-            {departements.map((d) => (
+            {visibleDepartements.map((d) => (
               <SelectItem key={d} value={d}>{d}</SelectItem>
             ))}
           </SelectContent>
