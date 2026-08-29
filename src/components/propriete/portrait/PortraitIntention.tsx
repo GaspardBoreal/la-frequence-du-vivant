@@ -50,6 +50,8 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
   const { data: canEdit = false } = useCanEditIntention(proprieteId);
   const save = useSaveIntention(proprieteId);
   const [editing, setEditing] = useState<OnboardingQuestion | null>(null);
+  const [pickerSignal, setPickerSignal] = useState(0);
+  const [pickerSlug, setPickerSlug] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const section: IntentionSection = searchParams.get('intention') === 'projet' ? 'projet' : 'jardin';
