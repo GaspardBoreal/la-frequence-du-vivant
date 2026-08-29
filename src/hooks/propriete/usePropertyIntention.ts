@@ -12,19 +12,78 @@ import type { Answers, AnswerValue } from '@/config/onboarding/schema';
 
 const META_KEYS = new Set(['answers', 'persona', 'version', 'completed_at', 'updated_at', 'source']);
 
+/** Jardin-exemple retenu à l'écran « Lequel vous ressemble le plus ? ». */
+export interface StoredGardenExample {
+  id: string | null;
+  stableId: string | null;
+  titre: string | null;
+  sousTitre: string | null;
+  intention: string | null;
+  keywords: string[];
+  vignette: string | null;
+  chosenAt: string | null;
+  aiProfile: Record<string, unknown> | null;
+  /** L'utilisateur a explicitement répondu « Aucun ne me ressemble ». */
+  refused: boolean;
+}
+
+export interface IntentionGesture {
+  title: string;
+  detail: string;
+  sketch?: string | null;
+}
+
 export interface PropertyIntention {
   /** Réponses normalisées, quel que soit le format d'écriture d'origine. */
   answers: Answers;
   persona: Persona;
   /** Persona explicitement stockée par le parcours, si présente. */
   storedPersona: string | null;
+  personaLabel: string | null;
   version: number | null;
+  flowVersion: number | null;
+  flowSource: string | null;
   completedAt: string | null;
   updatedAt: string | null;
   /** Le jardin a-t-il été créé (ou complété) par le parcours d'accueil ? */
   hasOnboarding: boolean;
+  gardenExample: StoredGardenExample | null;
+  gestures: IntentionGesture[];
+  portrait: string | null;
   raw: Record<string, unknown>;
 }
+
+const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
+
+const normalizeGardenExample = (raw: unknown): StoredGardenExample | null => {
+  if (!raw || typeof raw !== 'object') return null;
+  const g = raw as Record<string, unknown>;
+  const keywords = Array.isArray(g.keywords) ? g.keywords.filter((k): k is string => typeof k === 'string') : [];
+  return {
+    id: str(g.id),
+    stableId: str(g.stableId) ?? str(g.stable_id),
+    titre: str(g.titre) ?? str(g.title),
+    sousTitre: str(g.sousTitre) ?? str(g.sous_titre),
+    intention: str(g.intention) ?? str(g.user_intent),
+    keywords,
+    vignette: str(g.vignette) ?? str(g.thumbnail_url) ?? str(g.image_url),
+    chosenAt: str(g.chosenAt) ?? str(g.chosen_at),
+    aiProfile: g.aiProfile && typeof g.aiProfile === 'object' ? (g.aiProfile as Record<string, unknown>) : null,
+    refused: g.refused === true,
+  };
+};
+
+const normalizeGestures = (raw: unknown): IntentionGesture[] => {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((g): g is Record<string, unknown> => Boolean(g) && typeof g === 'object')
+    .map((g) => ({
+      title: str(g.title) ?? '',
+      detail: str(g.detail) ?? '',
+      sketch: str(g.sketch),
+    }))
+    .filter((g) => g.title || g.detail);
+};
 
 const normalize = (raw: unknown): PropertyIntention => {
   const prefs = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
@@ -41,15 +100,24 @@ const normalize = (raw: unknown): PropertyIntention => {
   });
 
   const storedPersona = typeof prefs.persona === 'string' ? prefs.persona : null;
+  const gardenExample = normalizeGardenExample(prefs.garden_example);
+  const gestures = normalizeGestures(prefs.gestures);
+  const portrait = str(prefs.portrait);
 
   return {
     answers,
-    persona: detectPersona(answers),
+    persona: (storedPersona && PERSONA_LABELS[storedPersona as Persona] ? (storedPersona as Persona) : detectPersona(answers)),
     storedPersona,
+    personaLabel: str(prefs.persona_label),
     version: typeof prefs.version === 'number' ? prefs.version : null,
+    flowVersion: typeof prefs.flow_version === 'number' ? prefs.flow_version : null,
+    flowSource: str(prefs.flow_source),
     completedAt: typeof prefs.completed_at === 'string' ? prefs.completed_at : null,
     updatedAt: typeof prefs.updated_at === 'string' ? prefs.updated_at : null,
     hasOnboarding: Object.keys(answers).length > 0,
+    gardenExample,
+    gestures,
+    portrait,
     raw: prefs,
   };
 };
