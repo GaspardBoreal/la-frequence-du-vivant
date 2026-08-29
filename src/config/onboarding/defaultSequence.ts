@@ -132,6 +132,7 @@ export const DEFAULT_QUESTIONS: OnboardingQuestion[] = [
       { value: 'legumes_famille', label: 'Quelques légumes pour ma famille', hint: 'Le plaisir de récolter' },
       { value: 'autonomie', label: 'Être le plus autonome possible', hint: 'Légumes et fruits toute l’année' },
       { value: 'beau_jardin', label: 'Avoir un beau jardin', hint: 'La beauté d’abord' },
+      RESOUDRE_PROBLEME,
     ],
     variants: {
       URBAIN_BALCON: {
@@ -140,6 +141,7 @@ export const DEFAULT_QUESTIONS: OnboardingQuestion[] = [
           { value: 'legumes_famille', label: 'Avoir quelques légumes et aromatiques', hint: 'De quoi cuisiner frais' },
           { value: 'beau_jardin', label: 'Avoir de belles plantes', hint: 'La beauté avant tout' },
           { value: 'climatiser', label: 'Climatiser mon balcon', hint: 'Les plantes rafraîchissent l’atmosphère' },
+          RESOUDRE_PROBLEME,
         ],
       },
       PARTICULIER_GRAND: {
@@ -148,6 +150,7 @@ export const DEFAULT_QUESTIONS: OnboardingQuestion[] = [
           { value: 'agroecologie', label: 'Déployer un projet agroécologique', hint: 'Un système complet, pensé long terme' },
           { value: 'legumes_famille', label: 'Une production familiale, fruits et légumes', hint: 'Nourrir la maisonnée' },
           { value: 'terroir', label: 'Conserver une production de terroir', hint: 'Variétés et usages locaux' },
+          RESOUDRE_PROBLEME,
         ],
       },
       ENTREPRISE_TERRAIN: {
@@ -157,7 +160,11 @@ export const DEFAULT_QUESTIONS: OnboardingQuestion[] = [
           { value: 'agroecologie', label: 'Déployer un projet agroécologique', hint: 'Un système complet, pensé long terme' },
           { value: 'legumes_famille', label: 'Une production pour nos équipes', hint: 'Fruits et légumes sur site' },
           { value: 'terroir', label: 'Conserver une production de terroir', hint: 'Variétés et usages locaux' },
+          RESOUDRE_PROBLEME_SITE,
         ],
+      },
+      COLLECTIVITE: {
+        options: undefined,
       },
     },
   },
