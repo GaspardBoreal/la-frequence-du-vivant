@@ -54,7 +54,7 @@ export function useProprieteChatProviders(proprieteId?: string): {
   const { state: synthesis } = usePropertySynthesis(proprieteId);
   const { state: observation } = usePropertyObservation(proprieteId);
   const flora = usePropertyFloraMatched(proprieteId);
-  const { intention } = usePropertyIntention(proprieteId);
+  const { data: intention } = usePropertyIntention(proprieteId);
 
   const focusObjet = useMemo(
     () => (focus.objetId ? (objets ?? []).find((o) => o.id === focus.objetId) ?? null : null),
