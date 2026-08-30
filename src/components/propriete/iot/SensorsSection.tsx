@@ -204,8 +204,12 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
               </div>
             </motion.button>
           );
-        })}
-      </div>
+          })}
+          </div>
+        </div>
+      ))}
+
+      {isAdmin && <ProviderIntegrationsPanel proprieteId={proprieteId} />}
 
       {/* Journal des livraisons */}
       {deliveries.length > 0 && (
