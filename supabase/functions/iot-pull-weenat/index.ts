@@ -12,12 +12,17 @@ import { fetchData, normalize } from '../_shared/weenat.ts';
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-/** Cron (clé de service), administrateur, ou gestionnaire de la propriété visée. */
+/** Cron (secret partagé ou clé de service), administrateur, ou gestionnaire de la propriété visée. */
 async function authorize(req: Request, proprieteId?: string): Promise<boolean> {
+  const cronSecret = Deno.env.get('CRON_SHARED_SECRET');
+  const providedCron = req.headers.get('x-cron-secret');
+  if (cronSecret && providedCron && providedCron === cronSecret) return true;
+
   const header = req.headers.get('authorization') ?? '';
   const token = header.replace(/^Bearer\s+/i, '').trim();
   if (!token) return false;
   if (token === Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) return true;
+
 
   const client = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
     global: { headers: { Authorization: `Bearer ${token}` } },
