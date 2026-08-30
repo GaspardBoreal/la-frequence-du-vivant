@@ -114,9 +114,9 @@ export const SensorFormDialog: React.FC<Props> = ({ open, onOpenChange, propriet
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{capteur ? 'Régler le capteur' : 'Ajouter un capteur'}</DialogTitle>
-        {selectedType?.description && (
-          <p className="text-xs text-muted-foreground">{selectedType.description}</p>
-        )}
+          {selectedType?.description && (
+            <p className="text-xs text-muted-foreground">{selectedType.description}</p>
+          )}
         </DialogHeader>
 
         <div className="grid gap-4">
