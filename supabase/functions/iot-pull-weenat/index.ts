@@ -14,9 +14,10 @@ const json = (body: unknown, status = 200) =>
 
 /** Cron (secret partagé ou clé de service), administrateur, ou gestionnaire de la propriété visée. */
 async function authorize(req: Request, proprieteId?: string): Promise<boolean> {
-  const cronSecret = Deno.env.get('CRON_SHARED_SECRET');
+  const cronSecret = Deno.env.get('IOT_CRON_SECRET') ?? Deno.env.get('CRON_SHARED_SECRET');
   const providedCron = req.headers.get('x-cron-secret');
   if (cronSecret && providedCron && providedCron === cronSecret) return true;
+
 
   const header = req.headers.get('authorization') ?? '';
   const token = header.replace(/^Bearer\s+/i, '').trim();
