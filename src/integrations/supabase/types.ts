@@ -4263,6 +4263,8 @@ export type Database = {
           etat: string
           etat_depuis: string | null
           etat_motif: string | null
+          external_id: string | null
+          external_kind: string | null
           id: string
           last_seen_at: string | null
           lat: number | null
@@ -4287,6 +4289,8 @@ export type Database = {
           etat?: string
           etat_depuis?: string | null
           etat_motif?: string | null
+          external_id?: string | null
+          external_kind?: string | null
           id?: string
           last_seen_at?: string | null
           lat?: number | null
@@ -4311,6 +4315,8 @@ export type Database = {
           etat?: string
           etat_depuis?: string | null
           etat_motif?: string | null
+          external_id?: string | null
+          external_kind?: string | null
           id?: string
           last_seen_at?: string | null
           lat?: number | null
@@ -4478,6 +4484,66 @@ export type Database = {
             columns: ["fournisseur_id"]
             isOneToOne: false
             referencedRelation: "iot_fournisseurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iot_propriete_integrations: {
+        Row: {
+          actif: boolean
+          api_key: string
+          created_at: string
+          external_farm_id: string | null
+          external_plot_id: string | null
+          fournisseur_id: string
+          id: string
+          label: string | null
+          last_pull_at: string | null
+          last_pull_status: string | null
+          propriete_id: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          api_key: string
+          created_at?: string
+          external_farm_id?: string | null
+          external_plot_id?: string | null
+          fournisseur_id: string
+          id?: string
+          label?: string | null
+          last_pull_at?: string | null
+          last_pull_status?: string | null
+          propriete_id: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          api_key?: string
+          created_at?: string
+          external_farm_id?: string | null
+          external_plot_id?: string | null
+          fournisseur_id?: string
+          id?: string
+          label?: string | null
+          last_pull_at?: string | null
+          last_pull_status?: string | null
+          propriete_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iot_propriete_integrations_fournisseur_id_fkey"
+            columns: ["fournisseur_id"]
+            isOneToOne: false
+            referencedRelation: "iot_fournisseurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "iot_propriete_integrations_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
             referencedColumns: ["id"]
           },
         ]
@@ -9465,6 +9531,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: Json
       }
+      admin_delete_iot_integration: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
       admin_delete_orphan_activity_logs: {
         Args: { p_user_ids: string[] }
         Returns: number
@@ -9486,6 +9556,23 @@ export type Database = {
         Args: { p_ids: string[] }
         Returns: {
           deleted_count: number
+        }[]
+      }
+      admin_list_iot_integrations: {
+        Args: { p_propriete_id: string }
+        Returns: {
+          actif: boolean
+          external_farm_id: string
+          external_plot_id: string
+          fournisseur_id: string
+          fournisseur_nom: string
+          fournisseur_slug: string
+          id: string
+          key_hint: string
+          label: string
+          last_pull_at: string
+          last_pull_status: string
+          propriete_id: string
         }[]
       }
       admin_list_marcheur_species_tags: {
@@ -9568,6 +9655,18 @@ export type Database = {
       admin_purge_user_cascade: {
         Args: { target_user_id: string }
         Returns: Json
+      }
+      admin_upsert_iot_integration: {
+        Args: {
+          p_actif?: boolean
+          p_api_key?: string
+          p_external_farm_id?: string
+          p_external_plot_id?: string
+          p_fournisseur_id: string
+          p_label?: string
+          p_propriete_id: string
+        }
+        Returns: string
       }
       age_bracket: { Args: { _birth: string }; Returns: string }
       attach_pratique_to_marcheur:
