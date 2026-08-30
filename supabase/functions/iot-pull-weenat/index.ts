@@ -126,7 +126,14 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const payload = mesures.map((m) => ({
+        // Deux sources peuvent donner la même grandeur au même horodatage
+        // (appareil + parcelle liée) : on ne garde qu'une valeur par clé.
+        const uniques = new Map<string, (typeof mesures)[number]>();
+        for (const m of mesures) {
+          uniques.set(`${m.grandeur}|${m.profondeur_m ?? ''}|${m.mesure_at}`, m);
+        }
+
+        const payload = [...uniques.values()].map((m) => ({
           capteur_id: capteur.id,
           grandeur: m.grandeur,
           valeur: m.valeur,
@@ -135,6 +142,7 @@ Deno.serve(async (req) => {
           mesure_at: m.mesure_at,
           source: 'weenat_pull',
         }));
+
 
         const { error: upErr } = await service
           .from('iot_mesures')
