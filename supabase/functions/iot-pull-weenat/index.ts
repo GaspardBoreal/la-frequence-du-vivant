@@ -94,15 +94,33 @@ Deno.serve(async (req) => {
 
     for (const capteur of mine as any[]) {
       try {
+        const isPlot = capteur.external_kind === 'plot';
         const rows = await fetchData(
           integ.api_key,
-          capteur.external_kind === 'plot' ? 'plot' : 'device',
+          isPlot ? 'plot' : 'device',
           String(capteur.external_id),
           start,
           end,
         );
+
+        // Une station météo virtuelle est un appareil (T, U, RR) ; la parcelle à
+        // laquelle elle est liée porte en plus les grandeurs agronomiques
+        // recalculées (ETP, point de rosée, rayonnement). On réunit les deux
+        // sur la même fiche capteur.
+        const plotRef = integ.external_plot_id && /^\d+$/.test(String(integ.external_plot_id))
+          ? String(integ.external_plot_id)
+          : null;
+        if (!isPlot && plotRef && plotRef !== String(capteur.external_id)) {
+          try {
+            rows.push(...(await fetchData(integ.api_key, 'plot', plotRef, start, end)));
+          } catch (e) {
+            console.warn('[iot-pull-weenat] parcelle liée', plotRef, e);
+          }
+        }
+
         const depths = (capteur.type?.profondeurs_m ?? []).map(Number).filter((n: number) => Number.isFinite(n));
         const { mesures, rejected } = normalize(rows, depths);
+
         if (!mesures.length) {
           details.push({ capteur: capteur.nom, points: 0, rejected });
           continue;
