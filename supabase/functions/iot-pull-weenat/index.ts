@@ -37,15 +37,15 @@ async function authorize(req: Request, proprieteId?: string): Promise<boolean> {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-
-
   let body: { propriete_id?: string; hours?: number } = {};
   try {
     body = await req.json();
   } catch {
     body = {};
   }
+  if (!(await authorize(req, body.propriete_id))) return json({ error: 'Non autorisé' }, 403);
   const hours = Math.min(Math.max(Number(body.hours) || 6, 1), 24 * 30);
+
 
   const service = createServiceClient();
 
