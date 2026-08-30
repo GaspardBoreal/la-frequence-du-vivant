@@ -128,8 +128,13 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
         </div>
       )}
 
-      <div className="grid gap-3 md:grid-cols-2">
-        {capteurs.map((c, i) => {
+      {groupes.map(([fournisseur, liste]) => (
+        <div key={fournisseur} className="space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[hsl(var(--ds-forest))]/70">
+            {fournisseur} · {liste.length} capteur{liste.length > 1 ? 's' : ''}
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+          {liste.map((c, i) => {
           const h = sensorHealth(c);
           const rows = latest[c.id] ?? [];
           return (
