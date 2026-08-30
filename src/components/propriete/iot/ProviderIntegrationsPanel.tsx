@@ -150,9 +150,11 @@ export const ProviderIntegrationsPanel: React.FC<Props> = ({ proprieteId }) => {
                 <li key={`${p.external_kind}-${p.external_id}`}>
                   <button
                     type="button"
+                    disabled={p.external_kind !== 'plot'}
                     onClick={() => setPlotId(p.external_id)}
-                    className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-left text-foreground hover:bg-accent"
+                    className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-left text-foreground enabled:hover:bg-accent disabled:cursor-default"
                   >
+
                     <span className="font-medium">
                       {p.external_kind === 'plot' ? '▦ ' : virtuelle ? '☁︎ ' : '⌁ '}
                       {p.nom ?? p.model_label ?? p.serial_number ?? `#${p.external_id}`}
