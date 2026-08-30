@@ -8,6 +8,8 @@ import SensorDrawer from './SensorDrawer';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
 import { useTelemetryLive, useTelemetryPings } from '@/hooks/iot/useIotTelemetry';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
+import { useIotPartnerAccess } from '@/hooks/iot/useIotPartner';
+import ProviderIntegrationsPanel from './ProviderIntegrationsPanel';
 
 interface Props {
   proprieteId: string;
