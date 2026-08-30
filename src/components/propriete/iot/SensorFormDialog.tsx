@@ -124,6 +124,86 @@ export const SensorFormDialog: React.FC<Props> = ({ open, onOpenChange, propriet
               </select>
             </div>
           </div>
+
+          {isWeenat && (
+            <div className="grid gap-2 rounded-xl border border-[hsl(var(--ds-line))] bg-white/60 p-3">
+              <div className="flex items-center gap-2">
+                <Satellite className="h-3.5 w-3.5 text-[hsl(var(--ds-forest))]" />
+                <span className="text-xs font-semibold">Rattachement au compte Weenat</span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="ml-auto h-7 text-[11px]"
+                  disabled={!weenatIntegration || discover.isPending}
+                  onClick={() =>
+                    discover.mutate(
+                      { integration_id: weenatIntegration!.id },
+                      { onSuccess: (list) => setCandidates(list) },
+                    )
+                  }
+                >
+                  <RefreshCw className={`mr-1 h-3 w-3 ${discover.isPending ? 'animate-spin' : ''}`} /> Découvrir
+                </Button>
+              </div>
+
+              {!weenatIntegration && (
+                <p className="text-[11px] text-[hsl(var(--ds-forest))]/70">
+                  Aucune clé Weenat n’est encore raccordée à cette propriété : enregistrez-la d’abord dans
+                  « Capteurs et sondes › Raccordements fournisseurs ».
+                </p>
+              )}
+
+              <div className="grid gap-1.5 sm:grid-cols-2 sm:gap-3">
+                <div className="grid gap-1.5">
+                  <Label className="text-xs">Identifiant Weenat</Label>
+                  <Input
+                    value={form.external_id}
+                    onChange={(e) => setForm({ ...form, external_id: e.target.value })}
+                    placeholder="11709"
+                    className="bg-white/70"
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs">Nature</Label>
+                  <select
+                    value={form.external_kind}
+                    onChange={(e) => setForm({ ...form, external_kind: e.target.value })}
+                    className="h-10 rounded-md border border-input bg-white/70 px-3 text-sm"
+                  >
+                    <option value="device">Sonde physique</option>
+                    <option value="plot">Parcelle (station météo virtuelle)</option>
+                  </select>
+                </div>
+              </div>
+
+              {candidates && (
+                <ul className="max-h-52 space-y-1 overflow-auto">
+                  {candidates.length === 0 && (
+                    <li className="text-[11px] italic opacity-60">Aucun appareil ni parcelle sur ce compte.</li>
+                  )}
+                  {candidates.map((c) => (
+                    <li key={`${c.external_kind}-${c.external_id}`}>
+                      <button
+                        type="button"
+                        onClick={() => applyCandidate(c)}
+                        className="w-full rounded-lg border border-[hsl(var(--ds-line))] bg-white/70 px-2.5 py-1.5 text-left text-[11px] hover:bg-white"
+                      >
+                        <span className="font-medium">
+                          {c.external_kind === 'plot' ? '☁︎ ' : '⌁ '}
+                          {c.nom || c.model_label || c.serial_number}
+                        </span>
+                        <span className="block opacity-60">
+                          #{c.external_id} · {(c.metrics ?? []).slice(0, 5).join(', ') || 'aucune mesure déclarée'}
+                          {c.location_text ? ` · ${c.location_text}` : ''}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           <div className="grid gap-1.5">
             <Label className="text-xs">Emplacement (facultatif)</Label>
             <Input value={form.emplacement} onChange={(e) => setForm({ ...form, emplacement: e.target.value })} placeholder="Potager d'été" className="bg-white/70" />
