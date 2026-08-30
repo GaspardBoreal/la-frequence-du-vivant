@@ -8,6 +8,8 @@ import SensorDrawer from './SensorDrawer';
 import { useCapteurCovers } from '@/hooks/iot/useCapteurPhotos';
 import { useTelemetryLive, useTelemetryPings } from '@/hooks/iot/useIotTelemetry';
 import { VitalityStrip } from '@/components/iot/VitalityStrip';
+import { useIotPartnerAccess } from '@/hooks/iot/useIotPartner';
+import ProviderIntegrationsPanel from './ProviderIntegrationsPanel';
 
 interface Props {
   proprieteId: string;
@@ -34,6 +36,18 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<IotCapteur | null>(null);
   const [openCapteur, setOpenCapteur] = React.useState<IotCapteur | null>(null);
+  const { data: access } = useIotPartnerAccess();
+  const isAdmin = !!access?.isAdmin;
+
+  /** Une propriété peut porter des sondes de plusieurs fabricants : on les regroupe. */
+  const groupes = React.useMemo(() => {
+    const m = new Map<string, IotCapteur[]>();
+    capteurs.forEach((c) => {
+      const k = c.type?.fournisseur?.nom ?? 'Fournisseur inconnu';
+      m.set(k, [...(m.get(k) ?? []), c]);
+    });
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [capteurs]);
 
   const healths = capteurs.map((c) => ({ c, h: sensorHealth(c) }));
   const counts = {
@@ -128,8 +142,13 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
         </div>
       )}
 
-      <div className="grid gap-3 md:grid-cols-2">
-        {capteurs.map((c, i) => {
+      {groupes.map(([fournisseur, liste]) => (
+        <div key={fournisseur} className="space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[hsl(var(--ds-forest))]/70">
+            {fournisseur} · {liste.length} capteur{liste.length > 1 ? 's' : ''}
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+          {liste.map((c, i) => {
           const h = sensorHealth(c);
           const rows = latest[c.id] ?? [];
           return (
@@ -199,8 +218,12 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
               </div>
             </motion.button>
           );
-        })}
-      </div>
+          })}
+          </div>
+        </div>
+      ))}
+
+      {isAdmin && <ProviderIntegrationsPanel proprieteId={proprieteId} />}
 
       {/* Journal des livraisons */}
       {deliveries.length > 0 && (

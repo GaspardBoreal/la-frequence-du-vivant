@@ -47,6 +47,10 @@ export interface IotCapteur {
   silence_alert_hours: number;
   battery_alert_pct: number;
   notes: string | null;
+  /** Identifiant du capteur chez le fournisseur (Weenat : id d'appareil ou de parcelle). */
+  external_id?: string | null;
+  /** 'device' (sonde physique) ou 'plot' (station météo virtuelle). */
+  external_kind?: string | null;
   type?: IotTypeCapteur | null;
 }
 

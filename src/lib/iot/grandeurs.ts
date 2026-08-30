@@ -7,6 +7,7 @@
 export type Grandeur =
   | 'soil_moisture'
   | 'soil_temperature'
+  | 'soil_potential'
   | 'soil_capacitance'
   | 'air_temperature'
   | 'air_humidity'
@@ -15,8 +16,13 @@ export type Grandeur =
   | 'luminosity'
   | 'infrared'
   | 'uv_index'
+  | 'solar_radiation'
+  | 'par'
+  | 'etp'
+  | 'vpd'
   | 'rainfall'
   | 'wind_speed'
+  | 'wind_direction'
   | 'battery_voltage';
 
 export interface GrandeurMeta {
@@ -33,6 +39,7 @@ export interface GrandeurMeta {
 export const GRANDEURS: Record<string, GrandeurMeta> = {
   soil_moisture: { label: 'Humidité du sol', unite: '%', digits: 0, color: '#2f6f8f', range: [0, 60] },
   soil_temperature: { label: 'Température du sol', unite: '°C', digits: 1, color: '#a4622d', range: [-5, 40] },
+  soil_potential: { label: 'Tension du sol', unite: 'kPa', digits: 0, color: '#7a5ea8', range: [0, 200] },
   soil_capacitance: { label: 'Capacitance du sol', unite: 'V', digits: 2, color: '#6b7f8f' },
   air_temperature: { label: "Température de l'air", unite: '°C', digits: 1, color: '#c2703d', range: [-10, 45] },
   air_humidity: { label: "Humidité de l'air", unite: '%', digits: 0, color: '#4a8fa8', range: [0, 100] },
@@ -41,10 +48,16 @@ export const GRANDEURS: Record<string, GrandeurMeta> = {
   luminosity: { label: 'Luminosité', unite: 'lx', digits: 0, color: '#c9a24a' },
   infrared: { label: 'Infrarouge', unite: 'lx', digits: 0, color: '#9c6b4a' },
   uv_index: { label: 'Indice UV', unite: 'index', digits: 1, color: '#8e6ea8' },
+  solar_radiation: { label: 'Rayonnement solaire', unite: 'W/m²', digits: 0, color: '#d09a3c', range: [0, 1200] },
+  par: { label: 'Rayonnement photosynthétique', unite: 'µmol/m²/s', digits: 0, color: '#8fa83c', range: [0, 2500] },
+  etp: { label: 'Évapotranspiration', unite: 'mm', digits: 2, color: '#5f8f8a', range: [0, 12] },
+  vpd: { label: 'Déficit de pression de vapeur', unite: 'kPa', digits: 2, color: '#9a7f5b', range: [0, 6] },
   rainfall: { label: 'Pluviométrie', unite: 'mm', digits: 1, color: '#3d7ea6' },
   wind_speed: { label: 'Vitesse du vent', unite: 'm/s', digits: 1, color: '#6f8f8a' },
+  wind_direction: { label: 'Direction du vent', unite: '°', digits: 0, color: '#8a8f85', range: [0, 360] },
   battery_voltage: { label: 'Tension batterie', unite: 'V', digits: 2, color: '#7f8f5b' },
 };
+
 
 export const grandeurMeta = (g: string): GrandeurMeta =>
   GRANDEURS[g] ?? { label: g, unite: '', digits: 1, color: '#6b7f6b' };
@@ -88,7 +101,7 @@ export const compareGrandeurs = (
 /* ── Profil de lecture d'un modèle de sonde ───────────────────────────── */
 
 /** Grandeurs qui se lisent par profondeur : le modèle en annonce la grille. */
-export const DEPTH_GRANDEURS = ['soil_moisture', 'soil_temperature'] as const;
+export const DEPTH_GRANDEURS = ['soil_moisture', 'soil_potential', 'soil_temperature'] as const;
 
 export type SensorFamille = 'sol' | 'meteo' | 'autre';
 
@@ -212,6 +225,44 @@ export const moistureVerdict = (pct: number): { key: MoistureVerdict; label: str
     conseil: "Excès d'eau : suspendez l'arrosage, vérifiez le drainage et le tassement.",
   };
 };
+
+/* ── Lecture agronomique de la tension du sol (tensiomètre) ───────────── */
+
+/**
+ * La tension dit l'effort que la racine doit fournir pour boire.
+ * Plus la valeur monte, plus le sol retient l'eau contre la plante.
+ */
+export const tensionVerdict = (kpa: number): { key: MoistureVerdict; label: string; color: string; conseil: string } => {
+  if (kpa < 10)
+    return {
+      key: 'sature',
+      label: 'Sol gorgé',
+      color: '#2f6f8f',
+      conseil: "L'eau est disponible sans effort : n'arrosez pas, surveillez l'asphyxie des racines.",
+    };
+  if (kpa < 30)
+    return {
+      key: 'confortable',
+      label: 'Confort hydrique',
+      color: '#3f7f52',
+      conseil: 'La réserve est facilement utilisable : rien à faire.',
+    };
+  if (kpa < 80)
+    return {
+      key: 'juste',
+      label: 'Vigilance',
+      color: '#c9a24a',
+      conseil: "La plante commence à tirer sur la réserve : préparez un arrosage dans les prochains jours.",
+    };
+  return {
+    key: 'sec',
+    label: 'Stress hydrique',
+    color: '#b4553a',
+    conseil: 'La succion devient coûteuse pour la racine : arrosez et renforcez le paillage.',
+  };
+};
+
+
 
 /* ── Santé d'un capteur ───────────────────────────────────────────────── */
 
