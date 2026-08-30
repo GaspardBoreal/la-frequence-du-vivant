@@ -55,7 +55,6 @@ export function useUpsertIotIntegration() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (v: {
-      id?: string | null;
       propriete_id: string;
       fournisseur_id: string;
       api_key?: string | null;
@@ -64,8 +63,8 @@ export function useUpsertIotIntegration() {
       external_plot_id?: string | null;
       actif?: boolean;
     }) => {
+      // Le raccordement est unique par (propriété, fournisseur) : la RPC fait l'upsert.
       const { data, error } = await db.rpc('admin_upsert_iot_integration', {
-        p_id: v.id ?? null,
         p_propriete_id: v.propriete_id,
         p_fournisseur_id: v.fournisseur_id,
         p_api_key: v.api_key ?? null,
