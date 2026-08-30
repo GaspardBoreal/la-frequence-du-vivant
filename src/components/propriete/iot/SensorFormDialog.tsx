@@ -4,7 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { RefreshCw, Satellite } from 'lucide-react';
 import { useIotTypes, useCapteurMutation, type IotCapteur } from '@/hooks/iot/useIot';
+import { useDiscoverWeenat, useIotIntegrations, type WeenatCandidate } from '@/hooks/iot/useIotIntegrations';
 
 interface Props {
   open: boolean;
@@ -13,16 +15,21 @@ interface Props {
   capteur?: IotCapteur | null;
 }
 
-/** Déclaration ou réglage d'un capteur sur la propriété. */
+/** Déclaration ou réglage d'un capteur sur la propriété, tous fournisseurs confondus. */
 export const SensorFormDialog: React.FC<Props> = ({ open, onOpenChange, proprieteId, capteur }) => {
   const { data: types = [] } = useIotTypes();
   const mut = useCapteurMutation(proprieteId);
+  const { data: integrations = [] } = useIotIntegrations(proprieteId);
+  const discover = useDiscoverWeenat();
+  const [candidates, setCandidates] = React.useState<WeenatCandidate[] | null>(null);
 
   const [form, setForm] = React.useState({
     nom: '',
     serial_number: '',
     type_id: '',
     emplacement: '',
+    external_id: '',
+    external_kind: 'device',
     silence_alert_hours: 6,
     battery_alert_pct: 25,
     actif: true,
@@ -32,11 +39,14 @@ export const SensorFormDialog: React.FC<Props> = ({ open, onOpenChange, propriet
 
   React.useEffect(() => {
     if (!open) return;
+    setCandidates(null);
     setForm({
       nom: capteur?.nom ?? '',
       serial_number: capteur?.serial_number ?? '',
       type_id: capteur?.type_id ?? types[0]?.id ?? '',
       emplacement: capteur?.emplacement ?? '',
+      external_id: capteur?.external_id ?? '',
+      external_kind: capteur?.external_kind ?? 'device',
       silence_alert_hours: capteur?.silence_alert_hours ?? 6,
       battery_alert_pct: capteur?.battery_alert_pct ?? 25,
       actif: capteur?.actif ?? true,
@@ -44,6 +54,25 @@ export const SensorFormDialog: React.FC<Props> = ({ open, onOpenChange, propriet
       notes: capteur?.notes ?? '',
     });
   }, [open, capteur, types]);
+
+  const selectedType = types.find((t) => t.id === form.type_id) ?? null;
+  const fournisseurNom = selectedType?.fournisseur?.nom ?? '';
+  const isWeenat = /weenat/i.test(fournisseurNom);
+  const weenatIntegration = integrations.find(
+    (i) => i.propriete_id === proprieteId && i.fournisseur_id === selectedType?.fournisseur_id,
+  );
+
+  /** Reprend l'identité du capteur telle que Weenat la déclare. */
+  const applyCandidate = (c: WeenatCandidate) => {
+    setForm((f) => ({
+      ...f,
+      nom: f.nom || c.nom || c.model_label || c.serial_number || `Capteur ${c.external_id}`,
+      serial_number: c.serial_number || `${c.external_kind}-${c.external_id}`,
+      external_id: c.external_id,
+      external_kind: c.external_kind,
+    }));
+    setCandidates(null);
+  };
 
   const submit = () => {
     if (!form.nom.trim() || !form.serial_number.trim() || !form.type_id) return;
@@ -53,6 +82,8 @@ export const SensorFormDialog: React.FC<Props> = ({ open, onOpenChange, propriet
       serial_number: form.serial_number.trim(),
       emplacement: form.emplacement.trim() || null,
       notes: form.notes.trim() || null,
+      external_id: form.external_id.trim() || null,
+      external_kind: form.external_id.trim() ? form.external_kind : null,
     };
     mut.mutate(
       capteur ? { action: 'update', id: capteur.id, values } : { action: 'create', values },
