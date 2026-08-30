@@ -113,9 +113,10 @@ export const ProviderIntegrationsPanel: React.FC<Props> = ({ proprieteId }) => {
             <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="LFDV-CDF-DEVIAT" className="bg-background" />
           </div>
           <div className="grid gap-1.5">
-            <Label className="text-xs text-foreground">Parcelle de référence (station météo virtuelle)</Label>
+            <Label className="text-xs text-foreground">Parcelle de référence (grandeurs agronomiques)</Label>
             <Input value={plotId} onChange={(e) => setPlotId(e.target.value)} placeholder="122193" className="bg-background" />
           </div>
+
         </div>
 
         <div className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-2">
