@@ -101,7 +101,7 @@ export const compareGrandeurs = (
 /* ── Profil de lecture d'un modèle de sonde ───────────────────────────── */
 
 /** Grandeurs qui se lisent par profondeur : le modèle en annonce la grille. */
-export const DEPTH_GRANDEURS = ['soil_moisture', 'soil_temperature'] as const;
+export const DEPTH_GRANDEURS = ['soil_moisture', 'soil_potential', 'soil_temperature'] as const;
 
 export type SensorFamille = 'sol' | 'meteo' | 'autre';
 
