@@ -104,7 +104,7 @@ export function useDiscoverWeenat() {
 export function usePullWeenat(proprieteId?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (hours = 24) => {
+    mutationFn: async (hours: number = 24) => {
       const { data, error } = await supabase.functions.invoke('iot-pull-weenat', {
         body: { propriete_id: proprieteId, hours },
       });
