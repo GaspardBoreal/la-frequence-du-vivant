@@ -259,20 +259,61 @@ const AdminIot: React.FC = () => {
             </div>
           )}
 
-          <div className="grid gap-2 sm:grid-cols-2">
-            {types.map((t) => (
-              <div key={t.id} className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{t.modele}</div>
-                  <div className="truncate text-xs text-muted-foreground">
-                    {t.fournisseur?.nom} · {t.famille}
-                    {t.profondeurs_m.length > 0 && ` · ${t.profondeurs_m.map((m) => `${Math.round(m * 100)} cm`).join(' / ')}`}
+          <div className="space-y-6">
+            {fournisseurs.map((f) => {
+              const typesFournisseur = types.filter((t) => t.fournisseur_id === f.id);
+              if (typesFournisseur.length === 0) return null;
+              return (
+                <div key={f.id} className="rounded-xl border border-border bg-card/50 p-4">
+                  <div className="mb-3 flex items-center gap-2 border-b border-border pb-2">
+                    <Building2 className="h-4 w-4 text-emerald-600" />
+                    <h3 className="text-sm font-semibold">{f.nom}</h3>
+                    <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                      {typesFournisseur.length} type{typesFournisseur.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {typesFournisseur.map((t) => (
+                      <div key={t.id} className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium">{t.modele}</div>
+                          <div className="truncate text-xs text-muted-foreground">
+                            {t.famille}
+                            {t.profondeurs_m.length > 0 && ` · ${t.profondeurs_m.map((m) => `${Math.round(m * 100)} cm`).join(' / ')}`}
+                          </div>
+                        </div>
+                        <button onClick={() => setTDraft(t)} className="p-1 opacity-60 hover:opacity-100"><Pencil className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => setConfirm({ kind: 't', id: t.id, nom: t.modele })} className="p-1 text-red-600/70 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <button onClick={() => setTDraft(t)} className="p-1 opacity-60 hover:opacity-100"><Pencil className="h-3.5 w-3.5" /></button>
-                <button onClick={() => setConfirm({ kind: 't', id: t.id, nom: t.modele })} className="p-1 text-red-600/70 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+              );
+            })}
+
+            {types.some((t) => !t.fournisseur_id) && (
+              <div className="rounded-xl border border-dashed border-amber-300/50 bg-amber-50/40 p-4 dark:bg-amber-950/20">
+                <div className="mb-3 flex items-center gap-2 border-b border-amber-200/50 pb-2">
+                  <Cpu className="h-4 w-4 text-amber-600" />
+                  <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">Sans fournisseur rattaché</h3>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {types.filter((t) => !t.fournisseur_id).map((t) => (
+                    <div key={t.id} className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium">{t.modele}</div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {t.famille}
+                          {t.profondeurs_m.length > 0 && ` · ${t.profondeurs_m.map((m) => `${Math.round(m * 100)} cm`).join(' / ')}`}
+                        </div>
+                      </div>
+                      <button onClick={() => setTDraft(t)} className="p-1 opacity-60 hover:opacity-100"><Pencil className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => setConfirm({ kind: 't', id: t.id, nom: t.modele })} className="p-1 text-red-600/70 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </section>
 
