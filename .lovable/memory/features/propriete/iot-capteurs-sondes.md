@@ -33,3 +33,9 @@ Fichiers : `src/lib/iot/grandeurs.ts`, `src/hooks/iot/useIot.ts`,
 - Fiches ouvertes depuis l'Atelier (z-[3000]) : passer `elevated` au drawer, sinon le
   Sheet (z-[1100]) reste invisible derrière le plein écran.
 
+- Weenat (pull) : la « Météo Vision » n'existe plus. Une Station Météo Virtuelle est
+  un **appareil** (`/v3/devices`, modèle `SMV`, n° de série `SMV…`) qui porte T, U, RR ;
+  la **parcelle** liée porte les grandeurs recalculées (ETP, point de rosée,
+  rayonnement). `iot-pull-weenat` fusionne les deux sur la même fiche capteur :
+  capteur en `external_kind='device'` + `external_plot_id` de l'intégration,
+  déduplication par (grandeur, profondeur, horodatage).
