@@ -11,9 +11,18 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-  const { isAdmin, errorResponse } = await validateAuth(req);
-  if (errorResponse) return errorResponse;
-  if (!isAdmin) return json({ error: 'Réservé aux administrateurs' }, 403);
+  // Exploitation : le secret partagé de collecte ouvre aussi la découverte,
+  // afin de pouvoir re-rattacher une station sans session administrateur.
+  const cronSecret = Deno.env.get('IOT_CRON_SECRET') ?? Deno.env.get('CRON_SHARED_SECRET');
+  const providedCron = req.headers.get('x-cron-secret');
+  const viaCron = !!cronSecret && !!providedCron && providedCron === cronSecret;
+
+  if (!viaCron) {
+    const { isAdmin, errorResponse } = await validateAuth(req);
+    if (errorResponse) return errorResponse;
+    if (!isAdmin) return json({ error: 'Réservé aux administrateurs' }, 403);
+  }
+
 
   let body: { integration_id?: string; api_key?: string } = {};
   try {
