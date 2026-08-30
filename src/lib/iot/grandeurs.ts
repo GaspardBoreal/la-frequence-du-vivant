@@ -226,6 +226,44 @@ export const moistureVerdict = (pct: number): { key: MoistureVerdict; label: str
   };
 };
 
+/* ── Lecture agronomique de la tension du sol (tensiomètre) ───────────── */
+
+/**
+ * La tension dit l'effort que la racine doit fournir pour boire.
+ * Plus la valeur monte, plus le sol retient l'eau contre la plante.
+ */
+export const tensionVerdict = (kpa: number): { key: MoistureVerdict; label: string; color: string; conseil: string } => {
+  if (kpa < 10)
+    return {
+      key: 'sature',
+      label: 'Sol gorgé',
+      color: '#2f6f8f',
+      conseil: "L'eau est disponible sans effort : n'arrosez pas, surveillez l'asphyxie des racines.",
+    };
+  if (kpa < 30)
+    return {
+      key: 'confortable',
+      label: 'Confort hydrique',
+      color: '#3f7f52',
+      conseil: 'La réserve est facilement utilisable : rien à faire.',
+    };
+  if (kpa < 80)
+    return {
+      key: 'juste',
+      label: 'Vigilance',
+      color: '#c9a24a',
+      conseil: "La plante commence à tirer sur la réserve : préparez un arrosage dans les prochains jours.",
+    };
+  return {
+    key: 'sec',
+    label: 'Stress hydrique',
+    color: '#b4553a',
+    conseil: 'La succion devient coûteuse pour la racine : arrosez et renforcez le paillage.',
+  };
+};
+
+
+
 /* ── Santé d'un capteur ───────────────────────────────────────────────── */
 
 export type SensorHealth = 'green' | 'amber' | 'red' | 'unknown' | 'paused';
