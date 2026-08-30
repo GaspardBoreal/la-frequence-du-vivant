@@ -59,35 +59,35 @@ export const ProviderIntegrationsPanel: React.FC<Props> = ({ proprieteId }) => {
     });
 
   return (
-    <details className="rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-4">
-      <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.24em] text-[hsl(var(--ds-forest))]">
+    <details className="rounded-3xl border border-border bg-card p-4">
+      <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.24em] text-foreground">
         <Plug className="mr-1 inline h-3 w-3" /> Raccordements fournisseurs ({integrations.length})
       </summary>
 
-      <ul className="mt-3 space-y-1.5 text-[11px] text-[hsl(var(--ds-forest-deep))]">
+      <ul className="mt-3 space-y-1.5 text-[11px] text-foreground">
         {integrations.map((i) => (
-          <li key={i.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-[hsl(var(--ds-line))] bg-white/60 px-3 py-2">
-            <KeyRound className="h-3.5 w-3.5 opacity-60" />
+          <li key={i.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
+            <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="font-medium">{i.fournisseur_nom ?? 'Fournisseur'}</span>
-            <span className="opacity-70">{i.label ?? '—'}</span>
-            {i.external_plot_id && <span className="opacity-60">parcelle #{i.external_plot_id}</span>}
-            <span className="ml-auto opacity-60">
+            <span className="text-muted-foreground">{i.label ?? '—'}</span>
+            {i.external_plot_id && <span className="text-muted-foreground">parcelle #{i.external_plot_id}</span>}
+            <span className="ml-auto text-muted-foreground">
               {i.actif ? 'actif' : 'suspendu'} · {fmtHorodatage(i.last_pull_at)}
               {i.last_pull_status ? ` · ${i.last_pull_status}` : ''}
             </span>
           </li>
         ))}
-        {integrations.length === 0 && <li className="italic opacity-60">Aucun compte fournisseur raccordé.</li>}
+        {integrations.length === 0 && <li className="italic text-muted-foreground">Aucun compte fournisseur raccordé.</li>}
       </ul>
 
-      <div className="mt-3 grid gap-2 rounded-2xl border border-[hsl(var(--ds-line))] bg-white/60 p-3">
+      <div className="mt-3 grid gap-2 rounded-2xl border border-border bg-background p-3">
         <div className="grid gap-1.5 sm:grid-cols-2 sm:gap-3">
           <div className="grid gap-1.5">
-            <Label className="text-xs">Fournisseur</Label>
+            <Label className="text-xs text-foreground">Fournisseur</Label>
             <select
               value={fournisseurId}
               onChange={(e) => setFournisseurId(e.target.value)}
-              className="h-10 rounded-md border border-input bg-white/70 px-3 text-sm"
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
             >
               <option value="">—</option>
               {fournisseurs.map((f) => (
@@ -96,30 +96,30 @@ export const ProviderIntegrationsPanel: React.FC<Props> = ({ proprieteId }) => {
             </select>
           </div>
           <div className="grid gap-1.5">
-            <Label className="text-xs">Clé API {current ? '(laisser vide pour conserver)' : ''}</Label>
+            <Label className="text-xs text-foreground">Clé API {current ? '(laisser vide pour conserver)' : ''}</Label>
             <Input
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="clé fournie par le fabricant"
-              className="bg-white/70"
+              className="bg-background"
             />
           </div>
         </div>
 
         <div className="grid gap-1.5 sm:grid-cols-2 sm:gap-3">
           <div className="grid gap-1.5">
-            <Label className="text-xs">Intitulé du compte</Label>
-            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="LFDV-CDF-DEVIAT" className="bg-white/70" />
+            <Label className="text-xs text-foreground">Intitulé du compte</Label>
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="LFDV-CDF-DEVIAT" className="bg-background" />
           </div>
           <div className="grid gap-1.5">
-            <Label className="text-xs">Parcelle de référence (station météo virtuelle)</Label>
-            <Input value={plotId} onChange={(e) => setPlotId(e.target.value)} placeholder="122193" className="bg-white/70" />
+            <Label className="text-xs text-foreground">Parcelle de référence (station météo virtuelle)</Label>
+            <Input value={plotId} onChange={(e) => setPlotId(e.target.value)} placeholder="122193" className="bg-background" />
           </div>
         </div>
 
-        <div className="flex items-center justify-between rounded-xl border border-[hsl(var(--ds-line))] bg-white/70 px-3 py-2">
-          <span className="text-xs">Collecte automatique active</span>
+        <div className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-2">
+          <span className="text-xs text-foreground">Collecte automatique active</span>
           <Switch checked={actif} onCheckedChange={setActif} />
         </div>
 
@@ -142,16 +142,16 @@ export const ProviderIntegrationsPanel: React.FC<Props> = ({ proprieteId }) => {
 
         {plots && (
           <ul className="space-y-1 text-[11px]">
-            {plots.length === 0 && <li className="italic opacity-60">Aucune parcelle sur ce compte.</li>}
+            {plots.length === 0 && <li className="italic text-muted-foreground">Aucune parcelle sur ce compte.</li>}
             {plots.map((p) => (
               <li key={p.external_id}>
                 <button
                   type="button"
                   onClick={() => setPlotId(p.external_id)}
-                  className="w-full rounded-lg border border-[hsl(var(--ds-line))] bg-white/70 px-2.5 py-1.5 text-left hover:bg-white"
+                  className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-left text-foreground hover:bg-accent"
                 >
                   <span className="font-medium">{p.nom}</span>
-                  <span className="block opacity-60">
+                  <span className="block text-muted-foreground">
                     #{p.external_id} · {p.meteo_vision ? 'Météo Vision activée' : 'Météo Vision non activée'}
                     {p.location_text ? ` · ${p.location_text}` : ''}
                   </span>
