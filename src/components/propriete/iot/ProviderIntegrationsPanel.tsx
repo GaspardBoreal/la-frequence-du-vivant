@@ -119,7 +119,7 @@ export const ProviderIntegrationsPanel: React.FC<Props> = ({ proprieteId }) => {
         </div>
 
         <div className="flex items-center justify-between rounded-xl border border-[hsl(var(--ds-line))] bg-white/70 px-3 py-2">
-          <span className="text-xs">Collecte automatique活 active</span>
+          <span className="text-xs">Collecte automatique active</span>
           <Switch checked={actif} onCheckedChange={setActif} />
         </div>
 
