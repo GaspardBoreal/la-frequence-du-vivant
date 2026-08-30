@@ -12,8 +12,8 @@ import { fetchData, normalize } from '../_shared/weenat.ts';
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-/** Cron (clé de service) ou administrateur connecté. */
-async function authorize(req: Request): Promise<boolean> {
+/** Cron (clé de service), administrateur, ou gestionnaire de la propriété visée. */
+async function authorize(req: Request, proprieteId?: string): Promise<boolean> {
   const header = req.headers.get('authorization') ?? '';
   const token = header.replace(/^Bearer\s+/i, '').trim();
   if (!token) return false;
@@ -25,21 +25,27 @@ async function authorize(req: Request): Promise<boolean> {
   const { data } = await client.auth.getUser();
   if (!data?.user) return false;
   const { data: isAdmin } = await client.rpc('check_is_admin_user', { check_user_id: data.user.id });
-  return !!isAdmin;
+  if (isAdmin) return true;
+
+  // Sans droit d'administration, la collecte est possible uniquement pour une
+  // propriété précise à laquelle la personne a accès.
+  if (!proprieteId) return false;
+  const { data: canAccess } = await client.rpc('can_access_propriete', { _propriete_id: proprieteId });
+  return !!canAccess;
 }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-  if (!(await authorize(req))) return json({ error: 'Non autorisé' }, 403);
-
   let body: { propriete_id?: string; hours?: number } = {};
   try {
     body = await req.json();
   } catch {
     body = {};
   }
+  if (!(await authorize(req, body.propriete_id))) return json({ error: 'Non autorisé' }, 403);
   const hours = Math.min(Math.max(Number(body.hours) || 6, 1), 24 * 30);
+
 
   const service = createServiceClient();
 
