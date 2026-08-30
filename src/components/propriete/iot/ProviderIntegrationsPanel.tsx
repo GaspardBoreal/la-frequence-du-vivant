@@ -131,9 +131,9 @@ export const ProviderIntegrationsPanel: React.FC<Props> = ({ proprieteId }) => {
             size="sm"
             variant="outline"
             disabled={!current || discover.isPending}
-            onClick={() => discover.mutate({ integration_id: current!.id }, { onSuccess: (l) => setPlots(l.filter((c) => c.external_kind === 'plot')) })}
+            onClick={() => discover.mutate({ integration_id: current!.id }, { onSuccess: setPlots })}
           >
-            <RefreshCw className={`mr-1 h-3.5 w-3.5 ${discover.isPending ? 'animate-spin' : ''}`} /> Lister les parcelles
+            <RefreshCw className={`mr-1 h-3.5 w-3.5 ${discover.isPending ? 'animate-spin' : ''}`} /> Lister le parc
           </Button>
           <Button size="sm" variant="outline" disabled={pull.isPending} onClick={() => pull.mutate(24)}>
             <Download className={`mr-1 h-3.5 w-3.5 ${pull.isPending ? 'animate-pulse' : ''}`} /> Collecter maintenant
@@ -142,24 +142,33 @@ export const ProviderIntegrationsPanel: React.FC<Props> = ({ proprieteId }) => {
 
         {plots && (
           <ul className="space-y-1 text-[11px]">
-            {plots.length === 0 && <li className="italic text-muted-foreground">Aucune parcelle sur ce compte.</li>}
-            {plots.map((p) => (
-              <li key={p.external_id}>
-                <button
-                  type="button"
-                  onClick={() => setPlotId(p.external_id)}
-                  className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-left text-foreground hover:bg-accent"
-                >
-                  <span className="font-medium">{p.nom}</span>
-                  <span className="block text-muted-foreground">
-                    #{p.external_id} · {p.meteo_vision ? 'Météo Vision activée' : 'Météo Vision non activée'}
-                    {p.location_text ? ` · ${p.location_text}` : ''}
-                  </span>
-                </button>
-              </li>
-            ))}
+            {plots.length === 0 && <li className="italic text-muted-foreground">Aucun appareil ni parcelle sur ce compte.</li>}
+            {plots.map((p) => {
+              const virtuelle = p.model === 'SMV' || /virtual/i.test(p.model_label ?? '');
+              return (
+                <li key={`${p.external_kind}-${p.external_id}`}>
+                  <button
+                    type="button"
+                    onClick={() => setPlotId(p.external_id)}
+                    className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-left text-foreground hover:bg-accent"
+                  >
+                    <span className="font-medium">
+                      {p.external_kind === 'plot' ? '▦ ' : virtuelle ? '☁︎ ' : '⌁ '}
+                      {p.nom ?? p.model_label ?? p.serial_number ?? `#${p.external_id}`}
+                      {virtuelle ? ' — station météo virtuelle' : ''}
+                    </span>
+                    <span className="block text-muted-foreground">
+                      #{p.external_id} · {p.external_kind === 'plot' ? 'parcelle' : `appareil ${p.serial_number ?? ''}`}
+                      {p.metrics?.length ? ` · ${p.metrics.slice(0, 6).join(', ')}` : ''}
+                      {p.location_text ? ` · ${p.location_text}` : ''}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
+
       </div>
     </details>
   );
