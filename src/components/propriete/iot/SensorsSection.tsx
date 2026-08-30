@@ -34,6 +34,18 @@ export const SensorsSection: React.FC<Props> = ({ proprieteId, proprieteNom }) =
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<IotCapteur | null>(null);
   const [openCapteur, setOpenCapteur] = React.useState<IotCapteur | null>(null);
+  const { data: access } = useIotPartnerAccess();
+  const isAdmin = !!access?.isAdmin;
+
+  /** Une propriété peut porter des sondes de plusieurs fabricants : on les regroupe. */
+  const groupes = React.useMemo(() => {
+    const m = new Map<string, IotCapteur[]>();
+    capteurs.forEach((c) => {
+      const k = c.type?.fournisseur?.nom ?? 'Fournisseur inconnu';
+      m.set(k, [...(m.get(k) ?? []), c]);
+    });
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [capteurs]);
 
   const healths = capteurs.map((c) => ({ c, h: sensorHealth(c) }));
   const counts = {
