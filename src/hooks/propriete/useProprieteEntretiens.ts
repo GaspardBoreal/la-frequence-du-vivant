@@ -193,3 +193,28 @@ export const useUpdateExtrait = (proprieteId?: string) => {
     },
   });
 };
+
+/** Toutes les cartes acceptées de la propriété — matière de l'IA de Jardin. */
+export const useProprieteEntretienAcquis = (proprieteId?: string) =>
+  useQuery({
+    queryKey: ['propriete-entretien-acquis', proprieteId],
+    enabled: !!proprieteId,
+    queryFn: async (): Promise<EntretienExtrait[]> => {
+      const { data: entretiens, error: e1 } = await db
+        .from('propriete_entretiens')
+        .select('id')
+        .eq('propriete_id', proprieteId);
+      if (e1) throw new Error(e1.message);
+      const ids = (entretiens ?? []).map((e: { id: string }) => e.id);
+      if (ids.length === 0) return [];
+      const { data, error } = await db
+        .from('propriete_entretien_extraits')
+        .select('*')
+        .in('entretien_id', ids)
+        .eq('statut', 'accepte')
+        .order('registre', { ascending: true })
+        .order('ordre', { ascending: true });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as EntretienExtrait[];
+    },
+  });
