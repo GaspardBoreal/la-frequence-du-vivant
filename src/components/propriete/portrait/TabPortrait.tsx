@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles, Map as MapIcon, Compass } from 'lucide-react';
+import { Images, LayoutGrid, MapPin, Printer, Save, Loader2, Pencil, Eye, Sparkles, Map as MapIcon, Compass, Mic } from 'lucide-react';
 import { PortraitCadastre } from './PortraitCadastre';
 import { PortraitIntention } from './PortraitIntention';
+import { PortraitEntretiens } from './PortraitEntretiens';
 
 import {
   GALLERY_MAX,
@@ -30,7 +31,7 @@ interface Props {
 }
 
 type ViewMode = 'bento' | 'motion' | 'constellation';
-type SubTab = 'galerie' | 'cadastre' | 'intention';
+type SubTab = 'galerie' | 'cadastre' | 'intention' | 'entretiens';
 
 const keyOf = (c: { source_table: string; source_id: string }) =>
   `${c.source_table}::${c.source_id}`;
@@ -176,10 +177,13 @@ export const TabPortrait: React.FC<Props> = ({
           <SubTabPill active={subTab === 'galerie'} onClick={() => setSubTab('galerie')} icon={Images} label="Galerie" />
           <SubTabPill active={subTab === 'cadastre'} onClick={() => setSubTab('cadastre')} icon={MapIcon} label="Cadastre" />
           <SubTabPill active={subTab === 'intention'} onClick={() => setSubTab('intention')} icon={Compass} label="Intention" />
+          <SubTabPill active={subTab === 'entretiens'} onClick={() => setSubTab('entretiens')} icon={Mic} label="Entretiens" />
         </div>
       )}
 
-      {subTab === 'intention' ? (
+      {subTab === 'entretiens' ? (
+        <PortraitEntretiens proprieteId={proprieteId} proprieteNom={proprieteNom} />
+      ) : subTab === 'intention' ? (
         <PortraitIntention proprieteId={proprieteId} proprieteNom={proprieteNom} />
       ) : subTab === 'cadastre' ? (
         <PortraitCadastre
