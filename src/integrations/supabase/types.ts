@@ -7299,6 +7299,118 @@ export type Database = {
           },
         ]
       }
+      propriete_entretien_extraits: {
+        Row: {
+          cible: string | null
+          created_at: string
+          detail: string | null
+          entretien_id: string
+          id: string
+          minutage: string | null
+          ordre: number
+          payload: Json
+          registre: string
+          statut: string
+          titre: string
+          updated_at: string
+          verbatim: string | null
+        }
+        Insert: {
+          cible?: string | null
+          created_at?: string
+          detail?: string | null
+          entretien_id: string
+          id?: string
+          minutage?: string | null
+          ordre?: number
+          payload?: Json
+          registre: string
+          statut?: string
+          titre: string
+          updated_at?: string
+          verbatim?: string | null
+        }
+        Update: {
+          cible?: string | null
+          created_at?: string
+          detail?: string | null
+          entretien_id?: string
+          id?: string
+          minutage?: string | null
+          ordre?: number
+          payload?: Json
+          registre?: string
+          statut?: string
+          titre?: string
+          updated_at?: string
+          verbatim?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_entretien_extraits_entretien_id_fkey"
+            columns: ["entretien_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_entretiens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propriete_entretiens: {
+        Row: {
+          consentement: boolean
+          created_at: string
+          created_by: string | null
+          duree_minutes: number | null
+          harvested_at: string | null
+          id: string
+          propriete_id: string
+          source: string
+          statut: string
+          tenu_le: string | null
+          titre: string
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          consentement?: boolean
+          created_at?: string
+          created_by?: string | null
+          duree_minutes?: number | null
+          harvested_at?: string | null
+          id?: string
+          propriete_id: string
+          source?: string
+          statut?: string
+          tenu_le?: string | null
+          titre?: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          consentement?: boolean
+          created_at?: string
+          created_by?: string | null
+          duree_minutes?: number | null
+          harvested_at?: string | null
+          id?: string
+          propriete_id?: string
+          source?: string
+          statut?: string
+          tenu_le?: string | null
+          titre?: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_entretiens_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_flora_diagnostics: {
         Row: {
           completed_at: string | null

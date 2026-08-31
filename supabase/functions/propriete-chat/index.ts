@@ -222,6 +222,33 @@ Un ouvrage est cadré (rayon ${pageState?.filters?.rayonEcouteM ?? "?"} m) mais 
 L'utilisateur n'a activé aucun contexte. Réponds sur la méthode et invite-le à sélectionner un ouvrage dans l'Atelier puis à cliquer sur **« Cadrer l'IA sur cet ouvrage »**, ou à ouvrir la **Console de contextes** (trombone 📎) pour activer les données utiles (vivant, sol, ouvrage, portrait du site).`;
 
     let systemContent = SYSTEM_PROMPT + contextBlock;
+
+    // Garde-fou permanent : les lignes rouges validées en entretien fondateur
+    // s'appliquent quoi que l'utilisateur ait activé comme contexte.
+    if (proprieteId) {
+      const { data: entretiens } = await userClient
+        .from("propriete_entretiens")
+        .select("id")
+        .eq("propriete_id", proprieteId);
+      const ids = (entretiens ?? []).map((e: { id: string }) => e.id);
+      if (ids.length > 0) {
+        const { data: rouges } = await userClient
+          .from("propriete_entretien_extraits")
+          .select("titre, detail, verbatim")
+          .in("entretien_id", ids)
+          .eq("registre", "ligne_rouge")
+          .eq("statut", "accepte");
+        if (rouges && rouges.length > 0) {
+          systemContent += `\n\n## LIGNES ROUGES DE CE JARDIN (non négociables)
+${rouges
+            .map((r: { titre: string; detail: string | null; verbatim: string | null }) =>
+              `- ${r.titre}${r.detail ? ` — ${r.detail}` : ""}${r.verbatim ? ` (« ${r.verbatim} »)` : ""}`)
+            .join("\n")}
+> Ne propose jamais, sous aucune forme, une action contraire à ces refus. Si la question l'implique, dis-le et propose une autre voie.`;
+        }
+      }
+    }
+
     if (iotAdminMode) systemContent += TELEMETRY_ADDENDUM(pageState);
     if (voiceMode) systemContent += VOICE_MODE_ADDENDUM;
 

@@ -377,9 +377,9 @@ const PropTabs: React.FC<{
     return () => window.removeEventListener('propriete:goto-tab', onGoto);
   }, [handleTabChange]);
 
-  const [portraitSub, setPortraitSub] = React.useState<'galerie' | 'cadastre' | 'intention'>('galerie');
+  const [portraitSub, setPortraitSub] = React.useState<'galerie' | 'cadastre' | 'intention' | 'entretiens'>('galerie');
 
-  const goPortrait = React.useCallback((sub: 'galerie' | 'cadastre' | 'intention') => {
+  const goPortrait = React.useCallback((sub: 'galerie' | 'cadastre' | 'intention' | 'entretiens') => {
     setPortraitSub(sub);
     handleTabChange('portrait');
   }, [handleTabChange]);
@@ -426,7 +426,7 @@ const PropTabs: React.FC<{
   const projectActive = ['portrait', 'synthesize', 'palette', 'clinique', 'capteurs'].includes(tab);
   const projectLabel =
     tab === 'portrait'
-      ? portraitSub === 'cadastre' ? 'Cadastre' : portraitSub === 'intention' ? 'Intention' : 'Galerie'
+      ? portraitSub === 'cadastre' ? 'Cadastre' : portraitSub === 'intention' ? 'Intention' : portraitSub === 'entretiens' ? 'Entretiens' : 'Galerie'
 
       : tab === 'synthesize'
         ? 'Je synthétise'
@@ -480,6 +480,7 @@ const PropTabs: React.FC<{
                 <DropdownMenuItem onSelect={() => goPortrait('galerie')}>Portrait · Galerie</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => goPortrait('cadastre')}>Portrait · Cadastre</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => goPortrait('intention')}>Portrait · Intention</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => goPortrait('entretiens')}>Portrait · Entretiens</DropdownMenuItem>
 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => handleTabChange('synthesize')}>Je synthétise</DropdownMenuItem>

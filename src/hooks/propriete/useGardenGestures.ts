@@ -5,6 +5,7 @@ import {
 } from './usePropertyIntention';
 import { DEFAULT_SEQUENCE } from '@/config/onboarding/defaultSequence';
 import { PERSONA_LABELS } from '@/config/onboarding/personas';
+import { useProprieteEntretienAcquis, REGISTRE_LABELS } from './useProprieteEntretiens';
 import type { AnswerValue, OnboardingQuestion } from '@/config/onboarding/schema';
 
 /**
@@ -75,12 +76,22 @@ export const buildGestureContext = (intention: PropertyIntention | undefined) =>
 
 export const useGardenGestures = (proprieteId?: string, canEdit = false) => {
   const { data: intention } = usePropertyIntention(proprieteId);
+  const { data: acquis } = useProprieteEntretienAcquis(proprieteId);
   const save = useSaveGestures(proprieteId);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const attempted = useRef<Set<string>>(new Set());
 
-  const context = useMemo(() => buildGestureContext(intention), [intention]);
+  // L'entretien fondateur validé pèse dans les gestes : les faits du lieu, les
+  // pratiques déjà en place et surtout les lignes rouges à ne jamais franchir.
+  const context = useMemo(() => {
+    const base = buildGestureContext(intention);
+    (acquis ?? []).forEach((c) => {
+      const label = REGISTRE_LABELS[c.registre] ?? c.registre;
+      base.push(`${label} : ${c.titre}${c.detail ? ` — ${c.detail}` : ''}`);
+    });
+    return base;
+  }, [intention, acquis]);
   const fingerprint = useMemo(
     () => (context.length ? stableFingerprint(context.join('\n')) : null),
     [context],

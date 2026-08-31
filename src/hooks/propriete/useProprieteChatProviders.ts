@@ -8,6 +8,7 @@ import { usePropertySynthesis } from '@/hooks/propriete/usePropertySynthesis';
 import { usePropertyObservation } from '@/hooks/propriete/usePropertyObservation';
 import { usePropertyFloraMatched } from '@/hooks/propriete/usePropertyFloraMatched';
 import { usePropertyIntention } from '@/hooks/propriete/usePropertyIntention';
+import { useProprieteEntretienAcquis, REGISTRE_LABELS } from '@/hooks/propriete/useProprieteEntretiens';
 import { placedSamples, buildOuvrageSoilDossier, mergeSamples } from '@/lib/soilLinkEngine';
 import { geometryAreaM2, geometryCenter, measureFor } from '@/components/propriete/palette/studio/geoMetrics';
 import { payloadBytes } from '@/lib/chatContextCost';
@@ -55,6 +56,7 @@ export function useProprieteChatProviders(proprieteId?: string): {
   const { state: observation } = usePropertyObservation(proprieteId);
   const flora = usePropertyFloraMatched(proprieteId);
   const { data: intention } = usePropertyIntention(proprieteId);
+  const { data: entretienAcquis } = useProprieteEntretienAcquis(proprieteId);
 
   const focusObjet = useMemo(
     () => (focus.objetId ? (objets ?? []).find((o) => o.id === focus.objetId) ?? null : null),
@@ -458,6 +460,36 @@ export function useProprieteChatProviders(proprieteId?: string): {
       );
     }
 
+    /* ── Entretien fondateur ────────────────────────────────────────────── */
+    const acquis = entretienAcquis ?? [];
+    if (acquis.length > 0) {
+      const par = (r: string) =>
+        acquis
+          .filter((c) => c.registre === r)
+          .map((c) => (c.detail ? `${c.titre} — ${c.detail}` : c.titre));
+      const lignesRouges = acquis
+        .filter((c) => c.registre === 'ligne_rouge')
+        .map((c) => (c.verbatim ? `${c.titre} (« ${c.verbatim} »)` : c.titre));
+      list.push(
+        provider({
+          id: 'site.entretien',
+          group: 'Propriété',
+          emoji: '🎙️',
+          label: lignesRouges.length ? 'Entretien fondateur · lignes rouges' : 'Entretien fondateur',
+          hint: 'Faits, gestes, lignes rouges et cap validés par la propriétaire',
+          payload: {
+            regle: 'Ne jamais proposer une action contraire aux lignes rouges.',
+            lignes_rouges: lignesRouges,
+            faits_du_lieu: par('fait'),
+            gestes_et_pratiques: par('geste'),
+            comment_accompagner: par('portrait'),
+            cap_et_intentions: par('cap'),
+            registres: Object.values(REGISTRE_LABELS),
+          },
+        }),
+      );
+    }
+
     return {
       providers: list,
       providersTitle: focusObjet
@@ -481,5 +513,6 @@ export function useProprieteChatProviders(proprieteId?: string): {
     focus.selectedObjetIds,
     focus.ouvrageDetail,
     intention,
+    entretienAcquis,
   ]);
 }
