@@ -202,6 +202,58 @@ const EntretienForm: React.FC<{
           </button>
         ))}
       </div>
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          void handleFile(e.dataTransfer.files?.[0]);
+        }}
+        className={`rounded-xl border border-dashed px-4 py-4 text-center transition-colors ${
+          dragOver ? 'border-amber-500 bg-amber-500/5' : 'border-border bg-background/40'
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={acceptedFormats}
+          className="hidden"
+          onChange={(e) => void handleFile(e.target.files?.[0])}
+        />
+        {isExtracting ? (
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Lecture du document…
+          </div>
+        ) : extracted ? (
+          <div className="flex items-center justify-center gap-2 text-xs text-foreground flex-wrap">
+            <FileText className="w-3.5 h-3.5 text-amber-500" />
+            <span className="font-medium">{extracted.fileName}</span>
+            <span className="text-muted-foreground">
+              · {extracted.text.length.toLocaleString('fr-FR')} signes extraits
+            </span>
+            <button
+              onClick={() => { removeDocument(); setTranscript(''); }}
+              className="ml-1 text-muted-foreground hover:text-foreground underline"
+            >
+              retirer
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={openFilePicker}
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            Importer un fichier (PDF, TXT, MD, CSV) — ou glissez-le ici
+          </button>
+        )}
+        {extractError && (
+          <p className="mt-2 text-xs text-destructive">
+            {extractError} Vous pouvez coller la transcription manuellement.
+          </p>
+        )}
+      </div>
       <label className="text-xs text-muted-foreground space-y-1 block">
         Transcription
         <textarea
