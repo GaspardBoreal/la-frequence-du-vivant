@@ -24,6 +24,8 @@ interface Props {
   proprieteNom: string;
 }
 
+const DEFAULT_TITRE = 'ITW 01 · Découverte du jardin';
+
 const SOURCES = [
   { value: 'texte', label: 'Texte collé' },
   { value: 'pdf', label: 'Transcription PDF' },
