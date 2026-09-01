@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Mic, Loader2, Sparkles, Check, X, Pencil, Trash2, Plus, Quote, ShieldAlert, Clock,
+  Upload, FileText,
 } from 'lucide-react';
+import { useDocumentExtractor } from '@/hooks/useDocumentExtractor';
 import { toast } from 'sonner';
 import {
   REGISTRES, REGISTRE_LABELS, REGISTRE_HINTS,
