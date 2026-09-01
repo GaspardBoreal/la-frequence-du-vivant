@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Mic, Loader2, Sparkles, Check, X, Pencil, Trash2, Plus, Quote, ShieldAlert, Clock,
+  Upload, FileText,
 } from 'lucide-react';
+import { useDocumentExtractor } from '@/hooks/useDocumentExtractor';
 import { toast } from 'sonner';
 import {
   REGISTRES, REGISTRE_LABELS, REGISTRE_HINTS,
@@ -21,6 +23,8 @@ interface Props {
   proprieteId: string;
   proprieteNom: string;
 }
+
+const DEFAULT_TITRE = 'ITW 01 · Découverte du jardin';
 
 const SOURCES = [
   { value: 'texte', label: 'Texte collé' },
@@ -119,11 +123,30 @@ const EntretienForm: React.FC<{
   onCancel: () => void;
 }> = ({ proprieteId, onDone, onCancel }) => {
   const create = useCreateEntretien(proprieteId);
-  const [titre, setTitre] = useState('ITW 01 · Découverte du jardin');
+  const [titre, setTitre] = useState(DEFAULT_TITRE);
   const [tenuLe, setTenuLe] = useState('');
   const [source, setSource] = useState('texte');
   const [transcript, setTranscript] = useState('');
   const [consentement, setConsentement] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  const {
+    document: extracted, isExtracting, error: extractError,
+    fileInputRef, processFile, removeDocument, openFilePicker, acceptedFormats,
+  } = useDocumentExtractor({ maxLength: 400_000 });
+
+  const handleFile = async (file: File | undefined | null) => {
+    if (!file) return;
+    await processFile(file);
+  };
+
+  useEffect(() => {
+    if (!extracted) return;
+    setTranscript(extracted.text);
+    setSource(extracted.fileName.toLowerCase().endsWith('.pdf') ? 'pdf' : 'texte');
+    setTitre((t) => (t === DEFAULT_TITRE ? extracted.fileName.replace(/\.[^.]+$/, '') : t));
+  }, [extracted]);
+
 
   const submit = async () => {
     if (transcript.trim().length < 200) {
@@ -178,6 +201,58 @@ const EntretienForm: React.FC<{
             {s.label}
           </button>
         ))}
+      </div>
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          void handleFile(e.dataTransfer.files?.[0]);
+        }}
+        className={`rounded-xl border border-dashed px-4 py-4 text-center transition-colors ${
+          dragOver ? 'border-amber-500 bg-amber-500/5' : 'border-border bg-background/40'
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={acceptedFormats}
+          className="hidden"
+          onChange={(e) => void handleFile(e.target.files?.[0])}
+        />
+        {isExtracting ? (
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Lecture du document…
+          </div>
+        ) : extracted ? (
+          <div className="flex items-center justify-center gap-2 text-xs text-foreground flex-wrap">
+            <FileText className="w-3.5 h-3.5 text-amber-500" />
+            <span className="font-medium">{extracted.fileName}</span>
+            <span className="text-muted-foreground">
+              · {extracted.text.length.toLocaleString('fr-FR')} signes extraits
+            </span>
+            <button
+              onClick={() => { removeDocument(); setTranscript(''); }}
+              className="ml-1 text-muted-foreground hover:text-foreground underline"
+            >
+              retirer
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={openFilePicker}
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            Importer un fichier (PDF, TXT, MD, CSV) — ou glissez-le ici
+          </button>
+        )}
+        {extractError && (
+          <p className="mt-2 text-xs text-destructive">
+            {extractError} Vous pouvez coller la transcription manuellement.
+          </p>
+        )}
       </div>
       <label className="text-xs text-muted-foreground space-y-1 block">
         Transcription

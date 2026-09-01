@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
-const MAX_TEXT_LENGTH = 12_000;
+const DEFAULT_MAX_TEXT_LENGTH = 12_000;
 const ACCEPTED_TYPES = [
   'application/pdf',
   'text/plain',
@@ -15,21 +15,22 @@ export interface DocumentContext {
   text: string;
 }
 
-export function useDocumentExtractor() {
+export function useDocumentExtractor(options?: { maxLength?: number }) {
+  const maxLength = options?.maxLength ?? DEFAULT_MAX_TEXT_LENGTH;
   const [document, setDocument] = useState<DocumentContext | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const truncate = (text: string): string => {
-    if (text.length <= MAX_TEXT_LENGTH) return text;
-    const truncated = text.slice(0, MAX_TEXT_LENGTH);
+    if (text.length <= maxLength) return text;
+    const truncated = text.slice(0, maxLength);
     const lastDot = truncated.lastIndexOf('.');
     const lastNewline = truncated.lastIndexOf('\n');
     const cutPoint = Math.max(lastDot, lastNewline);
     return (
-      (cutPoint > MAX_TEXT_LENGTH * 0.8 ? truncated.slice(0, cutPoint + 1) : truncated) +
-      '\n\n[… document tronqué à ~12 000 caractères]'
+      (cutPoint > maxLength * 0.8 ? truncated.slice(0, cutPoint + 1) : truncated) +
+      `\n\n[… document tronqué à ~${maxLength.toLocaleString('fr-FR')} caractères]`
     );
   };
 
@@ -101,7 +102,8 @@ export function useDocumentExtractor() {
     } finally {
       setIsExtracting(false);
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maxLength]);
 
   const removeDocument = useCallback(() => {
     setDocument(null);
