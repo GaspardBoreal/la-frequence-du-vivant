@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
-const MAX_TEXT_LENGTH = 12_000;
+const DEFAULT_MAX_TEXT_LENGTH = 12_000;
 const ACCEPTED_TYPES = [
   'application/pdf',
   'text/plain',
