@@ -119,11 +119,30 @@ const EntretienForm: React.FC<{
   onCancel: () => void;
 }> = ({ proprieteId, onDone, onCancel }) => {
   const create = useCreateEntretien(proprieteId);
-  const [titre, setTitre] = useState('ITW 01 · Découverte du jardin');
+  const [titre, setTitre] = useState(DEFAULT_TITRE);
   const [tenuLe, setTenuLe] = useState('');
   const [source, setSource] = useState('texte');
   const [transcript, setTranscript] = useState('');
   const [consentement, setConsentement] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  const {
+    document: extracted, isExtracting, error: extractError,
+    fileInputRef, processFile, removeDocument, openFilePicker, acceptedFormats,
+  } = useDocumentExtractor({ maxLength: 400_000 });
+
+  const handleFile = async (file: File | undefined | null) => {
+    if (!file) return;
+    await processFile(file);
+  };
+
+  useEffect(() => {
+    if (!extracted) return;
+    setTranscript(extracted.text);
+    setSource(extracted.fileName.toLowerCase().endsWith('.pdf') ? 'pdf' : 'texte');
+    setTitre((t) => (t === DEFAULT_TITRE ? extracted.fileName.replace(/\.[^.]+$/, '') : t));
+  }, [extracted]);
+
 
   const submit = async () => {
     if (transcript.trim().length < 200) {
