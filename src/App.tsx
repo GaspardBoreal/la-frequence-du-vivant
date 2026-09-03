@@ -113,6 +113,7 @@ const JardinBienvenue = lazyWithRetry(() => import('./pages/JardinBienvenue'));
 const MarchesDuVivantExplorationMarcheur = lazyWithRetry(() => import('./pages/MarchesDuVivantExplorationMarcheur'));
 const AdminOutilsHub = lazyWithRetry(() => import('./pages/AdminOutilsHub'));
 const AdminGpsControl = lazyWithRetry(() => import('./pages/AdminGpsControl'));
+const AdminImportParcours = lazyWithRetry(() => import('./pages/AdminImportParcours'));
 const AdminSoilRegistryAudit = lazyWithRetry(() => import('./pages/AdminSoilRegistryAudit'));
 const AdminOnboarding = lazyWithRetry(() => import('./pages/AdminOnboarding'));
 const AdminParametrage = lazyWithRetry(() => import('./pages/AdminParametrage'));
