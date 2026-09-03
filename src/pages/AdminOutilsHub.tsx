@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route } from 'lucide-react';
 
 const OUTILS = [
   {
@@ -45,6 +45,13 @@ const OUTILS = [
     description: 'Vérifie en direct les verrous qui empêchent l\'effacement des prélèvements : garde-fou serveur, journal des versions, points d\'entrée applicatifs, test à blanc.',
     icon: ShieldCheck,
     to: '/admin/outils/registre-sol',
+    active: true,
+  },
+  {
+    titre: 'Importer un parcours',
+    description: 'Un fichier KML, KMZ ou GPX devient un parcours complet : une marche par point, l\'exploration qui les regroupe et l\'événement public associé.',
+    icon: Route,
+    to: '/admin/outils/import-parcours',
     active: true,
   },
   {
