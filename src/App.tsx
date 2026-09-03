@@ -425,6 +425,11 @@ function App() {
                 <AdminGpsControl />
               </AdminAuth>
             } />
+            <Route path="/admin/outils/import-parcours" element={
+              <AdminAuth>
+                <AdminImportParcours />
+              </AdminAuth>
+            } />
             <Route path="/admin/outils/registre-sol" element={
               <AdminAuth>
                 <AdminSoilRegistryAudit />
