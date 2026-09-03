@@ -48,6 +48,13 @@ const OUTILS = [
     active: true,
   },
   {
+    titre: 'Importer un parcours',
+    description: 'Un fichier KML, KMZ ou GPX devient un parcours complet : une marche par point, l\'exploration qui les regroupe et l\'événement public associé.',
+    icon: Route,
+    to: '/admin/outils/import-parcours',
+    active: true,
+  },
+  {
     titre: 'Curation taxonomique',
     description: 'Fusionne durablement les espèces dupliquées (Lantana / Lantana camara…), par marche ou globalement. Persistant face aux synchros iNat / Pl@ntNet.',
     icon: GitMerge,
