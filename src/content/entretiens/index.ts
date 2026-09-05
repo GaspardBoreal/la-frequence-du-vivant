@@ -1,10 +1,13 @@
 import gaspardRaw from './gaspard-boreal.md?raw';
 import laurentMarchesRaw from './laurent-tripied-marches.md?raw';
 import laurentPiloterraRaw from './laurent-tripied-piloterra.md?raw';
+import laurenceRaw from './laurence-karki.md?raw';
 
 import gaspardPortrait from '@/assets/entretiens/gaspard-boreal.png.asset.json';
 import laurentPortrait from '@/assets/entretiens/laurent-tripied.jpg.asset.json';
+import laurencePortrait from '@/assets/entretiens/laurence-karki.jpg.asset.json';
 import victorPortrait from '@/assets/entretiens/victor-boixeda.jpg.asset.json';
+
 
 export const SITE_ORIGIN = 'https://la-frequence-du-vivant.com';
 export const ENTRETIENS_URL = `${SITE_ORIGIN}/entretiens`;
