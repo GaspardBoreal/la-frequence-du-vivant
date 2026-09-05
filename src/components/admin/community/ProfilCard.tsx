@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pencil, MapPin, Sparkles, CalendarPlus, Heart, Radio } from 'lucide-react';
+import { Pencil, MapPin, Sparkles, CalendarPlus, Heart, Radio, Mail, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -95,6 +96,24 @@ export const ProfilCard: React.FC<Props> = ({ profile, onEdit }) => {
           {profile.ville && (
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <MapPin className="h-3 w-3" /> {profile.ville}
+            </div>
+          )}
+          {profile.email && (
+            <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+              <Mail className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{profile.email}</span>
+              <button
+                type="button"
+                aria-label="Copier l'email"
+                className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(profile.email!);
+                  toast.success('Email copié');
+                }}
+              >
+                <Copy className="h-3 w-3" />
+              </button>
             </div>
           )}
           <div className="flex flex-wrap gap-1.5 mt-2">
