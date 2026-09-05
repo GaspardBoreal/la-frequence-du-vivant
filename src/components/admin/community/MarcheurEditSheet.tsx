@@ -40,6 +40,8 @@ export interface EditableProfile {
   college_adhesion?: 'fondateurs' | 'actifs' | 'partenaires_mecenes' | null;
   adhesion_date?: string | null;
   adhesion_numero?: number | null;
+  /** Email résolu côté admin (auth.users), jamais modifiable ici. */
+  email?: string | null;
 }
 
 export const COLLEGE_LABELS: Record<'fondateurs' | 'actifs' | 'partenaires_mecenes', string> = {

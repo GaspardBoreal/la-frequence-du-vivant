@@ -30,6 +30,7 @@ import RecherchesPanel from '@/components/admin/community/RecherchesPanel';
 import UsageDashboard from '@/components/admin/community/usage/UsageDashboard';
 import DeleteMarcheurDialog, { type DeletableMarcheur } from '@/components/admin/community/DeleteMarcheurDialog';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useAdminProfileEmails } from '@/hooks/useAdminProfileEmails';
 import { Trash2 } from 'lucide-react';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
@@ -85,6 +86,17 @@ const CommunityProfilesAdmin: React.FC = () => {
       return data;
     },
   });
+
+  const profileUserIds = useMemo(() => profiles?.map((p: any) => p.user_id as string) ?? [], [profiles]);
+  const { data: emailMap } = useAdminProfileEmails(profileUserIds);
+
+  const profilesWithEmail = useMemo(() => {
+    if (!profiles) return [];
+    return profiles.map((p: any) => ({
+      ...p,
+      email: emailMap?.get(p.user_id as string) || null,
+    }));
+  }, [profiles, emailMap]);
 
   const { data: adminUserIds } = useQuery({
     queryKey: ['community-admins-set'],
@@ -147,10 +159,10 @@ const CommunityProfilesAdmin: React.FC = () => {
 
   // Build a map of user_id → profile for display
   const profileMap = useMemo(() => {
-    const map: Record<string, { prenom: string; nom: string }> = {};
-    profiles?.forEach(p => { map[p.user_id] = { prenom: p.prenom, nom: p.nom }; });
+    const map: Record<string, { prenom: string; nom: string; email?: string | null }> = {};
+    profilesWithEmail.forEach((p: any) => { map[p.user_id] = { prenom: p.prenom, nom: p.nom, email: p.email }; });
     return map;
-  }, [profiles]);
+  }, [profilesWithEmail]);
 
   // Unique events for dropdown filter
   const uniqueEvents = useMemo(() => {
@@ -171,7 +183,7 @@ const CommunityProfilesAdmin: React.FC = () => {
       const profile = profileMap[p.user_id];
       const fullName = profile ? `${profile.prenom} ${profile.nom}`.toLowerCase() : '';
       const q = marcheursSearch.toLowerCase();
-      const matchSearch = !q || fullName.includes(q);
+      const matchSearch = !q || `${fullName} ${profile?.email || ''}`.toLowerCase().includes(q);
       const matchEvent = eventFilter === 'all' || p.marche_events?.id === eventFilter;
       return matchSearch && matchEvent;
     });
@@ -213,9 +225,9 @@ const CommunityProfilesAdmin: React.FC = () => {
     },
   });
 
-  const filtered = profiles?.filter(p => {
+  const filtered = profilesWithEmail.filter((p: any) => {
     const q = search.toLowerCase();
-    const matchSearch = !q || `${p.prenom} ${p.nom} ${p.ville || ''}`.toLowerCase().includes(q);
+    const matchSearch = !q || `${p.prenom} ${p.nom} ${p.ville || ''} ${p.email || ''}`.toLowerCase().includes(q);
     const matchAdmin = !adminOnly || adminUserIds?.has(p.user_id);
     const matchRole = !roleFilter || p.role === roleFilter;
     return matchSearch && matchAdmin && matchRole;
@@ -344,7 +356,7 @@ const CommunityProfilesAdmin: React.FC = () => {
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par nom, prénom, ville..."
+                placeholder="Rechercher par nom, prénom, ville, email..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-10"
@@ -363,6 +375,7 @@ const CommunityProfilesAdmin: React.FC = () => {
                       <TableHead>Inscription</TableHead>
                       <TableHead>Marches</TableHead>
                       <TableHead>Ville</TableHead>
+                      <TableHead>Email</TableHead>
                       <TableHead>Formation</TableHead>
                       <TableHead>Certification</TableHead>
                       <TableHead className="text-right">Action</TableHead>
@@ -406,6 +419,9 @@ const CommunityProfilesAdmin: React.FC = () => {
                           </TableCell>
                           <TableCell className="font-mono">{profile.marches_count}</TableCell>
                           <TableCell>{profile.ville || '—'}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground break-all max-w-[220px]">
+                            {profile.email || '—'}
+                          </TableCell>
                           <TableCell>
                             <Button
                               variant={profile.formation_validee ? 'default' : 'outline'}
@@ -458,7 +474,7 @@ const CommunityProfilesAdmin: React.FC = () => {
                     })}
                     {filtered?.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                           Aucun profil trouvé.
                         </TableCell>
                       </TableRow>

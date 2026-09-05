@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminProfileEmails } from '@/hooks/useAdminProfileEmails';
 import ProfilsImpactDashboard from './ProfilsImpactDashboard';
 import ProfilsMosaique from './ProfilsMosaique';
 import MarcheurEditSheet, { type EditableProfile } from './MarcheurEditSheet';
@@ -77,9 +78,19 @@ export const ProfilsPanel: React.FC<Props> = ({
     enabled: scope.type === 'all' || !!participantIds,
   });
 
-  const profilesList = useMemo(
-    () => (profiles ?? []) as unknown as (EditableProfile & { marches_count?: number })[],
+  const profileUserIds = useMemo(
+    () => (profiles ?? []).map((p: any) => p.user_id as string),
     [profiles],
+  );
+  const { data: emailMap } = useAdminProfileEmails(profileUserIds);
+
+  const profilesList = useMemo(
+    () =>
+      (profiles ?? []).map((p: any) => ({
+        ...p,
+        email: emailMap?.get(p.user_id as string) || null,
+      })) as unknown as (EditableProfile & { marches_count?: number })[],
+    [profiles, emailMap],
   );
 
   return (

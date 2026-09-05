@@ -107,7 +107,7 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
     const q = search.trim().toLowerCase();
     return enriched.filter(p => {
       if (q) {
-        const hay = `${p.prenom} ${p.nom} ${p.ville || ''} ${p.csp_precision || ''}`.toLowerCase();
+        const hay = `${p.prenom} ${p.nom} ${p.ville || ''} ${p.email || ''} ${p.csp_precision || ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       if (role !== 'all' && p.role !== role) return false;
@@ -155,7 +155,7 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
         <div className="relative md:col-span-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher (nom, ville, métier précis…)"
+            placeholder="Rechercher (nom, ville, email, métier précis…)"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-10"
