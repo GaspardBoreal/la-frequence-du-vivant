@@ -1,10 +1,13 @@
 import gaspardRaw from './gaspard-boreal.md?raw';
 import laurentMarchesRaw from './laurent-tripied-marches.md?raw';
 import laurentPiloterraRaw from './laurent-tripied-piloterra.md?raw';
+import laurenceRaw from './laurence-karki.md?raw';
 
 import gaspardPortrait from '@/assets/entretiens/gaspard-boreal.png.asset.json';
 import laurentPortrait from '@/assets/entretiens/laurent-tripied.jpg.asset.json';
+import laurencePortrait from '@/assets/entretiens/laurence-karki.jpg.asset.json';
 import victorPortrait from '@/assets/entretiens/victor-boixeda.jpg.asset.json';
+
 
 export const SITE_ORIGIN = 'https://la-frequence-du-vivant.com';
 export const ENTRETIENS_URL = `${SITE_ORIGIN}/entretiens`;
@@ -108,7 +111,10 @@ const LAURENCE: EntretienPerson = {
   name: 'Laurence Karki',
   role: "Vice-présidente et ambassadrice de La Fréquence du Vivant",
   sameAs: [],
+  portraitUrl: laurencePortrait.url,
+  portraitAlt: "Portrait de Laurence Karki, vice-présidente de La Fréquence du Vivant, cueillant des prunes dans un verger",
 };
+
 
 const VICTOR: EntretienPerson = {
   name: 'Victor Boixeda',
@@ -246,26 +252,49 @@ export const entretiens: Entretien[] = [
     laurentPiloterraRaw,
   ),
 
+  build(
+    {
+      slug: 'laurence-karki-animer-communaute-vivant',
+      title: 'Comment animer une communauté autour du vivant ? Entretien avec Laurence Karki',
+      seoTitle: 'Animer une communauté autour du vivant — Laurence Karki',
+      seoDescription:
+        "Laurence Karki, vice-présidente de La Fréquence du Vivant, sur l'animation d'une communauté de marcheurs, les haïkus en marche écopoétique et le parcours vers le rôle d'ambassadrice.",
+      person: LAURENCE,
+      interviewer: VICTOR,
+      publishedAt: '2026-09-05',
+      updatedAt: '2026-09-05',
+      keyPoints: [
+        "Les Marches du Vivant réunissent trois engagements de Laurence Karki : la marche, l'écriture et la biodiversité.",
+        "Le marcheur bascule quand il cesse d'enchaîner les kilomètres pour s'arrêter, observer, écouter et photographier ce qui l'entoure.",
+        "Trente ans de ressources humaines nourrissent une écoute attentive et la prise en compte des personnalités au sein d'un groupe hétérogène.",
+        "Les marcheurs emportent un carnet pour noter les « mots du jour » et écrivent un haïku au retour de marche, pendant le temps de partage.",
+        "On devient ambassadeur après un certain nombre de marches, une formation à l'application, et la validation par les ambassadeurs déjà en place.",
+      ],
+      entities: [
+        'ressources humaines',
+        'La Comédie des Mondes Hybrides',
+        'ambassadrice',
+        'haïku',
+        'marche écopoétique',
+        'biodiversité',
+        'science participative',
+      ],
+      internalLinks: [
+        { label: 'Association La Fréquence du Vivant', to: '/marches-du-vivant/association' },
+        { label: 'Les Marches du Vivant', to: '/marches-du-vivant' },
+        { label: 'Adhérer à l’association', to: '/adhesion' },
+      ],
+      related: [
+        'gaspard-boreal-naissance-la-frequence-du-vivant',
+        'laurent-tripied-marches-du-vivant-frequence-jardin',
+      ],
+      status: 'published',
+    },
+    laurenceRaw,
+  ),
+
   // Entretiens annoncés, textes en cours de relecture.
-  {
-    slug: 'laurence-karki-animer-communaute-vivant',
-    title: 'Comment animer une communauté autour du vivant ? Entretien avec Laurence Karki',
-    seoTitle: 'Animer une communauté autour du vivant — Laurence Karki',
-    seoDescription:
-      "Laurence Karki, vice-présidente de La Fréquence du Vivant, sur l'animation d'une communauté de marcheurs et le parcours vers le rôle d'ambassadrice.",
-    chapo:
-      "Vice-présidente et ambassadrice de La Fréquence du Vivant, Laurence Karki revient sur l'animation d'un collectif hétérogène, l'accueil des marcheurs sans connaissance naturaliste, et le chemin qui mène du statut de marcheur à celui d'ambassadeur.",
-    person: LAURENCE,
-    publishedAt: '2026-09-08',
-    updatedAt: '2026-08-25',
-    keyPoints: [],
-    entities: ['ressources humaines', 'La Comédie des Mondes Hybrides', 'ambassadeur', 'sentinelle'],
-    internalLinks: [{ label: 'Association La Fréquence du Vivant', to: '/marches-du-vivant/association' }],
-    related: ['gaspard-boreal-naissance-la-frequence-du-vivant'],
-    body: '',
-    questions: [],
-    status: 'a-venir',
-  },
+
   {
     slug: 'victor-boixeda-huit-mois-marches-du-vivant',
     title: 'Huit mois avec Les Marches du Vivant : le retour d’expérience de Victor Boixeda',
