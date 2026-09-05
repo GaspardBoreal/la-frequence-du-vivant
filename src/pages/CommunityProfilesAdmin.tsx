@@ -30,6 +30,7 @@ import RecherchesPanel from '@/components/admin/community/RecherchesPanel';
 import UsageDashboard from '@/components/admin/community/usage/UsageDashboard';
 import DeleteMarcheurDialog, { type DeletableMarcheur } from '@/components/admin/community/DeleteMarcheurDialog';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useAdminProfileEmails } from '@/hooks/useAdminProfileEmails';
 import { Trash2 } from 'lucide-react';
 
 const roleConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
