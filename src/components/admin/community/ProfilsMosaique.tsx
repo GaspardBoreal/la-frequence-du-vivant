@@ -107,7 +107,7 @@ export const ProfilsMosaique: React.FC<Props> = ({ profiles, onEdit }) => {
     const q = search.trim().toLowerCase();
     return enriched.filter(p => {
       if (q) {
-        const hay = `${p.prenom} ${p.nom} ${p.ville || ''} ${p.csp_precision || ''}`.toLowerCase();
+        const hay = `${p.prenom} ${p.nom} ${p.ville || ''} ${p.email || ''} ${p.csp_precision || ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       if (role !== 'all' && p.role !== role) return false;
