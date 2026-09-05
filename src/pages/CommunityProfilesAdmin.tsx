@@ -225,9 +225,9 @@ const CommunityProfilesAdmin: React.FC = () => {
     },
   });
 
-  const filtered = profiles?.filter(p => {
+  const filtered = profilesWithEmail.filter((p: any) => {
     const q = search.toLowerCase();
-    const matchSearch = !q || `${p.prenom} ${p.nom} ${p.ville || ''}`.toLowerCase().includes(q);
+    const matchSearch = !q || `${p.prenom} ${p.nom} ${p.ville || ''} ${p.email || ''}`.toLowerCase().includes(q);
     const matchAdmin = !adminOnly || adminUserIds?.has(p.user_id);
     const matchRole = !roleFilter || p.role === roleFilter;
     return matchSearch && matchAdmin && matchRole;
