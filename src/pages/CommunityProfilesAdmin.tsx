@@ -87,6 +87,17 @@ const CommunityProfilesAdmin: React.FC = () => {
     },
   });
 
+  const profileUserIds = useMemo(() => profiles?.map((p: any) => p.user_id as string) ?? [], [profiles]);
+  const { data: emailMap } = useAdminProfileEmails(profileUserIds);
+
+  const profilesWithEmail = useMemo(() => {
+    if (!profiles) return [];
+    return profiles.map((p: any) => ({
+      ...p,
+      email: emailMap?.get(p.user_id as string) || null,
+    }));
+  }, [profiles, emailMap]);
+
   const { data: adminUserIds } = useQuery({
     queryKey: ['community-admins-set'],
     queryFn: async () => {
