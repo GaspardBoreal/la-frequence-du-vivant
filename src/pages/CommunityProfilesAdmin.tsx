@@ -159,10 +159,10 @@ const CommunityProfilesAdmin: React.FC = () => {
 
   // Build a map of user_id → profile for display
   const profileMap = useMemo(() => {
-    const map: Record<string, { prenom: string; nom: string }> = {};
-    profiles?.forEach(p => { map[p.user_id] = { prenom: p.prenom, nom: p.nom }; });
+    const map: Record<string, { prenom: string; nom: string; email?: string | null }> = {};
+    profilesWithEmail.forEach((p: any) => { map[p.user_id] = { prenom: p.prenom, nom: p.nom, email: p.email }; });
     return map;
-  }, [profiles]);
+  }, [profilesWithEmail]);
 
   // Unique events for dropdown filter
   const uniqueEvents = useMemo(() => {
@@ -183,7 +183,7 @@ const CommunityProfilesAdmin: React.FC = () => {
       const profile = profileMap[p.user_id];
       const fullName = profile ? `${profile.prenom} ${profile.nom}`.toLowerCase() : '';
       const q = marcheursSearch.toLowerCase();
-      const matchSearch = !q || fullName.includes(q);
+      const matchSearch = !q || `${fullName} ${profile?.email || ''}`.toLowerCase().includes(q);
       const matchEvent = eventFilter === 'all' || p.marche_events?.id === eventFilter;
       return matchSearch && matchEvent;
     });
