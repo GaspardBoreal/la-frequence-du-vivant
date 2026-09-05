@@ -419,6 +419,9 @@ const CommunityProfilesAdmin: React.FC = () => {
                           </TableCell>
                           <TableCell className="font-mono">{profile.marches_count}</TableCell>
                           <TableCell>{profile.ville || '—'}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground break-all max-w-[220px]">
+                            {profile.email || '—'}
+                          </TableCell>
                           <TableCell>
                             <Button
                               variant={profile.formation_validee ? 'default' : 'outline'}
