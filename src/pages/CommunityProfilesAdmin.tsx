@@ -420,7 +420,20 @@ const CommunityProfilesAdmin: React.FC = () => {
                           <TableCell className="font-mono">{profile.marches_count}</TableCell>
                           <TableCell>{profile.ville || '—'}</TableCell>
                           <TableCell className="text-xs text-muted-foreground break-all max-w-[220px]">
-                            {profile.email || '—'}
+                            {profile.email ? (
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-1 hover:text-foreground transition-colors text-left"
+                                title="Copier l'email"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(profile.email!);
+                                  toast.success('Email copié');
+                                }}
+                              >
+                                <span className="break-all">{profile.email}</span>
+                                <Copy className="h-3 w-3 flex-shrink-0" />
+                              </button>
+                            ) : '—'}
                           </TableCell>
                           <TableCell>
                             <Button
