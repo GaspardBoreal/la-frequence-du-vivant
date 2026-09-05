@@ -78,9 +78,19 @@ export const ProfilsPanel: React.FC<Props> = ({
     enabled: scope.type === 'all' || !!participantIds,
   });
 
-  const profilesList = useMemo(
-    () => (profiles ?? []) as unknown as (EditableProfile & { marches_count?: number })[],
+  const profileUserIds = useMemo(
+    () => (profiles ?? []).map((p: any) => p.user_id as string),
     [profiles],
+  );
+  const { data: emailMap } = useAdminProfileEmails(profileUserIds);
+
+  const profilesList = useMemo(
+    () =>
+      (profiles ?? []).map((p: any) => ({
+        ...p,
+        email: emailMap?.get(p.user_id as string) || null,
+      })) as unknown as (EditableProfile & { marches_count?: number })[],
+    [profiles, emailMap],
   );
 
   return (
