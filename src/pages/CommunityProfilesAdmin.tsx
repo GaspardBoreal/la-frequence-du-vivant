@@ -356,7 +356,7 @@ const CommunityProfilesAdmin: React.FC = () => {
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par nom, prénom, ville..."
+                placeholder="Rechercher par nom, prille, ville, email..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-10"
@@ -375,6 +375,7 @@ const CommunityProfilesAdmin: React.FC = () => {
                       <TableHead>Inscription</TableHead>
                       <TableHead>Marches</TableHead>
                       <TableHead>Ville</TableHead>
+                      <TableHead>Email</TableHead>
                       <TableHead>Formation</TableHead>
                       <TableHead>Certification</TableHead>
                       <TableHead className="text-right">Action</TableHead>
