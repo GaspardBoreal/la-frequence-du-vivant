@@ -9670,6 +9670,13 @@ export type Database = {
           deleted_count: number
         }[]
       }
+      admin_get_profile_emails: {
+        Args: { user_ids: string[] }
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
       admin_list_iot_integrations: {
         Args: { p_propriete_id: string }
         Returns: {
