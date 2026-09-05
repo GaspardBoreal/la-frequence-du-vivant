@@ -111,7 +111,10 @@ const LAURENCE: EntretienPerson = {
   name: 'Laurence Karki',
   role: "Vice-présidente et ambassadrice de La Fréquence du Vivant",
   sameAs: [],
+  portraitUrl: laurencePortrait.url,
+  portraitAlt: "Portrait de Laurence Karki, vice-présidente de La Fréquence du Vivant, cueillant des prunes dans un verger",
 };
+
 
 const VICTOR: EntretienPerson = {
   name: 'Victor Boixeda',
