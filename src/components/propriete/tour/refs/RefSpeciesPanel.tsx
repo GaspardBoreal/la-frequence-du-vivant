@@ -5,6 +5,7 @@ import { SpeciesName } from '@/components/species/SpeciesName';
 import { speciesLatinBase } from '@/lib/speciesLatinBase';
 import { normRef, type TourRef } from './types';
 import type { TourRefIndex } from './useTourRefIndex';
+import SpeciesPhotoViewer from './SpeciesPhotoViewer';
 
 const RefSpeciesPanel: React.FC<{ refItem: TourRef; index: TourRefIndex }> = ({ refItem, index }) => {
   const latin = refItem.latin || refItem.label;
@@ -13,12 +14,24 @@ const RefSpeciesPanel: React.FC<{ refItem: TourRef; index: TourRefIndex }> = ({ 
     index.species.find((s) => normRef(s.commonName || '') === normRef(refItem.label));
 
   const scientific = sp?.scientificName || latin;
-  const photo = sp?.photos?.[0];
+  const photos = sp?.photos?.filter(Boolean) ?? [];
+  const photo = photos[0];
+  const [zoomIndex, setZoomIndex] = React.useState<number | null>(null);
+
+  // « Famille » vaut parfois un identifiant iNaturalist numérique : on le masque.
+  const family = sp?.family && !/^\d+$/.test(sp.family.trim()) ? sp.family : null;
+  const lastObserved = sp?.lastObserved || null;
 
   return (
     <div className="space-y-4">
       <div className="flex items-start gap-3">
-        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted">
+        <button
+          type="button"
+          disabled={!photo}
+          onClick={() => photo && setZoomIndex(0)}
+          aria-label={photo ? 'Agrandir la photo' : undefined}
+          className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default enabled:cursor-zoom-in"
+        >
           {photo ? (
             <img src={photo} alt={sp?.commonName || scientific} loading="lazy" className="h-full w-full object-cover" />
           ) : (
@@ -29,7 +42,7 @@ const RefSpeciesPanel: React.FC<{ refItem: TourRef; index: TourRefIndex }> = ({ 
               className="!h-full !w-full !rounded-none [&_img]:!h-full [&_img]:!w-full"
             />
           )}
-        </div>
+        </button>
         <div className="min-w-0 flex-1">
           <SpeciesName
             scientificName={scientific}
@@ -54,13 +67,14 @@ const RefSpeciesPanel: React.FC<{ refItem: TourRef; index: TourRefIndex }> = ({ 
           <div className="rounded-lg border border-border bg-muted/40 p-2.5">
             <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Dernière fois</div>
             <div className="font-semibold">
-              {sp.lastSeen ? new Date(sp.lastSeen).toLocaleDateString('fr-FR') : '—'}
+              {lastObserved ? new Date(lastObserved).toLocaleDateString('fr-FR') : '—'}
             </div>
+            <div className="text-[10px] text-muted-foreground">date d'observation</div>
           </div>
-          {sp.family && (
+          {family && (
             <div className="col-span-2 rounded-lg border border-border bg-muted/40 p-2.5">
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Famille</div>
-              <div className="font-semibold">{sp.family}</div>
+              <div className="font-semibold">{family}</div>
             </div>
           )}
         </div>
@@ -70,6 +84,16 @@ const RefSpeciesPanel: React.FC<{ refItem: TourRef; index: TourRefIndex }> = ({ 
         <p className="text-sm text-muted-foreground">
           Cette espèce n'a pas encore été relevée sur le lieu : le tour vous invite à la chercher.
         </p>
+      )}
+
+      {zoomIndex !== null && photo && (
+        <SpeciesPhotoViewer
+          photos={photos}
+          index={zoomIndex}
+          alt={sp?.commonName || scientific}
+          onIndexChange={setZoomIndex}
+          onClose={() => setZoomIndex(null)}
+        />
       )}
 
       <a

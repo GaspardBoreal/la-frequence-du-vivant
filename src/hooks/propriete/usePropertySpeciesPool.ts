@@ -103,6 +103,37 @@ const resolvePhotos = (sp: RpcSpecies): string[] => {
   return out;
 };
 
+/**
+ * Date de la dernière observation RÉELLE d'une espèce : maximum des dates
+ * portées par les relevés marcheurs et par les attributions iNaturalist.
+ * `last_seen` renvoyé par la RPC vaut la date de collecte du snapshot : il ne
+ * doit jamais être affiché comme une date d'observation.
+ */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
+const resolveLastObserved = (sp: RpcSpecies): string | null => {
+  let best: string | null = null;
+  const push = (raw: any) => {
+    if (typeof raw !== 'string' || !ISO_DATE.test(raw)) return;
+    if (!best || raw > best) best = raw;
+  };
+  const mAttrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
+  for (const a of mAttrs) push(a?.observation_date || a?.date || a?.observationDate);
+  const groups: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
+  for (const g of groups) {
+    const list: any[] = Array.isArray(g) ? g : [g];
+    for (const a of list) {
+      push(
+        a?.observation_date ||
+          a?.observationDate ||
+          a?.observedOn ||
+          a?.observed_on ||
+          a?.date,
+      );
+    }
+  }
+  return best;
+};
+
 const mapKingdom = (k?: string | null): BiodiversitySpecies['kingdom'] => {
   const s = (k || '').toLowerCase();
   if (s.includes('plant')) return 'Plantae';
@@ -448,6 +479,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
         iconic: string | null;
         count: number;
         lastSeen: string | null;
+        lastObserved: string | null;
         photos: string[];
         seen: Set<string>;
       }
@@ -468,6 +500,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           iconic: sp.iconic_taxon,
           count: sp.observations || 0,
           lastSeen: sp.last_seen,
+          lastObserved: resolveLastObserved(sp),
           photos: [...photos],
           seen,
         });
@@ -484,6 +517,8 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
         if (!existing.iconic && sp.iconic_taxon) existing.iconic = sp.iconic_taxon;
         if (!existing.kingdom && sp.kingdom) existing.kingdom = sp.kingdom;
         if ((sp.last_seen || '') > (existing.lastSeen || '')) existing.lastSeen = sp.last_seen;
+        const obs = resolveLastObserved(sp);
+        if ((obs || '') > (existing.lastObserved || '')) existing.lastObserved = obs;
       }
     }
     return Array.from(bucket.values());
@@ -509,6 +544,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           iconicTaxon: s.iconic || undefined,
           observations: s.count,
           lastSeen: s.lastSeen || '',
+          lastObserved: s.lastObserved || undefined,
           photos: s.photos,
           source: 'inaturalist',
           attributions: [],

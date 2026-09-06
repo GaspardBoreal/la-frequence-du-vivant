@@ -75,6 +75,9 @@ export interface BiodiversitySpecies {
   iconicTaxon?: string;
   observations: number;
   lastSeen: string;
+  /** Date de la dernière OBSERVATION réelle (marcheur ou iNaturalist), à
+   *  distinguer de `lastSeen` qui peut refléter la date de collecte du snapshot. */
+  lastObserved?: string;
   photos?: string[];
   photoData?: BirdPhoto; // Nouvelle propriété pour les métadonnées photo
   audioUrl?: string;
