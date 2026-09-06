@@ -232,7 +232,17 @@ Deno.serve(async (req) => {
     if (logErr) console.error('[send-carnet-terrain] historique non enregistré:', logErr.message);
 
     if (status === 'failed') {
-      return json({ error: "L'envoi a échoué", detail: results[0]?.error ?? null, status }, 502);
+      const detail = results[0]?.error ?? null;
+      return json(
+        {
+          error: detail
+            ? `L'envoi a échoué (motif du service d'emails : ${detail})`
+            : "L'envoi a échoué",
+          detail,
+          status,
+        },
+        502,
+      );
     }
 
     return json({
