@@ -8327,6 +8327,7 @@ export type Database = {
           id: string
           moment: string | null
           order_index: number
+          refs: Json
           schema_key: string | null
           source: string
           titre: string
@@ -8342,6 +8343,7 @@ export type Database = {
           id?: string
           moment?: string | null
           order_index?: number
+          refs?: Json
           schema_key?: string | null
           source?: string
           titre: string
@@ -8357,6 +8359,7 @@ export type Database = {
           id?: string
           moment?: string | null
           order_index?: number
+          refs?: Json
           schema_key?: string | null
           source?: string
           titre?: string
