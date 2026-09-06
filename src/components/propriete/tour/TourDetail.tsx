@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Mail, NotebookPen, Plus, Sparkles, Star, Sun, Trash2 } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Clock, Mail, NotebookPen, Plus, Sparkles, Star, Sun, Trash2, X } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
