@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import TourStatusBadge from './TourStatusBadge';
 import TourActionRow from './TourActionRow';
+import CarnetTerrainDialog from './carnet/CarnetTerrainDialog';
 import {
   TOUR_STATUTS,
   useTourActions,
@@ -36,6 +37,7 @@ import {
 
 interface Props {
   tour: ProprieteTour;
+  proprieteNom: string;
   onBack: () => void;
   onUpdateTour: (id: string, patch: Partial<ProprieteTour>) => Promise<void> | void;
   onDeleteTour: (id: string) => Promise<void> | void;
