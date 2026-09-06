@@ -517,6 +517,8 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
         if (!existing.iconic && sp.iconic_taxon) existing.iconic = sp.iconic_taxon;
         if (!existing.kingdom && sp.kingdom) existing.kingdom = sp.kingdom;
         if ((sp.last_seen || '') > (existing.lastSeen || '')) existing.lastSeen = sp.last_seen;
+        const obs = resolveLastObserved(sp);
+        if ((obs || '') > (existing.lastObserved || '')) existing.lastObserved = obs;
       }
     }
     return Array.from(bucket.values());
