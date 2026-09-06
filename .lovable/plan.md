@@ -1,66 +1,31 @@
-# Faire ressortir l'entretien de Laurence Karki en premier
+# Corriger la création d'un Tour de Jardin sur « Maison sous Blossac »
 
-Objectif : quand on tape « Laurence Karki » sur Google, Bing ou dans une IA (ChatGPT, Perplexity, Gemini), la page de son entretien sur La Fréquence du Vivant arrive en tête.
+## Ce qui se passe
 
-## Le vrai blocage aujourd'hui
+Le message « Failed to send a request » ne vient pas de vos droits : c'est l'assistant de proposition de tour qui n'existe pas encore côté serveur. Je l'ai écrit hier, mais sa mise en ligne n'a pas abouti — le serveur répond « fonction introuvable » quand la page l'appelle. Le bouton ne peut donc rien faire, quel que soit l'utilisateur.
 
-Le site est une application qui se construit dans le navigateur. La page de Laurence existe bien, mais le fichier envoyé au robot est une coquille vide : son nom, ses réponses, sa photo n'y sont pas. Google sait exécuter le code et finit par voir le contenu, avec du retard. Les robots des IA génératives, eux, ne l'exécutent pas : pour eux, la page est aujourd'hui **vide**. C'est la raison numéro un pour laquelle elle ne peut pas ressortir dans les réponses d'IA.
+Vérifications faites côté droits, pour lever le doute :
 
-Deuxième point : le titre affiché dans les résultats est « Animer une communauté autour du vivant — Laurence Karki ». Pour une recherche sur un nom, le nom doit venir en premier.
+- Sur « Maison sous Blossac », vous êtes bien rattaché en tant que **propriétaire** (avec Laurence Karki et l'équipe Ver de Terre Production ; Vincent Levavasseur et Olivier Lépine en prestataires, Victor Boixeda en marcheur historique).
+- La règle d'accès aux tours de jardin est déjà celle que vous demandez : **toute personne rattachée à la propriété**, quel que soit son rôle, peut créer, modifier et supprimer les tours et leurs actions — plus le marcheur principal et les administrateurs. Rien à changer de ce côté.
 
-Troisième point : « Laurence Karki » n'apparaît quasiment nulle part ailleurs sur le site, et la fiche d'identité de la page ne relie son nom à aucun autre profil public. Un moteur ne peut pas confirmer qu'il s'agit bien d'une même personne identifiable.
+## Ce que je propose
 
-## Ce que je propose de faire
+### 1. Remettre l'assistant en ligne
 
-### 1. Rendre la page lisible sans navigateur (le geste décisif)
+Redéployer la fonction de proposition, puis vérifier qu'elle répond vraiment : un appel direct doit renvoyer « accès refusé » au lieu de « introuvable ». C'est le test qui prouve que la mise en ligne a réussi, et non un simple message d'espoir.
 
-À la fabrication du site, générer une vraie page HTML complète pour chaque entretien : titre, chapô, photo, questions, réponses, fiche d'identité. Le visiteur ne verra aucune différence ; le robot, lui, recevra le texte immédiatement. C'est ce qui ouvre la porte aux IA génératives.
+### 2. Un message d'erreur qui dit la vérité
 
-### 2. Mettre son nom devant
+Aujourd'hui, toute panne s'affiche « Failed to send a request », en anglais et sans indice. Je remplace par des messages en français qui distinguent les trois cas : assistant momentanément indisponible, crédits d'intelligence artificielle épuisés, ou trop de demandes en même temps.
 
-- Titre de résultat : « Laurence Karki — vice-présidente et ambassadrice de La Fréquence du Vivant ».
-- Description : une phrase qui commence par « Laurence Karki, … » et dit qui elle est avant de dire ce qu'elle raconte.
-- Titre visible en haut de page : ajouter son nom et sa fonction juste sous le titre de l'entretien, en toutes lettres.
+### 3. Ne pas rester bloqué sur l'assistant
 
-### 3. Une page « Qui est Laurence Karki »
-
-Créer une page dédiée à la personne (adresse du type `/personnes/laurence-karki`) : portrait, fonction, en deux paragraphes son rôle dans l'association, ses citations, la liste de ses marches et de ses contributions, puis un lien bien visible vers l'entretien complet. C'est le format que les moteurs et les IA préfèrent pour une recherche sur un nom : une page dont le sujet **est** la personne, pas un article où elle intervient.
-
-### 4. Renforcer les signaux d'identité
-
-- Compléter la fiche d'identité invisible de la page (celle que lisent les moteurs) avec ses liens publics : LinkedIn, profil iNaturalist, site personnel, page d'auteur — tout ce qu'elle accepte de rendre public. **J'ai besoin de ces liens de sa part** : sans eux, ce point reste incomplet.
-- Ajouter son nom aux endroits du site où elle intervient déjà (page association, pages de marches auxquelles elle a participé, index des entretiens), avec à chaque fois un lien vers sa page.
-
-### 5. Aider explicitement les IA
-
-- Enrichir le fichier destiné aux IA (`llms.txt`) : une entrée dédiée à Laurence Karki avec ses citations exactes, pas seulement un résumé.
-- Ajouter la page « personne » et une date de mise à jour fraîche au plan du site.
-
-### 6. Ce qui ne dépend pas du site (mais qui pèse lourd)
-
-Un moteur classe d'abord ce que d'autres confirment. Pour une recherche sur un nom, trois actions extérieures valent souvent plus que dix réglages techniques :
-
-- Que Laurence mette le lien de son entretien dans son profil LinkedIn (section « À propos » ou publication épinglée).
-- Une publication LinkedIn de l'association et une de Laurence, avec le lien.
-- Le lien depuis les sites partenaires qui la mentionnent déjà, s'il y en a.
-
-Ces gestes-là, je ne peux pas les faire à sa place — mais je peux préparer les textes.
-
-## Ce qu'il faut savoir sur les délais
-
-Une fois en ligne : Google met en général deux à six semaines pour reclasser une page sur un nom propre. Les IA génératives dépendent de leurs propres cycles de collecte, souvent plus lents encore. Si un homonyme plus visible existe, la première place demande les signaux extérieurs du point 6.
+Vérifier que la création **manuelle** d'un tour fonctionne indépendamment, pour que la page reste utilisable même si l'assistant tombe. Si le bouton manuel est absent ou fragile sur cette propriété, je le corrige.
 
 ## Détail technique
 
-- **Pré-rendu** : ajouter une étape de génération statique au build (plugin Vite de prerender ou script post-build) pour les routes `/entretiens`, `/entretiens/:slug` et `/personnes/:slug`. Les fichiers produits sont servis avant la réécriture `/(.*) → /index.html` de `vercel.json`, donc rien d'autre à changer côté hébergement. À valider : `curl` sur l'URL en production doit renvoyer le texte de l'entretien.
-- `src/content/entretiens/index.ts` : `seoTitle` et `seoDescription` de `laurence-karki-animer-communaute-vivant` réécrits nom en tête ; `LAURENCE.sameAs` renseigné dès réception des liens.
-- `src/pages/EntretienDetail.tsx` : nom + fonction rendus dans un sous-titre textuel sous le `<h1>` ; balisage `Person` enrichi (`sameAs`, `worksFor`, `knowsAbout` depuis `entities`, `alumniOf` si pertinent) ; ajouter un balisage `speakable` sur les citations.
-- Nouvelle page `src/pages/PersonneDetail.tsx` + route `/personnes/:slug`, alimentée par les données `EntretienPerson` existantes (aucun doublon de contenu) ; balisage `ProfilePage` + `Person` avec `mainEntity`, canonical propre, et lien réciproque avec l'entretien.
-- `public/sitemap.xml` : ajout de `/personnes/laurence-karki`, `lastmod` actualisé. `public/llms.txt` : entrée « personne » distincte de l'entrée « entretien ».
-- Aucune URL publique existante n'est modifiée.
-
-## Ce dont j'ai besoin de vous
-
-1. Les liens publics de Laurence (LinkedIn, iNaturalist, autre) pour la fiche d'identité.
-2. Son accord pour une page dédiée à son nom, avec sa photo en grand.
-3. Confirmation que je peux ajouter son nom sur les pages de marches auxquelles elle a participé.
+- Cause confirmée : `POST /functions/v1/propriete-tour-suggest` renvoie `404 NOT_FOUND` alors que `propriete-chat` renvoie bien `401` — la fonction n'a jamais été déployée. Le nom invoqué dans `useProprieteTours.ts` est correct ; l'absence d'entrée dans `supabase/config.toml` n'est pas en cause (une trentaine de fonctions en production n'y figurent pas non plus).
+- Action : redéploiement de `supabase/functions/propriete-tour-suggest`, puis contrôle par `curl` du passage de `404` à `401`, et test réel du bouton depuis la propriété `745b455f-dacf-4e8e-8e10-9ed150f4f76e`.
+- Droits vérifiés, aucune migration nécessaire : `can_access_propriete()` couvre `main_walker_id`, toute ligne de `propriete_marcheurs` (tous rôles) et les administrateurs ; les politiques `ALL` de `propriete_tours` et `propriete_tour_actions` s'appuient dessus en `USING` comme en `WITH CHECK`.
+- `useProprieteTours.ts` : dans `useSuggestTour`, lire l'erreur réelle via `FunctionsHttpError` (`error.context.text()`) au lieu du message générique, et traduire les statuts 402 / 403 / 429 / 404.
