@@ -107,7 +107,9 @@ Deno.serve(async (req) => {
     if (!prop) return json({ error: "Vous n'avez pas accès à ce jardin" }, 403);
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    const fromAddress = Deno.env.get('FROM_EMAIL_ADDRESS') || Deno.env.get('SMTP_FROM');
+    // Le carnet part du sous-domaine vérifié dans Resend (mail.la-frequence-du-vivant.com)
+    const fromAddress =
+      Deno.env.get('CARNET_FROM_EMAIL') || Deno.env.get('FROM_EMAIL_ADDRESS') || Deno.env.get('SMTP_FROM');
     if (!resendApiKey || !fromAddress) {
       return json({ error: "L'envoi d'emails n'est pas configuré sur le site" }, 500);
     }
