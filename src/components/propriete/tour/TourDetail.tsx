@@ -55,6 +55,7 @@ const fmtDate = (d: string) =>
 
 export const TourDetail: React.FC<Props> = ({
   tour,
+  proprieteId,
   proprieteNom,
   onBack,
   onUpdateTour,
@@ -63,6 +64,7 @@ export const TourDetail: React.FC<Props> = ({
   enriching,
 }) => {
   const { actions, addAction, updateAction, removeAction, setAllRetenues, reorder } = useTourActions(tour.id);
+  const { data: envois = [] } = useCarnetEnvois(tour.id);
   const [newTitle, setNewTitle] = React.useState('');
   const [carnetOpen, setCarnetOpen] = React.useState(false);
   const [notes, setNotes] = React.useState(tour.notes ?? '');
