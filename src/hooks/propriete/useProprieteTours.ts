@@ -23,6 +23,8 @@ export interface ProprieteTour {
   potentiels: string[];
   notes: string | null;
   source: string;
+  /** Dernière édition du carnet de terrain (PDF). */
+  carnet_edite_at?: string | null;
   created_at: string;
   updated_at: string;
 }
