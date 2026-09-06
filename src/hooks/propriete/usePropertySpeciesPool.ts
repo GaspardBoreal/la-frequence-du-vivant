@@ -479,6 +479,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
         iconic: string | null;
         count: number;
         lastSeen: string | null;
+        lastObserved: string | null;
         photos: string[];
         seen: Set<string>;
       }
