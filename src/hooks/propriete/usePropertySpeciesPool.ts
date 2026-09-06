@@ -520,6 +520,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
         count: number;
         lastSeen: string | null;
         lastObserved: string | null;
+        lastObserver: LastObserver | null;
         photos: string[];
         seen: Set<string>;
       }
