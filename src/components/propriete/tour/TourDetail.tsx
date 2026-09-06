@@ -267,6 +267,15 @@ export const TourDetail: React.FC<Props> = ({
           placeholder="Ce que j'ai vu, entendu, senti pendant le tour…"
         />
       </section>
+
+      <CarnetTerrainDialog
+        open={carnetOpen}
+        onOpenChange={setCarnetOpen}
+        tour={tour}
+        actions={retenues}
+        proprieteNom={proprieteNom}
+        onEdited={() => onUpdateTour(tour.id, { carnet_edite_at: new Date().toISOString() })}
+      />
     </div>
   );
 };
