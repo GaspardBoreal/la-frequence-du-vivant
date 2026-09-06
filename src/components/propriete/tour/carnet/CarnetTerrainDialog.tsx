@@ -123,13 +123,36 @@ export const CarnetTerrainDialog: React.FC<Props> = ({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setSendOpen(true)}
+            disabled={actions.length === 0}
+            className="sm:mr-auto"
+          >
+            <Mail className="h-4 w-4 mr-1.5" />
+            Envoyer par email
+          </Button>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Annuler</Button>
           <Button onClick={generate} disabled={busy || actions.length === 0}>
             {busy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <NotebookPen className="h-4 w-4 mr-1.5" />}
             Éditer le PDF
           </Button>
         </DialogFooter>
+
+        <CarnetSendDialog
+          open={sendOpen}
+          onOpenChange={setSendOpen}
+          tour={tour}
+          actions={actions}
+          proprieteId={proprieteId}
+          proprieteNom={proprieteNom}
+          options={options}
+          onSent={() => {
+            onEdited?.();
+            onOpenChange(false);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
