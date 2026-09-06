@@ -500,6 +500,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           iconic: sp.iconic_taxon,
           count: sp.observations || 0,
           lastSeen: sp.last_seen,
+          lastObserved: resolveLastObserved(sp),
           photos: [...photos],
           seen,
         });
