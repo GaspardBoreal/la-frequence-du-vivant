@@ -314,6 +314,14 @@ const EntretienDetail: React.FC = () => {
         </div>
       </article>
 
+      <EntretienPortraitOverlay
+        person={entretien.person}
+        verbatims={entretien.verbatims}
+        open={portraitOpen}
+        onClose={() => setPortraitOpen(false)}
+      />
+
+
       <Footer />
     </div>
   );
