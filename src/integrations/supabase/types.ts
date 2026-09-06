@@ -8446,6 +8446,7 @@ export type Database = {
           created_by: string | null
           date_tour: string
           duree_min: number | null
+          heure_tour: string | null
           id: string
           intention: string | null
           notes: string | null
@@ -8464,6 +8465,7 @@ export type Database = {
           created_by?: string | null
           date_tour?: string
           duree_min?: number | null
+          heure_tour?: string | null
           id?: string
           intention?: string | null
           notes?: string | null
@@ -8482,6 +8484,7 @@ export type Database = {
           created_by?: string | null
           date_tour?: string
           duree_min?: number | null
+          heure_tour?: string | null
           id?: string
           intention?: string | null
           notes?: string | null

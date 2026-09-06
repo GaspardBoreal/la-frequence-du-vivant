@@ -1,0 +1,1 @@
+ALTER TABLE public.propriete_tours ADD COLUMN IF NOT EXISTS heure_tour time without time zone;
