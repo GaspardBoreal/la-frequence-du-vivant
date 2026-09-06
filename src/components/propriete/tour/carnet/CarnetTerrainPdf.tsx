@@ -53,9 +53,10 @@ const styles = StyleSheet.create({
   notesBlock: { marginTop: 10 },
   notesTitle: { fontSize: 7.5, letterSpacing: 1, fontFamily: 'Helvetica-Bold', color: VERT, marginBottom: 4 },
 
+  urlNote: { marginTop: 10, fontSize: 6.5, color: GRIS },
   footer: { position: 'absolute', bottom: 16, left: 28, right: 28, borderTopWidth: 0.7, borderTopColor: TRAIT, paddingTop: 5, flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
-  footerText: { flex: 1, fontSize: 6.5, color: GRIS },
-  footerPage: { fontSize: 6.5, color: GRIS, textAlign: 'right' },
+  footerText: { width: '74%', fontSize: 6.5, color: GRIS },
+  footerPage: { width: '26%', fontSize: 6.5, color: GRIS, textAlign: 'right' },
 });
 
 const VOLET_LABEL: Record<TourVolet, string> = {
@@ -99,7 +100,7 @@ interface DocProps {
 
 const CarnetTerrainDocument = ({ tour, actions, proprieteNom, options, pageUrl }: DocProps) => {
   const editedOn = new Date().toLocaleDateString('fr-FR');
-  const shortUrl = clean((pageUrl ?? '').replace(/^https?:\/\//, '')).slice(0, 58);
+  const shortUrl = clean((pageUrl ?? '').replace(/^https?:\/\//, '')).slice(0, 70);
   const groups = VOLET_ORDER.map((v) => ({ volet: v, items: actions.filter((a) => a.volet === v) })).filter(
     (g) => g.items.length > 0,
   );
@@ -207,9 +208,11 @@ const CarnetTerrainDocument = ({ tour, actions, proprieteNom, options, pageUrl }
           </View>
         )}
 
-        <View style={styles.footer} fixed>
+        {shortUrl ? <Text style={styles.urlNote}>{shortUrl}</Text> : null}
+
+      <View style={styles.footer} fixed>
           <Text style={styles.footerText}>
-            De retour : reportez vos dates dans l'espace Tour de Jardin{shortUrl ? ` - ${shortUrl}` : ''}
+            De retour : reportez vos dates dans l'espace Tour de Jardin.
           </Text>
           <Text
             style={styles.footerPage}
