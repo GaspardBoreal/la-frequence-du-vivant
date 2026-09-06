@@ -109,12 +109,43 @@ export const TourDetail: React.FC<Props> = ({
               onChange={(e) => onUpdateTour(tour.id, { titre: e.target.value })}
               className="border-0 bg-transparent px-0 text-lg font-semibold shadow-none focus-visible:ring-0"
             />
-            <p className="text-xs text-muted-foreground">
-              {fmtDate(tour.date_tour)}
-              {tour.duree_min ? ` · ${tour.duree_min} min` : ''}
-              {tour.saison ? ` · ${tour.saison}` : ''}
-              {` · ${doneCount}/${actions.length} action(s) faite(s)`}
-            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+              <label className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2 py-1 transition focus-within:border-primary/50 focus-within:bg-background">
+                <CalendarDays className="h-3.5 w-3.5 text-primary" aria-hidden />
+                <input
+                  type="date"
+                  value={tour.date_tour}
+                  onChange={(e) => e.target.value && onUpdateTour(tour.id, { date_tour: e.target.value })}
+                  aria-label="Date du tour"
+                  className="w-[8.5rem] bg-transparent text-xs text-foreground outline-none"
+                />
+              </label>
+              <label className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2 py-1 transition focus-within:border-primary/50 focus-within:bg-background">
+                <Clock className="h-3.5 w-3.5 text-primary" aria-hidden />
+                <input
+                  type="time"
+                  value={tour.heure_tour?.slice(0, 5) ?? ''}
+                  onChange={(e) => onUpdateTour(tour.id, { heure_tour: e.target.value || null })}
+                  aria-label="Heure du tour (facultative)"
+                  className="w-[4.5rem] bg-transparent text-xs text-foreground outline-none"
+                />
+                {tour.heure_tour && (
+                  <button
+                    type="button"
+                    aria-label="Effacer l'heure"
+                    onClick={() => onUpdateTour(tour.id, { heure_tour: null })}
+                    className="rounded-full p-0.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </label>
+              <span>
+                {tour.duree_min ? `${tour.duree_min} min · ` : ''}
+                {tour.saison ? `${tour.saison} · ` : ''}
+                {`${doneCount}/${actions.length} action(s) faite(s)`}
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <TourStatusBadge statut={tour.statut} />
