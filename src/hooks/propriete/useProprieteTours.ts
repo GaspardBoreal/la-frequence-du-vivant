@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { FunctionsFetchError, FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -257,6 +258,34 @@ export function useTourActions(tourId?: string | null) {
 
 /* ─────────────────────────── Génération IA ─────────────────────────── */
 
+/**
+ * Traduit une panne d'appel en phrase utile. Sans cela, toute erreur
+ * s'affiche « Failed to send a request », qui ne dit rien à personne.
+ */
+async function messageErreurSuggestion(error: unknown): Promise<string> {
+  if (error instanceof FunctionsHttpError) {
+    const status = error.context?.status as number | undefined;
+    let detail = '';
+    try {
+      const texte = await error.context.text();
+      detail = JSON.parse(texte)?.error ?? '';
+    } catch {
+      /* corps illisible : on retombe sur le statut */
+    }
+    if (status === 404)
+      return "L'IA de Jardin n'est pas encore en ligne sur ce serveur. Réessayez dans quelques minutes.";
+    if (status === 401 || status === 403)
+      return detail || "Vous n'avez pas accès à cette propriété.";
+    if (status === 402) return detail || 'Crédits IA épuisés pour cet espace de travail.';
+    if (status === 429)
+      return detail || "L'IA de Jardin est très sollicitée. Réessayez dans un instant.";
+    return detail || `L'IA de Jardin a répondu une erreur (${status ?? 'inconnue'}).`;
+  }
+  if (error instanceof FunctionsFetchError)
+    return "Impossible de joindre l'IA de Jardin. Vérifiez votre connexion et réessayez.";
+  return (error as Error)?.message || "L'IA de Jardin n'a pas pu répondre";
+}
+
 export function useSuggestTour(proprieteId?: string) {
   const qc = useQueryClient();
 
@@ -266,7 +295,8 @@ export function useSuggestTour(proprieteId?: string) {
       const { data, error } = await supabase.functions.invoke('propriete-tour-suggest', {
         body: { proprieteId, tourId: opts?.tourId ?? null, mois: opts?.mois ?? null },
       });
-      if (error) throw new Error(error.message || "L'IA de Jardin n'a pas pu répondre");
+      if (error) throw new Error(await messageErreurSuggestion(error));
+
       if ((data as any)?.error) throw new Error((data as any).error);
       return data as { tourId: string; actionsAdded: number };
     },
