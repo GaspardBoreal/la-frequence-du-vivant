@@ -38,6 +38,8 @@ export interface Entretien {
   updatedAt: string;
   /** Faits courts et citables, extraits du texte — bloc « À retenir ». */
   keyPoints: string[];
+  /** Trois citations fortes extraites du texte — affichées dans le portrait. */
+  verbatims: string[];
   /** Entités nommées dans l'entretien (SEO/GEO). */
   entities: string[];
   /** Liens internes contextuels. */
@@ -149,6 +151,11 @@ export const entretiens: Entretien[] = [
         "Il prolonge La Confession muette, recueil consacré à la créativité face aux limites planétaires.",
         "Gaspard Boréal est l'auteur et le créateur du projet ; la structuration associative et le dispositif des Marches du Vivant sont portés par les membres de l'association.",
       ],
+      verbatims: [
+        "Un son, c'est une onde, et une onde, c'est une fréquence. Et tous les vivants ont une onde.",
+        "J'ai découvert au fur et à mesure des travaux que tout le vivant émettait une onde, jusqu'à un ver de terre ou une plante, et bien sûr des arbres.",
+        "Prenez trois personnes, faites-les observer quelque chose, et on est trois à voir des choses différentes.",
+      ],
       entities: [
         'Fréquences de la rivière Dordogne',
         'La Confession muette',
@@ -192,6 +199,11 @@ export const entretiens: Entretien[] = [
         "Collectivités, domaines viticoles, coopératives agricoles et entreprises font appel aux Marches du Vivant.",
         "Fréquence Jardin applique aux jardins particuliers et aux entreprises la mesure de biodiversité, l'analyse de sol et l'intelligence artificielle frugale.",
       ],
+      verbatims: [
+        "Les Marches du Vivant, c'est un protocole de marche qui vise à rapprocher la société civile, l'ensemble du grand public, des questions de biodiversité.",
+        "Ce n'est évidemment pas possible pour un être humain d'identifier de façon sûre et certaine 26 espèces différentes.",
+        "On ne peut pas découpler santé des sols et biodiversité.",
+      ],
       entities: [
         'Les Marches du Vivant',
         'Fréquence Jardin',
@@ -234,6 +246,11 @@ export const entretiens: Entretien[] = [
         "Chercheurs, associations naturalistes, foncières immobilières et coopératives agricoles sont les premiers bénéficiaires.",
         "Les données produites sont validées par la communauté et publiées au format GBIF.",
       ],
+      verbatims: [
+        "PiloTerra est une plateforme qui fait de l'IA frugale, c'est-à-dire de l'intelligence artificielle pour résoudre des problèmes, et non pour s'amuser avec.",
+        "Ce n'est pas un répertoire statique de solutions open source dans le monde agricole.",
+        "On parle en millions d'utilisateurs sur iNaturalist, et comme on l'intègre, ça produit de la donnée validée au format GBIF.",
+      ],
       entities: ['PiloTerra', 'bziiit', 'GBIF', 'iNaturalist', 'Lexicone', 'Westfarm', 'open data'],
       internalLinks: [
         { label: "Agent IA « Les Marches du Vivant »", to: '/agent-ia' },
@@ -269,6 +286,11 @@ export const entretiens: Entretien[] = [
         "Trente ans de ressources humaines nourrissent une écoute attentive et la prise en compte des personnalités au sein d'un groupe hétérogène.",
         "Les marcheurs emportent un carnet pour noter les « mots du jour » et écrivent un haïku au retour de marche, pendant le temps de partage.",
         "On devient ambassadeur après un certain nombre de marches, une formation à l'application, et la validation par les ambassadeurs déjà en place.",
+      ],
+      verbatims: [
+        "Mon rôle, c'est de faire en sorte qu'il se retourne, qu'il prenne le temps d'observer, d'écouter, et de prendre conscience de tout ce qui l'entoure.",
+        "Je pense que c'est important de pouvoir laisser une trace, au-delà de la collecte d'informations sur la nature, une trace de comment on a vécu ce moment.",
+        "Venez nous rejoindre, c'est passionnant, c'est enrichissant. Ça apporte beaucoup à soi-même et ça apporte aux autres.",
       ],
       entities: [
         'ressources humaines',
@@ -307,6 +329,7 @@ export const entretiens: Entretien[] = [
     publishedAt: '2026-09-22',
     updatedAt: '2026-08-25',
     keyPoints: [],
+    verbatims: [],
     entities: ['ISEG', 'relations publiques', 'science participative'],
     internalLinks: [{ label: 'Les Marches du Vivant', to: '/marches-du-vivant' }],
     related: ['laurent-tripied-marches-du-vivant-frequence-jardin'],
@@ -326,6 +349,7 @@ export const entretiens: Entretien[] = [
     publishedAt: '2026-10-06',
     updatedAt: '2026-08-25',
     keyPoints: [],
+    verbatims: [],
     entities: ['bziiit', 'PiloTerra', 'intelligence artificielle frugale', 'numérique responsable'],
     internalLinks: [{ label: "Agent IA « Les Marches du Vivant »", to: '/agent-ia' }],
     related: ['piloterra-open-source-biodiversite'],
