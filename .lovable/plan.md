@@ -1,25 +1,25 @@
-# Réparer l'envoi du Carnet de Terrain
+# Envoi du carnet : utiliser le domaine vérifié `mail.la-frequence-du-vivant.com`
 
-## Ce qui bloque aujourd'hui
+## Diagnostic (confirmé par le journal du service)
 
-Deux problèmes distincts, tous deux visibles lors du dernier essai depuis « Jardin Monde DEVIAT » :
+L'envoi du carnet échoue avec ce motif exact de Resend :
 
-1. **L'envoi est refusé par le service d'emails.** Le message renvoyé est explicite : le domaine `la-frequence-du-vivant.com` n'est pas encore validé chez Resend. Tant qu'il ne l'est pas, aucun email partant de cette adresse ne sortira.
-2. **La liste des destinataires ne se charge pas.** L'appel qui récupère les marcheurs rattachés à la propriété échoue avec une erreur technique (le mot « rôle » désigne deux choses différentes dans la requête). La fenêtre d'envoi ne propose donc aucun marcheur, seulement la saisie manuelle d'adresses.
+> 403 — The **la-frequence-du-vivant.com** domain is not verified.
 
-## Ce que vous faites de votre côté
+Or, d'après votre capture, seul le sous-domaine **`mail.la-frequence-du-vivant.com`** est vérifié dans Resend. L'adresse d'expédition actuelle (secret `FROM_EMAIL_ADDRESS`, ex. `...@la-frequence-du-vivant.com`) utilise le domaine racine, que Resend refuse. Les emails d'inscription, eux, passent par un autre canal déjà configuré sur `mail.` — d'où l'écart que vous avez remarqué.
 
-Ajouter et vérifier `la-frequence-du-vivant.com` dans votre compte Resend (Domains → Add Domain, puis ajouter les enregistrements DNS proposés chez votre hébergeur de domaine). Une fois le domaine affiché comme « Verified », les envois passeront sans autre changement dans l'app.
+## Correction
 
-## Ce que je corrige dans l'app
+1. **Adresse d'expédition dédiée au carnet**, sur le domaine vérifié :
+   - Nouveau secret `CARNET_FROM_EMAIL` = `jardin@mail.la-frequence-du-vivant.com` (enregistré sans action de votre part).
+   - Dans `supabase/functions/send-carnet-terrain/index.ts` : l'expéditeur devient `Fréquence Jardin <CARNET_FROM_EMAIL>`, avec repli sur `FROM_EMAIL_ADDRESS` si absent.
+   - Aucune création de boîte mail nécessaire : c'est une adresse d'émission Resend, et les réponses arrivent déjà chez l'expéditeur du carnet (champ `reply_to` existant).
 
-- **Liste des destinataires réparée** : correction de la requête qui remonte les marcheurs de la propriété et des marches associées, pour que la première étape de la fenêtre d'envoi affiche à nouveau les personnes disponibles (nom, rôle, indication « sans adresse email » le cas échéant), sans jamais afficher leurs adresses.
-- **Message d'erreur lisible** : si le service d'emails refuse encore un envoi (domaine non validé, quota, adresse invalide), la fenêtre affiche une phrase claire en français expliquant quoi faire, au lieu du texte technique anglais actuel.
-- **Contrôle avant envoi** : si aucune adresse d'expédition n'est configurée, le bouton d'envoi le signale avant d'essayer, plutôt qu'après une erreur.
+2. **Redéploiement** de la fonction `send-carnet-terrain`.
 
-## Détails techniques
+3. **Vérification** : lecture du journal après un envoi de test pour confirmer que Resend accepte (plus de 403).
 
-- Migration : recréer `public.get_propriete_carnet_recipients(p_propriete_id uuid)` en levant l'ambiguïté `role` (renommage des colonnes internes / qualification explicite dans le `RETURN QUERY`). Aucun changement de signature ni de contrat côté client.
-- `supabase/functions/send-carnet-terrain/index.ts` : mapper les codes d'erreur Resend (403 domaine non vérifié, 422, 429) vers des messages français explicites ; vérifier `FROM_EMAIL_ADDRESS`/`SMTP_FROM` en amont et renvoyer un code dédié.
-- `src/hooks/propriete/useCarnetEnvoi.ts` et `src/components/propriete/tour/carnet/CarnetSendDialog.tsx` : afficher le message renvoyé tel quel, sans encapsulation technique.
-- Aucun changement de schéma de table ni de mise en page de l'email.
+## Hors périmètre
+
+- Les emails d'inscription/mot de passe oublié ne sont pas modifiés : ils fonctionnent déjà.
+- Alternative non retenue : vérifier aussi le domaine racine dans Resend — inutile, le sous-domaine `mail.` suffit et est déjà vérifié.
