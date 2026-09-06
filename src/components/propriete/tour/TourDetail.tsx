@@ -37,6 +37,7 @@ import {
 
 interface Props {
   tour: ProprieteTour;
+  proprieteId: string;
   proprieteNom: string;
   onBack: () => void;
   onUpdateTour: (id: string, patch: Partial<ProprieteTour>) => Promise<void> | void;
