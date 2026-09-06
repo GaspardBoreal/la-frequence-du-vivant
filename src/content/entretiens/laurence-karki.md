@@ -12,7 +12,7 @@ Et donc, de toute la biodiversité, de pouvoir la transmettre au travers des mar
 
 **En tant qu'ambassadrice présente à chaque marche, quel est selon vous le moment où un marcheur occasionnel devient réellement engagé dans la communauté ?**
 
-Il y a plusieurs moments. La première action, c'est qu'il va se concentrer. Le marcheur occasionnel, souvent, il marche : il fait défiler les kilomètres au rythme qu'il veut, mais souvent sur un rythme plus ou moins sportif. Là, mon rôle, c'est de faire en sorte qu'il se retourne, qu'il prenne le temps d'observer, d'écouter, et de prendre conscience de tout ce qui l'entoure, de la nature qui l'entoure. On va lui en donner les moyens, au-delà de regarder et d'observer, de partager toutes les observations qu'il va faire, en photographiant tout ce qu'il observe.
+Il y a plusieurs moments. La première action, c'est qu'il va se concentrer. Le marcheur occasionnel, souvent, il marche : il fait défiler les kilomètres au rythme qu'il veut, mais souvent sur un rythme plus ou moins sportif. Là, mon rôle, c'est de faire en sorte que le marcheur se retourne, qu'il prenne le temps d'observer, d'écouter, et de prendre conscience de tout ce qui l'entoure, de la nature qui l'entoure. On va lui en donner les moyens, au-delà de regarder et d'observer, de partager toutes les observations qu'il va faire, en photographiant tout ce qu'il observe.
 
 C'est à ce moment-là que le marcheur va demander à adhérer à l'association, à rentrer dans l'application les photos ou les remarques qu'il a faites tout au long de la marche. Et dans un second temps, il pourra même aller plus loin, s'engager encore davantage au sein de l'association, et devenir peut-être lui aussi ambassadeur.
 
