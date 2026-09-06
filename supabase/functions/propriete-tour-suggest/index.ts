@@ -65,6 +65,12 @@ serve(async (req) => {
         supabase.from("propriete_consultations").select("subject_label, status, severity").eq("propriete_id", proprieteId).limit(20),
       ]);
 
+    // Ressources citables : l'IA ne peut lier que ce qui existe réellement.
+    const [zonesRes, capteursRes] = await Promise.all([
+      supabase.from("propriete_zones").select("id, nom").eq("propriete_id", proprieteId).limit(40),
+      supabase.from("iot_capteurs").select("id, nom").eq("propriete_id", proprieteId).limit(40),
+    ]);
+
     const bio = (bioRes.data as any) ?? {};
     const mois = moisDemande ?? new Date().getMonth() + 1;
 
@@ -84,6 +90,14 @@ serve(async (req) => {
       paletteRenseignee: (paletteRes.data ?? []).length > 0,
       chantiers: chantiersRes.data ?? [],
       consultations: consultRes.data ?? [],
+      ressourcesCitables: {
+        secteurs: (zonesRes.data ?? []).map((z: any) => z.nom).filter(Boolean),
+        prelevements: Array.isArray((solRes.data as any)?.samples)
+          ? (solRes.data as any).samples.map((s: any) => s.label).filter(Boolean)
+          : [],
+        ouvrages: (objetsRes.data ?? []).map((o: any) => o.nom).filter(Boolean),
+        sondes: (capteursRes.data ?? []).map((c: any) => c.nom).filter(Boolean),
+      },
     };
 
     const system = `Tu es l'**IA de Jardin** de La Fréquence du Vivant : conseillère en écologie du paysage, sobre, concrète, encourageante.
@@ -101,7 +115,8 @@ RÈGLES ABSOLUES
 - Chaque action est faisable en une sortie ou en une demi-journée, décrite en 2 à 4 phrases utiles (où regarder, comment faire, pourquoi ça compte).
 - Répartis les actions entre les trois intentions : observer, biodiversite, resilience.
 - Espèces : nom français d'abord, nom scientifique entre parenthèses en italique. Si le nom français est inconnu, écris seulement le nom scientifique.
-- Choisis un schéma pédagogique (schema_key) uniquement quand il éclaire vraiment l'action, sinon laisse vide.`;
+- Choisis un schéma pédagogique (schema_key) uniquement quand il éclaire vraiment l'action, sinon laisse vide.
+- Quand une action cite une espèce, un prélèvement de sol, un secteur, un ouvrage ou une sonde présents dans le contexte (voir `ressourcesCitables`), reporte-la dans le tableau `refs` de l'action : { kind, label } où `label` est le texte EXACT tel qu'il apparaît dans le titre ou le détail. Ne référence jamais un élément absent du contexte.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -149,6 +164,19 @@ RÈGLES ABSOLUES
                         moment: { type: "string" },
                         difficulte: { type: "integer", enum: [1, 2, 3] },
                         schema_key: { type: "string", enum: [...SCHEMA_KEYS, ""] },
+                        refs: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              kind: { type: "string", enum: ["species", "sample", "zone", "objet", "capteur"] },
+                              label: { type: "string" },
+                              latin: { type: "string" },
+                            },
+                            required: ["kind", "label"],
+                            additionalProperties: false,
+                          },
+                        },
                       },
                       required: ["titre", "volet", "detail", "moment", "difficulte", "schema_key"],
                       additionalProperties: false,
@@ -245,6 +273,16 @@ RÈGLES ABSOLUES
       moment: a.moment ? String(a.moment) : null,
       difficulte: [1, 2, 3].includes(a.difficulte) ? a.difficulte : 1,
       schema_key: SCHEMA_KEYS.includes(a.schema_key) ? a.schema_key : null,
+      refs: Array.isArray(a.refs)
+        ? a.refs
+            .filter((r: any) => r && typeof r.label === "string" && r.label.trim().length > 2)
+            .slice(0, 8)
+            .map((r: any) => ({
+              kind: ["species", "sample", "zone", "objet", "capteur"].includes(r.kind) ? r.kind : "species",
+              label: String(r.label).trim(),
+              ...(r.latin ? { latin: String(r.latin) } : {}),
+            }))
+        : [],
       order_index: index++,
       source: "ia",
     }));
