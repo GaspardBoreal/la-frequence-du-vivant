@@ -78,6 +78,14 @@ export interface BiodiversitySpecies {
   /** Date de la dernière OBSERVATION réelle (marcheur ou iNaturalist), à
    *  distinguer de `lastSeen` qui peut refléter la date de collecte du snapshot. */
   lastObserved?: string;
+  /** Auteur de cette dernière observation (marcheur du projet ou base citoyenne). */
+  lastObserver?: {
+    kind: 'inat' | 'marcheur';
+    name: string | null;
+    profileUrl: string | null;
+    observationUrl: string | null;
+    marcheurId: string | null;
+  };
   photos?: string[];
   photoData?: BirdPhoto; // Nouvelle propriété pour les métadonnées photo
   audioUrl?: string;
