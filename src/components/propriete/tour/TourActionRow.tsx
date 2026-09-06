@@ -106,6 +106,21 @@ export const TourActionRow: React.FC<Props> = ({ action, readOnly, onUpdate, onR
           }
         />
 
+        {!readOnly && (
+          <button
+            type="button"
+            aria-pressed={!!action.retenue}
+            aria-label={action.retenue ? 'Retirer du carnet de terrain' : 'Emporter dans le carnet de terrain'}
+            title={action.retenue ? 'Retirée du carnet' : 'À emporter sur le terrain'}
+            onClick={() => onUpdate(action.id, { retenue: !action.retenue })}
+            className={`-mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              action.retenue ? 'text-primary' : 'text-muted-foreground/50 hover:text-muted-foreground'
+            }`}
+          >
+            <Star className={`h-4 w-4 ${action.retenue ? 'fill-current' : ''}`} />
+          </button>
+        )}
+
         <div className="flex-1 min-w-0">
           {editing ? (
             <div className="space-y-2">
