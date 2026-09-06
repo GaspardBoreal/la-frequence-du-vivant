@@ -544,6 +544,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           iconicTaxon: s.iconic || undefined,
           observations: s.count,
           lastSeen: s.lastSeen || '',
+          lastObserved: s.lastObserved || undefined,
           photos: s.photos,
           source: 'inaturalist',
           attributions: [],
