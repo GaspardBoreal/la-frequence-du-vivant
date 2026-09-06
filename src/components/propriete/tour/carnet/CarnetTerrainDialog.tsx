@@ -1,5 +1,5 @@
 import React from 'react';
-import { NotebookPen, Loader2 } from 'lucide-react';
+import { NotebookPen, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -14,12 +14,14 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import type { ProprieteTour, TourAction } from '@/hooks/propriete/useProprieteTours';
 import { exportCarnetPdf, type CarnetOptions } from './CarnetTerrainPdf';
+import CarnetSendDialog from './CarnetSendDialog';
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   tour: ProprieteTour;
   actions: TourAction[];
+  proprieteId: string;
   proprieteNom: string;
   onEdited?: () => void;
 }
@@ -29,6 +31,7 @@ export const CarnetTerrainDialog: React.FC<Props> = ({
   onOpenChange,
   tour,
   actions,
+  proprieteId,
   proprieteNom,
   onEdited,
 }) => {
@@ -38,6 +41,7 @@ export const CarnetTerrainDialog: React.FC<Props> = ({
     includeNotes: true,
   });
   const [busy, setBusy] = React.useState(false);
+  const [sendOpen, setSendOpen] = React.useState(false);
 
   const generate = async () => {
     setBusy(true);
@@ -119,13 +123,36 @@ export const CarnetTerrainDialog: React.FC<Props> = ({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setSendOpen(true)}
+            disabled={actions.length === 0}
+            className="sm:mr-auto"
+          >
+            <Mail className="h-4 w-4 mr-1.5" />
+            Envoyer par email
+          </Button>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Annuler</Button>
           <Button onClick={generate} disabled={busy || actions.length === 0}>
             {busy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <NotebookPen className="h-4 w-4 mr-1.5" />}
             Éditer le PDF
           </Button>
         </DialogFooter>
+
+        <CarnetSendDialog
+          open={sendOpen}
+          onOpenChange={setSendOpen}
+          tour={tour}
+          actions={actions}
+          proprieteId={proprieteId}
+          proprieteNom={proprieteNom}
+          options={options}
+          onSent={() => {
+            onEdited?.();
+            onOpenChange(false);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

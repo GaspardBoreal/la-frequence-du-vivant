@@ -6894,6 +6894,66 @@ export type Database = {
           },
         ]
       }
+      propriete_carnet_envois: {
+        Row: {
+          body: string | null
+          created_at: string
+          error: string | null
+          id: string
+          propriete_id: string
+          recipient_count: number
+          recipients: Json
+          sent_by: string | null
+          sent_by_name: string | null
+          status: string
+          subject: string
+          tour_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          propriete_id: string
+          recipient_count?: number
+          recipients?: Json
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject: string
+          tour_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          propriete_id?: string
+          recipient_count?: number
+          recipients?: Json
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject?: string
+          tour_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_carnet_envois_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propriete_carnet_envois_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_chantier_media_phases: {
         Row: {
           chantier_id: string
@@ -10574,6 +10634,16 @@ export type Database = {
       get_propriete_biodiversity: {
         Args: { p_propriete_id: string }
         Returns: Json
+      }
+      get_propriete_carnet_recipients: {
+        Args: { p_propriete_id: string }
+        Returns: {
+          community_profile_id: string
+          has_email: boolean
+          nom: string
+          prenom: string
+          role: string
+        }[]
       }
       get_propriete_gallery: {
         Args: { _propriete_id: string }
