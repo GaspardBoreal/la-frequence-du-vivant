@@ -590,6 +590,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           observations: s.count,
           lastSeen: s.lastSeen || '',
           lastObserved: s.lastObserved || undefined,
+          lastObserver: s.lastObserver || undefined,
           photos: s.photos,
           source: 'inaturalist',
           attributions: [],
