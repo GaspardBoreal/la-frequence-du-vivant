@@ -8328,6 +8328,7 @@ export type Database = {
           moment: string | null
           order_index: number
           refs: Json
+          retenue: boolean
           schema_key: string | null
           source: string
           titre: string
@@ -8344,6 +8345,7 @@ export type Database = {
           moment?: string | null
           order_index?: number
           refs?: Json
+          retenue?: boolean
           schema_key?: string | null
           source?: string
           titre: string
@@ -8360,6 +8362,7 @@ export type Database = {
           moment?: string | null
           order_index?: number
           refs?: Json
+          retenue?: boolean
           schema_key?: string | null
           source?: string
           titre?: string
@@ -8378,6 +8381,7 @@ export type Database = {
       }
       propriete_tours: {
         Row: {
+          carnet_edite_at: string | null
           created_at: string
           created_by: string | null
           date_tour: string
@@ -8395,6 +8399,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          carnet_edite_at?: string | null
           created_at?: string
           created_by?: string | null
           date_tour?: string
@@ -8412,6 +8417,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          carnet_edite_at?: string | null
           created_at?: string
           created_by?: string | null
           date_tour?: string
