@@ -288,7 +288,7 @@ export const entretiens: Entretien[] = [
         "On devient ambassadeur après un certain nombre de marches, une formation à l'application, et la validation par les ambassadeurs déjà en place.",
       ],
       verbatims: [
-        "Mon rôle, c'est de faire en sorte qu'il se retourne, qu'il prenne le temps d'observer, d'écouter, et de prendre conscience de tout ce qui l'entoure.",
+        "Mon rôle, c'est de faire en sorte que le marcheur se retourne, qu'il prenne le temps d'observer, d'écouter, et de prendre conscience de tout ce qui l'entoure.",
         "Je pense que c'est important de pouvoir laisser une trace, au-delà de la collecte d'informations sur la nature, une trace de comment on a vécu ce moment.",
         "Venez nous rejoindre, c'est passionnant, c'est enrichissant. Ça apporte beaucoup à soi-même et ça apporte aux autres.",
       ],
