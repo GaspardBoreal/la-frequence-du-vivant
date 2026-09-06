@@ -531,6 +531,7 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
       if (!key) continue;
       const existing = bucket.get(key);
       const photos = resolvePhotos(sp);
+      const last = resolveLastObservation(sp);
       if (!existing) {
         const seen = new Set<string>(photos);
         bucket.set(key, {
@@ -541,7 +542,8 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
           iconic: sp.iconic_taxon,
           count: sp.observations || 0,
           lastSeen: sp.last_seen,
-          lastObserved: resolveLastObserved(sp),
+          lastObserved: last.date,
+          lastObserver: last.observer,
           photos: [...photos],
           seen,
         });
@@ -558,8 +560,10 @@ export function usePropertySpeciesPool(proprieteId: string | undefined) {
         if (!existing.iconic && sp.iconic_taxon) existing.iconic = sp.iconic_taxon;
         if (!existing.kingdom && sp.kingdom) existing.kingdom = sp.kingdom;
         if ((sp.last_seen || '') > (existing.lastSeen || '')) existing.lastSeen = sp.last_seen;
-        const obs = resolveLastObserved(sp);
-        if ((obs || '') > (existing.lastObserved || '')) existing.lastObserved = obs;
+        if ((last.date || '') > (existing.lastObserved || '')) {
+          existing.lastObserved = last.date;
+          existing.lastObserver = last.observer;
+        }
       }
     }
     return Array.from(bucket.values());
