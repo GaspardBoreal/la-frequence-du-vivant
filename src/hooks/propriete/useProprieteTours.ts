@@ -40,6 +40,8 @@ export interface TourAction {
   difficulte: number;
   done: boolean;
   done_at: string | null;
+  /** Action retenue pour le carnet de terrain (« à emporter »). */
+  retenue?: boolean;
   order_index: number;
   /** Ressources du lieu citées dans le texte (espèce, prélèvement, secteur…). */
   refs?: { kind: string; id?: string; latin?: string; label: string }[];
