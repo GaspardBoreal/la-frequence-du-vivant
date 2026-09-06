@@ -114,6 +114,7 @@ const CarnetTerrainDocument = ({ tour, actions, proprieteNom, options, pageUrl }
           <Text style={styles.title}>{clean(tour.titre)}</Text>
           <Text style={styles.meta}>
             {clean(proprieteNom)} · {fmtDate(tour.date_tour)}
+            {tour.heure_tour ? ` a ${tour.heure_tour.slice(0, 5).replace(':', 'h')}` : ''}
             {tour.duree_min ? ` · ${tour.duree_min} min` : ''}
             {tour.saison ? ` · ${clean(tour.saison)}` : ''}
             {` · ${actions.length} action${actions.length > 1 ? 's' : ''}`}

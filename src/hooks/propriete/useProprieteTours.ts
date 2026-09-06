@@ -16,6 +16,8 @@ export interface ProprieteTour {
   titre: string;
   intention: string | null;
   date_tour: string;
+  /** Heure de rendez-vous facultative (HH:mm). */
+  heure_tour?: string | null;
   statut: TourStatut;
   duree_min: number | null;
   saison: string | null;
