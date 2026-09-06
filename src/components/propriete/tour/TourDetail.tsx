@@ -54,15 +54,19 @@ const fmtDate = (d: string) =>
 
 export const TourDetail: React.FC<Props> = ({
   tour,
+  proprieteNom,
   onBack,
   onUpdateTour,
   onDeleteTour,
   onEnrich,
   enriching,
 }) => {
-  const { actions, addAction, updateAction, removeAction, reorder } = useTourActions(tour.id);
+  const { actions, addAction, updateAction, removeAction, setAllRetenues, reorder } = useTourActions(tour.id);
   const [newTitle, setNewTitle] = React.useState('');
+  const [carnetOpen, setCarnetOpen] = React.useState(false);
   const [notes, setNotes] = React.useState(tour.notes ?? '');
+
+  const retenues = React.useMemo(() => actions.filter((a) => a.retenue), [actions]);
 
   React.useEffect(() => setNotes(tour.notes ?? ''), [tour.id, tour.notes]);
 
