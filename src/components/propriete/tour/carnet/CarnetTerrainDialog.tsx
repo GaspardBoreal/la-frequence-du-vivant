@@ -66,7 +66,7 @@ export const CarnetTerrainDialog: React.FC<Props> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-md max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <NotebookPen className="h-4 w-4 text-primary" />
@@ -123,21 +123,23 @@ export const CarnetTerrainDialog: React.FC<Props> = ({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-2">
+        <DialogFooter className="flex-col gap-2 sm:flex-row sm:items-center">
           <Button
             variant="outline"
             onClick={() => setSendOpen(true)}
             disabled={actions.length === 0}
-            className="sm:mr-auto"
+            className="w-full sm:w-auto sm:mr-auto"
           >
             <Mail className="h-4 w-4 mr-1.5" />
             Envoyer par email
           </Button>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Annuler</Button>
-          <Button onClick={generate} disabled={busy || actions.length === 0}>
-            {busy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <NotebookPen className="h-4 w-4 mr-1.5" />}
-            Éditer le PDF
-          </Button>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <Button variant="ghost" className="flex-1 sm:flex-none" onClick={() => onOpenChange(false)}>Annuler</Button>
+            <Button className="flex-1 sm:flex-none" onClick={generate} disabled={busy || actions.length === 0}>
+              {busy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <NotebookPen className="h-4 w-4 mr-1.5" />}
+              Éditer le PDF
+            </Button>
+          </div>
         </DialogFooter>
 
         <CarnetSendDialog
