@@ -190,6 +190,21 @@ export const TourActionRow: React.FC<Props> = ({ action, readOnly, onUpdate, onR
                 <p className="mt-1 text-sm text-muted-foreground whitespace-pre-line">{linkifyTourText(action.detail, refIndex, explicitRefs)}</p>
               )}
               <GardenSchema schemaKey={action.schema_key} className="mt-2" />
+              {action.done && !readOnly && (
+                <label className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                  Fait le
+                  <input
+                    type="date"
+                    value={action.done_at ? action.done_at.slice(0, 10) : ''}
+                    onChange={(e) =>
+                      onUpdate(action.id, {
+                        done_at: e.target.value ? new Date(`${e.target.value}T12:00:00`).toISOString() : null,
+                      })
+                    }
+                    className="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </label>
+              )}
             </>
           )}
         </div>
