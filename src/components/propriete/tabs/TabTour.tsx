@@ -2,6 +2,8 @@ import React from 'react';
 import { Footprints } from 'lucide-react';
 import TourList from '@/components/propriete/tour/TourList';
 import TourDetail from '@/components/propriete/tour/TourDetail';
+import { TourRefProvider, useBuildTourRefIndex } from '@/components/propriete/tour/refs/useTourRefIndex';
+import TourRefSheet from '@/components/propriete/tour/refs/TourRefSheet';
 import {
   useProprieteTours,
   useSuggestTour,
@@ -15,6 +17,7 @@ export const TabTour: React.FC<{ proprieteId: string; proprieteNom: string }> = 
   const { tours, isLoading, create, update, remove } = useProprieteTours(proprieteId);
   const suggest = useSuggestTour(proprieteId);
   const [openId, setOpenId] = React.useState<string | null>(null);
+  const refIndex = useBuildTourRefIndex(proprieteId);
 
   const current = tours.find((t) => t.id === openId) ?? null;
 
@@ -30,6 +33,7 @@ export const TabTour: React.FC<{ proprieteId: string; proprieteNom: string }> = 
   };
 
   return (
+    <TourRefProvider value={refIndex}>
     <div className="space-y-5">
       <header className="space-y-1.5">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -63,7 +67,9 @@ export const TabTour: React.FC<{ proprieteId: string; proprieteNom: string }> = 
           suggesting={suggest.isPending}
         />
       )}
+      <TourRefSheet />
     </div>
+    </TourRefProvider>
   );
 };
 
