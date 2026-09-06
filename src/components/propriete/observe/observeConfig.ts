@@ -141,6 +141,11 @@ export const SENSORIAL_FIELDS = [
   { key: 'textures', label: 'Textures', icon: '✋', placeholder: 'écorce rugueuse, mousse douce…' },
   { key: 'vues', label: 'Vues', icon: '👁️', placeholder: 'cadres remarquables, horizons…' },
   { key: 'ambiance', label: 'Ambiance ressentie', icon: '✧', placeholder: 'calme, joyeux, mystérieux…' },
+  { key: 'lumiere', label: 'Lumière', icon: '☀️', placeholder: 'ombre sous le tilleul, plein soleil au potager…' },
+  { key: 'gouts', label: 'Goûts', icon: '👅', placeholder: 'menthe, mûre, tomate du jardin…' },
+  { key: 'temperature', label: 'Température & air', icon: '🌡️', placeholder: 'fraîcheur du sous-bois, humidité du marais…' },
+  { key: 'silences', label: 'Silences', icon: '🤫', placeholder: 'moments de calme, absence de bruit…' },
+  { key: 'presences', label: 'Présences remarquées', icon: '🐾', placeholder: 'traces d\'animaux, passage, vie du lieu…' },
 ] as const;
 
 export const SENSORIAL_HERO = sensorialImg;
