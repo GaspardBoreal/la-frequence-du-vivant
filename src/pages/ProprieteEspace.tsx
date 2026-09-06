@@ -600,6 +600,9 @@ const PropTabs: React.FC<{
             proprieteCenter={proprieteCenter}
           />
         </TabsContent>
+        <TabsContent value="tour" className="pt-5 min-h-[calc(100vh-8rem)]">
+          <TabTour proprieteId={proprieteId} proprieteNom={proprieteNom} />
+        </TabsContent>
       </Tabs>
       <SampleCoreDrawerHost />
       <ProprieteChatBotMount proprieteId={proprieteId} proprieteNom={proprieteNom} />
