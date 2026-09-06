@@ -272,11 +272,58 @@ export const TourDetail: React.FC<Props> = ({
         />
       </section>
 
+      {/* Historique des envois */}
+      {envois.length > 0 && (
+        <details className="rounded-xl border border-border bg-card/60 p-3">
+          <summary className="cursor-pointer list-none text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">
+            <span className="inline-flex items-center gap-2">
+              <Mail className="h-3.5 w-3.5 text-primary" />
+              Envois du carnet ({envois.length})
+            </span>
+          </summary>
+          <ul className="mt-3 space-y-2.5">
+            {envois.map((e) => (
+              <li key={e.id} className="rounded-lg border border-border/70 px-3 py-2 text-xs">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-medium text-foreground">
+                    {new Date(e.created_at).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                  <span className="text-muted-foreground">
+                    par {e.sent_by_name ?? 'un marcheur'} · {e.recipient_count} destinataire
+                    {e.recipient_count > 1 ? 's' : ''}
+                  </span>
+                  <span
+                    className={
+                      e.status === 'sent'
+                        ? 'text-primary'
+                        : e.status === 'partial'
+                          ? 'text-muted-foreground'
+                          : 'text-destructive'
+                    }
+                  >
+                    {e.status === 'sent' ? 'envoyé' : e.status === 'partial' ? 'partiellement envoyé' : 'échec'}
+                  </span>
+                </div>
+                <p className="mt-1 text-muted-foreground">
+                  {(e.recipients ?? []).map((r) => r.name || r.email_masked).join(', ')}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       <CarnetTerrainDialog
         open={carnetOpen}
         onOpenChange={setCarnetOpen}
         tour={tour}
         actions={retenues}
+        proprieteId={proprieteId}
         proprieteNom={proprieteNom}
         onEdited={() => onUpdateTour(tour.id, { carnet_edite_at: new Date().toISOString() })}
       />
