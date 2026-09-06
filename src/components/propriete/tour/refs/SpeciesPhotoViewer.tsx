@@ -51,7 +51,7 @@ export const SpeciesPhotoViewer: React.FC<Props> = ({ photos, index, alt, onInde
       role="dialog"
       aria-modal="true"
       aria-label={`Photo agrandie : ${alt}`}
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-background/95 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[1200] flex items-center justify-center bg-background/98 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
       onTouchStart={(e) => {
         touchX.current = e.touches[0]?.clientX ?? null;
@@ -81,7 +81,7 @@ export const SpeciesPhotoViewer: React.FC<Props> = ({ photos, index, alt, onInde
         src={photos[index]}
         alt={alt}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[88vh] max-w-[94vw] rounded-lg object-contain shadow-lg"
+        className="max-h-[92vh] max-w-[96vw] rounded-lg object-contain shadow-lg"
       />
 
       {total > 1 && (
