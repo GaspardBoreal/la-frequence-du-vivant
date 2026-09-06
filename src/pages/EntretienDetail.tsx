@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Copy, Check, Download, ExternalLink, Sparkles } 
 import { toast } from 'sonner';
 import Footer from '@/components/Footer';
 import EntretienNav from '@/components/entretiens/EntretienNav';
+import EntretienPortraitOverlay from '@/components/entretiens/EntretienPortraitOverlay';
 import PartnerAuditContent from '@/components/partners/PartnerAuditContent';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,6 +51,7 @@ const EntretienDetail: React.FC = () => {
   const { slug } = useParams();
   const entretien = getEntretien(slug);
   const [copied, setCopied] = React.useState(false);
+  const [portraitOpen, setPortraitOpen] = React.useState(false);
 
   if (!entretien) return <Navigate to="/entretiens" replace />;
   if (entretien.status === 'a-venir') return <Navigate to="/entretiens" replace />;
