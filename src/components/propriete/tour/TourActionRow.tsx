@@ -15,6 +15,9 @@ import {
 } from '@/components/ui/select';
 import { GardenSchema, SCHEMA_KEYS, SCHEMA_LABELS, type SchemaKey } from './GardenSchema';
 import { TOUR_VOLETS, type TourAction, type TourVolet } from '@/hooks/propriete/useProprieteTours';
+import { linkifyTourText } from './refs/linkifyTourText';
+import { useTourRefIndex } from './refs/useTourRefIndex';
+import type { TourRef } from './refs/types';
 
 const VOLET_ICON: Record<TourVolet, React.ReactNode> = {
   observer: <Eye className="h-3.5 w-3.5" />,
@@ -36,6 +39,8 @@ interface Props {
 }
 
 export const TourActionRow: React.FC<Props> = ({ action, readOnly, onUpdate, onRemove }) => {
+  const refIndex = useTourRefIndex();
+  const explicitRefs = (action.refs ?? []) as TourRef[];
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: action.id,
   });
@@ -156,7 +161,7 @@ export const TourActionRow: React.FC<Props> = ({ action, readOnly, onUpdate, onR
             <>
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`text-sm font-medium ${action.done ? 'line-through text-muted-foreground' : ''}`}>
-                  {action.titre}
+                  {linkifyTourText(action.titre, refIndex, explicitRefs)}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                   {VOLET_ICON[action.volet]}
@@ -167,7 +172,7 @@ export const TourActionRow: React.FC<Props> = ({ action, readOnly, onUpdate, onR
                 )}
               </div>
               {action.detail && (
-                <p className="mt-1 text-sm text-muted-foreground whitespace-pre-line">{action.detail}</p>
+                <p className="mt-1 text-sm text-muted-foreground whitespace-pre-line">{linkifyTourText(action.detail, refIndex, explicitRefs)}</p>
               )}
               <GardenSchema schemaKey={action.schema_key} className="mt-2" />
             </>

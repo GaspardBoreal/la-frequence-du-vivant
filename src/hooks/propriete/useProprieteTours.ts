@@ -39,6 +39,8 @@ export interface TourAction {
   done: boolean;
   done_at: string | null;
   order_index: number;
+  /** Ressources du lieu citées dans le texte (espèce, prélèvement, secteur…). */
+  refs?: { kind: string; id?: string; latin?: string; label: string }[];
   source: string;
   created_at: string;
 }
@@ -196,6 +198,7 @@ export function useTourActions(tourId?: string | null) {
         schema_key: input.schema_key ?? null,
         moment: input.moment ?? null,
         difficulte: input.difficulte ?? 1,
+        refs: input.refs ?? [],
         order_index: nextIndex,
         source: 'manuel',
       });
