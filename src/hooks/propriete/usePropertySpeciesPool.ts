@@ -110,29 +110,69 @@ const resolvePhotos = (sp: RpcSpecies): string[] => {
  * doit jamais être affiché comme une date d'observation.
  */
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
-const resolveLastObserved = (sp: RpcSpecies): string | null => {
+
+export interface LastObserver {
+  kind: 'inat' | 'marcheur';
+  name: string | null;
+  profileUrl: string | null;
+  observationUrl: string | null;
+  marcheurId: string | null;
+}
+
+const resolveLastObservation = (
+  sp: RpcSpecies,
+): { date: string | null; observer: LastObserver | null } => {
   let best: string | null = null;
-  const push = (raw: any) => {
+  let observer: LastObserver | null = null;
+
+  const push = (raw: any, obs: LastObserver | null) => {
     if (typeof raw !== 'string' || !ISO_DATE.test(raw)) return;
-    if (!best || raw > best) best = raw;
+    if (!best || raw > best) {
+      best = raw;
+      observer = obs;
+    }
   };
+
   const mAttrs: any[] = Array.isArray(sp.marcheur_attrs) ? sp.marcheur_attrs : [];
-  for (const a of mAttrs) push(a?.observation_date || a?.date || a?.observationDate);
+  for (const a of mAttrs) {
+    push(a?.observation_date || a?.date || a?.observationDate, {
+      kind: 'marcheur',
+      name: null,
+      profileUrl: null,
+      observationUrl: null,
+      marcheurId: a?.marcheur_id || null,
+    });
+  }
+
   const groups: any[] = Array.isArray(sp.attributions) ? sp.attributions : [];
   for (const g of groups) {
     const list: any[] = Array.isArray(g) ? g : [g];
     for (const a of list) {
+      const login: string | null = a?.observerLogin || null;
       push(
         a?.observation_date ||
           a?.observationDate ||
           a?.observedOn ||
           a?.observed_on ||
           a?.date,
+        {
+          kind: 'inat',
+          name: a?.observerName || login || null,
+          profileUrl:
+            a?.observerProfileUrl ||
+            (login ? `https://www.inaturalist.org/people/${encodeURIComponent(login)}` : null),
+          observationUrl: a?.originalUrl || a?.original_url || null,
+          marcheurId: null,
+        },
       );
     }
   }
-  return best;
+
+  return { date: best, observer };
 };
+
+const resolveLastObserved = (sp: RpcSpecies): string | null => resolveLastObservation(sp).date;
+
 
 const mapKingdom = (k?: string | null): BiodiversitySpecies['kingdom'] => {
   const s = (k || '').toLowerCase();
