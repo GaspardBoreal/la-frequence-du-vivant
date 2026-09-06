@@ -175,12 +175,20 @@ const EntretienDetail: React.FC = () => {
           </h1>
           <div className="mt-5 flex items-center gap-3">
             {entretien.person.portraitUrl && (
-              <img
-                src={entretien.person.portraitUrl}
-                alt={entretien.person.portraitAlt ?? entretien.person.name}
-                className="h-12 w-12 rounded-full object-cover"
-              />
+              <button
+                type="button"
+                onClick={() => setPortraitOpen(true)}
+                aria-label={`Voir le portrait de ${entretien.person.name}`}
+                className="group relative h-12 w-12 shrink-0 rounded-full ring-1 ring-border transition hover:ring-2 hover:ring-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <img
+                  src={entretien.person.portraitUrl}
+                  alt={entretien.person.portraitAlt ?? entretien.person.name}
+                  className="h-12 w-12 rounded-full object-cover transition group-hover:brightness-110"
+                />
+              </button>
             )}
+
             <div className="text-sm">
               <p className="font-medium text-foreground">{entretien.person.name}</p>
               <p className="text-muted-foreground">{entretien.person.role}</p>
