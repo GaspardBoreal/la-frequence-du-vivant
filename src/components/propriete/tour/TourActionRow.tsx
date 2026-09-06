@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Pencil, Trash2, Check, X, Eye, Sprout, ShieldCheck } from 'lucide-react';
+import { GripVertical, Pencil, Trash2, Check, X, Eye, Sprout, ShieldCheck, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -106,6 +106,21 @@ export const TourActionRow: React.FC<Props> = ({ action, readOnly, onUpdate, onR
           }
         />
 
+        {!readOnly && (
+          <button
+            type="button"
+            aria-pressed={!!action.retenue}
+            aria-label={action.retenue ? 'Retirer du carnet de terrain' : 'Emporter dans le carnet de terrain'}
+            title={action.retenue ? 'Retirée du carnet' : 'À emporter sur le terrain'}
+            onClick={() => onUpdate(action.id, { retenue: !action.retenue })}
+            className={`-mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              action.retenue ? 'text-primary' : 'text-muted-foreground/50 hover:text-muted-foreground'
+            }`}
+          >
+            <Star className={`h-4 w-4 ${action.retenue ? 'fill-current' : ''}`} />
+          </button>
+        )}
+
         <div className="flex-1 min-w-0">
           {editing ? (
             <div className="space-y-2">
@@ -175,6 +190,21 @@ export const TourActionRow: React.FC<Props> = ({ action, readOnly, onUpdate, onR
                 <p className="mt-1 text-sm text-muted-foreground whitespace-pre-line">{linkifyTourText(action.detail, refIndex, explicitRefs)}</p>
               )}
               <GardenSchema schemaKey={action.schema_key} className="mt-2" />
+              {action.done && !readOnly && (
+                <label className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                  Fait le
+                  <input
+                    type="date"
+                    value={action.done_at ? action.done_at.slice(0, 10) : ''}
+                    onChange={(e) =>
+                      onUpdate(action.id, {
+                        done_at: e.target.value ? new Date(`${e.target.value}T12:00:00`).toISOString() : null,
+                      })
+                    }
+                    className="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </label>
+              )}
             </>
           )}
         </div>

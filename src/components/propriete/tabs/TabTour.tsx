@@ -49,6 +49,7 @@ export const TabTour: React.FC<{ proprieteId: string; proprieteNom: string }> = 
       {current ? (
         <TourDetail
           tour={current}
+          proprieteNom={proprieteNom}
           onBack={() => setOpenId(null)}
           onUpdateTour={update}
           onDeleteTour={handleDelete}
