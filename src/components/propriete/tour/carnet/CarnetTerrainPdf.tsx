@@ -90,7 +90,7 @@ const clean = (s: string) =>
     .replace(/[^\u0000-\u00ff]/g, '')
     .trim();
 
-interface DocProps {
+export interface DocProps {
   tour: ProprieteTour;
   actions: TourAction[];
   proprieteNom: string;
