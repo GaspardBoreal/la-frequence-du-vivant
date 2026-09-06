@@ -423,7 +423,7 @@ const PropTabs: React.FC<{
 
 
 
-  const projectActive = ['portrait', 'synthesize', 'palette', 'clinique', 'capteurs'].includes(tab);
+  const projectActive = ['portrait', 'synthesize', 'palette', 'clinique', 'capteurs', 'tour'].includes(tab);
   const projectLabel =
     tab === 'portrait'
       ? portraitSub === 'cadastre' ? 'Cadastre' : portraitSub === 'intention' ? 'Intention' : portraitSub === 'entretiens' ? 'Entretiens' : 'Galerie'
@@ -436,7 +436,9 @@ const PropTabs: React.FC<{
             ? 'Capteurs et sondes'
             : tab === 'clinique'
               ? 'Clinique du jardin'
-              : '';
+              : tab === 'tour'
+                ? 'Tour de Jardin'
+                : '';
 
 
   return (
