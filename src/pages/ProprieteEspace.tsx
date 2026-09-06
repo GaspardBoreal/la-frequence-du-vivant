@@ -27,6 +27,7 @@ import { TabSynthesize } from '@/components/propriete/tabs/TabSynthesize';
 import { TabPalette } from '@/components/propriete/tabs/TabPalette';
 import { TabPortrait } from '@/components/propriete/portrait/TabPortrait';
 import { TabClinique } from '@/components/propriete/tabs/TabClinique';
+import { TabTour } from '@/components/propriete/tabs/TabTour';
 import SensorsSection from '@/components/propriete/iot/SensorsSection';
 import KenBurnsCarousel from '@/components/immersive-garden/KenBurnsCarousel';
 import { ProprieteVivantScopeProvider } from '@/contexts/ProprieteVivantScopeContext';
@@ -423,7 +424,7 @@ const PropTabs: React.FC<{
 
 
 
-  const projectActive = ['portrait', 'synthesize', 'palette', 'clinique', 'capteurs'].includes(tab);
+  const projectActive = ['portrait', 'synthesize', 'palette', 'clinique', 'capteurs', 'tour'].includes(tab);
   const projectLabel =
     tab === 'portrait'
       ? portraitSub === 'cadastre' ? 'Cadastre' : portraitSub === 'intention' ? 'Intention' : portraitSub === 'entretiens' ? 'Entretiens' : 'Galerie'
@@ -436,7 +437,9 @@ const PropTabs: React.FC<{
             ? 'Capteurs et sondes'
             : tab === 'clinique'
               ? 'Clinique du jardin'
-              : '';
+              : tab === 'tour'
+                ? 'Tour de Jardin'
+                : '';
 
 
   return (
@@ -486,6 +489,7 @@ const PropTabs: React.FC<{
                 <DropdownMenuItem onSelect={() => handleTabChange('synthesize')}>Je synthétise</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handleTabChange('palette')}>Palette végétale</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => openAtelier(null)}>Atelier du jardin</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleTabChange('tour')}>Tour de Jardin</DropdownMenuItem>
                 {/* Sous-section à part entière : capteurs et sondes, encadrée de vert */}
                 <div aria-hidden className="my-1 h-px bg-emerald-600/60" />
                 <DropdownMenuItem onSelect={() => handleTabChange('capteurs')}>Capteurs et sondes</DropdownMenuItem>
@@ -596,6 +600,9 @@ const PropTabs: React.FC<{
             proprieteVille={proprieteVille}
             proprieteCenter={proprieteCenter}
           />
+        </TabsContent>
+        <TabsContent value="tour" className="pt-5 min-h-[calc(100vh-8rem)]">
+          <TabTour proprieteId={proprieteId} proprieteNom={proprieteNom} />
         </TabsContent>
       </Tabs>
       <SampleCoreDrawerHost />

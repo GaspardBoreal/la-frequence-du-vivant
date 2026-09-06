@@ -8317,6 +8317,124 @@ export type Database = {
           },
         ]
       }
+      propriete_tour_actions: {
+        Row: {
+          created_at: string
+          detail: string | null
+          difficulte: number
+          done: boolean
+          done_at: string | null
+          id: string
+          moment: string | null
+          order_index: number
+          schema_key: string | null
+          source: string
+          titre: string
+          tour_id: string
+          volet: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          difficulte?: number
+          done?: boolean
+          done_at?: string | null
+          id?: string
+          moment?: string | null
+          order_index?: number
+          schema_key?: string | null
+          source?: string
+          titre: string
+          tour_id: string
+          volet?: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          difficulte?: number
+          done?: boolean
+          done_at?: string | null
+          id?: string
+          moment?: string | null
+          order_index?: number
+          schema_key?: string | null
+          source?: string
+          titre?: string
+          tour_id?: string
+          volet?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_tour_actions_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      propriete_tours: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date_tour: string
+          duree_min: number | null
+          id: string
+          intention: string | null
+          notes: string | null
+          points_forts: Json
+          potentiels: Json
+          propriete_id: string
+          saison: string | null
+          source: string
+          statut: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date_tour?: string
+          duree_min?: number | null
+          id?: string
+          intention?: string | null
+          notes?: string | null
+          points_forts?: Json
+          potentiels?: Json
+          propriete_id: string
+          saison?: string | null
+          source?: string
+          statut?: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date_tour?: string
+          duree_min?: number | null
+          id?: string
+          intention?: string | null
+          notes?: string | null
+          points_forts?: Json
+          potentiels?: Json
+          propriete_id?: string
+          saison?: string | null
+          source?: string
+          statut?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_tours_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_zones: {
         Row: {
           couleur: string
