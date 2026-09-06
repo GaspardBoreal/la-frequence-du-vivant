@@ -181,11 +181,41 @@ export const TourDetail: React.FC<Props> = ({
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-semibold">Actions clés du tour</h3>
-          <Button size="sm" variant="outline" onClick={onEnrich} disabled={enriching}>
-            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-            {enriching ? 'L\u2019IA réfléchit…' : 'Enrichir avec l\u2019IA'}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="outline" onClick={onEnrich} disabled={enriching}>
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              {enriching ? 'L\u2019IA réfléchit…' : 'Enrichir avec l\u2019IA'}
+            </Button>
+            <Button size="sm" onClick={() => setCarnetOpen(true)} disabled={retenues.length === 0}>
+              <NotebookPen className="h-3.5 w-3.5 mr-1.5" />
+              Carnet de terrain
+            </Button>
+          </div>
         </div>
+
+        {actions.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <Star className={`h-3.5 w-3.5 ${retenues.length ? 'fill-current text-primary' : ''}`} />
+              {retenues.length === 0
+                ? 'Aucune action retenue pour le terrain'
+                : `${retenues.length} action${retenues.length > 1 ? 's' : ''} retenue${retenues.length > 1 ? 's' : ''}`}
+            </span>
+            <span className="hidden sm:inline">·</span>
+            <button type="button" className="underline underline-offset-2 hover:text-foreground" onClick={() => setAllRetenues(true)}>
+              Tout sélectionner
+            </button>
+            <button type="button" className="underline underline-offset-2 hover:text-foreground" onClick={() => setAllRetenues(false)}>
+              Aucune
+            </button>
+            {tour.carnet_edite_at && (
+              <span className="basis-full text-[11px] text-muted-foreground/80">
+                Carnet édité le {new Date(tour.carnet_edite_at).toLocaleDateString('fr-FR')} — pensez à reporter vos
+                dates.
+              </span>
+            )}
+          </div>
+        )}
 
         {actions.length === 0 && (
           <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
