@@ -181,6 +181,7 @@ export const TourList: React.FC<Props> = ({
                   <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <CalendarDays className="h-3.5 w-3.5" />{fmtDate(t.date_tour)}
+                      {t.heure_tour ? ` · ${t.heure_tour.slice(0, 5).replace(':', 'h')}` : ''}
                     </span>
                     {stats && (
                       <span className="inline-flex items-center gap-1">
