@@ -224,12 +224,20 @@ const CarnetTerrainDocument = ({ tour, actions, proprieteNom, options, pageUrl }
   );
 };
 
+export function carnetFilename(props: DocProps) {
+  return `carnet-tour-${props.tour.date_tour}.pdf`;
+}
+
+export async function buildCarnetPdfBlob(props: DocProps): Promise<Blob> {
+  return await pdf(<CarnetTerrainDocument {...props} />).toBlob();
+}
+
 export async function exportCarnetPdf(props: DocProps) {
-  const blob = await pdf(<CarnetTerrainDocument {...props} />).toBlob();
+  const blob = await buildCarnetPdfBlob(props);
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `carnet-tour-${props.tour.date_tour}.pdf`;
+  a.download = carnetFilename(props);
   a.click();
   URL.revokeObjectURL(url);
 }
