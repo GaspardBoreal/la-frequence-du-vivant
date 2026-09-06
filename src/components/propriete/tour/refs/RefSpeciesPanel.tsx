@@ -1,11 +1,79 @@
 import React from 'react';
 import { ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import type { BiodiversitySpecies } from '@/types/biodiversity';
 import { SpeciesThumb } from '@/components/species/SpeciesThumb';
 import { SpeciesName } from '@/components/species/SpeciesName';
 import { speciesLatinBase } from '@/lib/speciesLatinBase';
 import { normRef, type TourRef } from './types';
 import type { TourRefIndex } from './useTourRefIndex';
 import SpeciesPhotoViewer from './SpeciesPhotoViewer';
+import { useMarcheurIdentity } from '@/hooks/propriete/useMarcheurIdentity';
+
+/** Ligne « Observé par … » : lien profil interne (marcheur) ou externe (base citoyenne). */
+const LastObserverLine: React.FC<{ observer: NonNullable<BiodiversitySpecies['lastObserver']> }> = ({
+  observer,
+}) => {
+  const { data: marcheur } = useMarcheurIdentity(
+    observer.kind === 'marcheur' ? observer.marcheurId : null,
+  );
+
+  const name = observer.kind === 'marcheur' ? marcheur?.name || 'Marcheur du projet' : observer.name;
+  if (!name) return null;
+
+  const internalHref = marcheur?.slug ? `/marcheur/${marcheur.slug}/carnet` : null;
+  const externalHref = observer.kind === 'inat' ? observer.profileUrl : null;
+  const avatar = observer.kind === 'marcheur' ? marcheur?.avatarUrl : null;
+
+  const identity = (
+    <span className="inline-flex min-h-[40px] items-center gap-2">
+      {avatar ? (
+        <img src={avatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+      ) : (
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+          {name.trim().charAt(0).toUpperCase()}
+        </span>
+      )}
+      <span className="truncate font-medium">{name}</span>
+      {externalHref && <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+    </span>
+  );
+
+  return (
+    <div className="col-span-2 rounded-lg border border-border bg-muted/40 p-2.5">
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Observé par</div>
+      {internalHref ? (
+        <Link
+          to={internalHref}
+          className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:text-primary"
+        >
+          {identity}
+        </Link>
+      ) : externalHref ? (
+        <a
+          href={externalHref}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:text-primary"
+        >
+          {identity}
+        </a>
+      ) : (
+        identity
+      )}
+      {observer.observationUrl && (
+        <a
+          href={observer.observationUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-1 inline-flex min-h-[32px] items-center gap-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Voir l'observation <ExternalLink className="h-3 w-3" />
+        </a>
+      )}
+    </div>
+  );
+};
 
 const RefSpeciesPanel: React.FC<{ refItem: TourRef; index: TourRefIndex }> = ({ refItem, index }) => {
   const latin = refItem.latin || refItem.label;
@@ -71,6 +139,7 @@ const RefSpeciesPanel: React.FC<{ refItem: TourRef; index: TourRefIndex }> = ({ 
             </div>
             <div className="text-[10px] text-muted-foreground">date d'observation</div>
           </div>
+          {sp.lastObserver && <LastObserverLine observer={sp.lastObserver} />}
           {family && (
             <div className="col-span-2 rounded-lg border border-border bg-muted/40 p-2.5">
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Famille</div>
