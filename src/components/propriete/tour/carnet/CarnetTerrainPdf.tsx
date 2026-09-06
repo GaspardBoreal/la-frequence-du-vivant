@@ -53,8 +53,9 @@ const styles = StyleSheet.create({
   notesBlock: { marginTop: 10 },
   notesTitle: { fontSize: 7.5, letterSpacing: 1, fontFamily: 'Helvetica-Bold', color: VERT, marginBottom: 4 },
 
-  footer: { position: 'absolute', bottom: 16, left: 28, right: 28, borderTopWidth: 0.7, borderTopColor: TRAIT, paddingTop: 5, flexDirection: 'row', justifyContent: 'space-between' },
-  footerText: { fontSize: 6.5, color: GRIS },
+  footer: { position: 'absolute', bottom: 16, left: 28, right: 28, borderTopWidth: 0.7, borderTopColor: TRAIT, paddingTop: 5, flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  footerText: { flex: 1, fontSize: 6.5, color: GRIS },
+  footerPage: { fontSize: 6.5, color: GRIS, textAlign: 'right' },
 });
 
 const VOLET_LABEL: Record<TourVolet, string> = {
@@ -80,6 +81,10 @@ const clean = (s: string) =>
     .replace(/[\u201c\u201d]/g, '"')
     .replace(/[\u2013\u2014]/g, '-')
     .replace(/\u2026/g, '...')
+    .replace(/\u0153/g, 'oe')
+    .replace(/\u0152/g, 'OE')
+    .replace(/\u00e6/g, 'ae')
+    .replace(/\u00c6/g, 'AE')
     .replace(/\u00a0/g, ' ')
     .replace(/[^\u0000-\u00ff]/g, '')
     .trim();
@@ -94,6 +99,7 @@ interface DocProps {
 
 const CarnetTerrainDocument = ({ tour, actions, proprieteNom, options, pageUrl }: DocProps) => {
   const editedOn = new Date().toLocaleDateString('fr-FR');
+  const shortUrl = clean((pageUrl ?? '').replace(/^https?:\/\//, '')).slice(0, 58);
   const groups = VOLET_ORDER.map((v) => ({ volet: v, items: actions.filter((a) => a.volet === v) })).filter(
     (g) => g.items.length > 0,
   );
@@ -114,7 +120,7 @@ const CarnetTerrainDocument = ({ tour, actions, proprieteNom, options, pageUrl }
           <View style={styles.identityRow}>
             <Text style={styles.identityLabel}>Marcheur :</Text>
             <View style={styles.identityLine} />
-            <Text style={styles.identityLabel}>Meteo / heure :</Text>
+            <Text style={styles.identityLabel}>Météo / heure :</Text>
             <View style={styles.identityLine} />
           </View>
         </View>
@@ -155,8 +161,8 @@ const CarnetTerrainDocument = ({ tour, actions, proprieteNom, options, pageUrl }
                 .slice(0, 6);
 
               return (
-                <View key={a.id} style={styles.action} wrap={false}>
-                  <View style={styles.actionHead}>
+                <View key={a.id} style={styles.action}>
+                  <View style={styles.actionHead} wrap={false}>
                     <View style={styles.box} />
                     <Text style={styles.actionTitle}>{clean(a.titre)}</Text>
                     <View style={styles.dots}>
@@ -203,11 +209,11 @@ const CarnetTerrainDocument = ({ tour, actions, proprieteNom, options, pageUrl }
 
         <View style={styles.footer} fixed>
           <Text style={styles.footerText}>
-            De retour : reportez vos dates dans l'espace Tour de Jardin{pageUrl ? ` - ${clean(pageUrl)}` : ''}
+            De retour : reportez vos dates dans l'espace Tour de Jardin{shortUrl ? ` - ${shortUrl}` : ''}
           </Text>
           <Text
-            style={styles.footerText}
-            render={({ pageNumber, totalPages }) => `Edite le ${editedOn} - ${pageNumber}/${totalPages}`}
+            style={styles.footerPage}
+            render={({ pageNumber, totalPages }) => `Édité le ${editedOn} - ${pageNumber}/${totalPages}`}
           />
         </View>
       </Page>
