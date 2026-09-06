@@ -252,12 +252,30 @@ export function useTourActions(tourId?: string | null) {
     [qc, tourId, invalidate],
   );
 
+  /** Coche ou décoche « à emporter » sur toutes les actions du tour. */
+  const setAllRetenues = useCallback(
+    async (value: boolean) => {
+      if (!tourId) return;
+      const { error } = await (supabase as any)
+        .from('propriete_tour_actions')
+        .update({ retenue: value })
+        .eq('tour_id', tourId);
+      if (error) {
+        toast.error('Modification impossible');
+        throw error;
+      }
+      await invalidate();
+    },
+    [tourId, invalidate],
+  );
+
   return {
     actions: query.data ?? [],
     isLoading: query.isLoading,
     addAction,
     updateAction,
     removeAction,
+    setAllRetenues,
     reorder,
     invalidate,
   };
