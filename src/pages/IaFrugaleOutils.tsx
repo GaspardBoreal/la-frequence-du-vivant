@@ -207,7 +207,8 @@ const IaFrugaleOutils: React.FC = () => {
               </div>
             </div>
           </section>
-        ))}
+          )
+        )}
       </main>
 
       {/* Clôture */}
