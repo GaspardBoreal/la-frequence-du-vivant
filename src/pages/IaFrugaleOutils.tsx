@@ -7,12 +7,12 @@ import {
   CONSTANTES_ECOLOGITS,
   CONSTANTES_GREEN_ALGORITHMS,
   CONSTANTES_COMPARIA,
-  PAYS,
   SOURCE_CI,
   type Constante,
 } from '@/content/iaFrugale/outilsMesure';
 import SimulateurCard from '@/components/ia-frugale/SimulateurCard';
 import SourceNote from '@/components/ia-frugale/SourceNote';
+import IntensiteCarboneChart from '@/components/ia-frugale/IntensiteCarboneChart';
 
 const CANONICAL = 'https://la-frequence-du-vivant.com/ia-frugale/outils-de-mesure';
 
