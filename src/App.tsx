@@ -390,6 +390,8 @@ function App() {
             <Route path="/roadmap/frequence-jardin" element={<FrequenceJardinFiche />} />
             <Route path="/roadmap/frequence-jardin/logo/:slug" element={<FrequenceJardinLogo />} />
             <Route path="/etude-de-sol" element={<EtudeDeSolPublique />} />
+            <Route path="/ia-frugale/outils-de-mesure" element={<IaFrugaleOutils />} />
+
             <Route path="/roadmap/:audience" element={<RoadmapPublic />} />
 
             <Route path="/propriete/:slug" element={<ProprieteEspace />} />
