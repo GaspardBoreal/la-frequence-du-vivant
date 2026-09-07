@@ -29,8 +29,8 @@ export const AncrageInaturalist = ({ valeurs, setValeurs }: Props) => {
   const { data: stats } = usePublicGlobalStats();
   const { data: inat, isLoading } = useInatVolumes();
 
-  const [photosParMois, setPhotosParMois] = useState(INFERENCE_DEFAUTS.photosParMois);
-  const [msParPhoto, setMsParPhoto] = useState(INFERENCE_DEFAUTS.msParPhoto);
+  const [photosParMois, setPhotosParMois] = useState<number>(INFERENCE_DEFAUTS.photosParMois);
+  const [msParPhoto, setMsParPhoto] = useState<number>(INFERENCE_DEFAUTS.msParPhoto);
 
   const ci = ciDuPays(String(valeurs.pays));
 

@@ -77,6 +77,8 @@ export interface Simulateur {
   rigueur: string[];
   hypotheses: string[];
   sources: Source[];
+  /** Bloc de comparaison avec des données réelles publiées, rendu sous les résultats. */
+  ancrage?: 'inaturalist';
 }
 
 const optionsPays = PAYS.map((p) => ({ value: p.code, label: p.nom }));
