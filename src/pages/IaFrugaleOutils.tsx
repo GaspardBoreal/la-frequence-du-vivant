@@ -12,6 +12,7 @@ import {
 } from '@/content/iaFrugale/outilsMesure';
 import SimulateurCard from '@/components/ia-frugale/SimulateurCard';
 import SourceNote from '@/components/ia-frugale/SourceNote';
+import Footer from '@/components/Footer';
 import IntensiteCarboneChart from '@/components/ia-frugale/IntensiteCarboneChart';
 
 const CANONICAL = 'https://la-frequence-du-vivant.com/ia-frugale/outils-de-mesure';
