@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { ChevronDown, RotateCcw, Sparkles } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ interface Props {
   /** Pastille ronde numérotée (serre de nuit CodeCarbon). */
   numero?: number;
   /** Cartouche visuelle optionnelle affichée à côté des résultats. */
-  illustration?: React.ReactNode;
+  illustration?: ReactNode;
 }
 
 const valeursParDefaut = (sim: Simulateur): Valeurs =>
