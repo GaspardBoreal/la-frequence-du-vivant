@@ -3501,3 +3501,85 @@
     animation-delay: 0ms;
   }
 }
+
+/* ===== Serre de nuit — section CodeCarbon (« Précision botanique » sombre) ===== */
+.cc-nuit {
+  --background: 168 52% 11%;
+  --foreground: 45 35% 95%;
+  --card: 168 42% 14%;
+  --card-foreground: 45 35% 95%;
+  --popover: 168 45% 13%;
+  --popover-foreground: 45 35% 95%;
+  --primary: 163 79% 36%;
+  --primary-foreground: 45 35% 96%;
+  --secondary: 168 30% 20%;
+  --secondary-foreground: 45 35% 95%;
+  --muted: 168 30% 19%;
+  --muted-foreground: 46 14% 70%;
+  --accent: 168 30% 20%;
+  --accent-foreground: 45 35% 95%;
+  --border: 168 24% 26%;
+  --input: 168 24% 26%;
+  --ring: 163 60% 50%;
+  --frugal-codecarbon: 163 58% 52%;
+  --accent-outil: var(--frugal-codecarbon);
+  color-scheme: dark;
+}
+
+.cc-nuit .cc-serif {
+  font-family: 'Playfair Display', 'Crimson Text', Georgia, serif;
+}
+
+.cc-nuit .cc-mono {
+  font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.cc-nuit .cc-verre {
+  background: hsl(45 35% 95% / 0.05);
+  border: 1px solid hsl(45 35% 95% / 0.12);
+  backdrop-filter: blur(10px);
+  border-radius: 1.5rem;
+  transition: background 0.5s ease, border-color 0.5s ease;
+}
+
+.cc-nuit .cc-verre:hover {
+  background: hsl(45 35% 95% / 0.09);
+  border-color: hsl(45 35% 95% / 0.2);
+}
+
+.cc-nuit .cc-glow {
+  text-shadow: 0 0 24px hsl(163 79% 45% / 0.45);
+}
+
+/* Révélation douce à l'arrivée dans l'écran */
+.cc-nuit .cc-reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.cc-nuit.cc-visible .cc-reveal {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-nuit .cc-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Résultat principal amplifié dans la serre de nuit */
+.cc-nuit [data-cc='principal'] {
+  background: hsl(163 79% 36% / 0.12);
+  border-color: hsl(163 58% 52% / 0.4);
+}
+
+.cc-nuit [data-cc='principal'] .cc-chiffre {
+  font-size: 2rem;
+  line-height: 1.15;
+  color: hsl(45 35% 96%);
+  text-shadow: 0 0 22px hsl(163 79% 45% / 0.5);
+}
