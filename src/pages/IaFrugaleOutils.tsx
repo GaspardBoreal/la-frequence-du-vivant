@@ -115,19 +115,8 @@ const IaFrugaleOutils: React.FC = () => {
             un même calcul n'a pas le même poids selon le pays. Les valeurs ci-dessous sont celles
             embarquées dans CodeCarbon, reprises d'Our World in Data pour l'année 2023.
           </p>
-          <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {PAYS.map((p) => (
-              <li key={p.code} className="rounded-xl border border-border bg-card p-3">
-                <p className="text-sm font-medium text-foreground">{p.nom}</p>
-                <p className="mt-1 font-mono text-lg tabular-nums text-foreground">
-                  {p.ci.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}
-                  <span className="ml-1 text-[11px] font-normal text-muted-foreground">
-                    gCO2eq/kWh
-                  </span>
-                </p>
-              </li>
-            ))}
-          </ul>
+          <IntensiteCarboneChart />
+
           <div className="mt-5">
             <SourceNote sources={[SOURCE_CI]} />
           </div>
