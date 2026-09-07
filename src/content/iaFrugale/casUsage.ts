@@ -77,6 +77,8 @@ export interface Simulateur {
   rigueur: string[];
   hypotheses: string[];
   sources: Source[];
+  /** Bloc de comparaison avec des données réelles publiées, rendu sous les résultats. */
+  ancrage?: 'inaturalist';
 }
 
 const optionsPays = PAYS.map((p) => ({ value: p.code, label: p.nom }));
@@ -100,7 +102,7 @@ const codecarbonMdv: Simulateur = {
       cle: 'heures',
       label: "Durée d'entraînement",
       min: 1,
-      max: 200,
+      max: 2400,
       pas: 1,
       unite: 'h',
       defaut: 24,
@@ -111,8 +113,8 @@ const codecarbonMdv: Simulateur = {
       cle: 'gpu',
       label: 'Puissance de la carte graphique',
       min: 0,
-      max: 700,
-      pas: 25,
+      max: 900,
+      pas: 5,
       unite: 'W',
       defaut: 300,
       aide: 'Puissance de conception thermique de la carte utilisée.',
@@ -200,8 +202,10 @@ const codecarbonMdv: Simulateur = {
   hypotheses: [
     "La durée d'entraînement et le matériel sont des hypothèses que vous réglez : elles ne décrivent pas une exécution réelle des Marches du Vivant.",
     'Le processeur est supposé sollicité à 50 % pendant que la carte graphique travaille.',
+    "iNaturalist publie son matériel d'entraînement et ses volumes, mais ni son pays d'hébergement, ni l'efficacité de son centre de données, ni la référence de son processeur : ces trois-là restent vos réglages.",
   ],
   sources: [SOURCE_CODECARBON, SOURCE_CI],
+  ancrage: 'inaturalist',
 };
 
 /* ================================================================== */
