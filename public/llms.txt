@@ -52,4 +52,5 @@ La Fréquence du Vivant relie poésie contemporaine, bioacoustique et science ci
 
 ## Optional
 
+- [IA frugale — outils de mesure](/ia-frugale/outils-de-mesure): huit simulateurs interactifs (CodeCarbon, EcoLogits, Green Algorithms, compar:IA) pour mesurer l'impact environnemental d'un calcul et d'une requête IA, appliqués aux cas Les Marches du Vivant et Propriété - Fréquence Jardin. Formules, constantes officielles et sources datées.
 - [Explorations](/explorations): Index des explorations en cours.
