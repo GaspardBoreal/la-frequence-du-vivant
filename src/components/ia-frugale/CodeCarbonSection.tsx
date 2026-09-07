@@ -85,6 +85,9 @@ const CodeCarbonSection = ({ outil }: { outil: Outil }) => {
           </a>
         </header>
 
+        <BandeauTerrain />
+
+
         {/* Cartes d'information en verre */}
         <div className="mt-8 grid gap-6 md:grid-cols-2">
           <div className="cc-verre cc-reveal p-6 sm:p-8" style={{ transitionDelay: '90ms' }}>

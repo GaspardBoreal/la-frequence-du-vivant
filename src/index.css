@@ -3583,3 +3583,47 @@
   color: hsl(45 35% 96%);
   text-shadow: 0 0 22px hsl(163 79% 45% / 0.5);
 }
+
+/* Vignettes de terrain dans la serre de nuit */
+.cc-nuit .cc-vignette {
+  opacity: 0;
+  transform: translateY(18px) scale(0.98);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+  border: 1px solid hsl(45 35% 95% / 0.12);
+}
+
+.cc-nuit .cc-vignette.cc-vignette-on {
+  opacity: 1;
+  transform: none;
+}
+
+.cc-nuit .cc-vignette img {
+  filter: saturate(0.35) brightness(0.62) hue-rotate(-8deg);
+}
+
+.cc-nuit .cc-vignette:hover img,
+.cc-nuit .cc-vignette:focus-within img {
+  filter: none;
+  transform: scale(1.04);
+}
+
+.cc-nuit .cc-cartouche {
+  box-shadow: 0 0 28px hsl(163 79% 45% / 0.18);
+}
+
+.cc-nuit .cc-cartouche img {
+  filter: saturate(0.6) brightness(0.85);
+  transition: filter 0.6s ease;
+}
+
+.cc-nuit .cc-cartouche:hover img {
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-nuit .cc-vignette {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
