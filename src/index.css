@@ -174,8 +174,14 @@
     --paper: 0 0% 100%;
     --ink: 0 0% 0%;
     
+    --frugal-codecarbon: 262 55% 72%;
+    --frugal-ecologits: 276 50% 76%;
+    --frugal-greenalgorithms: 186 50% 62%;
+    --frugal-comparia: 24 75% 66%;
+
     --tech-biomimicry: 140 70% 45%;
     --tech-biomimicry-bg: 140 70% 95%;
+
     --tech-lowtech: 25 85% 50%;
     --tech-lowtech-bg: 25 85% 95%;
     --tech-openhardware: 200 85% 50%;
