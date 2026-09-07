@@ -220,6 +220,9 @@ const IaFrugaleOutils: React.FC = () => {
           </p>
         </div>
       </footer>
+
+      {/* Pied de page commun */}
+      <Footer variant="marches" />
     </div>
   );
 };
