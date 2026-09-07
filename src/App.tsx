@@ -106,6 +106,8 @@ const RoadmapWeekPage = lazyWithRetry(() => import('./pages/RoadmapWeekPage'));
 const FrequenceJardinFiche = lazyWithRetry(() => import('./pages/FrequenceJardinFiche'));
 const FrequenceJardinLogo = lazyWithRetry(() => import('./pages/FrequenceJardinLogo'));
 const EtudeDeSolPublique = lazyWithRetry(() => import('./pages/EtudeDeSolPublique'));
+const IaFrugaleOutils = lazyWithRetry(() => import('./pages/IaFrugaleOutils'));
+
 const ProprieteEspace = lazyWithRetry(() => import('./pages/ProprieteEspace'));
 const JardinDemarrer = lazyWithRetry(() => import('./pages/JardinDemarrer'));
 const JardinBienvenue = lazyWithRetry(() => import('./pages/JardinBienvenue'));
