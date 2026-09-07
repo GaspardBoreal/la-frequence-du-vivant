@@ -23,6 +23,8 @@ import AncrageInaturalist from './AncrageInaturalist';
 
 interface Props {
   simulateur: Simulateur;
+  /** Pastille ronde numérotée (serre de nuit CodeCarbon). */
+  numero?: number;
 }
 
 const valeursParDefaut = (sim: Simulateur): Valeurs =>
