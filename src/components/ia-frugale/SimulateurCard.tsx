@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { ChevronDown, RotateCcw, Sparkles } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,8 @@ interface Props {
   simulateur: Simulateur;
   /** Pastille ronde numérotée (serre de nuit CodeCarbon). */
   numero?: number;
+  /** Cartouche visuelle optionnelle affichée à côté des résultats. */
+  illustration?: ReactNode;
 }
 
 const valeursParDefaut = (sim: Simulateur): Valeurs =>
@@ -35,7 +37,7 @@ const formatCurseur = (valeur: number, pas: number) =>
     ? valeur.toLocaleString('fr-FR', { maximumFractionDigits: 2 })
     : valeur.toLocaleString('fr-FR');
 
-export const SimulateurCard = ({ simulateur, numero }: Props) => {
+export const SimulateurCard = ({ simulateur, numero, illustration }: Props) => {
   const [valeurs, setValeurs] = useState<Valeurs>(() => valeursParDefaut(simulateur));
   const [detailsOuverts, setDetailsOuverts] = useState(false);
 
@@ -185,6 +187,8 @@ export const SimulateurCard = ({ simulateur, numero }: Props) => {
               </li>
             ))}
           </ul>
+
+          {illustration}
         </div>
       </div>
 

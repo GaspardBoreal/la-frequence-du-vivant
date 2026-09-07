@@ -3,6 +3,23 @@ import { ExternalLink } from 'lucide-react';
 import type { Outil } from '@/content/iaFrugale/casUsage';
 import { CONSTANTES_CODECARBON } from '@/content/iaFrugale/outilsMesure';
 import SimulateurCard from './SimulateurCard';
+import BandeauTerrain from './BandeauTerrain';
+import VignetteCas from './VignetteCas';
+import m04 from '@/assets/marcheurs/Marcheurs_04.jpeg.asset.json';
+import m07 from '@/assets/marcheurs/Marcheurs_07.jpeg.asset.json';
+
+const ILLUSTRATIONS: Record<string, { src: string; alt: string; legende: string }> = {
+  mdv: {
+    src: m04.url,
+    alt: "Marcheurs observant le vivant au pied d'un vieux chêne",
+    legende: 'Marches du Vivant — le calcul ci-dessus porte sur des photos comme celle-ci.',
+  },
+  jardin: {
+    src: m07.url,
+    alt: "Mains examinant le système racinaire d'une plante dans un jardin",
+    legende: 'Fréquence Jardin — un jardin documenté, observation après observation.',
+  },
+};
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
@@ -67,6 +84,9 @@ const CodeCarbonSection = ({ outil }: { outil: Outil }) => {
             />
           </a>
         </header>
+
+        <BandeauTerrain />
+
 
         {/* Cartes d'information en verre */}
         <div className="mt-8 grid gap-6 md:grid-cols-2">
@@ -133,7 +153,13 @@ const CodeCarbonSection = ({ outil }: { outil: Outil }) => {
         <div className="mt-12 space-y-12">
           {outil.simulateurs.map((sim, i) => (
             <div key={sim.id} className="cc-reveal" style={{ transitionDelay: `${320 + i * 120}ms` }}>
-              <SimulateurCard simulateur={sim} numero={i + 1} />
+              <SimulateurCard
+                simulateur={sim}
+                numero={i + 1}
+                illustration={
+                  ILLUSTRATIONS[sim.cas] ? <VignetteCas {...ILLUSTRATIONS[sim.cas]} /> : undefined
+                }
+              />
             </div>
           ))}
         </div>
