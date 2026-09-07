@@ -1,96 +1,116 @@
-# Panorama interactif des outils de mesure — IA frugale
+# Panorama interactif des outils de mesure — cours IA frugale
 
-Une page publique où le visiteur manipule quatre mini-simulateurs, un par outil
-(CodeCarbon, EcoLogits, Green Algorithms, Compar:IA), voit les résultats bouger
-en direct, et lit d'où vient chaque chiffre.
+Une page publique où le visiteur manipule **huit** mini-simulateurs : deux par
+outil (CodeCarbon, EcoLogits, Green Algorithms, Compar:IA). Pour chaque outil,
+un exercice ancré dans le cas **Les Marches du Vivant** et un exercice ancré
+dans le cas **Propriété — Fréquence Jardin**.
 
 **URL proposée : `/ia-frugale/outils-de-mesure`**
-(dites-moi si vous préférez une autre adresse, elle est libre à ce stade)
 
 ## Principe de rigueur
 
 Rien n'est inventé. Chaque simulateur applique la formule publiée par l'outil
-lui-même, avec ses coefficients d'origine, et chaque carte affiche :
+lui-même, avec ses coefficients d'origine. Chaque exercice affiche :
 
-- la formule utilisée, écrite en clair ;
-- les constantes employées avec leur source et sa date de consultation ;
+- la formule employée, écrite en clair, avec ses unités ;
+- chaque constante utilisée, sa valeur, sa source et la date de consultation ;
 - le lien vers la page de méthode officielle ;
-- une mention honnête des limites (marges d'incertitude, ce que le modèle ne
-  couvre pas).
+- les limites explicites (incertitudes, ce que le modèle ne couvre pas).
 
 Quand une valeur n'est pas publiée par la source, elle n'est pas affichée : le
-curseur correspondant est absent plutôt qu'estimé au jugé.
+curseur correspondant est absent plutôt qu'estimé au jugé. Les volumes propres à
+vos deux cas (nombre d'observations, de photos, de fiches espèces) sont saisis
+par le visiteur avec des valeurs de départ que vous pourrez ajuster : ce sont
+des hypothèses affichées comme telles, jamais présentées comme des mesures.
 
-## Les quatre exercices
+## Les huit exercices
 
-**1. CodeCarbon — « Votre script tourne, combien ça coûte ? »**
-Curseurs : durée d'exécution, type de matériel (CPU/GPU parmi la liste de
-puissances publiée), taux d'utilisation, pays (facteur carbone du réseau).
-Résultat animé : watt-heures et grammes de CO2e, plus deux équivalents concrets
-(km en voiture thermique, temps d'ampoule LED). Bouton « et si je déplaçais ce
-calcul en France / en Pologne ? » qui rejoue la même mesure avec un autre mix
-électrique. Encart : les cinq lignes de code réelles à ajouter à un notebook.
+### CodeCarbon — mesurer un traitement qui tourne
 
-**2. EcoLogits — « Une réponse d'IA générative, ça pèse quoi ? »**
-Curseurs : nombre de paramètres actifs du modèle, nombre de jetons produits,
-mix électrique du pays d'hébergement. Le calcul suit la formule publiée par
-EcoLogits, vérifiée sur leur page de méthode : impact d'une requête = énergie
-consommée × facteur carbone du mix + part de fabrication du matériel amortie sur
-la durée de la requête, avec leur modèle d'énergie par jeton produit
-(coefficients alpha, beta, gamma publiés, taille de lot fixée à 64). Deux
-compteurs supplémentaires : impact « fabrication » distinct de l'impact
-« usage », et comparaison instantanée petit modèle contre grand modèle sur la
-même question.
+1. **Marches du Vivant — « La nuit où l'on rattrape iNaturalist »**
+   Curseurs : nombre d'observations à synchroniser, durée du traitement, type de
+   machine, pays d'hébergement. Sortie : watt-heures et grammes de CO2e, plus
+   « combien pour une marche », « combien pour une saison ».
+2. **Fréquence Jardin — « Reconnaître les espèces sur photo »**
+   Curseurs : nombre de photos, matériel (processeur seul ou carte graphique),
+   durée par image, taux d'utilisation. Sortie animée + comparaison
+   « traitement au fil de l'eau » contre « traitement groupé la nuit ».
 
-**3. Green Algorithms — « Décider avant de lancer »**
-Curseurs : nombre de cœurs, nombre de cartes graphiques, durée, pays,
-efficacité du centre de données (PUE), facteur d'usage réel du matériel. Sortie :
-empreinte a priori, plus le « facteur de gâchis » — combien on économise en
-réservant juste ce qu'il faut. Petit défi : atteindre une cible d'empreinte en
-ajustant les curseurs, façon jeu.
+### EcoLogits — mesurer un appel à un modèle génératif
 
-**4. Compar:IA — « Le même prompt, deux modèles »**
-Choix d'une tâche parmi quelques exemples et de deux modèles ; affichage côte à
-côte des impacts respectifs et du rapport entre les deux, dans l'esprit du
-service public français. Conçu pour être projeté en réunion : gros chiffres,
-une phrase de conclusion. Un lien invite à refaire l'expérience en vrai sur
-comparia.beta.gouv.fr avec de vraies réponses de modèles.
+3. **Marches du Vivant — « Le résumé éditorial d'une marche »**
+   Curseurs : taille du modèle (paramètres actifs), longueur de la réponse
+   produite, mix électrique du pays. Deux compteurs séparés : impact d'usage et
+   impact de fabrication du matériel, comme le prévoit la méthode EcoLogits.
+4. **Fréquence Jardin — « L'IA de Jardin, mille conversations »**
+   Curseurs : nombre d'échanges par mois, longueur moyenne des réponses, choix
+   entre un petit et un grand modèle. Sortie : impact mensuel et écart entre les
+   deux modèles pour un service rendu identique.
+
+*Base : la formule publiée par EcoLogits, relevée sur leur page de méthode —
+impact d'une requête = énergie consommée × facteur carbone du mix + part de
+fabrication amortie sur la durée de la requête, avec leur modèle d'énergie par
+jeton produit (coefficients alpha, beta, gamma publiés, taille de lot 64).*
+
+### Green Algorithms — décider avant de lancer
+
+5. **Marches du Vivant — « Recalculer tous les instantanés de biodiversité »**
+   Curseurs : cœurs, durée, pays, efficacité du centre de données (PUE), facteur
+   d'usage réel. Sortie : empreinte a priori et « facteur de gâchis » —
+   l'économie réalisée en réservant juste ce qu'il faut.
+6. **Fréquence Jardin — « Un rapport de chantier, à quel prix ? »**
+   Même moteur, appliqué à la génération des rapports avant/après d'une
+   propriété. Petit défi chronométré : atteindre une cible d'empreinte en
+   ajustant les curseurs.
+
+### Compar:IA — convaincre un interlocuteur non technique
+
+7. **Marches du Vivant — « Le même texte, deux modèles »**
+   Deux modèles côte à côte sur la rédaction d'un carnet de terrain : impacts
+   respectifs, rapport entre les deux, une phrase de conclusion en gros.
+8. **Fréquence Jardin — « Le bon modèle pour la bonne question »**
+   Trois tâches types du jardin (question courte, synthèse de tour, palette
+   végétale) ; le visiteur choisit un modèle par tâche et voit l'empreinte
+   cumulée du mois selon ses choix. Lien pour refaire l'expérience en vrai sur
+   comparia.beta.gouv.fr.
 
 ## Mise en page
 
-En-tête reprenant l'esprit de votre planche « Module 4 Outillage » : titre fort,
-sous-titre, quatre cartes à filet coloré, chacune avec son étiquette de nature
-(package Python, calculateur web, comparateur public) et sa phrase « l'outil
-pour… ». Mobile d'abord : curseurs larges, résultats collants en bas d'écran
-pendant qu'on fait varier. Pied de page « également utiles » avec ML CO2 Impact,
-AI Energy Score et Awesome Green AI, comme sur votre planche.
+Esprit de votre planche « Module 4 Outillage » : titre fort, sous-titre en
+italique, quatre blocs à filet coloré (violet foncé, violet, sarcelle, orange),
+étiquette de nature (package Python, calculateur web, comparateur public) et
+phrase « l'outil pour… ». Sous chaque bloc, les deux exercices en onglets
+« Marches du Vivant » / « Fréquence Jardin ». Mobile d'abord : curseurs larges,
+bandeau de résultats collant en bas d'écran pendant la manipulation. Pied de
+page « également utiles » : ML CO2 Impact, AI Energy Score, Awesome Green AI.
 
 ## Détail technique
 
-- Nouvelle page `src/pages/IaFrugaleOutils.tsx`, route publique déclarée dans
-  `src/App.tsx`, chargée en `lazyWithRetry` comme les autres pages publiques.
-- Données et formules isolées dans `src/content/iaFrugale/outilsMesure.ts` :
-  constantes sourcées (facteurs carbone par pays, TDP matériels, coefficients
-  EcoLogits), fonctions de calcul pures, et pour chaque constante un champ
-  `source` + `consulteLe` affiché dans l'interface.
-- Quatre composants sous `src/components/ia-frugale/` (un par simulateur) plus
-  un `SourceNote` commun.
-- Tokens sémantiques du thème existant, aucune couleur en dur ; compteurs
-  animés via le composant `AnimatedCounter` déjà présent.
-- `SEOHead` pour titre, description, canonical, plus JSON-LD `LearningResource`.
-- Entrées ajoutées dans `public/sitemap.xml` et `public/llms.txt`.
+- Page `src/pages/IaFrugaleOutils.tsx`, route publique dans `src/App.tsx` en
+  `lazyWithRetry` comme les autres pages publiques.
+- `src/content/iaFrugale/outilsMesure.ts` : constantes sourcées (facteurs
+  carbone par pays, puissances matérielles, coefficients EcoLogits), fonctions
+  de calcul pures, et pour chaque constante un champ `source` + `consulteLe`
+  affiché dans l'interface.
+- `src/content/iaFrugale/casUsage.ts` : les huit scénarios (libellés, curseurs,
+  valeurs de départ, texte pédagogique), séparés du moteur de calcul.
+- Composants sous `src/components/ia-frugale/` : un `SimulateurCard` générique
+  piloté par la description du scénario, un `SourceNote`, un `FormuleBloc`.
+- Tokens sémantiques du thème existant, aucune couleur en dur ; compteurs animés
+  via `AnimatedCounter` déjà présent.
+- `SEOHead` (titre, description, canonical) + JSON-LD `LearningResource` ;
+  entrées ajoutées dans `public/sitemap.xml` et `public/llms.txt`.
 
 ### Sourcing à faire avant d'écrire les formules
 
-La formule EcoLogits est déjà relevée sur leur page de méthode. Restent à
-relever, à la source, avant tout codage : la méthode CodeCarbon (table des
-puissances matérielles et facteurs carbone), la formule et les coefficients du
-calculateur Green Algorithms, et la méthode d'impact affichée par Compar:IA.
-Si une de ces méthodes n'est pas publiquement documentée, la carte concernée
-renvoie vers l'outil sans inventer de calcul, et le dit explicitement.
+La formule EcoLogits est déjà relevée à la source. Restent à relever avant tout
+codage : la méthode CodeCarbon (puissances matérielles, facteurs carbone), la
+formule et les coefficients du calculateur Green Algorithms, et la méthode
+d'impact affichée par Compar:IA. Si l'une n'est pas publiquement documentée, la
+carte renvoie vers l'outil sans inventer de calcul, et le dit explicitement.
 
 ## Vérification
 
-Page ouverte en navigateur à 375 px et 1280 px, en thème clair et sombre ;
-contrôle que chaque curseur fait bouger les résultats de façon cohérente et que
-chaque chiffre affiché est rattaché à sa source.
+Page ouverte à 375 px et 1280 px, thèmes clair et sombre ; contrôle que chaque
+curseur fait bouger les résultats de façon cohérente et que chaque chiffre
+affiché est rattaché à sa source.
