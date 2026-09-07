@@ -11,6 +11,7 @@ import {
   type Constante,
 } from '@/content/iaFrugale/outilsMesure';
 import SimulateurCard from '@/components/ia-frugale/SimulateurCard';
+import CodeCarbonSection from '@/components/ia-frugale/CodeCarbonSection';
 import SourceNote from '@/components/ia-frugale/SourceNote';
 import Footer from '@/components/Footer';
 import IntensiteCarboneChart from '@/components/ia-frugale/IntensiteCarboneChart';
@@ -63,6 +64,12 @@ const IaFrugaleOutils: React.FC = () => {
         />
         <meta property="og:url" content={CANONICAL} />
         <meta name="twitter:card" content="summary_large_image" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Mono:wght@400;700&display=swap"
+          rel="stylesheet"
+        />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
 
@@ -126,7 +133,10 @@ const IaFrugaleOutils: React.FC = () => {
 
       {/* Les quatre outils */}
       <main>
-        {OUTILS.map((outil) => (
+        {OUTILS.map((outil) =>
+          outil.cle === 'codecarbon' ? (
+            <CodeCarbonSection key={outil.cle} outil={outil} />
+          ) : (
           <section
             key={outil.cle}
             id={outil.cle}
