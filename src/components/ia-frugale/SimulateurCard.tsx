@@ -19,6 +19,7 @@ import type { Simulateur, Valeurs } from '@/content/iaFrugale/casUsage';
 import { CAS_LABEL } from '@/content/iaFrugale/casUsage';
 import FormuleBloc from './FormuleBloc';
 import SourceNote from './SourceNote';
+import AncrageInaturalist from './AncrageInaturalist';
 
 interface Props {
   simulateur: Simulateur;
@@ -173,6 +174,10 @@ export const SimulateurCard = ({ simulateur }: Props) => {
           </ul>
         </div>
       </div>
+
+      {simulateur.ancrage === 'inaturalist' && (
+        <AncrageInaturalist valeurs={valeurs} setValeurs={setValeurs} />
+      )}
 
       {/* Détails de méthode */}
       <Collapsible open={detailsOuverts} onOpenChange={setDetailsOuverts}>
