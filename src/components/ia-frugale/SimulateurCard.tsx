@@ -23,6 +23,8 @@ import AncrageInaturalist from './AncrageInaturalist';
 
 interface Props {
   simulateur: Simulateur;
+  /** Pastille ronde numérotée (serre de nuit CodeCarbon). */
+  numero?: number;
 }
 
 const valeursParDefaut = (sim: Simulateur): Valeurs =>
@@ -33,7 +35,7 @@ const formatCurseur = (valeur: number, pas: number) =>
     ? valeur.toLocaleString('fr-FR', { maximumFractionDigits: 2 })
     : valeur.toLocaleString('fr-FR');
 
-export const SimulateurCard = ({ simulateur }: Props) => {
+export const SimulateurCard = ({ simulateur, numero }: Props) => {
   const [valeurs, setValeurs] = useState<Valeurs>(() => valeursParDefaut(simulateur));
   const [detailsOuverts, setDetailsOuverts] = useState(false);
 
@@ -49,9 +51,19 @@ export const SimulateurCard = ({ simulateur }: Props) => {
       <div className="h-1 w-full bg-[hsl(var(--accent-outil))]" aria-hidden />
 
       <header className="space-y-3 border-b border-border p-5 sm:p-6">
-        <span className="inline-flex items-center rounded-full border border-[hsl(var(--accent-outil)/0.4)] bg-[hsl(var(--accent-outil)/0.08)] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.1em] text-[hsl(var(--accent-outil))]">
-          {CAS_LABEL[simulateur.cas]}
-        </span>
+        <div className="flex items-center gap-3">
+          {numero !== undefined && (
+            <span
+              className="cc-serif flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--accent-outil))] text-lg text-primary-foreground"
+              aria-hidden
+            >
+              {numero}
+            </span>
+          )}
+          <span className="inline-flex items-center rounded-full border border-[hsl(var(--accent-outil)/0.4)] bg-[hsl(var(--accent-outil)/0.08)] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.1em] text-[hsl(var(--accent-outil))]">
+            {CAS_LABEL[simulateur.cas]}
+          </span>
+        </div>
         <h3 className="text-lg font-semibold leading-snug text-foreground sm:text-xl">
           {simulateur.titre}
         </h3>
@@ -142,10 +154,11 @@ export const SimulateurCard = ({ simulateur }: Props) => {
             {principaux.map((r) => (
               <div
                 key={r.label}
+                data-cc="principal"
                 className="rounded-xl border border-[hsl(var(--accent-outil)/0.35)] bg-[hsl(var(--accent-outil)/0.07)] p-4"
               >
                 <p className="text-xs leading-snug text-muted-foreground">{r.label}</p>
-                <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-[hsl(var(--accent-outil))]">
+                <p className="cc-chiffre mt-1 font-mono text-2xl font-semibold tabular-nums text-[hsl(var(--accent-outil))]">
                   {r.valeur}
                   {r.unite && (
                     <span className="ml-1 text-xs font-normal text-muted-foreground">{r.unite}</span>
