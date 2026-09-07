@@ -59,17 +59,6 @@ const IntensiteCarboneChart: React.FC = () => {
   return (
     <div ref={ref} className="mt-6">
       <div className="relative rounded-2xl border border-border bg-card p-4 sm:p-6">
-        {/* Repère moyenne mondiale */}
-        {mondePct !== null && monde && (
-          <div
-            className="pointer-events-none absolute inset-y-4 hidden sm:block"
-            style={{ left: `calc(${mondePct}% * 0.62 + 38%)` }}
-            aria-hidden
-          >
-            <div className="h-full border-l border-dashed border-foreground/35" />
-          </div>
-        )}
-
         <ul className="relative space-y-3">
           {lignes.map((p, i) => {
             const pct = (p.ci / max) * 100;
@@ -85,7 +74,7 @@ const IntensiteCarboneChart: React.FC = () => {
               >
                 <span className="truncate text-sm font-medium text-foreground">{p.nom}</span>
                 <div className="flex items-center gap-2">
-                  <div className="h-6 flex-1 overflow-hidden rounded-full bg-muted sm:h-7">
+                  <div className="relative h-6 flex-1 overflow-hidden rounded-full bg-muted sm:h-7">
                     <div
                       className="h-full rounded-full transition-[width,opacity] ease-out"
                       style={{
@@ -96,6 +85,13 @@ const IntensiteCarboneChart: React.FC = () => {
                         background: `linear-gradient(90deg, color-mix(in oklab, hsl(var(--primary)) ${100 - t}%, hsl(var(--destructive))) 0%, color-mix(in oklab, hsl(var(--primary)) ${Math.max(0, 100 - t - 18)}%, hsl(var(--destructive))) 100%)`,
                       }}
                     />
+                    {mondePct !== null && (
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-y-0 border-l border-dashed border-foreground/40"
+                        style={{ left: `${mondePct}%` }}
+                      />
+                    )}
                   </div>
                   <span className="w-[5.5rem] shrink-0 text-right font-mono text-sm tabular-nums text-foreground">
                     {fmt(p.ci)}
