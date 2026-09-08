@@ -255,6 +255,24 @@ const AdminProprietes: React.FC = () => {
     placeholderData: (prev: ProprieteListRow[] | undefined) => prev,
   });
 
+  // ---- Réponses du parcours d'accueil (vues Tableau de bord et Analyse) -----
+  const onboardingQuery = useQuery<GardenAnswers[]>({
+    queryKey: ['admin-proprietes', 'onboarding', filters, idsAvecSondes],
+    enabled: vue === 'kpi' || vue === 'analyse',
+    queryFn: async () => {
+      const { data, error } = await applyFilters(
+        sb.from('proprietes').select('id, nom, ville, departement, created_at, onboarding_preferences'),
+      )
+        .order('nom', { ascending: true })
+        .limit(1000);
+      if (error) throw error;
+      return ((data ?? []) as OnboardingPropertyRow[]).map(toGardenAnswers);
+    },
+    placeholderData: (prev: GardenAnswers[] | undefined) => prev,
+  });
+  const gardens = onboardingQuery.data ?? [];
+
+
   const companyById = useMemo(() => Object.fromEntries(companies.map((c) => [c.id, c])), [companies]);
   const marcheurById = useMemo(() => Object.fromEntries(marcheurs.map((m) => [m.id, m])), [marcheurs]);
 
