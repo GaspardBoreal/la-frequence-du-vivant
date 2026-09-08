@@ -74,7 +74,8 @@ const AdminApiMcp: React.FC = () => {
                         Dernière mise à jour {formatFreshness(h?.freshness ?? null)}
                       </div>
                     </div>
-                    <div className="ml-auto">
+                    <div className="ml-auto flex items-center gap-1">
+                      <ApiRemediateInfo slug={entry.slug} name={entry.name} />
                       <ApiRemediateButton slug={entry.slug} name={entry.name} />
                     </div>
                   </li>
