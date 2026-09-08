@@ -3,7 +3,9 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion } from 'framer-motion';
-import { ArrowRight, ExternalLink, Microscope, Sparkles, Wind, Compass, Heart, X } from 'lucide-react';
+import { ArrowRight, ExternalLink, Microscope, Sparkles, Wind, Compass, Heart, X, Wrench } from 'lucide-react';
+import ApiRemediateButton from './ApiRemediateButton';
+import { ApiIncidentsMini } from './ApiIncidentsLog';
 import { Link } from 'react-router-dom';
 import { FAMILY_META } from '@/lib/apiMcpFamilies';
 import type { ApiMcpEntry } from '@/hooks/useApiMcpRegistry';
@@ -16,6 +18,8 @@ interface Props {
   health?: ApiMcpHealth;
   open: boolean;
   onClose: () => void;
+  /** Mode admin : affiche la relance de collecte et l'historique. */
+  admin?: boolean;
 }
 
 const CHAPTERS = [
@@ -25,7 +29,7 @@ const CHAPTERS = [
   { id: 'impact', label: 'Impact', icon: Heart },
 ];
 
-const ApiStoryDrawer: React.FC<Props> = ({ entry, health, open, onClose }) => {
+const ApiStoryDrawer: React.FC<Props> = ({ entry, health, open, onClose, admin }) => {
   const [showTech, setShowTech] = useState(false);
 
   if (!entry) return null;
@@ -181,6 +185,25 @@ const ApiStoryDrawer: React.FC<Props> = ({ entry, health, open, onClose }) => {
               )}
             </div>
           </motion.section>
+
+          {/* Admin — traiter l'alerte */}
+          {admin && (
+            <section className="rounded-2xl bg-emerald-950/60 border border-emerald-400/15 p-5 space-y-3">
+              <div className="flex items-center gap-2 text-emerald-300">
+                <Wrench className="w-4 h-4" />
+                <span className="text-xs uppercase tracking-wider">Traiter l'alerte</span>
+              </div>
+              <p className="text-xs text-emerald-100/70 leading-relaxed">
+                {health?.status === 'red' || health?.status === 'orange'
+                  ? 'Les données de cette intégration ont vieilli. Vous pouvez relancer la collecte immédiatement.'
+                  : 'Tout est à jour. Une relance manuelle reste possible.'}
+              </p>
+              <ApiRemediateButton slug={entry.slug} name={entry.name} />
+              <ApiIncidentsMini slug={entry.slug} label={entry.name} />
+            </section>
+          )}
+
+
 
           {/* Aller plus loin */}
           {entry.tech_description && (
