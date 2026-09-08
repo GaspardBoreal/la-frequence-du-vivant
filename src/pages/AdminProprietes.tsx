@@ -53,7 +53,9 @@ const AdminProprietes: React.FC = () => {
     du: searchParams.get('du') ?? '',
     au: searchParams.get('au') ?? '',
   };
-  const vue = searchParams.get('vue') === 'carte' ? 'carte' : 'table';
+  const vueParam = searchParams.get('vue');
+  const vue: 'table' | 'carte' | 'kpi' | 'analyse' =
+    vueParam === 'carte' || vueParam === 'kpi' || vueParam === 'analyse' ? vueParam : 'table';
   const tri: SortKey = (searchParams.get('tri') as SortKey) || 'created_at';
   const dir: 'asc' | 'desc' =
     searchParams.get('dir') === 'asc' || searchParams.get('dir') === 'desc'
