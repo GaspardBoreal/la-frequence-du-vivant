@@ -75,11 +75,17 @@ const ApiCard: React.FC<Props> = ({ entry, health, onOpen, showAdminBadge }) => 
                 </span>
               </div>
             )}
-            {health?.freshness && (
+            {typeof health?.backlog === 'number' ? (
+              <div className="text-[11px] text-emerald-200/60 ml-auto">
+                · {health.backlog === 0
+                  ? 'rien en attente'
+                  : `${health.backlog} en attente`}
+              </div>
+            ) : health?.freshness ? (
               <div className="text-[11px] text-emerald-200/60 ml-auto">
                 · maj {formatFreshness(health.freshness)}
               </div>
-            )}
+            ) : null}
           </div>
         ) : null}
 

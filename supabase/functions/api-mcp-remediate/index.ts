@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
 
     let ok = false;
     let detail = '';
+    let backlog: number | null = null;
 
     if (slug === 'inaturalist' || slug === 'gbif') {
       const res = await invokeFunction(
@@ -85,51 +86,52 @@ Deno.serve(async (req) => {
         detail = res.parsed?.error ?? res.text?.slice(0, 400) ?? `Erreur ${res.status}`;
       }
     } else {
-      // lovable-ai : classifier les espèces encore absentes de la base de connaissances
-      const { data: snapshots } = await admin
-        .from('biodiversity_snapshots')
-        .select('scientific_name, common_name, iconic_taxon')
-        .not('scientific_name', 'is', null)
-        .order('updated_at', { ascending: false })
-        .limit(1500);
+      // lovable-ai : classifier les espèces observées encore absentes de la base de connaissances
+      const { data: backlogBefore } = await admin.rpc('count_species_awaiting_eco_tags');
+      backlog = typeof backlogBefore === 'number' ? backlogBefore : Number(backlogBefore ?? 0);
 
-      const { data: known } = await admin
-        .from('species_eco_tags_kb')
-        .select('scientific_name');
-      const knownSet = new Set((known ?? []).map((r: any) => r.scientific_name));
+      const { data: awaiting, error: awaitingErr } = await admin
+        .rpc('list_species_awaiting_eco_tags', { _limit: 60 });
 
-      const seen = new Set<string>();
-      const species: Array<Record<string, unknown>> = [];
-      for (const row of (snapshots ?? []) as any[]) {
-        const name = String(row.scientific_name ?? '').trim();
-        if (!name || seen.has(name) || knownSet.has(name)) continue;
-        seen.add(name);
-        species.push({
-          scientific_name: name,
-          common_name: row.common_name ?? null,
-          iconic_taxon: row.iconic_taxon ?? null,
-        });
-        if (species.length >= 60) break;
-      }
-
-      if (species.length === 0) {
-        ok = true;
-        detail = 'Aucune espèce nouvelle à classifier : la base de connaissances est à jour.';
+      if (awaitingErr) {
+        ok = false;
+        detail = `Vérification impossible : ${awaitingErr.message}`;
       } else {
-        const res = await invokeFunction('classify-species-eco-tags', { species }, authHeader);
-        ok = res.ok;
-        if (ok) {
-          const auto = res.parsed?.auto_validated ?? 0;
-          detail = `${species.length} espèce(s) soumises, ${auto} étiquette(s) validée(s) automatiquement.`;
+        const species = (awaiting ?? []).map((r: any) => ({
+          scientific_name: r.scientific_name,
+          common_name: r.common_name ?? null,
+          iconic_taxon: r.iconic_taxon ?? null,
+        }));
+
+        if (species.length === 0) {
+          ok = true;
+          detail = 'Vérification effectuée : 0 espèce en attente, la base de connaissances est à jour.';
         } else {
-          detail = res.parsed?.error ?? res.text?.slice(0, 400) ?? `Erreur ${res.status}`;
+          const res = await invokeFunction('classify-species-eco-tags', { species }, authHeader);
+          ok = res.ok;
+          if (ok) {
+            const auto = res.parsed?.auto_validated ?? 0;
+            const { data: after } = await admin.rpc('count_species_awaiting_eco_tags');
+            const rest = typeof after === 'number' ? after : Number(after ?? 0);
+            detail = `${backlog} espèce(s) en attente avant relance — ${species.length} soumises, ${auto} étiquette(s) validée(s) automatiquement, ${rest} restante(s).`;
+          } else {
+            detail = res.parsed?.error ?? res.text?.slice(0, 400) ?? `Erreur ${res.status}`;
+          }
         }
       }
+
+      await admin.from('api_mcp_checks').insert({
+        slug,
+        backlog,
+        note: detail.slice(0, 500),
+      });
     }
 
-    // Statut au moment de l'action (mêmes seuils que la santé live)
+    // Statut au moment de l'action (mêmes règles que la santé live)
     let statusAtAction = 'unknown';
-    if (freshnessBefore) {
+    if (slug === 'lovable-ai') {
+      statusAtAction = backlog === null ? 'red' : backlog === 0 ? 'green' : backlog <= 30 ? 'orange' : 'red';
+    } else if (freshnessBefore) {
       const ageH = (Date.now() - new Date(freshnessBefore).getTime()) / 36e5;
       statusAtAction = ageH > 72 ? 'red' : ageH > 24 ? 'orange' : 'green';
     }
