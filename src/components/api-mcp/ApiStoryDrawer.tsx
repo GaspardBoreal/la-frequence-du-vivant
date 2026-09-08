@@ -199,7 +199,10 @@ const ApiStoryDrawer: React.FC<Props> = ({ entry, health, open, onClose, admin }
                   ? 'Les données de cette intégration ont vieilli. Vous pouvez relancer la collecte immédiatement.'
                   : 'Tout est à jour. Une relance manuelle reste possible.'}
               </p>
-              <ApiRemediateButton slug={entry.slug} name={entry.name} />
+              <div className="flex items-center gap-2">
+                <ApiRemediateButton slug={entry.slug} name={entry.name} />
+                <ApiRemediateInfo slug={entry.slug} name={entry.name} />
+              </div>
               <ApiIncidentsMini slug={entry.slug} label={entry.name} />
             </section>
           )}
