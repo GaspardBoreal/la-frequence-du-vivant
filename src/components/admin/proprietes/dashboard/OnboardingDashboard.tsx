@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Sprout } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   dashboardToCsv, distribution, readSurface, readTempsSemaine,
   SURFACE_BREAKS, tally, tallyExamples, TEMPS_BREAKS,
