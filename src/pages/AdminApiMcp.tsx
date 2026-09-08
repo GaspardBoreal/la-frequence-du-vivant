@@ -4,6 +4,7 @@ import { ArrowLeft, Activity, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ApiMcpGrid from '@/components/api-mcp/ApiMcpGrid';
 import ApiRemediateButton from '@/components/api-mcp/ApiRemediateButton';
+import ApiRemediateInfo from '@/components/api-mcp/ApiRemediateInfo';
 import ApiIncidentsLog from '@/components/api-mcp/ApiIncidentsLog';
 import { useApiMcpRegistry } from '@/hooks/useApiMcpRegistry';
 import { useApiMcpHealth, formatFreshness } from '@/hooks/useApiMcpHealth';
@@ -73,7 +74,8 @@ const AdminApiMcp: React.FC = () => {
                         Dernière mise à jour {formatFreshness(h?.freshness ?? null)}
                       </div>
                     </div>
-                    <div className="ml-auto">
+                    <div className="ml-auto flex items-center gap-1">
+                      <ApiRemediateInfo slug={entry.slug} name={entry.name} />
                       <ApiRemediateButton slug={entry.slug} name={entry.name} />
                     </div>
                   </li>

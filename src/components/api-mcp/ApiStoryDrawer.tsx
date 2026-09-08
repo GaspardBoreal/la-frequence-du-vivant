@@ -5,6 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { motion } from 'framer-motion';
 import { ArrowRight, ExternalLink, Microscope, Sparkles, Wind, Compass, Heart, X, Wrench } from 'lucide-react';
 import ApiRemediateButton from './ApiRemediateButton';
+import ApiRemediateInfo from './ApiRemediateInfo';
 import { ApiIncidentsMini } from './ApiIncidentsLog';
 import { Link } from 'react-router-dom';
 import { FAMILY_META } from '@/lib/apiMcpFamilies';
@@ -198,7 +199,10 @@ const ApiStoryDrawer: React.FC<Props> = ({ entry, health, open, onClose, admin }
                   ? 'Les données de cette intégration ont vieilli. Vous pouvez relancer la collecte immédiatement.'
                   : 'Tout est à jour. Une relance manuelle reste possible.'}
               </p>
-              <ApiRemediateButton slug={entry.slug} name={entry.name} />
+              <div className="flex items-center gap-2">
+                <ApiRemediateButton slug={entry.slug} name={entry.name} />
+                <ApiRemediateInfo slug={entry.slug} name={entry.name} />
+              </div>
               <ApiIncidentsMini slug={entry.slug} label={entry.name} />
             </section>
           )}
