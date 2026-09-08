@@ -210,6 +210,30 @@ export type Database = {
         }
         Relationships: []
       }
+      api_mcp_checks: {
+        Row: {
+          backlog: number | null
+          checked_at: string
+          id: string
+          note: string | null
+          slug: string
+        }
+        Insert: {
+          backlog?: number | null
+          checked_at?: string
+          id?: string
+          note?: string | null
+          slug: string
+        }
+        Update: {
+          backlog?: number | null
+          checked_at?: string
+          id?: string
+          note?: string | null
+          slug?: string
+        }
+        Relationships: []
+      }
       api_mcp_incidents: {
         Row: {
           action: string
@@ -10105,6 +10129,7 @@ export type Database = {
         Args: { _fournisseur_id: string }
         Returns: Json
       }
+      count_species_awaiting_eco_tags: { Args: never; Returns: number }
       create_admin_user: {
         Args: { new_email: string; new_user_id: string }
         Returns: boolean
