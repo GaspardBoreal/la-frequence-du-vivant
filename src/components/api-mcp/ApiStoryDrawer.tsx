@@ -179,11 +179,19 @@ const ApiStoryDrawer: React.FC<Props> = ({ entry, health, open, onClose, admin }
               <div className="text-2xl font-serif text-emerald-50 leading-snug">
                 {impactText || 'Cette intégration nourrit silencieusement vos marches.'}
               </div>
-              {health?.freshness && (
+              {typeof health?.backlog === 'number' ? (
+                <div className="text-xs text-emerald-200/60 mt-3 space-y-0.5">
+                  <div>
+                    En attente de traitement : {health.backlog === 0 ? 'rien, tout est à jour' : `${health.backlog} espèce${health.backlog > 1 ? 's' : ''}`}
+                  </div>
+                  <div>Dernier contrôle : {formatFreshness(health.lastCheckedAt ?? null)}</div>
+                  <div>Dernière classification : {formatFreshness(health.freshness)}</div>
+                </div>
+              ) : health?.freshness ? (
                 <div className="text-xs text-emerald-200/60 mt-3">
                   Dernière mise à jour : {formatFreshness(health.freshness)}
                 </div>
-              )}
+              ) : null}
             </div>
           </motion.section>
 
