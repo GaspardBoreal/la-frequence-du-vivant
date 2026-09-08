@@ -107,7 +107,7 @@ const OnboardingDashboard: React.FC<{ gardens: GardenAnswers[] }> = ({ gardens }
         <NumericDistributionCard result={temps} onSelect={pick} />
       </div>
 
-      <QuestionVignetteCard result={blocs.style} onSelect={pick} />
+      <QuestionVignetteCard result={styleIllustre} onSelect={pick} />
       <QuestionVignetteCard result={blocs.exemple} onSelect={pick} />
 
       <div className="grid gap-4 lg:grid-cols-2">
