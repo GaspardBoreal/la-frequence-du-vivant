@@ -141,3 +141,6 @@ verify_jwt = false
 [functions.send-carnet-terrain]
 verify_jwt = false
 
+
+[functions.api-mcp-remediate]
+verify_jwt = true
