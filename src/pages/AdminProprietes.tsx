@@ -22,6 +22,9 @@ import type {
 } from '@/components/admin/proprietes/types';
 import { DEFAULT_FILTERS, formatSurface, resolvePeriodeRange } from '@/components/admin/proprietes/types';
 import { canonicalDepartement, canonicalRegion } from '@/utils/frenchGeoLookup';
+import OnboardingDashboard from '@/components/admin/proprietes/dashboard/OnboardingDashboard';
+import AnalyseView from '@/components/admin/proprietes/analyse/AnalyseView';
+import { toGardenAnswers, type GardenAnswers, type OnboardingPropertyRow } from '@/lib/onboardingStats';
 
 const sb = supabase as any;
 
