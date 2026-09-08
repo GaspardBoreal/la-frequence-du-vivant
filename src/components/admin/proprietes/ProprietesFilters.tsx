@@ -112,7 +112,60 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
 
       <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
         <Select value={values.statut} onValueChange={(v) => set('statut', v as ProprietesFilterValues['statut'])}>
-...
+          <SelectTrigger><SelectValue placeholder="Statut" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous statuts</SelectItem>
+            <SelectItem value="actives">Actives</SelectItem>
+            <SelectItem value="archivees">Archivées</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={values.region}
+          onValueChange={(v) => {
+            const deptStillValid =
+              values.dept === 'all' || v === 'all' || regionLabelFromDepartement(values.dept) === v;
+            onChange({ ...values, region: v, dept: deptStillValid ? values.dept : 'all' });
+          }}
+        >
+          <SelectTrigger><SelectValue placeholder="Région" /></SelectTrigger>
+          <SelectContent className="max-h-72">
+            <SelectItem value="all">Toutes régions</SelectItem>
+            {regions.map((r) => (
+              <SelectItem key={r} value={r}>{r}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={values.dept} onValueChange={(v) => set('dept', v)}>
+          <SelectTrigger><SelectValue placeholder="Département" /></SelectTrigger>
+          <SelectContent className="max-h-72">
+            <SelectItem value="all">Tous départements</SelectItem>
+            {visibleDepartements.map((d) => (
+              <SelectItem key={d} value={d}>{d}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={values.entreprise} onValueChange={(v) => set('entreprise', v)}>
+          <SelectTrigger><SelectValue placeholder="Entreprise" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes entreprises</SelectItem>
+            {entreprises.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.nom}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={values.gps} onValueChange={(v) => set('gps', v as ProprietesFilterValues['gps'])}>
+          <SelectTrigger><SelectValue placeholder="GPS" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">GPS : toutes</SelectItem>
+            <SelectItem value="avec">Géolocalisées</SelectItem>
+            <SelectItem value="sans">Sans coordonnées GPS</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Select value={values.sondes} onValueChange={(v) => set('sondes', v as ProprietesFilterValues['sondes'])}>
           <SelectTrigger><SelectValue placeholder="Sondes" /></SelectTrigger>
           <SelectContent>
