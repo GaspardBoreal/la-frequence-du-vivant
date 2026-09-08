@@ -103,28 +103,33 @@ Deno.serve(async (req) => {
           }
 
           // Trace du contrôle : ce service peut légitimement n'avoir rien à faire.
-          const nowIso = new Date().toISOString();
-          await supabase.from('api_mcp_checks').insert({
-            slug: entry.slug,
-            backlog,
-            note: backlog === null ? 'contrôle impossible' : `${backlog} espèce(s) en attente`,
-          });
-          lastCheckedAt = nowIso;
+          // On n'écrit qu'une trace par quart d'heure pour ne pas gonfler le journal.
+          const { data: prev } = await supabase
+            .from('api_mcp_checks')
+            .select('checked_at')
+            .eq('slug', entry.slug)
+            .order('checked_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          const prevAgeH = prev?.checked_at
+            ? (Date.now() - new Date(prev.checked_at).getTime()) / 36e5
+            : null;
+          lastCheckedAt = prev?.checked_at ?? null;
+
+          if (prevAgeH === null || prevAgeH > 0.25) {
+            const nowIso = new Date().toISOString();
+            await supabase.from('api_mcp_checks').insert({
+              slug: entry.slug,
+              backlog,
+              note: backlog === null ? 'contrôle impossible' : `${backlog} espèce(s) en attente`,
+            });
+            lastCheckedAt = nowIso;
+          }
 
           // Silence prolongé de la surveillance (au cas où plus rien ne contrôle).
-          if (status === 'green') {
-            const { data: prev } = await supabase
-              .from('api_mcp_checks')
-              .select('checked_at')
-              .eq('slug', entry.slug)
-              .lt('checked_at', nowIso)
-              .order('checked_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (prev?.checked_at) {
-              const ageH = (Date.now() - new Date(prev.checked_at).getTime()) / 36e5;
-              if (ageH > CHECK_SILENCE_HOURS) status = 'orange';
-            }
+          if (status === 'green' && prevAgeH !== null && prevAgeH > CHECK_SILENCE_HOURS) {
+            status = 'orange';
           }
         } else if (entry.is_critical && freshness) {
           const ageH = (Date.now() - new Date(freshness).getTime()) / 36e5;
