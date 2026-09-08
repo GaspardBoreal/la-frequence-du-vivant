@@ -91,6 +91,7 @@ const ApiMcpGrid: React.FC<Props> = ({
         health={selected ? health?.[selected.slug] : undefined}
         open={!!selected}
         onClose={() => setSelected(null)}
+        admin={showHealth}
       />
     </div>
   );
