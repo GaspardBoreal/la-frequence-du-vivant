@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft, Plus, Trees, List, Map as MapIcon, RadioTower,
-  ArrowUp, ArrowDown, ChevronsUpDown, ChevronRight,
+  ArrowUp, ArrowDown, ChevronsUpDown, ChevronRight, BarChart3, Sparkles,
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
