@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft, Plus, Trees, List, Map as MapIcon, RadioTower,
-  ArrowUp, ArrowDown, ChevronsUpDown, ChevronRight,
+  ArrowUp, ArrowDown, ChevronsUpDown, ChevronRight, BarChart3, Sparkles,
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +22,9 @@ import type {
 } from '@/components/admin/proprietes/types';
 import { DEFAULT_FILTERS, formatSurface, resolvePeriodeRange } from '@/components/admin/proprietes/types';
 import { canonicalDepartement, canonicalRegion } from '@/utils/frenchGeoLookup';
+import OnboardingDashboard from '@/components/admin/proprietes/dashboard/OnboardingDashboard';
+import AnalyseView from '@/components/admin/proprietes/analyse/AnalyseView';
+import { toGardenAnswers, type GardenAnswers, type OnboardingPropertyRow } from '@/lib/onboardingStats';
 
 const sb = supabase as any;
 
@@ -53,7 +56,9 @@ const AdminProprietes: React.FC = () => {
     du: searchParams.get('du') ?? '',
     au: searchParams.get('au') ?? '',
   };
-  const vue = searchParams.get('vue') === 'carte' ? 'carte' : 'table';
+  const vueParam = searchParams.get('vue');
+  const vue: 'table' | 'carte' | 'kpi' | 'analyse' =
+    vueParam === 'carte' || vueParam === 'kpi' || vueParam === 'analyse' ? vueParam : 'table';
   const tri: SortKey = (searchParams.get('tri') as SortKey) || 'created_at';
   const dir: 'asc' | 'desc' =
     searchParams.get('dir') === 'asc' || searchParams.get('dir') === 'desc'
@@ -253,6 +258,24 @@ const AdminProprietes: React.FC = () => {
     placeholderData: (prev: ProprieteListRow[] | undefined) => prev,
   });
 
+  // ---- Réponses du parcours d'accueil (vues Tableau de bord et Analyse) -----
+  const onboardingQuery = useQuery<GardenAnswers[]>({
+    queryKey: ['admin-proprietes', 'onboarding', filters, idsAvecSondes],
+    enabled: vue === 'kpi' || vue === 'analyse',
+    queryFn: async () => {
+      const { data, error } = await applyFilters(
+        sb.from('proprietes').select('id, nom, ville, departement, created_at, onboarding_preferences'),
+      )
+        .order('nom', { ascending: true })
+        .limit(1000);
+      if (error) throw error;
+      return ((data ?? []) as OnboardingPropertyRow[]).map(toGardenAnswers);
+    },
+    placeholderData: (prev: GardenAnswers[] | undefined) => prev,
+  });
+  const gardens = onboardingQuery.data ?? [];
+
+
   const companyById = useMemo(() => Object.fromEntries(companies.map((c) => [c.id, c])), [companies]);
   const marcheurById = useMemo(() => Object.fromEntries(marcheurs.map((m) => [m.id, m])), [marcheurs]);
 
@@ -340,34 +363,52 @@ const AdminProprietes: React.FC = () => {
             entreprises={entrepriseOptions}
           />
 
-          {/* Bascule Table | Carte */}
-          <div className="flex items-center justify-between">
-            <div className="inline-flex rounded-lg border border-border bg-card p-1">
-              <button
-                type="button"
-                onClick={() => updateParams({ vue: null }, false)}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  vue === 'table' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <List className="h-3.5 w-3.5" /> Table
-              </button>
-              <button
-                type="button"
-                onClick={() => updateParams({ vue: 'carte' }, false)}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  vue === 'carte' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <MapIcon className="h-3.5 w-3.5" /> Carte
-              </button>
+          {/* Bascule Table | Carte | Tableau de bord | Analyse */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="inline-flex flex-wrap rounded-lg border border-border bg-card p-1">
+              {([
+                { key: 'table', label: 'Table', icon: List, param: null },
+                { key: 'carte', label: 'Carte', icon: MapIcon, param: 'carte' },
+                { key: 'kpi', label: 'Tableau de bord', icon: BarChart3, param: 'kpi' },
+                { key: 'analyse', label: 'Analyse', icon: Sparkles, param: 'analyse' },
+              ] as const).map((v) => {
+                const Icon = v.icon;
+                return (
+                  <button
+                    key={v.key}
+                    type="button"
+                    onClick={() => updateParams({ vue: v.param }, false)}
+                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                      vue === v.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" /> {v.label}
+                  </button>
+                );
+              })}
             </div>
             <div className="text-xs text-muted-foreground tabular-nums">
-              {vue === 'table' ? `${total} propriété${total > 1 ? 's' : ''}` : `${(mapQuery.data ?? []).length} propriété${(mapQuery.data ?? []).length > 1 ? 's' : ''}`}
+              {vue === 'table'
+                ? `${total} propriété${total > 1 ? 's' : ''}`
+                : vue === 'carte'
+                  ? `${(mapQuery.data ?? []).length} propriété${(mapQuery.data ?? []).length > 1 ? 's' : ''}`
+                  : `${gardens.length} propriété${gardens.length > 1 ? 's' : ''}`}
             </div>
           </div>
 
-          {vue === 'carte' ? (
+          {vue === 'kpi' ? (
+            onboardingQuery.isLoading && !onboardingQuery.data ? (
+              <Card className="p-8 text-center text-muted-foreground">Chargement des réponses…</Card>
+            ) : (
+              <OnboardingDashboard gardens={gardens} />
+            )
+          ) : vue === 'analyse' ? (
+            onboardingQuery.isLoading && !onboardingQuery.data ? (
+              <Card className="p-8 text-center text-muted-foreground">Chargement des réponses…</Card>
+            ) : (
+              <AnalyseView gardens={gardens} />
+            )
+          ) : vue === 'carte' ? (
             mapQuery.isLoading && !mapQuery.data ? (
               <Card className="p-8 text-center text-muted-foreground">Chargement de la carte…</Card>
             ) : (
