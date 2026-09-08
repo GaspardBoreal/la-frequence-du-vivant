@@ -71,7 +71,17 @@ const AdminApiMcp: React.FC = () => {
                     <div className="min-w-0">
                       <div className="text-sm text-emerald-50">{entry.name}</div>
                       <div className="text-[11px] text-emerald-200/60">
-                        Dernière mise à jour {formatFreshness(h?.freshness ?? null)}
+                        {typeof h?.backlog === 'number' || h?.lastCheckedAt ? (
+                          <>
+                            {typeof h?.backlog === 'number'
+                              ? `${h.backlog} espèce${h.backlog > 1 ? 's' : ''} en attente`
+                              : 'Retard non mesurable'}
+                            {' · '}dernier contrôle {formatFreshness(h?.lastCheckedAt ?? null)}
+                            {' · '}dernière classification {formatFreshness(h?.freshness ?? null)}
+                          </>
+                        ) : (
+                          <>Dernière mise à jour {formatFreshness(h?.freshness ?? null)}</>
+                        )}
                       </div>
                     </div>
                     <div className="ml-auto flex items-center gap-1">
