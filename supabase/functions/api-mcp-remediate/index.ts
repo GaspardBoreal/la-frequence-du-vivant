@@ -114,7 +114,6 @@ Deno.serve(async (req) => {
             const { data: after } = await admin.rpc('count_species_awaiting_eco_tags');
             const rest = typeof after === 'number' ? after : Number(after ?? 0);
             detail = `${backlog} espèce(s) en attente avant relance — ${species.length} soumises, ${auto} étiquette(s) validée(s) automatiquement, ${rest} restante(s).`;
-            backlog = rest;
           } else {
             detail = res.parsed?.error ?? res.text?.slice(0, 400) ?? `Erreur ${res.status}`;
           }
