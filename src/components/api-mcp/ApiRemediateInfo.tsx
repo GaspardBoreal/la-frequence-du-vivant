@@ -31,9 +31,9 @@ const EXPLAIN: Record<string, Explain> = {
   },
   'lovable-ai': {
     critical:
-      'La base de connaissances des fonctions écologiques n\'a pas été actualisée. Les espèces récemment observées peuvent apparaître sans leurs étiquettes écologiques (mellifère, fixateur d\'azote, etc.).',
+      "L'alerte ne mesure pas l'ancienneté du dernier travail, mais le retard réel : le nombre d'espèces déjà observées qui n'ont encore aucune étiquette écologique (mellifère, fixateur d'azote, etc.). Aucune espèce en attente = vert, même si la dernière classification est ancienne. De 1 à 30 espèces = orange, au-delà de 30 (ou si le comptage échoue) = rouge.",
     execution:
-      'La fonction edge classify-species-eco-tags est appelée sur un lot d\'espèces observées dans biodiversity_snapshots mais absentes de species_eco_tags_kb. Jusqu\'à 60 espèces sont classifiées par appel.',
+      "La relance recompte d'abord les espèces en attente. S'il n'y en a aucune, rien n'est classifié et le contrôle est simplement horodaté. Sinon, un lot d'au plus 60 espèces est envoyé à la classification par IA, puis le retard restant est recalculé et affiché.",
   },
 };
 
