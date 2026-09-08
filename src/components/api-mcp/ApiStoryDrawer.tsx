@@ -5,6 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { motion } from 'framer-motion';
 import { ArrowRight, ExternalLink, Microscope, Sparkles, Wind, Compass, Heart, X, Wrench } from 'lucide-react';
 import ApiRemediateButton from './ApiRemediateButton';
+import ApiRemediateInfo from './ApiRemediateInfo';
 import { ApiIncidentsMini } from './ApiIncidentsLog';
 import { Link } from 'react-router-dom';
 import { FAMILY_META } from '@/lib/apiMcpFamilies';
