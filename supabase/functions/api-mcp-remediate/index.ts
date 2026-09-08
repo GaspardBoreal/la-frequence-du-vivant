@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
 
     let ok = false;
     let detail = '';
+    let backlog: number | null = null;
 
     if (slug === 'inaturalist' || slug === 'gbif') {
       const res = await invokeFunction(
