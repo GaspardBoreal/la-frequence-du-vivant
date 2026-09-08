@@ -44,6 +44,8 @@ export interface ProprietesFilterValues {
   entreprise: string;
   gps: 'all' | 'avec' | 'sans';
   sondes: 'all' | 'avec';
+  /** Parcours d'accueil : bloc Portrait · Intention vide ou renseigné. */
+  intention: 'all' | 'vide' | 'renseignee';
   periode: ProprietesPeriode;
   du: string;
   au: string;
@@ -57,6 +59,7 @@ export const DEFAULT_FILTERS: ProprietesFilterValues = {
   entreprise: 'all',
   gps: 'all',
   sondes: 'all',
+  intention: 'all',
   periode: 'all',
   du: '',
   au: '',
