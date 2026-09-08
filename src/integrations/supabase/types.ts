@@ -11048,6 +11048,14 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      list_species_awaiting_eco_tags: {
+        Args: { _limit?: number }
+        Returns: {
+          common_name: string
+          iconic_taxon: string
+          scientific_name: string
+        }[]
+      }
       log_public_event_event: {
         Args: {
           _event_type: string
