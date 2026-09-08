@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Sprout } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   dashboardToCsv, distribution, readSurface, readTempsSemaine,
   SURFACE_BREAKS, tally, tallyExamples, TEMPS_BREAKS,
@@ -17,6 +18,24 @@ const OnboardingDashboard: React.FC<{ gardens: GardenAnswers[] }> = ({ gardens }
   const [selection, setSelection] = React.useState<Selection | null>(null);
   const repondants = React.useMemo(() => gardens.filter((g) => g.hasOnboarding), [gardens]);
 
+  // Images officielles de la galerie « Quel jardin vous fait rêver ? »
+  const [typeImages, setTypeImages] = React.useState<Record<string, string>>({});
+  React.useEffect(() => {
+    let actif = true;
+    supabase
+      .from('onboarding_garden_types')
+      .select('slug, image_url')
+      .then(({ data }) => {
+        if (!actif || !data) return;
+        const map: Record<string, string> = {};
+        data.forEach((t: { slug: string | null; image_url: string | null }) => {
+          if (t.slug && t.image_url) map[t.slug] = t.image_url;
+        });
+        setTypeImages(map);
+      });
+    return () => { actif = false; };
+  }, []);
+
   const blocs = React.useMemo(() => ({
     profil: tally(repondants, 'profil', { title: 'Qui êtes-vous ?' }),
     lieu: tally(repondants, 'lieu', { title: 'Où jardinez-vous ?' }),
@@ -31,6 +50,12 @@ const OnboardingDashboard: React.FC<{ gardens: GardenAnswers[] }> = ({ gardens }
     budget: tally(repondants, 'budget', { title: 'Que souhaitez-vous investir ?' }),
     objectif: tally(repondants, 'objectif_6_mois', { title: 'Quel premier objectif ?' }),
   }), [repondants]);
+
+  const styleIllustre = React.useMemo(() => ({
+    ...blocs.style,
+    items: blocs.style.items.map((it) => ({ ...it, vignette: typeImages[it.value] ?? null })),
+  }), [blocs.style, typeImages]);
+
 
   const surfaces = React.useMemo(
     () => distribution(repondants, readSurface, SURFACE_BREAKS, 'm²', 'Quelle place avez-vous ?'),
@@ -82,7 +107,7 @@ const OnboardingDashboard: React.FC<{ gardens: GardenAnswers[] }> = ({ gardens }
         <NumericDistributionCard result={temps} onSelect={pick} />
       </div>
 
-      <QuestionVignetteCard result={blocs.style} onSelect={pick} />
+      <QuestionVignetteCard result={styleIllustre} onSelect={pick} />
       <QuestionVignetteCard result={blocs.exemple} onSelect={pick} />
 
       <div className="grid gap-4 lg:grid-cols-2">
