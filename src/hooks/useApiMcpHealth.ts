@@ -4,6 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 export interface ApiMcpHealth {
   volume: number | null;
   freshness: string | null;
+  /** Services à la demande (Lovable AI) : nombre d'éléments en attente de traitement. */
+  backlog?: number | null;
+  /** Date du dernier contrôle du retard, indépendante du dernier traitement effectif. */
+  lastCheckedAt?: string | null;
   status: 'green' | 'orange' | 'red' | 'unknown';
 }
 
