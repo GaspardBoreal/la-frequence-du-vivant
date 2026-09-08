@@ -110,7 +110,7 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
         )}
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
         <Select value={values.statut} onValueChange={(v) => set('statut', v as ProprietesFilterValues['statut'])}>
           <SelectTrigger><SelectValue placeholder="Statut" /></SelectTrigger>
           <SelectContent>
@@ -171,6 +171,18 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
           <SelectContent>
             <SelectItem value="all">Sondes : toutes</SelectItem>
             <SelectItem value="avec">Avec sondes IoT</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={values.intention}
+          onValueChange={(v) => set('intention', v as ProprietesFilterValues['intention'])}
+        >
+          <SelectTrigger><SelectValue placeholder="Portrait · Intention" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Intention : toutes</SelectItem>
+            <SelectItem value="vide">Intention à renseigner</SelectItem>
+            <SelectItem value="renseignee">Intention renseignée</SelectItem>
           </SelectContent>
         </Select>
 
