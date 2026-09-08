@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info, AlertTriangle, PlayCircle, X } from 'lucide-react';
+import { Info, AlertTriangle, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
