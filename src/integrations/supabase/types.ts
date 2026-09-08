@@ -210,6 +210,42 @@ export type Database = {
         }
         Relationships: []
       }
+      api_mcp_incidents: {
+        Row: {
+          action: string
+          created_at: string
+          detail: string | null
+          freshness_before: string | null
+          id: string
+          outcome: string
+          slug: string
+          status_at_action: string
+          triggered_by: string | null
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          detail?: string | null
+          freshness_before?: string | null
+          id?: string
+          outcome?: string
+          slug: string
+          status_at_action?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          detail?: string | null
+          freshness_before?: string | null
+          id?: string
+          outcome?: string
+          slug?: string
+          status_at_action?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       api_mcp_registry: {
         Row: {
           created_at: string
