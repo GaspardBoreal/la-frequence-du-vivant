@@ -37,6 +37,13 @@ export interface PropertyBiodiversityKpis {
   fertilityScore: number;
   /** Provenance des étiquettes. */
   sources: { curated: number; kb: number; auto: number };
+  /** Espèces fusionnées, pour le détail (triées par nombre d'observations). */
+  species: Array<{
+    scientificName: string | null;
+    kingdom: KingdomKey;
+    functions: EcoFunction[];
+    count: number;
+  }>;
   isLoading: boolean;
   error: Error | null;
 }
