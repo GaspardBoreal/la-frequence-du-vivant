@@ -56,8 +56,8 @@ const ProprieteIntentionSection: React.FC<Props> = ({ proprieteId, nom, sousTitr
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" disabled={isLoading || !intention}>
-                {isLoading
+              <Button variant="outline" size="sm" disabled={isLoading || bio.isLoading || !intention}>
+                {isLoading || bio.isLoading
                   ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   : <Download className="mr-2 h-4 w-4" />}
                 Exporter
