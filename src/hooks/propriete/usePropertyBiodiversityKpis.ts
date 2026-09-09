@@ -205,9 +205,11 @@ export function usePropertyBiodiversityKpis(
 
     const sources = { curated: 0, kb: 0, auto: 0 };
     let alliesCount = 0;
+    const species: PropertyBiodiversityKpis['species'] = [];
 
     merged.forEach((sp) => {
-      byKingdom[normalizeKingdom(sp.group)] += 1;
+      const kingdom = normalizeKingdom(sp.group);
+      byKingdom[kingdom] += 1;
       const key = normSci(sp.scientificName);
       const res = resolveEcoFunctions(sp, {
         override: overrides.has(key) ? overrides.get(key)! : undefined,
