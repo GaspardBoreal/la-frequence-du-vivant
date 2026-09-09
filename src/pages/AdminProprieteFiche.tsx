@@ -28,6 +28,8 @@ import {
 } from '@/utils/frenchGeoLookup';
 import ProprietePositionPicker from '@/components/admin/proprietes/ProprietePositionPicker';
 import DeleteProprieteDialog from '@/components/admin/proprietes/DeleteProprieteDialog';
+import ProprieteDashboard from '@/components/admin/proprietes/fiche/ProprieteDashboard';
+import ProprieteIntentionSection from '@/components/admin/proprietes/fiche/ProprieteIntentionSection';
 import { cn } from '@/lib/utils';
 
 const sb = supabase as any;
