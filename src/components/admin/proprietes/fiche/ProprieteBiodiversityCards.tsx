@@ -89,7 +89,7 @@ const ProprieteBiodiversityCards: React.FC<Props> = ({ proprieteId, onOpen }) =>
 
   return (
     <div className="grid gap-3 lg:grid-cols-2">
-      <Shell titre="Le vivant recensé" icone={<Leaf className="h-4 w-4" />} delay={0}>
+      <Shell titre="Le vivant recensé" icone={<Leaf className="h-4 w-4" />} delay={0} onOpen={() => onOpen?.('vivant')}>
         <p className="mt-3 text-4xl font-semibold leading-none tabular-nums text-foreground">
           {bio.totalSpecies}
         </p>
@@ -113,7 +113,7 @@ const ProprieteBiodiversityCards: React.FC<Props> = ({ proprieteId, onOpen }) =>
         </div>
       </Shell>
 
-      <Shell titre="Les alliés du jardin" icone={<Sparkles className="h-4 w-4" />} delay={80}>
+      <Shell titre="Les alliés du jardin" icone={<Sparkles className="h-4 w-4" />} delay={80} onOpen={() => onOpen?.('allies')}>
         <p className="mt-3 flex items-baseline gap-2">
           <span className="text-4xl font-semibold leading-none tabular-nums text-foreground">
             {bio.alliesCount}
