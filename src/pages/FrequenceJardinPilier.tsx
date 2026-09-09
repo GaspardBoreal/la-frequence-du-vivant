@@ -12,6 +12,8 @@ import {
   FJ_MODULES,
   FJ_FAQ,
   FJ_REPERES, FJ_SIGNUP_URL } from '@/content/frequenceJardin/pilier';
+import { FJ_GUIDES } from '@/content/frequenceJardin/guides';
+import { FJ_PLANTS } from '@/content/frequenceJardin/plantes';
 
 const PATH = '/frequence-jardin';
 const SITE = 'https://la-frequence-du-vivant.com';
