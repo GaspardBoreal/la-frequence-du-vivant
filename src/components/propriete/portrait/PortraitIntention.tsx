@@ -14,12 +14,17 @@ import { PERSONA_LABELS } from '@/config/onboarding/personas';
 import { IntentionQuestionEditor } from './IntentionQuestionEditor';
 import { GardenExampleCard } from './GardenExampleCard';
 
+type IntentionSection = 'jardin' | 'projet';
+
 interface Props {
   proprieteId: string;
   proprieteNom: string;
+  /** Volet affiché, piloté par le parent (console admin). Sinon l'URL fait foi. */
+  section?: IntentionSection;
+  onSectionChange?: (s: IntentionSection) => void;
+  /** Masque l'en-tête (titre + compteur) quand le parent en fournit un. */
+  hideHeader?: boolean;
 }
-
-type IntentionSection = 'jardin' | 'projet';
 
 /** Libellé lisible d'une réponse, à partir des options de la question. */
 const readableAnswer = (
