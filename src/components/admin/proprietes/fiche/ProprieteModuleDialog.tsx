@@ -102,6 +102,55 @@ const Vide: React.FC<{ texte: string }> = ({ texte }) => (
   </p>
 );
 
+/** Sous-vue : les espèces d'un règne ou d'une fonction écologique. */
+type Focus = { kind: 'kingdom'; value: KingdomKey } | { kind: 'function'; value: string };
+
+const SpeciesGrid: React.FC<{
+  especes: PropertyBiodiversityKpis['species'];
+}> = ({ especes }) => {
+  if (especes.length === 0) return <Vide texte="Aucune espèce dans cette vue pour l’instant." />;
+  return (
+    <ul className="grid gap-2 sm:grid-cols-2">
+      {especes.map((s, i) => (
+        <li
+          key={`${s.scientificName}-${i}`}
+          style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }}
+          className="animate-fade-in flex items-center gap-3 rounded-xl border border-border bg-gradient-to-br from-card to-muted/25 p-2.5"
+        >
+          <SpeciesThumb scientificName={s.scientificName} kingdom={s.kingdom} size="md" />
+          <div className="min-w-0 flex-1">
+            <SpeciesName
+              scientificName={s.scientificName}
+              showScientific
+              truncate
+              size="sm"
+            />
+            <div className="mt-1 flex flex-wrap items-center gap-1">
+              {s.functions.slice(0, 4).map((f) => {
+                const meta = ECO_FUNCTIONS.find((x) => x.value === f);
+                return meta ? (
+                  <span
+                    key={f}
+                    title={meta.service}
+                    className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary"
+                  >
+                    {meta.emoji} {meta.shortLabel}
+                  </span>
+                ) : null;
+              })}
+            </div>
+          </div>
+          {s.count > 0 && (
+            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] tabular-nums text-muted-foreground">
+              {s.count}
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 interface Props {
   proprieteId: string;
   slug?: string | null;
