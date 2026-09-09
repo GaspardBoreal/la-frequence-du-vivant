@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import PortraitIntention from '@/components/propriete/portrait/PortraitIntention';
 import { usePropertyIntention } from '@/hooks/propriete/usePropertyIntention';
+import { usePropertyBiodiversityKpis } from '@/hooks/propriete/usePropertyBiodiversityKpis';
 import { exportIntentionCsv, exportIntentionJson, exportIntentionPdf } from '@/lib/intentionExport';
 
 interface Props {
