@@ -178,12 +178,23 @@ const FrequenceJardinPilier: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  to={p.cta.to}
-                  className="mt-6 inline-flex items-center gap-1.5 text-[14px] font-medium text-[hsl(var(--ds-forest))] underline-offset-4 hover:underline"
-                >
-                  {p.cta.label} <ArrowRight className="h-4 w-4" />
-                </Link>
+                {p.cta.to.startsWith('http') ? (
+                  <a
+                    href={p.cta.to}
+                    target="_blank"
+                    rel="noopener"
+                    className="mt-6 inline-flex items-center gap-1.5 text-[14px] font-medium text-[hsl(var(--ds-forest))] underline-offset-4 hover:underline"
+                  >
+                    {p.cta.label} <ArrowRight className="h-4 w-4" />
+                  </a>
+                ) : (
+                  <Link
+                    to={p.cta.to}
+                    className="mt-6 inline-flex items-center gap-1.5 text-[14px] font-medium text-[hsl(var(--ds-forest))] underline-offset-4 hover:underline"
+                  >
+                    {p.cta.label} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
               </article>
             ))}
           </div>
