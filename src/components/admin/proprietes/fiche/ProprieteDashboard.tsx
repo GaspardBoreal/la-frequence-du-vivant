@@ -52,14 +52,20 @@ const relative = (iso: string | null): string | null => {
 };
 
 /** Carte d'un module : un chiffre lisible de loin, une ligne de contexte. */
-const Card: React.FC<{ def: CardDef; stat: ModuleStat; index: number }> = ({ def, stat, index }) => {
+const Card: React.FC<{
+  def: CardDef; stat: ModuleStat; index: number; onOpen: () => void;
+}> = ({ def, stat, index, onOpen }) => {
   const vivant = stat.count > 0 || !!stat.lastAt;
   return (
-    <div
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-haspopup="dialog"
       style={{ animationDelay: `${index * 45}ms` }}
       className={cn(
-        'animate-fade-in rounded-2xl border p-4 transition-colors',
-        vivant ? 'border-border bg-card hover:bg-muted/40' : 'border-dashed border-border/70 bg-muted/20',
+        'animate-fade-in rounded-2xl border p-4 text-left transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        vivant ? 'border-border bg-card hover:bg-muted/40' : 'border-dashed border-border/70 bg-muted/20 hover:bg-muted/40',
       )}
     >
       <div className="flex items-center gap-2">
