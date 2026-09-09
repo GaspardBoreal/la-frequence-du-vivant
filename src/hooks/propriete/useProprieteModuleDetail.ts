@@ -88,7 +88,7 @@ export const useProprieteModuleDetail = (proprieteId?: string, moduleKey?: Modul
         }
 
         case 'sol': {
-          const s = await one('propriete_soil_diagnostics', 'samples, notes, completed_at, updated_at');
+          const s = await one('propriete_soil_diagnostics', 'samples, synthesis, structure, texture, ph, completed_at, updated_at');
           if (!s) return { rows: [], resume: null };
           const samples: any[] = Array.isArray(s.samples) ? s.samples : [];
           return {
