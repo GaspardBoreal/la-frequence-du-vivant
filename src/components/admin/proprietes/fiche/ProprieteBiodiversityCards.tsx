@@ -7,6 +7,8 @@ import type { KingdomKey } from '@/lib/kingdomLabels';
 
 interface Props {
   proprieteId: string;
+  /** Ouvre la fenêtre de détail correspondante. */
+  onOpen?: (key: 'vivant' | 'allies') => void;
 }
 
 const KINGDOMS: Array<{ key: KingdomKey; label: string; emoji: string; tint: string }> = [
@@ -20,11 +22,18 @@ const Shell: React.FC<{
   titre: string;
   icone: React.ReactNode;
   delay: number;
+  onOpen?: () => void;
   children: React.ReactNode;
-}> = ({ titre, icone, delay, children }) => (
-  <div
+}> = ({ titre, icone, delay, onOpen, children }) => (
+  <button
+    type="button"
+    onClick={onOpen}
+    aria-haspopup="dialog"
     style={{ animationDelay: `${delay}ms` }}
-    className="animate-fade-in rounded-2xl border border-border bg-gradient-to-br from-card to-muted/30 p-5"
+    className={cn(
+      'animate-fade-in w-full rounded-2xl border border-border bg-gradient-to-br from-card to-muted/30 p-5 text-left',
+      'transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+    )}
   >
     <div className="flex items-center gap-2">
       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -35,14 +44,15 @@ const Shell: React.FC<{
       </span>
     </div>
     {children}
-  </div>
+    <span className="mt-3 block text-[11px] font-medium text-primary/80">Voir le détail →</span>
+  </button>
 );
 
 /**
  * Deux indicateurs issus des marches rattachées au jardin : le vivant recensé
  * et les alliés du jardin. Aucun chiffre n'est affiché sans donnée réelle.
  */
-const ProprieteBiodiversityCards: React.FC<Props> = ({ proprieteId }) => {
+const ProprieteBiodiversityCards: React.FC<Props> = ({ proprieteId, onOpen }) => {
   const bio = usePropertyBiodiversityKpis(proprieteId);
 
   if (bio.isLoading) {
@@ -79,7 +89,7 @@ const ProprieteBiodiversityCards: React.FC<Props> = ({ proprieteId }) => {
 
   return (
     <div className="grid gap-3 lg:grid-cols-2">
-      <Shell titre="Le vivant recensé" icone={<Leaf className="h-4 w-4" />} delay={0}>
+      <Shell titre="Le vivant recensé" icone={<Leaf className="h-4 w-4" />} delay={0} onOpen={() => onOpen?.('vivant')}>
         <p className="mt-3 text-4xl font-semibold leading-none tabular-nums text-foreground">
           {bio.totalSpecies}
         </p>
@@ -103,7 +113,7 @@ const ProprieteBiodiversityCards: React.FC<Props> = ({ proprieteId }) => {
         </div>
       </Shell>
 
-      <Shell titre="Les alliés du jardin" icone={<Sparkles className="h-4 w-4" />} delay={80}>
+      <Shell titre="Les alliés du jardin" icone={<Sparkles className="h-4 w-4" />} delay={80} onOpen={() => onOpen?.('allies')}>
         <p className="mt-3 flex items-baseline gap-2">
           <span className="text-4xl font-semibold leading-none tabular-nums text-foreground">
             {bio.alliesCount}

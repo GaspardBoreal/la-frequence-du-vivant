@@ -37,6 +37,13 @@ export interface PropertyBiodiversityKpis {
   fertilityScore: number;
   /** Provenance des étiquettes. */
   sources: { curated: number; kb: number; auto: number };
+  /** Espèces fusionnées, pour le détail (triées par nombre d'observations). */
+  species: Array<{
+    scientificName: string | null;
+    kingdom: KingdomKey;
+    functions: EcoFunction[];
+    count: number;
+  }>;
   isLoading: boolean;
   error: Error | null;
 }
@@ -198,9 +205,11 @@ export function usePropertyBiodiversityKpis(
 
     const sources = { curated: 0, kb: 0, auto: 0 };
     let alliesCount = 0;
+    const species: PropertyBiodiversityKpis['species'] = [];
 
     merged.forEach((sp) => {
-      byKingdom[normalizeKingdom(sp.group)] += 1;
+      const kingdom = normalizeKingdom(sp.group);
+      byKingdom[kingdom] += 1;
       const key = normSci(sp.scientificName);
       const res = resolveEcoFunctions(sp, {
         override: overrides.has(key) ? overrides.get(key)! : undefined,
@@ -216,7 +225,14 @@ export function usePropertyBiodiversityKpis(
         functionCounts[f] += 1;
         buckets[f].push(sp);
       });
+      species.push({
+        scientificName: sp.scientificName,
+        kingdom,
+        functions: res.functions,
+        count: sp.count,
+      });
     });
+    species.sort((a, b) => b.count - a.count);
 
     const totalSpecies = merged.length;
     const topFunctions = ECO_FUNCTIONS.map((f) => ({
@@ -240,6 +256,7 @@ export function usePropertyBiodiversityKpis(
       topFunctions,
       fertilityScore: computeFertilityScore(buckets),
       sources,
+      species,
       isLoading,
       error,
     };

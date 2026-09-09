@@ -7,6 +7,8 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useProprieteDashboard, type ModuleStat } from '@/hooks/propriete/useProprieteDashboard';
 import ProprieteBiodiversityCards from './ProprieteBiodiversityCards';
+import ProprieteModuleDialog, { type DialogKey } from './ProprieteModuleDialog';
+import { usePropertyBiodiversityKpis } from '@/hooks/propriete/usePropertyBiodiversityKpis';
 
 interface Props {
   proprieteId: string;
@@ -50,14 +52,20 @@ const relative = (iso: string | null): string | null => {
 };
 
 /** Carte d'un module : un chiffre lisible de loin, une ligne de contexte. */
-const Card: React.FC<{ def: CardDef; stat: ModuleStat; index: number }> = ({ def, stat, index }) => {
+const Card: React.FC<{
+  def: CardDef; stat: ModuleStat; index: number; onOpen: () => void;
+}> = ({ def, stat, index, onOpen }) => {
   const vivant = stat.count > 0 || !!stat.lastAt;
   return (
-    <div
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-haspopup="dialog"
       style={{ animationDelay: `${index * 45}ms` }}
       className={cn(
-        'animate-fade-in rounded-2xl border p-4 transition-colors',
-        vivant ? 'border-border bg-card hover:bg-muted/40' : 'border-dashed border-border/70 bg-muted/20',
+        'animate-fade-in rounded-2xl border p-4 text-left transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        vivant ? 'border-border bg-card hover:bg-muted/40' : 'border-dashed border-border/70 bg-muted/20 hover:bg-muted/40',
       )}
     >
       <div className="flex items-center gap-2">
@@ -84,13 +92,17 @@ const Card: React.FC<{ def: CardDef; stat: ModuleStat; index: number }> = ({ def
       ) : (
         <p className="mt-4 text-sm italic text-muted-foreground/70">{def.vide}</p>
       )}
-    </div>
+      <span className="mt-3 block text-[11px] font-medium text-primary/80">Voir le détail →</span>
+    </button>
   );
 };
 
 /** Tableau de bord lecture seule des modules du jardin, en tête de la fiche admin. */
 const ProprieteDashboard: React.FC<Props> = ({ proprieteId, slug }) => {
   const { data, isLoading, error } = useProprieteDashboard(proprieteId);
+  const bio = usePropertyBiodiversityKpis(proprieteId);
+  const [openKey, setOpenKey] = React.useState<DialogKey | null>(null);
+
 
   const actifs = data ? CARDS.filter((c) => (data[c.key].count > 0 || data[c.key].lastAt)).length : 0;
   const derniere = data
@@ -99,7 +111,7 @@ const ProprieteDashboard: React.FC<Props> = ({ proprieteId, slug }) => {
 
   return (
     <div className="space-y-4">
-      <ProprieteBiodiversityCards proprieteId={proprieteId} />
+      <ProprieteBiodiversityCards proprieteId={proprieteId} onOpen={setOpenKey} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
@@ -130,8 +142,24 @@ const ProprieteDashboard: React.FC<Props> = ({ proprieteId, slug }) => {
           ? CARDS.map((c) => (
               <div key={c.key} className="h-32 animate-pulse rounded-2xl border border-border/70 bg-muted/30" />
             ))
-          : CARDS.map((c, i) => <Card key={c.key} def={c} stat={data[c.key]} index={i} />)}
+          : CARDS.map((c, i) => (
+              <Card
+                key={c.key}
+                def={c}
+                stat={data[c.key]}
+                index={i}
+                onOpen={() => setOpenKey(c.key as DialogKey)}
+              />
+            ))}
       </div>
+
+      <ProprieteModuleDialog
+        proprieteId={proprieteId}
+        slug={slug}
+        openKey={openKey}
+        onClose={() => setOpenKey(null)}
+        bio={bio}
+      />
     </div>
   );
 };

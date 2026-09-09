@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, TreePine, MapPin, Leaf, Search, ChevronDown } from 'lucide-react';
 import {
@@ -361,7 +361,14 @@ const PropTabs: React.FC<{
   proprieteCenter?: [number, number] | null;
 }> = ({ proprieteId, proprieteNom, proprieteVille, proprieteAdresse, proprieteCodePostal, proprieteCenter }) => {
   const { data: bio } = usePropertyBiodiversity(proprieteId);
-  const [tab, setTab] = React.useState<string>('portrait');
+  const [searchParams] = useSearchParams();
+  // Un lien externe peut demander un onglet précis : /propriete/slug?tab=tour
+  const initialTab = React.useMemo(() => {
+    const t = searchParams.get('tab');
+    const allowed = ['portrait', 'observe', 'analyze', 'identify', 'synthesize', 'palette', 'capteurs', 'clinique', 'tour'];
+    return t && allowed.includes(t) ? t : 'portrait';
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [tab, setTab] = React.useState<string>(initialTab);
   const [atelierOpen, setAtelierOpen] = React.useState(false);
 
   const handleTabChange = React.useCallback((value: string) => {
