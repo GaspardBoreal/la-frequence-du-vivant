@@ -282,22 +282,16 @@ const ProprieteModuleDialog: React.FC<Props> = ({ proprieteId, slug, openKey, on
                     {bio.species.length === 0 ? (
                       <Vide texte="Collecte en attente sur ces marches." />
                     ) : (
-                      <ul>
-                        {bio.species.slice(0, 15).map((s, i) => (
-                          <Ligne
-                            key={`${s.scientificName}-${i}`}
-                            titre={s.scientificName || 'Espèce sans nom scientifique'}
-                            contexte={KINGDOM_LABELS_FR[s.kingdom]}
-                            meta={s.count ? `${s.count} observation${s.count > 1 ? 's' : ''}` : null}
-                          />
-                        ))}
-                      </ul>
+                      <SpeciesGrid especes={bio.species.slice(0, 8)} />
                     )}
-                    {bio.species.length > 15 && (
-                      <p className="pt-2 text-xs text-muted-foreground">
-                        et {bio.species.length - 15} autre{bio.species.length - 15 > 1 ? 's' : ''} espèce
-                        {bio.species.length - 15 > 1 ? 's' : ''}…
-                      </p>
+                    {bio.species.length > 8 && (
+                      <button
+                        type="button"
+                        onClick={() => setFocus({ kind: 'all', value: 'all' })}
+                        className="mt-2 inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        Voir les {bio.species.length} espèces <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
                     )}
                   </div>
                 </div>
