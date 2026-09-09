@@ -27,6 +27,16 @@ La Fréquence du Vivant relie poésie contemporaine, bioacoustique et science ci
 
 
 
+## Fréquence Jardin (application de diagnostic du vivant)
+
+Fréquence Jardin est une application web française éditée par l'association La Fréquence du Vivant. Elle lit le sol d'un lieu par des méthodes de terrain sans laboratoire, interprète la flore spontanée (plantes bio-indicatrices), mesure l'accord entre les deux (Indice de Concordance Globale) et propose une palette végétale adaptée au sol, au climat local et à sa dérive. Publics : particuliers (jardin, balcon, terrasse), domaines, collectivités et entreprises, paysagistes et professionnels du vivant.
+
+- [Fréquence Jardin — page pilier](/frequence-jardin): définition, parcours en cinq temps (observer, analyser le sol, identifier la flore, synthétiser, palette végétale), modules (atelier du jardin, tour de jardin, clinique du vivant, capteurs et sondes, herbier du moment, IA de jardin), publics, questions fréquentes.
+- [Diagnostiquer son jardin — guide complet](/frequence-jardin/diagnostiquer-son-jardin): protocole pas à pas, douze méthodes de terrain, signes de vie du sol, quatre curseurs de synthèse.
+- [Plantes bio-indicatrices](/frequence-jardin/plantes-bio-indicatrices): table des plantes indicatrices (ortie, pissenlit, joncs, petite oseille, prunellier…) avec leurs indices d'eau, de texture, de nutrition et de pH, notés de −3 à +3.
+- [Palette végétale](/frequence-jardin/palette-vegetale): méthode de recommandation d'espèces, sources botaniques nommées (CNPF, Baseflor/Catminat, Tela Botanica, Végétal local/OFB, iNaturalist, GBIF) et limites assumées.
+- [Cas concret : Jardin Monde de Deviat (Charente)](/frequence-jardin/cas-jardin-monde-deviat): diagnostic appliqué à un lieu réel, prélèvements géolocalisés et chiffres lus dans le carnet du lieu.
+
 ## Applications (fiches de référence)
 
 - [L'étude de sol vivante](/etude-de-sol): page publique — enjeux du sol, synthèse des 12 méthodes de diagnostic de terrain sans laboratoire (bêche, stabilité, boudin, sédimentation, pH bandelette/pHmètre, bêche vivante, vinaigre, sachet de thé) avec, pour chacune, le geste de terrain pas à pas, le matériel, les repères chiffrés et le livrable ; tables de lecture (structure, texture, pH, indices et classes de vie), quatre curseurs de synthèse, et cas concret documenté au Jardin Monde DEVIAT (prélèvements géolocalisés, photos de terrain, synthèse). Le protocole complet est téléchargeable depuis la page en Markdown et en PDF A4.
