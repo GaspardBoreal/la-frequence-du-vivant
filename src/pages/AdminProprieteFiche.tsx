@@ -618,6 +618,17 @@ const AdminProprieteFiche: React.FC = () => {
             />
           </section>
 
+          {/* Portrait · Intention */}
+          {!isNew && activeId && (
+            <section id="sec-intention" className="scroll-mt-32 rounded-xl border border-border bg-card p-4 sm:p-6">
+              <ProprieteIntentionSection
+                proprieteId={activeId}
+                nom={form.nom || propriete?.nom || 'Jardin'}
+                sousTitre={[form.ville, form.code_postal].filter(Boolean).join(' ') || null}
+              />
+            </section>
+          )}
+
           {/* Rattachements principaux */}
           <section id="sec-rattachements" className="scroll-mt-32 space-y-3 rounded-xl border border-border bg-card p-4 sm:p-6">
             <SectionTitle>Rattachements principaux</SectionTitle>
