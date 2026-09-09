@@ -32,26 +32,14 @@ export interface EcoFunctionsResult {
   isLoading: boolean;
 }
 
-const NON_PLANT_GROUPS = ['animalia', 'mammalia', 'aves', 'insecta', 'arachnida', 'reptilia', 'amphibia', 'mollusca'];
-
-function autoClassify(sp: ExplorationSpecies): EcoFunction[] {
-  const fns = new Set<EcoFunction>(
-    classifyFunctions({
-      scientificName: sp.scientificName,
-      kingdom: sp.group,
-      iconicTaxon: sp.group,
-      family: (sp as any).family ?? null,
-    }),
-  );
-  const groupLc = (sp.group || '').toLowerCase();
-  const isNonPlant = groupLc && NON_PLANT_GROUPS.includes(groupLc);
-  if (sp.scientificName && !isNonPlant) {
-    const strate = resolveStrate({ scientificName: sp.scientificName });
-    if (strate === 'arbre') fns.add('arbre');
-    if (strate === 'arbuste') fns.add('haie_bocage');
-  }
-  return Array.from(fns);
-}
+/** Classification automatique — règle partagée avec les indicateurs jardin. */
+const autoClassify = (sp: ExplorationSpecies): EcoFunction[] =>
+  autoClassifyFunctions({
+    scientificName: sp.scientificName,
+    group: sp.group,
+    family: (sp as any).family ?? null,
+    count: sp.count,
+  });
 
 /**
  * Calcule en mémoire les fonctions écologiques de chaque espèce du pool +
