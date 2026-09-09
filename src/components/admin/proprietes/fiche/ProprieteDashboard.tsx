@@ -92,7 +92,8 @@ const Card: React.FC<{
       ) : (
         <p className="mt-4 text-sm italic text-muted-foreground/70">{def.vide}</p>
       )}
-    </div>
+      <span className="mt-3 block text-[11px] font-medium text-primary/80">Voir le détail →</span>
+    </button>
   );
 };
 
