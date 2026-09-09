@@ -151,7 +151,7 @@ export const PortraitIntention: React.FC<Props> = ({
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
+      <div className={cn('flex items-start justify-between gap-3 flex-wrap', hideHeader && 'hidden')}>
         <div>
           <h2 className="text-xl md:text-2xl font-serif italic text-foreground flex items-center gap-2">
             <Compass className="w-5 h-5 text-amber-600" />
