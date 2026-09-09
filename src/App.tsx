@@ -112,6 +112,7 @@ const FrequenceJardinDiagnostiquer = lazyWithRetry(() => import('./pages/Frequen
 const FrequenceJardinBioIndicatrices = lazyWithRetry(() => import('./pages/FrequenceJardinBioIndicatrices'));
 const FrequenceJardinPalette = lazyWithRetry(() => import('./pages/FrequenceJardinPalette'));
 const FrequenceJardinCasDeviat = lazyWithRetry(() => import('./pages/FrequenceJardinCasDeviat'));
+const FrequenceJardinArticle = lazyWithRetry(() => import('./pages/FrequenceJardinArticle'));
 
 const ProprieteEspace = lazyWithRetry(() => import('./pages/ProprieteEspace'));
 const JardinDemarrer = lazyWithRetry(() => import('./pages/JardinDemarrer'));
@@ -221,6 +222,7 @@ function App() {
             <Route path="/frequence-jardin/plantes-bio-indicatrices" element={<FrequenceJardinBioIndicatrices />} />
             <Route path="/frequence-jardin/palette-vegetale" element={<FrequenceJardinPalette />} />
             <Route path="/frequence-jardin/cas-jardin-monde-deviat" element={<FrequenceJardinCasDeviat />} />
+            <Route path="/frequence-jardin/:slug" element={<FrequenceJardinArticle />} />
             <Route path="/jardin/:slug" element={<ImmersiveGardenFiche />} />
 
             <Route path="/apprendre/:slug" element={<ApprendreMarchePage />} />

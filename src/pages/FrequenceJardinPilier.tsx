@@ -12,6 +12,8 @@ import {
   FJ_MODULES,
   FJ_FAQ,
   FJ_REPERES, FJ_SIGNUP_URL } from '@/content/frequenceJardin/pilier';
+import { FJ_GUIDES } from '@/content/frequenceJardin/guides';
+import { FJ_PLANTS } from '@/content/frequenceJardin/plantes';
 
 const PATH = '/frequence-jardin';
 const SITE = 'https://la-frequence-du-vivant.com';
@@ -244,6 +246,36 @@ const FrequenceJardinPilier: React.FC = () => {
                 <span className="mt-3 inline-flex items-center gap-1 text-[13px] text-[hsl(var(--ds-forest))]">
                   Lire <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
                 </span>
+              </Link>
+            ))}
+          </div>
+
+          <h3 className="mt-10 font-serif text-[20px] text-[hsl(var(--ds-forest-deep))]">
+            Les guides de terrain
+          </h3>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {FJ_GUIDES.map((g) => (
+              <Link
+                key={g.slug}
+                to={`/frequence-jardin/${g.slug}`}
+                className="rounded-full border border-[hsl(var(--ds-line))] px-4 py-2 text-[14px] text-[hsl(var(--ds-forest-deep))] transition hover:border-[hsl(var(--ds-forest-soft))]"
+              >
+                {g.h1}
+              </Link>
+            ))}
+          </div>
+
+          <h3 className="mt-8 font-serif text-[20px] text-[hsl(var(--ds-forest-deep))]">
+            Une plante spontanée, un message
+          </h3>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {FJ_PLANTS.map((p) => (
+              <Link
+                key={p.slug}
+                to={`/frequence-jardin/${p.slug}`}
+                className="rounded-full border border-[hsl(var(--ds-line))] px-4 py-2 text-[14px] text-[hsl(var(--ds-forest-deep))] transition hover:border-[hsl(var(--ds-forest-soft))]"
+              >
+                {p.h1.split(' :')[0]}
               </Link>
             ))}
           </div>
