@@ -100,8 +100,10 @@ const FrequenceJardinCasDeviat: React.FC = () => {
           lead="Balcon, jardin de ville, parc d’entreprise, domaine agricole : le protocole ne change pas, seul le nombre de points varie."
         >
           <div className="flex flex-wrap gap-3">
-            <Link
-              to="/jardin/demarrer"
+            <a
+              href={FJ_SIGNUP_URL}
+              target="_blank"
+              rel="noopener"
               className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ds-gold))] px-6 py-3 text-[15px] font-medium text-[hsl(var(--ds-forest-deep))]"
             >
               Démarrer mon jardin <ArrowRight className="h-4 w-4" />

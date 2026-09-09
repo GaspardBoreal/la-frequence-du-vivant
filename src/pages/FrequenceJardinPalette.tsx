@@ -151,8 +151,10 @@ const FrequenceJardinPalette: React.FC = () => {
               </li>
             ))}
           </ul>
-          <Link
-            to="/jardin/demarrer"
+          <a
+            href={FJ_SIGNUP_URL}
+            target="_blank"
+            rel="noopener"
             className="mt-8 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ds-forest))] px-6 py-3 text-[15px] font-medium text-[hsl(var(--ds-cream))]"
           >
             Obtenir la palette de mon jardin <ArrowRight className="h-4 w-4" />

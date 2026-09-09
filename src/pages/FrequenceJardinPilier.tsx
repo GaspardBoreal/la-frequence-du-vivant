@@ -85,8 +85,10 @@ const FrequenceJardinPilier: React.FC = () => {
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            to="/jardin/demarrer"
+          <a
+            href={FJ_SIGNUP_URL}
+            target="_blank"
+            rel="noopener"
             className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ds-forest))] px-6 py-3 text-[15px] font-medium text-[hsl(var(--ds-cream))] transition hover:bg-[hsl(var(--ds-forest-deep))]"
           >
             Démarrer mon jardin <ArrowRight className="h-4 w-4" />
@@ -293,8 +295,10 @@ const FrequenceJardinPilier: React.FC = () => {
               le diagnostic commence toujours par un tour de terrain.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link
-                to="/jardin/demarrer"
+              <a
+                href={FJ_SIGNUP_URL}
+                target="_blank"
+                rel="noopener"
                 className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ds-gold))] px-6 py-3 text-[15px] font-medium text-[hsl(var(--ds-forest-deep))]"
               >
                 Démarrer mon jardin <ArrowRight className="h-4 w-4" />

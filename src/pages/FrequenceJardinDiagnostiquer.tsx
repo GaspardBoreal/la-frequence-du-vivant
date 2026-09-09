@@ -170,8 +170,10 @@ const FrequenceJardinDiagnostiquer: React.FC = () => {
             >
               Comment se construit une palette végétale
             </Link>
-            <Link
-              to="/jardin/demarrer"
+            <a
+              href={FJ_SIGNUP_URL}
+              target="_blank"
+              rel="noopener"
               className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ds-forest))] px-6 py-3 text-[15px] font-medium text-[hsl(var(--ds-cream))]"
             >
               Diagnostiquer mon jardin <ArrowRight className="h-4 w-4" />

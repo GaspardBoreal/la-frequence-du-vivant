@@ -9,6 +9,9 @@
 
 import { fiche, SITE_URL } from '@/content/frequenceJardinFiche';
 
+/** Adresse d'inscription à l'application Fréquence Jardin (tous les CTA de conversion y renvoient). */
+export const FJ_SIGNUP_URL = 'https://frequence-jardin.lovable.app';
+
 export const FJ_BASE = `${SITE_URL}/frequence-jardin`;
 
 /** Phrase de définition — c'est elle que reprennent les moteurs et les IA. */
@@ -76,7 +79,7 @@ export const FJ_PUBLICS: FjPublic[] = [
       'Une palette végétale illustrée, adaptée au sol lu et au climat de la commune.',
       "Un carnet de terrain imprimable et envoyable par courriel.",
     ],
-    cta: { label: 'Démarrer mon jardin', to: '/jardin/demarrer' },
+    cta: { label: 'Démarrer mon jardin', to: FJ_SIGNUP_URL },
   },
   {
     id: 'organisations',
