@@ -85,6 +85,7 @@ const EtudeDeSolPublique: React.FC = () => {
         <EnjeuxSection />
         <MethodesSection />
         <CasDeviatSection />
+        <FaqEtudeSol />
         <ContactCTA contactHref={CONTACT_HREF} />
       </main>
     </div>
