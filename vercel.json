@@ -1,5 +1,26 @@
-
 {
+  "redirects": [
+    {
+      "source": "/frequence-jardin/comment-analyser-le-sol-de-son-jardin",
+      "destination": "/etude-de-sol",
+      "permanent": true
+    },
+    {
+      "source": "/frequence-jardin/test-du-boudin-texture-du-sol",
+      "destination": "/etude-de-sol",
+      "permanent": true
+    },
+    {
+      "source": "/frequence-jardin/test-de-sedimentation-bocal",
+      "destination": "/etude-de-sol",
+      "permanent": true
+    },
+    {
+      "source": "/frequence-jardin/mesurer-le-ph-de-son-sol",
+      "destination": "/etude-de-sol",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

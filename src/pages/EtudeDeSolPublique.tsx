@@ -6,6 +6,7 @@ import { EnjeuxSection } from '@/components/etude-sol/EnjeuxSection';
 import { MethodesSection } from '@/components/etude-sol/MethodesSection';
 import { CasDeviatSection } from '@/components/etude-sol/CasDeviatSection';
 import { ContactCTA } from '@/components/etude-sol/ContactCTA';
+import { FaqEtudeSol, ETUDE_SOL_FAQ } from '@/components/etude-sol/FaqEtudeSol';
 import { PUBLIC_METHODS } from '@/content/etudeDeSolMethodes';
 
 const CANONICAL = 'https://la-frequence-du-vivant.com/etude-de-sol';
@@ -16,6 +17,7 @@ const ANCHORS: AnchorItem[] = [
   { id: 'enjeux', label: 'Les enjeux', short: 'Enjeux' },
   { id: 'methodes', label: 'Synthèse des méthodes', short: 'Méthodes' },
   { id: 'cas-deviat', label: 'Cas concret : Jardin Monde DEVIAT', short: 'Cas concret' },
+  { id: 'questions', label: 'Questions fréquentes', short: 'Questions' },
   { id: 'contact', label: 'Nous contacter', short: 'Contact' },
 ];
 
@@ -31,6 +33,17 @@ const EtudeDeSolPublique: React.FC = () => {
     author: { '@type': 'Organization', name: 'La Fréquence du Vivant' },
     publisher: { '@type': 'Organization', name: 'La Fréquence du Vivant' },
     about: ['Étude de sol', 'Diagnostic de sol', 'Agroécologie', 'Jardin vivant'],
+  };
+
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    inLanguage: 'fr-FR',
+    mainEntity: ETUDE_SOL_FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
   };
 
   return (
@@ -51,6 +64,7 @@ const EtudeDeSolPublique: React.FC = () => {
         <meta property="og:url" content={CANONICAL} />
         <meta name="twitter:card" content="summary_large_image" />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+        <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
       </Helmet>
 
       <HeroEtudeSol
@@ -71,6 +85,7 @@ const EtudeDeSolPublique: React.FC = () => {
         <EnjeuxSection />
         <MethodesSection />
         <CasDeviatSection />
+        <FaqEtudeSol />
         <ContactCTA contactHref={CONTACT_HREF} />
       </main>
     </div>

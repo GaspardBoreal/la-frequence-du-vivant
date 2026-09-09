@@ -347,7 +347,7 @@ const PlantView: React.FC<{ page: FjPlantPage }> = ({ page }) => {
               Voir le tableau complet
             </Link>
             <Link
-              to="/frequence-jardin/comment-analyser-le-sol-de-son-jardin"
+              to="/etude-de-sol"
               className="rounded-full border border-[hsl(var(--ds-line))] px-5 py-2.5 text-[14px] text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest-soft))]"
             >
               Vérifier par les tests de sol
