@@ -222,6 +222,11 @@ function App() {
             <Route path="/frequence-jardin/plantes-bio-indicatrices" element={<FrequenceJardinBioIndicatrices />} />
             <Route path="/frequence-jardin/palette-vegetale" element={<FrequenceJardinPalette />} />
             <Route path="/frequence-jardin/cas-jardin-monde-deviat" element={<FrequenceJardinCasDeviat />} />
+            {/* Pages sol fusionnées dans /etude-de-sol (page de référence unique) */}
+            <Route path="/frequence-jardin/comment-analyser-le-sol-de-son-jardin" element={<Navigate to="/etude-de-sol" replace />} />
+            <Route path="/frequence-jardin/test-du-boudin-texture-du-sol" element={<Navigate to="/etude-de-sol" replace />} />
+            <Route path="/frequence-jardin/test-de-sedimentation-bocal" element={<Navigate to="/etude-de-sol" replace />} />
+            <Route path="/frequence-jardin/mesurer-le-ph-de-son-sol" element={<Navigate to="/etude-de-sol" replace />} />
             <Route path="/frequence-jardin/:slug" element={<FrequenceJardinArticle />} />
             <Route path="/jardin/:slug" element={<ImmersiveGardenFiche />} />
 
