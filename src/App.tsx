@@ -156,9 +156,13 @@ const CommunityChatBotMount = lazyWithRetry(() =>
   import('./components/chatbot/CommunityChatBotMount').then((m) => ({ default: m.CommunityChatBotMount })),
 );
 const AdhesionFab = lazyWithRetry(() => import('./components/adhesion/AdhesionFab'));
+const SiteSearchMount = lazyWithRetry(() => import('./components/search/SiteSearchMount'));
+const AdminRecherche = lazyWithRetry(() => import('./pages/AdminRecherche'));
 
+import { SiteSearchProvider } from './components/search/SiteSearchContext';
 import { TrophicFullscreenProvider } from './components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenProvider';
 import { DiscoverFullscreenProvider } from './components/biodiversity/discover/DiscoverFullscreenProvider';
+
 
 
 
@@ -174,6 +178,7 @@ function GlobalMounts() {
       <AdminChatBotMount />
       <CommunityChatBotMount />
       <AdhesionFab />
+      <SiteSearchMount />
     </Suspense>
   );
 }
@@ -187,10 +192,12 @@ function App() {
           <AudioProvider>
             <BrowserRouter>
             <AuthHashHandler />
+            <SiteSearchProvider>
             <TrophicFullscreenProvider>
             <DiscoverFullscreenProvider>
           <Suspense fallback={<RouteFallback />}>
           <Routes>
+
 
             <Route path="/" element={<Index />} />
             <Route path="/agent-ia" element={<AgentIA />} />
@@ -439,6 +446,12 @@ function App() {
                 <AdminSoilRegistryAudit />
               </AdminAuth>
             } />
+            <Route path="/admin/outils/recherche" element={
+              <AdminAuth>
+                <AdminRecherche />
+              </AdminAuth>
+            } />
+
 
 
             <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />
@@ -506,6 +519,8 @@ function App() {
 
             </DiscoverFullscreenProvider>
             </TrophicFullscreenProvider>
+            </SiteSearchProvider>
+
             </BrowserRouter>
           </AudioProvider>
 

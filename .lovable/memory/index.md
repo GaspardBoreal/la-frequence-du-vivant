@@ -3,3 +3,4 @@
 - [Entretien fondateur](mem://features/propriete/entretien-fondateur) — Portrait › Entretiens : récolte IA en 5 registres avec verbatim obligatoire, validation carte par carte, lignes rouges en garde-fou de l'IA de Jardin
 - [Portrait · Intention](mem://features/propriete/portrait-intention-onboarding) — Sous-onglet Portrait relisant/éditant `onboarding_preferences` via RPC `save_propriete_onboarding`, question `objectif_6_mois`
 - [OFJ → jardin après confirmation](mem://features/propriete/ofj-claim-jardin-apres-confirmation) — Lien de confirmation FJ → `/jardin/bienvenue` LFDV → RPC idempotente `onboard_claim_from_metadata` → `/propriete/<slug>`, marqueur `auth_brand=fj`
+- [Recherche pages publiques](mem://features/recherche-pages-publiques) — Moteur ⌘K des pages publiques, 5 univers ordonnés, catalogue + règles dans /admin/outils/recherche
