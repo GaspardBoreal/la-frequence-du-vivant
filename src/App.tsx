@@ -1,7 +1,7 @@
 
 import { lazyWithRetry } from './lib/lazyWithRetry';
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { queryClient } from './lib/queryClient';
