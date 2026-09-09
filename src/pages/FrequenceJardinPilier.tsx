@@ -11,8 +11,7 @@ import {
   FJ_PARCOURS,
   FJ_MODULES,
   FJ_FAQ,
-  FJ_REPERES,
-} from '@/content/frequenceJardin/pilier';
+  FJ_REPERES, FJ_SIGNUP_URL } from '@/content/frequenceJardin/pilier';
 
 const PATH = '/frequence-jardin';
 const SITE = 'https://la-frequence-du-vivant.com';
@@ -85,12 +84,14 @@ const FrequenceJardinPilier: React.FC = () => {
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            to="/jardin/demarrer"
+          <a
+            href={FJ_SIGNUP_URL}
+            target="_blank"
+            rel="noopener"
             className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ds-forest))] px-6 py-3 text-[15px] font-medium text-[hsl(var(--ds-cream))] transition hover:bg-[hsl(var(--ds-forest-deep))]"
           >
             Démarrer mon jardin <ArrowRight className="h-4 w-4" />
-          </Link>
+          </a>
           <a
             href="#parcours"
             className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ds-line))] px-6 py-3 text-[15px] text-[hsl(var(--ds-forest-deep))] transition hover:border-[hsl(var(--ds-forest-soft))]"
@@ -177,12 +178,23 @@ const FrequenceJardinPilier: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  to={p.cta.to}
-                  className="mt-6 inline-flex items-center gap-1.5 text-[14px] font-medium text-[hsl(var(--ds-forest))] underline-offset-4 hover:underline"
-                >
-                  {p.cta.label} <ArrowRight className="h-4 w-4" />
-                </Link>
+                {p.cta.to.startsWith('http') ? (
+                  <a
+                    href={p.cta.to}
+                    target="_blank"
+                    rel="noopener"
+                    className="mt-6 inline-flex items-center gap-1.5 text-[14px] font-medium text-[hsl(var(--ds-forest))] underline-offset-4 hover:underline"
+                  >
+                    {p.cta.label} <ArrowRight className="h-4 w-4" />
+                  </a>
+                ) : (
+                  <Link
+                    to={p.cta.to}
+                    className="mt-6 inline-flex items-center gap-1.5 text-[14px] font-medium text-[hsl(var(--ds-forest))] underline-offset-4 hover:underline"
+                  >
+                    {p.cta.label} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
               </article>
             ))}
           </div>
@@ -293,12 +305,14 @@ const FrequenceJardinPilier: React.FC = () => {
               le diagnostic commence toujours par un tour de terrain.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link
-                to="/jardin/demarrer"
+              <a
+                href={FJ_SIGNUP_URL}
+                target="_blank"
+                rel="noopener"
                 className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ds-gold))] px-6 py-3 text-[15px] font-medium text-[hsl(var(--ds-forest-deep))]"
               >
                 Démarrer mon jardin <ArrowRight className="h-4 w-4" />
-              </Link>
+              </a>
               <a
                 href="mailto:contact@la-frequence-du-vivant.com?subject=Fr%C3%A9quence%20Jardin"
                 className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ds-cream))]/40 px-6 py-3 text-[15px]"
