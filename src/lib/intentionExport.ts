@@ -165,6 +165,21 @@ export const exportIntentionJson = (
     reponses: intention.answers,
     lignes: buildIntentionRows(intention),
     brut: intention.raw,
+    biodiversite: bio
+      ? {
+          marches_rattachees: bio.eventCount,
+          explorations: bio.explorationIds,
+          especes_distinctes: bio.totalSpecies,
+          par_regne: bio.byKingdom,
+          allies: bio.alliesCount,
+          part_allies_pct: bio.alliesShare,
+          indice_fertilite: bio.fertilityScore,
+          par_fonction: bio.functionCounts,
+          fonctions_dominantes: bio.topFunctions,
+          origine_etiquettes: bio.sources,
+          mesures: buildBiodiversityRows(bio),
+        }
+      : null,
   };
   download(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }),
     `intention-${slugify(nom)}-${stamp()}.json`);
