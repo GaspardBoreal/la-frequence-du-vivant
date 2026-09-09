@@ -170,8 +170,27 @@ const ProprieteModuleDialog: React.FC<Props> = ({ proprieteId, slug, openKey, on
   const detail = useProprieteModuleDetail(proprieteId, moduleKey);
   const events = useProprieteEvenements(proprieteId, openKey === 'vivant');
 
+  // Sous-vue « espèces » ouverte depuis un règne ou une fonction écologique.
+  const [focus, setFocus] = React.useState<Focus | null>(null);
+  React.useEffect(() => { setFocus(null); }, [openKey]);
+
   if (!openKey) return null;
   const intro = INTRO[openKey];
+
+  const focusEspeces = !focus
+    ? []
+    : focus.kind === 'kingdom'
+      ? bio.species.filter((s) => s.kingdom === focus.value)
+      : bio.species.filter((s) => s.functions.includes(focus.value as never));
+
+  const focusTitre = !focus
+    ? null
+    : focus.kind === 'kingdom'
+      ? KINGDOM_LABELS_FR[focus.value]
+      : (() => {
+          const m = ECO_FUNCTIONS.find((x) => x.value === focus.value);
+          return m ? `${m.emoji} ${m.shortLabel}` : 'Fonction écologique';
+        })();
 
   const lienJardinier = slug
     ? `/propriete/${slug}${moduleKey ? `?tab=${TAB_OF[moduleKey]}` : ''}`
