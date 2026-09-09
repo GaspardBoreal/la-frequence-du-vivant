@@ -69,8 +69,12 @@ export const PortraitIntention: React.FC<Props> = ({
   const [pickerSlug, setPickerSlug] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const section: IntentionSection = searchParams.get('intention') === 'projet' ? 'projet' : 'jardin';
+  const controlled = sectionProp != null;
+  const section: IntentionSection = controlled
+    ? sectionProp
+    : (searchParams.get('intention') === 'projet' ? 'projet' : 'jardin');
   const setSection = (s: IntentionSection) => {
+    if (controlled) { onSectionChange?.(s); return; }
     const next = new URLSearchParams(searchParams);
     if (s === 'jardin') next.delete('intention');
     else next.set('intention', s);
