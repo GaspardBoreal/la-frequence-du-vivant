@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route, Search } from 'lucide-react';
 
 const OUTILS = [
   {
@@ -61,8 +61,16 @@ const OUTILS = [
     to: '/admin/outils/taxonomie',
     active: true,
   },
+  {
+    titre: 'Moteur de recherche du site',
+    description: 'Le catalogue des pages publiques et les règles qui les classent dans les cinq univers (Jardin, Vignoble, Marches, Éco tourisme, Vivant).',
+    icon: Search,
+    to: '/admin/outils/recherche',
+    active: true,
+  },
 
   {
+
     titre: 'Zones',
     description: 'Cartographie des zones de marches.',
     icon: Map,
