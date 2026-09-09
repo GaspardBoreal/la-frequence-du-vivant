@@ -3,6 +3,8 @@ import { DEFAULT_SEQUENCE } from '@/config/onboarding/defaultSequence';
 import { buildSequence, type AnswerValue, type OnboardingQuestion } from '@/config/onboarding/schema';
 import { PERSONA_LABELS } from '@/config/onboarding/personas';
 import type { PropertyIntention } from '@/hooks/propriete/usePropertyIntention';
+import type { PropertyBiodiversityKpis } from '@/hooks/propriete/usePropertyBiodiversityKpis';
+import { ECO_FUNCTIONS } from '@/lib/ecologicalFunctions';
 
 /** Une ligne d'export : une question du parcours d'accueil et sa réponse. */
 export interface IntentionRow {
@@ -76,19 +78,75 @@ const download = (blob: Blob, filename: string) => {
 
 const csvCell = (v: string) => `"${(v ?? '').replace(/"/g, '""')}"`;
 
-export const exportIntentionCsv = (intention: PropertyIntention, nom: string) => {
+/** Indicateurs de biodiversité relevés lors des marches rattachées au jardin. */
+export type IntentionBiodiversity = PropertyBiodiversityKpis;
+
+const KINGDOM_FR: Record<string, string> = {
+  plantae: 'Plantes',
+  animalia: 'Animaux',
+  fungi: 'Champignons',
+  others: 'Autres',
+};
+
+/** Lignes « Biodiversité » : une mesure par ligne, jamais de chiffre inventé. */
+export const buildBiodiversityRows = (
+  bio: IntentionBiodiversity,
+): Array<{ mesure: string; valeur: string }> => {
+  if (!bio.hasEvents) {
+    return [{ mesure: 'Marches rattachées', valeur: 'Aucune marche rattachée à ce jardin' }];
+  }
+  const rows: Array<{ mesure: string; valeur: string }> = [
+    { mesure: 'Marches rattachées', valeur: String(bio.eventCount) },
+    { mesure: 'Espèces distinctes recensées', valeur: String(bio.totalSpecies) },
+  ];
+  (Object.keys(KINGDOM_FR) as Array<keyof typeof KINGDOM_FR>).forEach((k) => {
+    rows.push({
+      mesure: `Espèces — ${KINGDOM_FR[k]}`,
+      valeur: String((bio.byKingdom as Record<string, number>)[k] ?? 0),
+    });
+  });
+  rows.push(
+    { mesure: 'Alliés du jardin (espèces à fonction écologique)', valeur: String(bio.alliesCount) },
+    { mesure: 'Part des alliés', valeur: `${bio.alliesShare} %` },
+    { mesure: 'Indice de fertilité', valeur: String(bio.fertilityScore) },
+  );
+  ECO_FUNCTIONS.forEach((f) => {
+    const c = bio.functionCounts[f.value] ?? 0;
+    if (c > 0) rows.push({ mesure: `Fonction — ${f.shortLabel}`, valeur: String(c) });
+  });
+  rows.push({
+    mesure: 'Origine des étiquettes',
+    valeur: `curation ${bio.sources.curated} · base partagée ${bio.sources.kb} · automatique ${bio.sources.auto}`,
+  });
+  return rows;
+};
+
+export const exportIntentionCsv = (
+  intention: PropertyIntention,
+  nom: string,
+  bio?: IntentionBiodiversity | null,
+) => {
   const rows = buildIntentionRows(intention);
   const header = ['Volet', 'Chapitre', 'Question', 'Réponse', 'Valeur brute'];
   const lines = [
     header.map(csvCell).join(';'),
     ...rows.map((r) => [r.volet, r.chapitre, r.question, r.reponse, r.brut].map(csvCell).join(';')),
+    ...(bio
+      ? ['', ['Biodiversité', 'Mesure', 'Valeur'].map(csvCell).join(';'),
+         ...buildBiodiversityRows(bio).map((r) =>
+           ['Biodiversité', r.mesure, r.valeur].map(csvCell).join(';'))]
+      : []),
   ];
   // BOM : Excel ouvre correctement les accents.
   download(new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' }),
     `intention-${slugify(nom)}-${stamp()}.csv`);
 };
 
-export const exportIntentionJson = (intention: PropertyIntention, nom: string) => {
+export const exportIntentionJson = (
+  intention: PropertyIntention,
+  nom: string,
+  bio?: IntentionBiodiversity | null,
+) => {
   const payload = {
     jardin: nom,
     exporte_le: new Date().toISOString(),
@@ -107,6 +165,21 @@ export const exportIntentionJson = (intention: PropertyIntention, nom: string) =
     reponses: intention.answers,
     lignes: buildIntentionRows(intention),
     brut: intention.raw,
+    biodiversite: bio
+      ? {
+          marches_rattachees: bio.eventCount,
+          explorations: bio.explorationIds,
+          especes_distinctes: bio.totalSpecies,
+          par_regne: bio.byKingdom,
+          allies: bio.alliesCount,
+          part_allies_pct: bio.alliesShare,
+          indice_fertilite: bio.fertilityScore,
+          par_fonction: bio.functionCounts,
+          fonctions_dominantes: bio.topFunctions,
+          origine_etiquettes: bio.sources,
+          mesures: buildBiodiversityRows(bio),
+        }
+      : null,
   };
   download(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }),
     `intention-${slugify(nom)}-${stamp()}.json`);
@@ -117,6 +190,7 @@ export const exportIntentionPdf = (
   intention: PropertyIntention,
   nom: string,
   sousTitre?: string | null,
+  bio?: IntentionBiodiversity | null,
 ) => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const W = 210;
@@ -214,6 +288,25 @@ export const exportIntentionPdf = (
     });
     y += 4;
   });
+
+  if (bio) {
+    page();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('Biodiversité relevée', M, y);
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    buildBiodiversityRows(bio).forEach((r) => {
+      page();
+      doc.setTextColor(130);
+      doc.text(r.mesure, M, y);
+      doc.setTextColor(0);
+      doc.text(r.valeur, W - M, y, { align: 'right' });
+      y += 5.4;
+    });
+    y += 6;
+  }
 
   if (intention.gestures.length) {
     page();

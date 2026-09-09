@@ -6,6 +6,7 @@ import {
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useProprieteDashboard, type ModuleStat } from '@/hooks/propriete/useProprieteDashboard';
+import ProprieteBiodiversityCards from './ProprieteBiodiversityCards';
 
 interface Props {
   proprieteId: string;
@@ -98,6 +99,8 @@ const ProprieteDashboard: React.FC<Props> = ({ proprieteId, slug }) => {
 
   return (
     <div className="space-y-4">
+      <ProprieteBiodiversityCards proprieteId={proprieteId} />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           {isLoading ? (
