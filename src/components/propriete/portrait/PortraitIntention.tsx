@@ -51,7 +51,9 @@ const readableAnswer = (
  * « Le jardin » (description du lieu et du jardinier) et « Le projet »
  * (problème à résoudre, cap à six mois, premiers gestes). Mobile d'abord.
  */
-export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }) => {
+export const PortraitIntention: React.FC<Props> = ({
+  proprieteId, proprieteNom, section: sectionProp, onSectionChange, hideHeader,
+}) => {
   const { data: intention, isLoading, error } = usePropertyIntention(proprieteId);
   const { data: canEdit = false } = useCanEditIntention(proprieteId);
   const save = useSaveIntention(proprieteId);
