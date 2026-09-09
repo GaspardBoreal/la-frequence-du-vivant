@@ -35,6 +35,17 @@ const EtudeDeSolPublique: React.FC = () => {
     about: ['Étude de sol', 'Diagnostic de sol', 'Agroécologie', 'Jardin vivant'],
   };
 
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    inLanguage: 'fr-FR',
+    mainEntity: ETUDE_SOL_FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-[hsl(var(--ds-cream))] font-sans">
       <Helmet>
