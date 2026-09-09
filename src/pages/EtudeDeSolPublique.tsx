@@ -6,6 +6,7 @@ import { EnjeuxSection } from '@/components/etude-sol/EnjeuxSection';
 import { MethodesSection } from '@/components/etude-sol/MethodesSection';
 import { CasDeviatSection } from '@/components/etude-sol/CasDeviatSection';
 import { ContactCTA } from '@/components/etude-sol/ContactCTA';
+import { FaqEtudeSol, ETUDE_SOL_FAQ } from '@/components/etude-sol/FaqEtudeSol';
 import { PUBLIC_METHODS } from '@/content/etudeDeSolMethodes';
 
 const CANONICAL = 'https://la-frequence-du-vivant.com/etude-de-sol';
@@ -16,6 +17,7 @@ const ANCHORS: AnchorItem[] = [
   { id: 'enjeux', label: 'Les enjeux', short: 'Enjeux' },
   { id: 'methodes', label: 'Synthèse des méthodes', short: 'Méthodes' },
   { id: 'cas-deviat', label: 'Cas concret : Jardin Monde DEVIAT', short: 'Cas concret' },
+  { id: 'questions', label: 'Questions fréquentes', short: 'Questions' },
   { id: 'contact', label: 'Nous contacter', short: 'Contact' },
 ];
 
