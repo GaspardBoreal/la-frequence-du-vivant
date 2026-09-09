@@ -232,10 +232,24 @@ const ProprieteModuleDialog: React.FC<Props> = ({ proprieteId, slug, openKey, on
                 <div className="space-y-5">
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {(Object.keys(bio.byKingdom) as KingdomKey[]).map((k) => (
-                      <div key={k} className="rounded-xl border border-border bg-muted/20 p-3">
+                      <button
+                        key={k}
+                        type="button"
+                        disabled={bio.byKingdom[k] === 0}
+                        onClick={() => setFocus({ kind: 'kingdom', value: k })}
+                        className={cn(
+                          'rounded-xl border border-border bg-muted/20 p-3 text-left transition-colors',
+                          bio.byKingdom[k] === 0
+                            ? 'opacity-50'
+                            : 'hover:border-primary/40 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        )}
+                      >
                         <p className="text-2xl font-semibold tabular-nums text-foreground">{bio.byKingdom[k]}</p>
-                        <p className="text-xs text-muted-foreground">{KINGDOM_LABELS_FR[k]}</p>
-                      </div>
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                          {KINGDOM_LABELS_FR[k]}
+                          {bio.byKingdom[k] > 0 && <ChevronRight className="h-3 w-3" />}
+                        </p>
+                      </button>
                     ))}
                   </div>
 
