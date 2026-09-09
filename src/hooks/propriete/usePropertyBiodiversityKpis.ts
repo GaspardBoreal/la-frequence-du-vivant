@@ -256,6 +256,7 @@ export function usePropertyBiodiversityKpis(
       topFunctions,
       fertilityScore: computeFertilityScore(buckets),
       sources,
+      species,
       isLoading,
       error,
     };
