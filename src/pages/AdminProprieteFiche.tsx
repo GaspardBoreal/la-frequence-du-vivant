@@ -72,6 +72,7 @@ const SECTIONS = [
   { id: 'sec-tableau-de-bord', label: 'Tableau de bord', editOnly: true },
   { id: 'sec-identite', label: 'Identité' },
   { id: 'sec-localisation', label: 'Localisation' },
+  { id: 'sec-intention', label: 'Intention', editOnly: true },
   { id: 'sec-rattachements', label: 'Rattachements' },
   { id: 'sec-marcheurs', label: 'Marcheurs', editOnly: true },
   { id: 'sec-entreprises', label: 'Entreprises', editOnly: true },
