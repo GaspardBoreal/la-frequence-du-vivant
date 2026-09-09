@@ -44,14 +44,15 @@ const Shell: React.FC<{
       </span>
     </div>
     {children}
-  </div>
+    <span className="mt-3 block text-[11px] font-medium text-primary/80">Voir le détail →</span>
+  </button>
 );
 
 /**
  * Deux indicateurs issus des marches rattachées au jardin : le vivant recensé
  * et les alliés du jardin. Aucun chiffre n'est affiché sans donnée réelle.
  */
-const ProprieteBiodiversityCards: React.FC<Props> = ({ proprieteId }) => {
+const ProprieteBiodiversityCards: React.FC<Props> = ({ proprieteId, onOpen }) => {
   const bio = usePropertyBiodiversityKpis(proprieteId);
 
   if (bio.isLoading) {
