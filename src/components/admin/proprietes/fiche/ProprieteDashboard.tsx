@@ -7,6 +7,8 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useProprieteDashboard, type ModuleStat } from '@/hooks/propriete/useProprieteDashboard';
 import ProprieteBiodiversityCards from './ProprieteBiodiversityCards';
+import ProprieteModuleDialog, { type DialogKey } from './ProprieteModuleDialog';
+import { usePropertyBiodiversityKpis } from '@/hooks/propriete/usePropertyBiodiversityKpis';
 
 interface Props {
   proprieteId: string;
