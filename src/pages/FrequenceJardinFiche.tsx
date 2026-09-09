@@ -139,6 +139,15 @@ const FrequenceJardinFiche: React.FC = () => {
           <p className="mt-5 max-w-3xl text-base leading-relaxed text-muted-foreground">
             {fiche.summary}
           </p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Cette fiche est l'annexe technique.{' '}
+            <a href="/frequence-jardin" className="text-primary underline underline-offset-4">
+              Découvrir Fréquence Jardin
+            </a>{' '}
+            — présentation, méthode et cas concrets.
+          </p>
+
+
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Button onClick={() => download(markdown, 'frequence-jardin-fiche-application.md', 'text/markdown;charset=utf-8')}>
