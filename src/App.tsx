@@ -509,6 +509,8 @@ function App() {
 
             </DiscoverFullscreenProvider>
             </TrophicFullscreenProvider>
+            </SiteSearchProvider>
+
             </BrowserRouter>
           </AudioProvider>
 
