@@ -202,15 +202,19 @@ export const SitePagesSearchOverlay: React.FC<Props> = ({ open, onClose }) => {
 
           <div className="mt-3 -mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 scrollbar-none">
             <Chip active={filter === 'all'} onClick={() => setFilter('all')} label="Tous les univers" />
-            {UNIVERS_ORDER.map(u => (
-              <Chip
-                key={u}
-                active={filter === u}
-                onClick={() => setFilter(filter === u ? 'all' : u)}
-                label={`${UNIVERS_META[u].emoji} ${UNIVERS_META[u].short}`}
-                count={counts[u]}
-              />
-            ))}
+            {UNIVERS_ORDER.map(u => {
+              const Icon = UNIVERS_META[u].icon;
+              return (
+                <Chip
+                  key={u}
+                  active={filter === u}
+                  onClick={() => setFilter(filter === u ? 'all' : u)}
+                  label={<span className="inline-flex items-center gap-1.5"><Icon className={cn('h-3.5 w-3.5', UNIVERS_META[u].accent)} />{UNIVERS_META[u].short}</span>}
+                  count={counts[u]}
+                />
+              );
+            })}
+
           </div>
 
           <div ref={listRef} className="mt-4 max-h-[62vh] overflow-y-auto pb-24 pr-1">
