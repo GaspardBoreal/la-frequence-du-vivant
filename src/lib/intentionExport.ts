@@ -190,6 +190,7 @@ export const exportIntentionPdf = (
   intention: PropertyIntention,
   nom: string,
   sousTitre?: string | null,
+  bio?: IntentionBiodiversity | null,
 ) => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const W = 210;
