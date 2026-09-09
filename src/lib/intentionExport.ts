@@ -3,6 +3,8 @@ import { DEFAULT_SEQUENCE } from '@/config/onboarding/defaultSequence';
 import { buildSequence, type AnswerValue, type OnboardingQuestion } from '@/config/onboarding/schema';
 import { PERSONA_LABELS } from '@/config/onboarding/personas';
 import type { PropertyIntention } from '@/hooks/propriete/usePropertyIntention';
+import type { PropertyBiodiversityKpis } from '@/hooks/propriete/usePropertyBiodiversityKpis';
+import { ECO_FUNCTIONS } from '@/lib/ecologicalFunctions';
 
 /** Une ligne d'export : une question du parcours d'accueil et sa réponse. */
 export interface IntentionRow {
@@ -140,7 +142,11 @@ export const exportIntentionCsv = (
     `intention-${slugify(nom)}-${stamp()}.csv`);
 };
 
-export const exportIntentionJson = (intention: PropertyIntention, nom: string) => {
+export const exportIntentionJson = (
+  intention: PropertyIntention,
+  nom: string,
+  bio?: IntentionBiodiversity | null,
+) => {
   const payload = {
     jardin: nom,
     exporte_le: new Date().toISOString(),
