@@ -112,6 +112,7 @@ const FrequenceJardinDiagnostiquer = lazyWithRetry(() => import('./pages/Frequen
 const FrequenceJardinBioIndicatrices = lazyWithRetry(() => import('./pages/FrequenceJardinBioIndicatrices'));
 const FrequenceJardinPalette = lazyWithRetry(() => import('./pages/FrequenceJardinPalette'));
 const FrequenceJardinCasDeviat = lazyWithRetry(() => import('./pages/FrequenceJardinCasDeviat'));
+const FrequenceJardinArticle = lazyWithRetry(() => import('./pages/FrequenceJardinArticle'));
 
 const ProprieteEspace = lazyWithRetry(() => import('./pages/ProprieteEspace'));
 const JardinDemarrer = lazyWithRetry(() => import('./pages/JardinDemarrer'));
