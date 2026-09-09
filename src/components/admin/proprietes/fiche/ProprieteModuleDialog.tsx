@@ -103,7 +103,10 @@ const Vide: React.FC<{ texte: string }> = ({ texte }) => (
 );
 
 /** Sous-vue : les espèces d'un règne ou d'une fonction écologique. */
-type Focus = { kind: 'kingdom'; value: KingdomKey } | { kind: 'function'; value: string };
+type Focus =
+  | { kind: 'kingdom'; value: KingdomKey }
+  | { kind: 'function'; value: string }
+  | { kind: 'all'; value: 'all' };
 
 const SpeciesGrid: React.FC<{
   especes: PropertyBiodiversityKpis['species'];
