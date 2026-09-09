@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { PropertySoilState } from '@/hooks/propriete/usePropertySoil';
+import type { PropertySoilState, SoilSample } from '@/hooks/propriete/usePropertySoil';
 
 const sb = supabase as any;
 
@@ -93,7 +93,7 @@ export const useProprieteModuleDetail = (proprieteId?: string, moduleKey?: Modul
         case 'sol': {
           const s = await one('propriete_soil_diagnostics', 'terrain_status, samples, synthesis, structure, texture, boudin_shape, ph, life_signs, completed_at, updated_at');
           if (!s) return { rows: [], resume: null };
-          const samples: any[] = Array.isArray(s.samples) ? s.samples : [];
+          const samples: SoilSample[] = Array.isArray(s.samples) ? s.samples : [];
           return {
             rows: [],
             resume: s.completed_at
