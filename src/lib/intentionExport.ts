@@ -76,12 +76,64 @@ const download = (blob: Blob, filename: string) => {
 
 const csvCell = (v: string) => `"${(v ?? '').replace(/"/g, '""')}"`;
 
-export const exportIntentionCsv = (intention: PropertyIntention, nom: string) => {
+/** Indicateurs de biodiversité relevés lors des marches rattachées au jardin. */
+export type IntentionBiodiversity = PropertyBiodiversityKpis;
+
+const KINGDOM_FR: Record<string, string> = {
+  plantae: 'Plantes',
+  animalia: 'Animaux',
+  fungi: 'Champignons',
+  others: 'Autres',
+};
+
+/** Lignes « Biodiversité » : une mesure par ligne, jamais de chiffre inventé. */
+export const buildBiodiversityRows = (
+  bio: IntentionBiodiversity,
+): Array<{ mesure: string; valeur: string }> => {
+  if (!bio.hasEvents) {
+    return [{ mesure: 'Marches rattachées', valeur: 'Aucune marche rattachée à ce jardin' }];
+  }
+  const rows: Array<{ mesure: string; valeur: string }> = [
+    { mesure: 'Marches rattachées', valeur: String(bio.eventCount) },
+    { mesure: 'Espèces distinctes recensées', valeur: String(bio.totalSpecies) },
+  ];
+  (Object.keys(KINGDOM_FR) as Array<keyof typeof KINGDOM_FR>).forEach((k) => {
+    rows.push({
+      mesure: `Espèces — ${KINGDOM_FR[k]}`,
+      valeur: String((bio.byKingdom as Record<string, number>)[k] ?? 0),
+    });
+  });
+  rows.push(
+    { mesure: 'Alliés du jardin (espèces à fonction écologique)', valeur: String(bio.alliesCount) },
+    { mesure: 'Part des alliés', valeur: `${bio.alliesShare} %` },
+    { mesure: 'Indice de fertilité', valeur: String(bio.fertilityScore) },
+  );
+  ECO_FUNCTIONS.forEach((f) => {
+    const c = bio.functionCounts[f.value] ?? 0;
+    if (c > 0) rows.push({ mesure: `Fonction — ${f.shortLabel}`, valeur: String(c) });
+  });
+  rows.push({
+    mesure: 'Origine des étiquettes',
+    valeur: `curation ${bio.sources.curated} · base partagée ${bio.sources.kb} · automatique ${bio.sources.auto}`,
+  });
+  return rows;
+};
+
+export const exportIntentionCsv = (
+  intention: PropertyIntention,
+  nom: string,
+  bio?: IntentionBiodiversity | null,
+) => {
   const rows = buildIntentionRows(intention);
   const header = ['Volet', 'Chapitre', 'Question', 'Réponse', 'Valeur brute'];
   const lines = [
     header.map(csvCell).join(';'),
     ...rows.map((r) => [r.volet, r.chapitre, r.question, r.reponse, r.brut].map(csvCell).join(';')),
+    ...(bio
+      ? ['', ['Biodiversité', 'Mesure', 'Valeur'].map(csvCell).join(';'),
+         ...buildBiodiversityRows(bio).map((r) =>
+           ['Biodiversité', r.mesure, r.valeur].map(csvCell).join(';'))]
+      : []),
   ];
   // BOM : Excel ouvre correctement les accents.
   download(new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' }),
