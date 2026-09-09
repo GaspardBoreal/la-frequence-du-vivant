@@ -210,6 +210,14 @@ const FrequenceJardinBioIndicatrices: React.FC = () => {
           lead="La lecture bio-indicatrice se confronte toujours aux tests de terrain : bêche, boudin, sédimentation, pH. Quand les deux voix s’accordent, le diagnostic est solide ; quand elles divergent, Fréquence Jardin affiche l’écart au lieu de le lisser."
         >
           <div className="flex flex-wrap gap-3">
+            <a
+              href={FJ_SIGNUP_URL}
+              target="_blank"
+              rel="noopener"
+              className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ds-gold))] px-5 py-2.5 text-[14px] font-medium text-[hsl(var(--ds-forest-deep))]"
+            >
+              Démarrer mon jardin <ArrowRight className="h-4 w-4" />
+            </a>
             <Link
               to="/frequence-jardin/diagnostiquer-son-jardin"
               className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ds-cream))] px-5 py-2.5 text-[14px] font-medium text-[hsl(var(--ds-forest-deep))]"
