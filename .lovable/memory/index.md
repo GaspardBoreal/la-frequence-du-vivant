@@ -1,3 +1,4 @@
+- [Fréquence Jardin SEO](mem://features/seo/frequence-jardin-pilier-satellites) — Page pilier /frequence-jardin + 4 satellites, contenu factuel centralisé, sitemap/llms.txt/site_pages à tenir à jour
 - [Console admin Propriétés](mem://features/propriete/admin-console-proprietes) — KPI cliquables, filtres URL (dont Portrait · Intention), Table|Carte|Tableau de bord|Analyse, fiche plein écran, suppression à double confirmation ; schéma réel is_active/surface_hectares
 - [Lots exemples onboarding](mem://features/onboarding/lots-exemples-jardin) — Import ZIP admin (manifeste + images calibrées telles quelles), upsert par stable_id, RPC onboard_set_garden_style, galerie publique /jardin/demarrer
 - [Entretien fondateur](mem://features/propriete/entretien-fondateur) — Portrait › Entretiens : récolte IA en 5 registres avec verbatim obligatoire, validation carte par carte, lignes rouges en garde-fou de l'IA de Jardin
