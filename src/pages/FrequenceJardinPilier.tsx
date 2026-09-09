@@ -247,6 +247,36 @@ const FrequenceJardinPilier: React.FC = () => {
               </Link>
             ))}
           </div>
+
+          <h3 className="mt-10 font-serif text-[20px] text-[hsl(var(--ds-forest-deep))]">
+            Les guides de terrain
+          </h3>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {FJ_GUIDES.map((g) => (
+              <Link
+                key={g.slug}
+                to={`/frequence-jardin/${g.slug}`}
+                className="rounded-full border border-[hsl(var(--ds-line))] px-4 py-2 text-[14px] text-[hsl(var(--ds-forest-deep))] transition hover:border-[hsl(var(--ds-forest-soft))]"
+              >
+                {g.h1}
+              </Link>
+            ))}
+          </div>
+
+          <h3 className="mt-8 font-serif text-[20px] text-[hsl(var(--ds-forest-deep))]">
+            Une plante spontanée, un message
+          </h3>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {FJ_PLANTS.map((p) => (
+              <Link
+                key={p.slug}
+                to={`/frequence-jardin/${p.slug}`}
+                className="rounded-full border border-[hsl(var(--ds-line))] px-4 py-2 text-[14px] text-[hsl(var(--ds-forest-deep))] transition hover:border-[hsl(var(--ds-forest-soft))]"
+              >
+                {p.h1.split(' :')[0]}
+              </Link>
+            ))}
+          </div>
         </FjSection>
 
         {/* Lien avec Les Marches du Vivant */}
