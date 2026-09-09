@@ -486,6 +486,14 @@ const AdminProprieteFiche: React.FC = () => {
 
         {/* ---- Sections ------------------------------------------------------ */}
         <div className="min-w-0 space-y-8 pb-16">
+          {/* Tableau de bord du jardin */}
+          {!isNew && activeId && (
+            <section id="sec-tableau-de-bord" className="scroll-mt-32 space-y-4 rounded-xl border border-border bg-card p-4 sm:p-6">
+              <SectionTitle>Tableau de bord du jardin</SectionTitle>
+              <ProprieteDashboard proprieteId={activeId} slug={propriete?.slug} />
+            </section>
+          )}
+
           {/* Identité */}
           <section id="sec-identite" className="scroll-mt-32 space-y-3 rounded-xl border border-border bg-card p-4 sm:p-6">
             <SectionTitle>Identité</SectionTitle>
