@@ -10,6 +10,8 @@ import { KINGDOM_LABELS_FR, type KingdomKey } from '@/lib/kingdomLabels';
 import { ECO_FUNCTIONS } from '@/lib/ecologicalFunctions';
 import { SpeciesThumb } from '@/components/species/SpeciesThumb';
 import { SpeciesName } from '@/components/species/SpeciesName';
+import { Button } from '@/components/ui/button';
+import { SoilAnalysisDialogContent } from './SoilAnalysisDialogContent';
 import type { PropertyBiodiversityKpis } from '@/hooks/propriete/usePropertyBiodiversityKpis';
 import {
   useProprieteModuleDetail, useProprieteEvenements, type ModuleKey,
@@ -47,7 +49,7 @@ const INTRO: Record<DialogKey, { titre: string; sous: string; vide: string }> = 
   },
   sol: {
     titre: 'Analyse du sol',
-    sous: 'Prélèvements enregistrés dans le registre de sol.',
+    sous: 'Lecture des résultats de chaque fiche Carotte de sol.',
     vide: 'Aucun prélèvement enregistré dans le registre de sol.',
   },
   flore: {
@@ -383,6 +385,8 @@ const ProprieteModuleDialog: React.FC<Props> = ({ proprieteId, slug, openKey, on
               <p className="py-6 text-sm text-destructive">
                 Détail indisponible : {(detail.error as Error).message}
               </p>
+            ) : openKey === 'sol' && detail.data?.soil ? (
+              <SoilAnalysisDialogContent state={detail.data.soil} />
             ) : (
               <div className="space-y-3">
                 {detail.data?.resume && (
@@ -422,16 +426,14 @@ const ProprieteModuleDialog: React.FC<Props> = ({ proprieteId, slug, openKey, on
               <ExternalLink className="h-3.5 w-3.5" /> Ouvrir dans l’espace jardinier
             </Link>
           )}
-          <button
+          <Button
             type="button"
             onClick={onClose}
-            className={cn(
-              'ml-auto rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground',
-              'transition-opacity hover:opacity-90',
-            )}
+            size="sm"
+            className="ml-auto rounded-full text-xs"
           >
             Revenir à la synthèse
-          </button>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

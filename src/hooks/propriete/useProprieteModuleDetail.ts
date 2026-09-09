@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { PropertySoilState, SoilSample } from '@/hooks/propriete/usePropertySoil';
 
 const sb = supabase as any;
 
@@ -19,6 +20,8 @@ export interface ModuleDetail {
   rows: DetailRow[];
   /** Phrase de synthèse au-dessus de la liste. */
   resume: string | null;
+  /** Registre complet, réservé à la vue spécialisée « Analyse du sol ». */
+  soil?: PropertySoilState;
 }
 
 const str = (v: unknown): string | null => {
@@ -88,23 +91,26 @@ export const useProprieteModuleDetail = (proprieteId?: string, moduleKey?: Modul
         }
 
         case 'sol': {
-          const s = await one('propriete_soil_diagnostics', 'samples, synthesis, structure, texture, ph, completed_at, updated_at');
+          const s = await one('propriete_soil_diagnostics', 'terrain_status, samples, synthesis, structure, texture, boudin_shape, ph, life_signs, completed_at, updated_at');
           if (!s) return { rows: [], resume: null };
-          const samples: any[] = Array.isArray(s.samples) ? s.samples : [];
+          const samples: SoilSample[] = Array.isArray(s.samples) ? s.samples : [];
           return {
-            rows: samples.map((sp, i) => ({
-              id: `sample-${i}`,
-              titre: labelOf(sp, `Prélèvement ${i + 1}`),
-              contexte: Object.entries(sp || {})
-                .filter(([, v]) => str(v))
-                .slice(0, 4)
-                .map(([k, v]) => `${k} : ${str(v)}`)
-                .join(' · ') || null,
-              meta: null,
-            })),
+            rows: [],
             resume: s.completed_at
               ? `Registre de sol clos le ${dateFr(s.completed_at)}`
               : 'Registre de sol ouvert',
+            soil: {
+              terrain_status: s.terrain_status ?? null,
+              samples,
+              structure: s.structure ?? null,
+              texture: s.texture ?? null,
+              boudin_shape: s.boudin_shape ?? null,
+              ph: s.ph ?? null,
+              life_signs: Array.isArray(s.life_signs) ? s.life_signs : [],
+              synthesis: s.synthesis ?? '',
+              completed_at: s.completed_at ?? null,
+              updated_at: s.updated_at ?? null,
+            },
           };
         }
 
