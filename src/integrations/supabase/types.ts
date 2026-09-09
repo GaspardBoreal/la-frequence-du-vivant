@@ -9217,6 +9217,84 @@ export type Database = {
         }
         Relationships: []
       }
+      site_pages: {
+        Row: {
+          created_at: string
+          featured: boolean
+          id: string
+          is_active: boolean
+          keywords: string[]
+          path: string
+          priority: number
+          subtitle: string | null
+          title: string
+          univers: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          featured?: boolean
+          id?: string
+          is_active?: boolean
+          keywords?: string[]
+          path: string
+          priority?: number
+          subtitle?: string | null
+          title: string
+          univers?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          featured?: boolean
+          id?: string
+          is_active?: boolean
+          keywords?: string[]
+          path?: string
+          priority?: number
+          subtitle?: string | null
+          title?: string
+          univers?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_search_rules: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          match_type: string
+          note: string | null
+          pattern: string
+          position: number
+          univers: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          match_type?: string
+          note?: string | null
+          pattern: string
+          position?: number
+          univers: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          match_type?: string
+          note?: string | null
+          pattern?: string
+          position?: number
+          univers?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sound_recordings: {
         Row: {
           created_at: string
