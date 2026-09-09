@@ -156,9 +156,13 @@ const CommunityChatBotMount = lazyWithRetry(() =>
   import('./components/chatbot/CommunityChatBotMount').then((m) => ({ default: m.CommunityChatBotMount })),
 );
 const AdhesionFab = lazyWithRetry(() => import('./components/adhesion/AdhesionFab'));
+const SiteSearchMount = lazyWithRetry(() => import('./components/search/SiteSearchMount'));
+const AdminRecherche = lazyWithRetry(() => import('./pages/AdminRecherche'));
 
+import { SiteSearchProvider } from './components/search/SiteSearchContext';
 import { TrophicFullscreenProvider } from './components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenProvider';
 import { DiscoverFullscreenProvider } from './components/biodiversity/discover/DiscoverFullscreenProvider';
+
 
 
 
