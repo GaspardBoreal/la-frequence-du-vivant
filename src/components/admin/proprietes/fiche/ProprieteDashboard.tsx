@@ -99,6 +99,8 @@ const ProprieteDashboard: React.FC<Props> = ({ proprieteId, slug }) => {
 
   return (
     <div className="space-y-4">
+      <ProprieteBiodiversityCards proprieteId={proprieteId} />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           {isLoading ? (
