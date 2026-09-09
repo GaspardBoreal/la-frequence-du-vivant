@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, Loader2, ArrowRight } from 'lucide-react';
+import { ExternalLink, Loader2, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
@@ -8,6 +8,8 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { KINGDOM_LABELS_FR, type KingdomKey } from '@/lib/kingdomLabels';
 import { ECO_FUNCTIONS } from '@/lib/ecologicalFunctions';
+import { SpeciesThumb } from '@/components/species/SpeciesThumb';
+import { SpeciesName } from '@/components/species/SpeciesName';
 import type { PropertyBiodiversityKpis } from '@/hooks/propriete/usePropertyBiodiversityKpis';
 import {
   useProprieteModuleDetail, useProprieteEvenements, type ModuleKey,
