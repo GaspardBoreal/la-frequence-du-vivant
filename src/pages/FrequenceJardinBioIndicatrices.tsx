@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { FjHead, FjBreadcrumb, FjSection, FjRelated } from '@/components/frequence-jardin/FjKit';
-import { FJ_PAGES } from '@/content/frequenceJardin/pilier';
+import { FJ_PAGES, FJ_SIGNUP_URL } from '@/content/frequenceJardin/pilier';
 import { PLANT_INDICATORS, type PlantIndicator } from '@/lib/plantIndicatorKb';
 
 const PATH = '/frequence-jardin/plantes-bio-indicatrices';
