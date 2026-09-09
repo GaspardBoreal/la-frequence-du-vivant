@@ -289,6 +289,25 @@ export const exportIntentionPdf = (
     y += 4;
   });
 
+  if (bio) {
+    page();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('Biodiversité relevée', M, y);
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    buildBiodiversityRows(bio).forEach((r) => {
+      page();
+      doc.setTextColor(130);
+      doc.text(r.mesure, M, y);
+      doc.setTextColor(0);
+      doc.text(r.valeur, W - M, y, { align: 'right' });
+      y += 5.4;
+    });
+    y += 6;
+  }
+
   if (intention.gestures.length) {
     page();
     doc.setFont('helvetica', 'bold');
