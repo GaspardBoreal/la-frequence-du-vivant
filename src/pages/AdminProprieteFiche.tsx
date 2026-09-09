@@ -28,6 +28,8 @@ import {
 } from '@/utils/frenchGeoLookup';
 import ProprietePositionPicker from '@/components/admin/proprietes/ProprietePositionPicker';
 import DeleteProprieteDialog from '@/components/admin/proprietes/DeleteProprieteDialog';
+import ProprieteDashboard from '@/components/admin/proprietes/fiche/ProprieteDashboard';
+import ProprieteIntentionSection from '@/components/admin/proprietes/fiche/ProprieteIntentionSection';
 import { cn } from '@/lib/utils';
 
 const sb = supabase as any;
@@ -69,8 +71,10 @@ const EMPTY_FORM: Partial<Propriete> = {
 const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
 const SECTIONS = [
+  { id: 'sec-tableau-de-bord', label: 'Tableau de bord', editOnly: true },
   { id: 'sec-identite', label: 'Identité' },
   { id: 'sec-localisation', label: 'Localisation' },
+  { id: 'sec-intention', label: 'Intention', editOnly: true },
   { id: 'sec-rattachements', label: 'Rattachements' },
   { id: 'sec-marcheurs', label: 'Marcheurs', editOnly: true },
   { id: 'sec-entreprises', label: 'Entreprises', editOnly: true },
@@ -482,6 +486,14 @@ const AdminProprieteFiche: React.FC = () => {
 
         {/* ---- Sections ------------------------------------------------------ */}
         <div className="min-w-0 space-y-8 pb-16">
+          {/* Tableau de bord du jardin */}
+          {!isNew && activeId && (
+            <section id="sec-tableau-de-bord" className="scroll-mt-32 space-y-4 rounded-xl border border-border bg-card p-4 sm:p-6">
+              <SectionTitle>Tableau de bord du jardin</SectionTitle>
+              <ProprieteDashboard proprieteId={activeId} slug={propriete?.slug} />
+            </section>
+          )}
+
           {/* Identité */}
           <section id="sec-identite" className="scroll-mt-32 space-y-3 rounded-xl border border-border bg-card p-4 sm:p-6">
             <SectionTitle>Identité</SectionTitle>
@@ -615,6 +627,17 @@ const AdminProprieteFiche: React.FC = () => {
               onChange={(lat, lng) => setForm((f) => ({ ...f, latitude: lat, longitude: lng }))}
             />
           </section>
+
+          {/* Portrait · Intention */}
+          {!isNew && activeId && (
+            <section id="sec-intention" className="scroll-mt-32 rounded-xl border border-border bg-card p-4 sm:p-6">
+              <ProprieteIntentionSection
+                proprieteId={activeId}
+                nom={form.nom || propriete?.nom || 'Jardin'}
+                sousTitre={[form.ville, form.code_postal].filter(Boolean).join(' ') || null}
+              />
+            </section>
+          )}
 
           {/* Rattachements principaux */}
           <section id="sec-rattachements" className="scroll-mt-32 space-y-3 rounded-xl border border-border bg-card p-4 sm:p-6">

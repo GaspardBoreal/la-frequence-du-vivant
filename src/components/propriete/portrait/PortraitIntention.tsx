@@ -14,12 +14,17 @@ import { PERSONA_LABELS } from '@/config/onboarding/personas';
 import { IntentionQuestionEditor } from './IntentionQuestionEditor';
 import { GardenExampleCard } from './GardenExampleCard';
 
+type IntentionSection = 'jardin' | 'projet';
+
 interface Props {
   proprieteId: string;
   proprieteNom: string;
+  /** Volet affiché, piloté par le parent (console admin). Sinon l'URL fait foi. */
+  section?: IntentionSection;
+  onSectionChange?: (s: IntentionSection) => void;
+  /** Masque l'en-tête (titre + compteur) quand le parent en fournit un. */
+  hideHeader?: boolean;
 }
-
-type IntentionSection = 'jardin' | 'projet';
 
 /** Libellé lisible d'une réponse, à partir des options de la question. */
 const readableAnswer = (
@@ -46,7 +51,9 @@ const readableAnswer = (
  * « Le jardin » (description du lieu et du jardinier) et « Le projet »
  * (problème à résoudre, cap à six mois, premiers gestes). Mobile d'abord.
  */
-export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }) => {
+export const PortraitIntention: React.FC<Props> = ({
+  proprieteId, proprieteNom, section: sectionProp, onSectionChange, hideHeader,
+}) => {
   const { data: intention, isLoading, error } = usePropertyIntention(proprieteId);
   const { data: canEdit = false } = useCanEditIntention(proprieteId);
   const save = useSaveIntention(proprieteId);
@@ -62,8 +69,12 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
   const [pickerSlug, setPickerSlug] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const section: IntentionSection = searchParams.get('intention') === 'projet' ? 'projet' : 'jardin';
+  const controlled = sectionProp != null;
+  const section: IntentionSection = controlled
+    ? sectionProp
+    : (searchParams.get('intention') === 'projet' ? 'projet' : 'jardin');
   const setSection = (s: IntentionSection) => {
+    if (controlled) { onSectionChange?.(s); return; }
     const next = new URLSearchParams(searchParams);
     if (s === 'jardin') next.delete('intention');
     else next.set('intention', s);
@@ -140,7 +151,7 @@ export const PortraitIntention: React.FC<Props> = ({ proprieteId, proprieteNom }
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
+      <div className={cn('flex items-start justify-between gap-3 flex-wrap', hideHeader && 'hidden')}>
         <div>
           <h2 className="text-xl md:text-2xl font-serif italic text-foreground flex items-center gap-2">
             <Compass className="w-5 h-5 text-amber-600" />
