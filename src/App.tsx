@@ -216,7 +216,13 @@ function App() {
             <Route path="/marches-techno-sensibles" element={<MarchesTechnoSensibles />} />
             <Route path="/marche/:slug" element={<MarcheDetail />} />
             <Route path="/m/:slug" element={<PublicEventPage />} />
+            <Route path="/frequence-jardin" element={<FrequenceJardinPilier />} />
+            <Route path="/frequence-jardin/diagnostiquer-son-jardin" element={<FrequenceJardinDiagnostiquer />} />
+            <Route path="/frequence-jardin/plantes-bio-indicatrices" element={<FrequenceJardinBioIndicatrices />} />
+            <Route path="/frequence-jardin/palette-vegetale" element={<FrequenceJardinPalette />} />
+            <Route path="/frequence-jardin/cas-jardin-monde-deviat" element={<FrequenceJardinCasDeviat />} />
             <Route path="/jardin/:slug" element={<ImmersiveGardenFiche />} />
+
             <Route path="/apprendre/:slug" element={<ApprendreMarchePage />} />
             
             {/* Nouvelles routes bioacoustiques */}
