@@ -100,6 +100,9 @@ const Card: React.FC<{
 /** Tableau de bord lecture seule des modules du jardin, en tête de la fiche admin. */
 const ProprieteDashboard: React.FC<Props> = ({ proprieteId, slug }) => {
   const { data, isLoading, error } = useProprieteDashboard(proprieteId);
+  const bio = usePropertyBiodiversityKpis(proprieteId);
+  const [openKey, setOpenKey] = React.useState<DialogKey | null>(null);
+
 
   const actifs = data ? CARDS.filter((c) => (data[c.key].count > 0 || data[c.key].lastAt)).length : 0;
   const derniere = data
@@ -108,7 +111,7 @@ const ProprieteDashboard: React.FC<Props> = ({ proprieteId, slug }) => {
 
   return (
     <div className="space-y-4">
-      <ProprieteBiodiversityCards proprieteId={proprieteId} />
+      <ProprieteBiodiversityCards proprieteId={proprieteId} onOpen={setOpenKey} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
@@ -139,8 +142,24 @@ const ProprieteDashboard: React.FC<Props> = ({ proprieteId, slug }) => {
           ? CARDS.map((c) => (
               <div key={c.key} className="h-32 animate-pulse rounded-2xl border border-border/70 bg-muted/30" />
             ))
-          : CARDS.map((c, i) => <Card key={c.key} def={c} stat={data[c.key]} index={i} />)}
+          : CARDS.map((c, i) => (
+              <Card
+                key={c.key}
+                def={c}
+                stat={data[c.key]}
+                index={i}
+                onOpen={() => setOpenKey(c.key as DialogKey)}
+              />
+            ))}
       </div>
+
+      <ProprieteModuleDialog
+        proprieteId={proprieteId}
+        slug={slug}
+        openKey={openKey}
+        onClose={() => setOpenKey(null)}
+        bio={bio}
+      />
     </div>
   );
 };
