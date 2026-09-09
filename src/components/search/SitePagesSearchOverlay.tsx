@@ -248,7 +248,8 @@ export const SitePagesSearchOverlay: React.FC<Props> = ({ open, onClose }) => {
                     {portails.map(g => (
                       <div key={g.univers} className={cn('rounded-2xl bg-gradient-to-r to-transparent p-3 ring-1', UNIVERS_META[g.univers].glow, UNIVERS_META[g.univers].ring)}>
                         <p className={cn('mb-2 text-xs font-semibold uppercase tracking-widest', UNIVERS_META[g.univers].accent)}>
-                          {UNIVERS_META[g.univers].emoji} {UNIVERS_META[g.univers].label}
+                          {React.createElement(UNIVERS_META[g.univers].icon, { className: 'mr-1.5 inline h-3.5 w-3.5' })}
+                          {UNIVERS_META[g.univers].label}
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {g.items.map(p => (
@@ -284,7 +285,7 @@ export const SitePagesSearchOverlay: React.FC<Props> = ({ open, onClose }) => {
                 return (
                   <div key={g.univers}>
                     <div className="mb-2 flex items-center gap-2 px-1">
-                      <span className="text-sm">{meta.emoji}</span>
+                      <meta.icon className={cn('h-3.5 w-3.5', meta.accent)} />
                       <span className={cn('text-[0.7rem] font-semibold uppercase tracking-widest', meta.accent)}>{meta.label}</span>
                       <span className="text-[0.7rem] text-emerald-100/30">· {g.items.length}</span>
                     </div>
@@ -309,8 +310,8 @@ export const SitePagesSearchOverlay: React.FC<Props> = ({ open, onClose }) => {
                                 : 'bg-white/[0.03] ring-white/5 hover:bg-white/[0.07]',
                             )}
                           >
-                            <span className={cn('mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-base ring-1 ring-white/10')}>
-                              {meta.emoji}
+                            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10">
+                              <meta.icon className={cn('h-4 w-4', meta.accent)} />
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-sm font-medium text-emerald-50">
@@ -351,7 +352,7 @@ const Legend: React.FC<{ icon: React.ComponentType<any>; label: string }> = ({ i
   </div>
 );
 
-const Chip: React.FC<{ active: boolean; onClick: () => void; label: string; count?: number }> = ({ active, onClick, label, count }) => (
+const Chip: React.FC<{ active: boolean; onClick: () => void; label: React.ReactNode; count?: number }> = ({ active, onClick, label, count }) => (
   <button
     onClick={onClick}
     className={cn(

@@ -159,7 +159,7 @@ const AdminRecherche: React.FC = () => {
                 {preview.map(g => (
                   <div key={g.univers}>
                     <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                      {UNIVERS_META[g.univers].emoji} {UNIVERS_META[g.univers].label}
+                      {UNIVERS_META[g.univers].label}
                     </p>
                     <ul className="space-y-1">
                       {g.items.map(p => (
