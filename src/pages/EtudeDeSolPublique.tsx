@@ -64,6 +64,7 @@ const EtudeDeSolPublique: React.FC = () => {
         <meta property="og:url" content={CANONICAL} />
         <meta name="twitter:card" content="summary_large_image" />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+        <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
       </Helmet>
 
       <HeroEtudeSol
