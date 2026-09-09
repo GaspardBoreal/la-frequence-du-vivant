@@ -225,7 +225,14 @@ export function usePropertyBiodiversityKpis(
         functionCounts[f] += 1;
         buckets[f].push(sp);
       });
+      species.push({
+        scientificName: sp.scientificName,
+        kingdom,
+        functions: res.functions,
+        count: sp.count,
+      });
     });
+    species.sort((a, b) => b.count - a.count);
 
     const totalSpecies = merged.length;
     const topFunctions = ECO_FUNCTIONS.map((f) => ({
