@@ -361,7 +361,14 @@ const PropTabs: React.FC<{
   proprieteCenter?: [number, number] | null;
 }> = ({ proprieteId, proprieteNom, proprieteVille, proprieteAdresse, proprieteCodePostal, proprieteCenter }) => {
   const { data: bio } = usePropertyBiodiversity(proprieteId);
-  const [tab, setTab] = React.useState<string>('portrait');
+  const [searchParams] = useSearchParams();
+  // Un lien externe peut demander un onglet précis : /propriete/slug?tab=tour
+  const initialTab = React.useMemo(() => {
+    const t = searchParams.get('tab');
+    const allowed = ['portrait', 'observe', 'analyze', 'identify', 'synthesize', 'palette', 'capteurs', 'clinique', 'tour'];
+    return t && allowed.includes(t) ? t : 'portrait';
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [tab, setTab] = React.useState<string>(initialTab);
   const [atelierOpen, setAtelierOpen] = React.useState(false);
 
   const handleTabChange = React.useCallback((value: string) => {
