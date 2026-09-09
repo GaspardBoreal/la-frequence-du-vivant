@@ -174,6 +174,7 @@ function GlobalMounts() {
       <AdminChatBotMount />
       <CommunityChatBotMount />
       <AdhesionFab />
+      <SiteSearchMount />
     </Suspense>
   );
 }
@@ -187,10 +188,12 @@ function App() {
           <AudioProvider>
             <BrowserRouter>
             <AuthHashHandler />
+            <SiteSearchProvider>
             <TrophicFullscreenProvider>
             <DiscoverFullscreenProvider>
           <Suspense fallback={<RouteFallback />}>
           <Routes>
+
 
             <Route path="/" element={<Index />} />
             <Route path="/agent-ia" element={<AgentIA />} />
