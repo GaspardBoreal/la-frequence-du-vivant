@@ -6,6 +6,8 @@
  * mécanique (normalisation, classement par univers, score), jamais de contenu figé.
  */
 
+import { Compass, Footprints, Grape, Sparkles, Sprout, type LucideIcon } from 'lucide-react';
+
 export type UniversKey = 'jardin' | 'vignoble' | 'marches' | 'ecotourisme' | 'vivant';
 
 export const UNIVERS_ORDER: UniversKey[] = ['jardin', 'vignoble', 'marches', 'ecotourisme', 'vivant'];
@@ -13,33 +15,34 @@ export const UNIVERS_ORDER: UniversKey[] = ['jardin', 'vignoble', 'marches', 'ec
 export const UNIVERS_META: Record<UniversKey, {
   label: string;
   short: string;
-  emoji: string;
+  icon: LucideIcon;
   /** Teinte du groupe — volontairement locale à l'overlay (fond sombre dédié). */
   accent: string;
   ring: string;
   glow: string;
 }> = {
   jardin: {
-    label: 'Fréquence Jardin', short: 'Jardin', emoji: '🌱',
+    label: 'Fréquence Jardin', short: 'Jardin', icon: Sprout,
     accent: 'text-lime-300', ring: 'ring-lime-400/40', glow: 'from-lime-400/20',
   },
   vignoble: {
-    label: 'Fréquence du Vignoble', short: 'Vignoble', emoji: '🍇',
+    label: 'Fréquence du Vignoble', short: 'Vignoble', icon: Grape,
     accent: 'text-fuchsia-300', ring: 'ring-fuchsia-400/40', glow: 'from-fuchsia-400/20',
   },
   marches: {
-    label: 'Les Marches du Vivant', short: 'Marches', emoji: '🚶',
+    label: 'Les Marches du Vivant', short: 'Marches', icon: Footprints,
     accent: 'text-emerald-300', ring: 'ring-emerald-400/40', glow: 'from-emerald-400/20',
   },
   ecotourisme: {
-    label: 'Éco tourisme', short: 'Éco tourisme', emoji: '🧭',
+    label: 'Éco tourisme', short: 'Éco tourisme', icon: Compass,
     accent: 'text-amber-300', ring: 'ring-amber-400/40', glow: 'from-amber-400/20',
   },
   vivant: {
-    label: 'La Fréquence du Vivant', short: 'Vivant', emoji: '✳️',
+    label: 'La Fréquence du Vivant', short: 'Vivant', icon: Sparkles,
     accent: 'text-sky-300', ring: 'ring-sky-400/40', glow: 'from-sky-400/20',
   },
 };
+
 
 export interface SitePage {
   id: string;
