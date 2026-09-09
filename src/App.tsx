@@ -446,6 +446,12 @@ function App() {
                 <AdminSoilRegistryAudit />
               </AdminAuth>
             } />
+            <Route path="/admin/outils/recherche" element={
+              <AdminAuth>
+                <AdminRecherche />
+              </AdminAuth>
+            } />
+
 
 
             <Route path="/audit-frugal/:slug" element={<PublicAuditFrugal />} />

@@ -5,6 +5,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 
 import ShareButton from '@/components/share/ShareButton';
+import SiteSearchTrigger from '@/components/search/SiteSearchTrigger';
+
 
 export type PublicTopBarTone = 'light' | 'dark' | 'glass' | 'auto';
 
@@ -96,6 +98,11 @@ const PublicTopBar: React.FC<PublicTopBarProps> = ({
           {leftSlot}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
+          <SiteSearchTrigger
+            className={`${baseIcon} ${tones.iconBtn}`}
+            iconClassName="w-4 h-4"
+          />
+
           
           <Link
             to={connectHref}
