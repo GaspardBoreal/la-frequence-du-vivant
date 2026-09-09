@@ -69,6 +69,7 @@ const EMPTY_FORM: Partial<Propriete> = {
 const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
 const SECTIONS = [
+  { id: 'sec-tableau-de-bord', label: 'Tableau de bord', editOnly: true },
   { id: 'sec-identite', label: 'Identité' },
   { id: 'sec-localisation', label: 'Localisation' },
   { id: 'sec-rattachements', label: 'Rattachements' },
