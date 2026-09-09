@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { FjHead, FjBreadcrumb, FjSection, FjRelated } from '@/components/frequence-jardin/FjKit';
-import { FJ_PAGES, FJ_PARCOURS } from '@/content/frequenceJardin/pilier';
+import { FJ_PAGES, FJ_PARCOURS, FJ_SIGNUP_URL } from '@/content/frequenceJardin/pilier';
 import { PUBLIC_METHODS, SYNTHESE_AXES, LIFE_SIGNS_PUBLIC } from '@/content/etudeDeSolMethodes';
 
 const PATH = '/frequence-jardin/diagnostiquer-son-jardin';
@@ -177,7 +177,7 @@ const FrequenceJardinDiagnostiquer: React.FC = () => {
               className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ds-forest))] px-6 py-3 text-[15px] font-medium text-[hsl(var(--ds-cream))]"
             >
               Diagnostiquer mon jardin <ArrowRight className="h-4 w-4" />
-            </Link>
+            </a>
           </div>
         </FjSection>
       </main>

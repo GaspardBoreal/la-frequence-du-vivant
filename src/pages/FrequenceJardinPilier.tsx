@@ -11,8 +11,7 @@ import {
   FJ_PARCOURS,
   FJ_MODULES,
   FJ_FAQ,
-  FJ_REPERES,
-} from '@/content/frequenceJardin/pilier';
+  FJ_REPERES, FJ_SIGNUP_URL } from '@/content/frequenceJardin/pilier';
 
 const PATH = '/frequence-jardin';
 const SITE = 'https://la-frequence-du-vivant.com';
@@ -92,7 +91,7 @@ const FrequenceJardinPilier: React.FC = () => {
             className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ds-forest))] px-6 py-3 text-[15px] font-medium text-[hsl(var(--ds-cream))] transition hover:bg-[hsl(var(--ds-forest-deep))]"
           >
             Démarrer mon jardin <ArrowRight className="h-4 w-4" />
-          </Link>
+          </a>
           <a
             href="#parcours"
             className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ds-line))] px-6 py-3 text-[15px] text-[hsl(var(--ds-forest-deep))] transition hover:border-[hsl(var(--ds-forest-soft))]"
@@ -302,7 +301,7 @@ const FrequenceJardinPilier: React.FC = () => {
                 className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ds-gold))] px-6 py-3 text-[15px] font-medium text-[hsl(var(--ds-forest-deep))]"
               >
                 Démarrer mon jardin <ArrowRight className="h-4 w-4" />
-              </Link>
+              </a>
               <a
                 href="mailto:contact@la-frequence-du-vivant.com?subject=Fr%C3%A9quence%20Jardin"
                 className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ds-cream))]/40 px-6 py-3 text-[15px]"
