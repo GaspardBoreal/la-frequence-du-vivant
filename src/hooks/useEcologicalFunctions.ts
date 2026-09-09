@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useExplorationSpeciesPool, type ExplorationSpecies } from './useExplorationSpeciesPool';
 import { useExplorationCurations } from './useExplorationCurations';
 import { useSpeciesEcoTagsKb } from './useSpeciesEcoTagsKb';
-import { classifyFunctions } from '@/lib/ecologicalFunctionsClassification';
+import { autoClassifyFunctions } from '@/lib/ecoFunctionsCascade';
 import { ECO_FUNCTIONS, type EcoFunction, computeFertilityScore } from '@/lib/ecologicalFunctions';
 import { resolveStrate, type PlantStrate } from '@/lib/plantStrate';
 
