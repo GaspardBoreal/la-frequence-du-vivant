@@ -200,13 +200,28 @@ const ProprieteModuleDialog: React.FC<Props> = ({ proprieteId, slug, openKey, on
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-h-[88vh] max-w-2xl gap-4 overflow-hidden p-0">
         <DialogHeader className="space-y-1 border-b border-border px-5 pb-4 pt-5 text-left">
-          <DialogTitle className="text-lg">{intro.titre}</DialogTitle>
-          <DialogDescription>{intro.sous}</DialogDescription>
+          {focus && (
+            <button
+              type="button"
+              onClick={() => setFocus(null)}
+              className="mb-1 inline-flex w-fit items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" /> Revenir à la synthèse
+            </button>
+          )}
+          <DialogTitle className="text-lg">{focusTitre ?? intro.titre}</DialogTitle>
+          <DialogDescription>
+            {focus
+              ? `${focusEspeces.length} espèce${focusEspeces.length > 1 ? 's' : ''} — ${intro.titre.toLowerCase()}`
+              : intro.sous}
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[58vh] px-5">
           <div className="pb-4">
-            {isBio ? (
+            {isBio && focus ? (
+              <SpeciesGrid especes={focusEspeces} />
+            ) : isBio ? (
               !bio.hasEvents ? (
                 <Vide texte={INTRO.vivant.vide} />
               ) : bio.isLoading ? (
