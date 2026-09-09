@@ -23,7 +23,10 @@ interface Props {
  */
 const ProprieteIntentionSection: React.FC<Props> = ({ proprieteId, nom, sousTitre }) => {
   const { data: intention, isLoading } = usePropertyIntention(proprieteId);
+  const bio = usePropertyBiodiversityKpis(proprieteId);
   const [section, setSection] = React.useState<'jardin' | 'projet'>('jardin');
+  // On n'exporte des chiffres de biodiversité que s'ils sont réellement chargés.
+  const bioForExport = bio.isLoading || bio.error ? null : bio;
 
   const run = (fn: () => void, format: string) => {
     if (!intention) return;
@@ -61,13 +64,13 @@ const ProprieteIntentionSection: React.FC<Props> = ({ proprieteId, nom, sousTitr
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => run(() => exportIntentionCsv(intention!, nom), 'CSV')}>
+              <DropdownMenuItem onClick={() => run(() => exportIntentionCsv(intention!, nom, bioForExport), 'CSV')}>
                 <FileSpreadsheet className="mr-2 h-4 w-4" /> Tableur (CSV)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => run(() => exportIntentionJson(intention!, nom), 'JSON')}>
+              <DropdownMenuItem onClick={() => run(() => exportIntentionJson(intention!, nom, bioForExport), 'JSON')}>
                 <FileJson className="mr-2 h-4 w-4" /> Données complètes (JSON)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => run(() => exportIntentionPdf(intention!, nom, sousTitre), 'PDF')}>
+              <DropdownMenuItem onClick={() => run(() => exportIntentionPdf(intention!, nom, sousTitre, bioForExport), 'PDF')}>
                 <FileText className="mr-2 h-4 w-4" /> Document (PDF)
               </DropdownMenuItem>
             </DropdownMenuContent>
