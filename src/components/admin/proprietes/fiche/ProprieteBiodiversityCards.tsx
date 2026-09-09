@@ -7,6 +7,8 @@ import type { KingdomKey } from '@/lib/kingdomLabels';
 
 interface Props {
   proprieteId: string;
+  /** Ouvre la fenêtre de détail correspondante. */
+  onOpen?: (key: 'vivant' | 'allies') => void;
 }
 
 const KINGDOMS: Array<{ key: KingdomKey; label: string; emoji: string; tint: string }> = [
@@ -20,11 +22,18 @@ const Shell: React.FC<{
   titre: string;
   icone: React.ReactNode;
   delay: number;
+  onOpen?: () => void;
   children: React.ReactNode;
-}> = ({ titre, icone, delay, children }) => (
-  <div
+}> = ({ titre, icone, delay, onOpen, children }) => (
+  <button
+    type="button"
+    onClick={onOpen}
+    aria-haspopup="dialog"
     style={{ animationDelay: `${delay}ms` }}
-    className="animate-fade-in rounded-2xl border border-border bg-gradient-to-br from-card to-muted/30 p-5"
+    className={cn(
+      'animate-fade-in w-full rounded-2xl border border-border bg-gradient-to-br from-card to-muted/30 p-5 text-left',
+      'transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+    )}
   >
     <div className="flex items-center gap-2">
       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
