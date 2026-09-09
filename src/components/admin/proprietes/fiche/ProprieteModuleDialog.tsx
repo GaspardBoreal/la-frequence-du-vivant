@@ -182,18 +182,22 @@ const ProprieteModuleDialog: React.FC<Props> = ({ proprieteId, slug, openKey, on
 
   const focusEspeces = !focus
     ? []
-    : focus.kind === 'kingdom'
-      ? bio.species.filter((s) => s.kingdom === focus.value)
-      : bio.species.filter((s) => s.functions.includes(focus.value as never));
+    : focus.kind === 'all'
+      ? bio.species
+      : focus.kind === 'kingdom'
+        ? bio.species.filter((s) => s.kingdom === focus.value)
+        : bio.species.filter((s) => s.functions.includes(focus.value as never));
 
   const focusTitre = !focus
     ? null
-    : focus.kind === 'kingdom'
-      ? KINGDOM_LABELS_FR[focus.value]
-      : (() => {
-          const m = ECO_FUNCTIONS.find((x) => x.value === focus.value);
-          return m ? `${m.emoji} ${m.shortLabel}` : 'Fonction écologique';
-        })();
+    : focus.kind === 'all'
+      ? 'Toutes les espèces recensées'
+      : focus.kind === 'kingdom'
+        ? KINGDOM_LABELS_FR[focus.value]
+        : (() => {
+            const m = ECO_FUNCTIONS.find((x) => x.value === focus.value);
+            return m ? `${m.emoji} ${m.shortLabel}` : 'Fonction écologique';
+          })();
 
   const lienJardinier = slug
     ? `/propriete/${slug}${moduleKey ? `?tab=${TAB_OF[moduleKey]}` : ''}`
