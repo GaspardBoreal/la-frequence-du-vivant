@@ -130,52 +130,12 @@ export function useIdeesArret(waypointId: string | null) {
       } = await supabase.auth.getUser();
       if (!user) throw new Error('Vous devez être connecté pour enregistrer des idées.');
 
-      let lieu = fallbackIdees(point.nom, point.segment).lieu;
-      let vivant = fallbackIdees(point.nom, point.segment).vivant;
-      let secours = true;
-
-      try {
-        const { data, error } = await supabase.functions.invoke('sauniers-animation-ideas', {
-          body: point,
-        });
-        const res = data as any;
-        if (error || !res || res.error || !res.lieu?.length || !res.vivant?.length) {
-          throw new Error(res?.error ?? error?.message ?? 'Assistant indisponible');
-        }
-        lieu = res.lieu.slice(0, 3);
-        vivant = res.vivant.slice(0, 3);
-        secours = false;
-      } catch {
-        secours = true;
-      }
-
-      if (remplacer) {
-        const { error: dErr } = await supabase
-          .from('marche_animation_idees')
-          .delete()
-          .eq('waypoint_id', waypointId)
-          .eq('source', 'assistant');
-        if (dErr) throw new Error(dErr.message);
-      }
-
-      const lignes = [
-        ...lieu.map((i, n) => ({ ...i, groupe: 'lieu' as GroupeIdee, ordre: n + 1 })),
-        ...vivant.map((i, n) => ({ ...i, groupe: 'vivant' as GroupeIdee, ordre: n + 1 })),
-      ].map((i) => ({
-        marche_event_id: SAUNIERS_EVENT_ID,
-        waypoint_id: waypointId,
-        groupe: i.groupe,
-        ordre: i.ordre,
-        titre: i.titre,
-        description: i.description,
-        duree: i.duree,
-        materiel: i.materiel,
-        source: 'assistant',
-        created_by: user.id,
-      }));
-
-      const { error: iErr } = await supabase.from('marche_animation_idees').insert(lignes);
-      if (iErr) throw new Error(iErr.message);
+      const { secours } = await genererIdeesPourArret({
+        waypointId,
+        point,
+        remplacer,
+        userId: user.id,
+      });
       await rafraichir();
       return { secours };
     },
