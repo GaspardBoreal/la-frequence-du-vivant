@@ -1,5 +1,6 @@
 import React from 'react';
-import { Marker, Tooltip, useMapEvents } from 'react-leaflet';
+import { createPortal } from 'react-dom';
+import { Marker, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import {
   DndContext,
@@ -27,7 +28,12 @@ import {
   Waves,
   Footprints,
   X,
+  Maximize2,
+  Minimize2,
+  List,
 } from 'lucide-react';
+import PointWidget from './PointWidget';
+import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 import RichMap from '@/components/maps/RichMap';
 import { haversineM } from '@/utils/geoDistance';
 import { toast } from 'sonner';
@@ -94,6 +100,15 @@ const ClickToAdd: React.FC<{ enabled: boolean; onAdd: (lat: number, lng: number)
       if (enabled) onAdd(e.latlng.lat, e.latlng.lng);
     },
   });
+  return null;
+};
+
+const InvalidateOnResize: React.FC<{ dep: unknown }> = ({ dep }) => {
+  const map = useMap();
+  React.useEffect(() => {
+    const t = setTimeout(() => map.invalidateSize(), 220);
+    return () => clearTimeout(t);
+  }, [dep, map]);
   return null;
 };
 
@@ -199,6 +214,12 @@ const ParcoursPlanner: React.FC = () => {
   const [ajoutActif, setAjoutActif] = React.useState(false);
   const [confirmation, setConfirmation] = React.useState(false);
   const [remplacer, setRemplacer] = React.useState(false);
+  const [plein, setPlein] = React.useState(false);
+  const [selId, setSelId] = React.useState<string | null>(null);
+  const [placement, setPlacement] = React.useState(false);
+  const [listeOuverte, setListeOuverte] = React.useState(true);
+  const undoRef = React.useRef<{ id: string; lat: number; lng: number } | null>(null);
+  const [peutAnnuler, setPeutAnnuler] = React.useState(false);
 
   const { data: estAdmin } = useIsAdminUser();
   const { data: marchesExistantes = [] } = useMarchesExistantes();
@@ -256,8 +277,53 @@ const ParcoursPlanner: React.FC = () => {
       },
     ]);
     setAjoutActif(false);
+    setSelId(id);
     toast.success('Point ajouté — nommez-le dans la liste.');
   };
+
+  const deplacer = (id: string, lat: number, lng: number) => {
+    const avant = points.find((p) => p.id === id);
+    if (avant) {
+      undoRef.current = { id, lat: avant.lat, lng: avant.lng };
+      setPeutAnnuler(true);
+    }
+    setPoints((prev) => prev.map((q) => (q.id === id ? { ...q, lat, lng } : q)));
+  };
+
+  const annulerDeplacement = () => {
+    const u = undoRef.current;
+    if (!u) return;
+    setPoints((prev) => prev.map((q) => (q.id === u.id ? { ...q, lat: u.lat, lng: u.lng } : q)));
+    undoRef.current = null;
+    setPeutAnnuler(false);
+  };
+
+  const selection = points.find((p) => p.id === selId) ?? null;
+  const distancePrecedent = React.useMemo(() => {
+    if (!selection || !selection.actif) return null;
+    const i = retenus.findIndex((p) => p.id === selection.id);
+    if (i <= 0) return null;
+    return haversineM(retenus[i - 1].lat, retenus[i - 1].lng, selection.lat, selection.lng);
+  }, [selection, retenus]);
+
+  React.useEffect(() => {
+    if (!plein) return;
+    fullscreenSurfaces.push();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (selId) setSelId(null);
+        else setPlein(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      fullscreenSurfaces.pop();
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [plein, selId]);
 
   const lancerGeneration = () => {
     const segments = (['amont', 'aval'] as Segment[])
@@ -285,47 +351,188 @@ const ParcoursPlanner: React.FC = () => {
     ? retenus.map((p) => [p.lat, p.lng] as [number, number])
     : undefined;
 
+  const carte = (hauteur: string | number) => (
+    <RichMap
+      key={plein ? 'plein' : 'inline'}
+      center={SAUNIERS_CENTRE}
+      zoom={14}
+      bounds={bounds}
+      fitPadding={[50, 50]}
+      initialStyle="satellite"
+      controls={{ zoom: true, style: true, geolocate: false }}
+      height={hauteur}
+      marcheRoute={{
+        steps: [],
+        polylinePositions: retenus.map((p) => [p.lat, p.lng] as [number, number]),
+        renderMarkers: false,
+      }}
+    >
+      <InvalidateOnResize dep={`${plein}-${listeOuverte}`} />
+      <ClickToAdd
+        enabled={editable && (ajoutActif || placement)}
+        onAdd={(lat, lng) => {
+          if (placement && selId) {
+            deplacer(selId, lat, lng);
+            setPlacement(false);
+            return;
+          }
+          if (ajoutActif) ajouter(lat, lng);
+        }}
+      />
+      {points.map((p) => (
+        <Marker
+          key={p.id}
+          position={[p.lat, p.lng]}
+          icon={pinIcon(numeroDe(p.id) ?? 0, p.actif, p.segment)}
+          draggable={editable}
+          eventHandlers={{
+            click: () => {
+              setSelId(p.id);
+              setPlacement(false);
+            },
+            dragend: (e: any) => {
+              const ll = e.target.getLatLng();
+              deplacer(p.id, ll.lat, ll.lng);
+              setSelId(p.id);
+            },
+          }}
+        >
+          <Tooltip direction="top" offset={[0, -14]}>
+            <span className="text-xs font-medium">{p.nom}</span>
+          </Tooltip>
+        </Marker>
+      ))}
+    </RichMap>
+  );
+
+  const widget = selection ? (
+    <PointWidget
+      point={selection}
+      numero={numeroDe(selection.id)}
+      distancePrecedent={distancePrecedent}
+      editable={editable}
+      placementActif={placement}
+      peutAnnuler={peutAnnuler}
+      onPlacement={() => setPlacement((v) => !v)}
+      onAnnuler={annulerDeplacement}
+      onSegment={() =>
+        setPoints((prev) =>
+          prev.map((q) =>
+            q.id === selection.id
+              ? { ...q, segment: q.segment === 'amont' ? 'aval' : 'amont' }
+              : q,
+          ),
+        )
+      }
+      onClose={() => {
+        setSelId(null);
+        setPlacement(false);
+      }}
+    />
+  ) : null;
+
+  const listeJSX = (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <SortableContext items={points.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+        <div className="space-y-2">
+          {points.map((p) => (
+            <div key={p.id} onClick={() => setSelId(p.id)} role="presentation">
+              <Ligne
+                point={p}
+                numero={numeroDe(p.id)}
+                editable={editable}
+                onToggle={() =>
+                  setPoints((prev) =>
+                    prev.map((q) => (q.id === p.id ? { ...q, actif: !q.actif } : q)),
+                  )
+                }
+                onSegment={() =>
+                  setPoints((prev) =>
+                    prev.map((q) =>
+                      q.id === p.id
+                        ? { ...q, segment: q.segment === 'amont' ? 'aval' : 'amont' }
+                        : q,
+                    ),
+                  )
+                }
+                onRename={(nom) =>
+                  setPoints((prev) => prev.map((q) => (q.id === p.id ? { ...q, nom } : q)))
+                }
+                onDelete={() => setPoints((prev) => prev.filter((q) => q.id !== p.id))}
+              />
+            </div>
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
+  );
+
+  const barreOutils = (
+    <div className="pointer-events-auto flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-3 rounded-full bg-background/85 px-4 py-2 text-[11px] shadow-lg backdrop-blur">
+        <span className="font-semibold tabular-nums text-emerald-300">{retenus.length} pts</span>
+        <span className="font-semibold tabular-nums text-sky-300">{totalKm.toFixed(1)} km</span>
+        <span className="tabular-nums text-muted-foreground">
+          {Math.floor(dureeMin / 60)} h {String(dureeMin % 60).padStart(2, '0')}
+        </span>
+      </div>
+      {editable && (
+        <button
+          type="button"
+          onClick={() => {
+            setAjoutActif((v) => !v);
+            setPlacement(false);
+          }}
+          className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[11px] font-semibold shadow-lg backdrop-blur transition-colors ${
+            ajoutActif ? 'bg-amber-500 text-slate-900' : 'bg-background/85 text-foreground'
+          }`}
+        >
+          {ajoutActif ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+          {ajoutActif ? 'Cliquez sur la carte' : 'Ajouter'}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => setListeOuverte((v) => !v)}
+        className="inline-flex items-center gap-1.5 rounded-full bg-background/85 px-3.5 py-2 text-[11px] font-semibold text-foreground shadow-lg backdrop-blur"
+      >
+        <List className="h-3.5 w-3.5" /> {listeOuverte ? 'Masquer' : 'Liste'}
+      </button>
+      {editable && (
+        <button
+          type="button"
+          onClick={() => setConfirmation(true)}
+          disabled={retenus.length === 0}
+          className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-2 text-[11px] font-semibold text-white shadow-lg hover:bg-emerald-500 disabled:opacity-40"
+        >
+          <MapPin className="h-3.5 w-3.5" /> Générer
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => setPlein(false)}
+        className="inline-flex items-center gap-1.5 rounded-full bg-background/85 px-3.5 py-2 text-[11px] font-semibold text-foreground shadow-lg backdrop-blur"
+      >
+        <Minimize2 className="h-3.5 w-3.5" /> Quitter
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {/* Carte */}
-      <div className="overflow-hidden rounded-3xl border border-border/40">
-        <RichMap
-          center={SAUNIERS_CENTRE}
-          zoom={14}
-          bounds={bounds}
-          fitPadding={[50, 50]}
-          initialStyle="satellite"
-          controls={{ zoom: true, style: true, geolocate: false }}
-          height={420}
-          marcheRoute={{
-            steps: [],
-            polylinePositions: retenus.map((p) => [p.lat, p.lng] as [number, number]),
-            renderMarkers: false,
-          }}
+      <div className="relative overflow-hidden rounded-3xl border border-border/40">
+        {!plein && carte(420)}
+        {!plein && widget}
+        <button
+          type="button"
+          onClick={() => setPlein(true)}
+          className="absolute bottom-4 left-4 z-[700] inline-flex items-center gap-1.5 rounded-full bg-background/85 px-3.5 py-2 text-[11px] font-semibold text-foreground shadow-lg backdrop-blur hover:bg-background"
         >
-          <ClickToAdd enabled={ajoutActif && editable} onAdd={ajouter} />
-          {points.map((p) => (
-            <Marker
-              key={p.id}
-              position={[p.lat, p.lng]}
-              icon={pinIcon(numeroDe(p.id) ?? 0, p.actif, p.segment)}
-              draggable={editable}
-              eventHandlers={{
-                dragend: (e: any) => {
-                  const ll = e.target.getLatLng();
-                  setPoints((prev) =>
-                    prev.map((q) => (q.id === p.id ? { ...q, lat: ll.lat, lng: ll.lng } : q)),
-                  );
-                },
-              }}
-            >
-              <Tooltip direction="top" offset={[0, -14]}>
-                <span className="text-xs font-medium">{p.nom}</span>
-              </Tooltip>
-            </Marker>
-          ))}
-        </RichMap>
+          <Maximize2 className="h-3.5 w-3.5" /> Plein écran
+        </button>
       </div>
+
 
       {/* Compteurs */}
       <div className="grid grid-cols-3 gap-2">
@@ -372,38 +579,7 @@ const ParcoursPlanner: React.FC = () => {
       )}
 
       {/* Liste ordonnable */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={points.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2">
-            {points.map((p) => (
-              <Ligne
-                key={p.id}
-                point={p}
-                numero={numeroDe(p.id)}
-                editable={editable}
-                onToggle={() =>
-                  setPoints((prev) =>
-                    prev.map((q) => (q.id === p.id ? { ...q, actif: !q.actif } : q)),
-                  )
-                }
-                onSegment={() =>
-                  setPoints((prev) =>
-                    prev.map((q) =>
-                      q.id === p.id
-                        ? { ...q, segment: q.segment === 'amont' ? 'aval' : 'amont' }
-                        : q,
-                    ),
-                  )
-                }
-                onRename={(nom) =>
-                  setPoints((prev) => prev.map((q) => (q.id === p.id ? { ...q, nom } : q)))
-                }
-                onDelete={() => setPoints((prev) => prev.filter((q) => q.id !== p.id))}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+      {listeJSX}
 
       {/* Répartition */}
       <div className="grid gap-2 sm:grid-cols-2">
@@ -464,7 +640,7 @@ const ParcoursPlanner: React.FC = () => {
       {/* Confirmation */}
       {confirmation && (
         <div
-          className="fixed inset-0 z-[1200] flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-[3300] flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
           onClick={() => !generer.isPending && setConfirmation(false)}
         >
           <div
@@ -523,6 +699,40 @@ const ParcoursPlanner: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Plein écran */}
+      {plein &&
+        createPortal(
+          <div className="fixed inset-0 z-[3000] bg-[#050a09]">
+            <div className="absolute inset-0">{carte('100%')}</div>
+
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-[800] flex justify-center p-3">
+              {barreOutils}
+            </div>
+
+            {listeOuverte && (
+              <div className="absolute inset-x-0 bottom-0 z-[750] max-h-[45%] overflow-y-auto border-t border-emerald-500/20 bg-background/92 p-3 backdrop-blur-xl sm:inset-y-0 sm:right-auto sm:left-0 sm:max-h-none sm:w-[330px] sm:border-r sm:border-t-0 sm:pt-24">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-emerald-300/90">
+                    Ordre du parcours
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setListeOuverte(false)}
+                    aria-label="Masquer la liste"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                {listeJSX}
+              </div>
+            )}
+
+            {widget}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };
