@@ -192,6 +192,7 @@ const PointWidget: React.FC<Props> = ({
   numero,
   distancePrecedent,
   editable,
+  generationGlobale = false,
   placementActif,
   peutAnnuler,
   onPlacement,
@@ -201,9 +202,28 @@ const PointWidget: React.FC<Props> = ({
 }) => {
   const [ouvertIdees, setOuvertIdees] = React.useState(false);
   const [confirmRegen, setConfirmRegen] = React.useState(false);
-  const { idees, lieu, vivant, chargement, generer, modifier, supprimer, ajouter } = useIdeesArret(
-    point.id,
-  );
+  const {
+    idees,
+    lieu,
+    vivant,
+    chargement,
+    derniereGeneration,
+    generer,
+    modifier,
+    supprimer,
+    ajouter,
+  } = useIdeesArret(point.id);
+
+  const occupe = generer.isPending || generationGlobale;
+
+  const dateGeneration = derniereGeneration
+    ? new Date(derniereGeneration).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
 
   React.useEffect(() => {
     setOuvertIdees(false);
