@@ -8,12 +8,13 @@ import {
   SAUNIERS_EXPLORATION_ID,
   SAUNIERS_VILLE,
   SAUNIERS_DATE,
-  SEGMENT_MARCHE_NOM,
   type Segment,
 } from '@/content/sauniers/parcoursPropose';
 
 export interface ArretParcours {
+  /** Identifiant de l'ancrage cartographique (waypoint) : clé des idées d'animation. */
   id: string;
+  /** Marche propre à ce point. */
   marcheId: string;
   segment: Segment;
   nom: string;
@@ -21,6 +22,7 @@ export interface ArretParcours {
   texte: string;
   lat: number;
   lng: number;
+  /** Numéro du point dans l'expérience (1…n). */
   ordre: number;
 }
 
@@ -37,59 +39,75 @@ interface Parcours {
 
 const CLE = ['sauniers-parcours'] as const;
 
+/** Le segment (village / marais) est mémorisé dans les sous-thèmes de la marche. */
+const TAG_SEGMENT: Record<Segment, string> = {
+  amont: 'segment:amont',
+  aval: 'segment:aval',
+};
+
 const metaDe = (label: string) => PARCOURS_PROPOSE.find((p) => p.nom === label);
 
-const segmentDe = (nom: string | null): Segment =>
-  nom === SEGMENT_MARCHE_NOM.aval ? 'aval' : 'amont';
+const segmentDe = (nom: string, sousThemes: string[] | null): Segment => {
+  if (sousThemes?.includes(TAG_SEGMENT.amont)) return 'amont';
+  if (sousThemes?.includes(TAG_SEGMENT.aval)) return 'aval';
+  return metaDe(nom)?.segment ?? 'aval';
+};
+
+const descriptifDe = (nom: string) => {
+  const meta = metaDe(nom);
+  return meta ? `${meta.sous} — ${meta.texte}` : 'Arrêt du parcours Les Secrets de Sauniers.';
+};
 
 async function lireParcours(): Promise<Parcours> {
-  const { data: marches, error } = await supabase
-    .from('marches')
-    .select('id, nom_marche')
-    .in('nom_marche', [SEGMENT_MARCHE_NOM.amont, SEGMENT_MARCHE_NOM.aval]);
+  const { data: liens, error } = await supabase
+    .from('exploration_marches')
+    .select('ordre, marche_id, marches!inner(id, nom_marche, latitude, longitude, sous_themes, descriptif_court)')
+    .eq('exploration_id', SAUNIERS_EXPLORATION_ID)
+    .order('ordre', { ascending: true });
   if (error) throw new Error(`Lecture des marches : ${error.message}`);
 
-  const liste: MarcheSegment[] = (marches ?? []).map((m) => ({
-    id: m.id,
-    nom: m.nom_marche ?? '',
-    segment: segmentDe(m.nom_marche),
-  }));
-  if (liste.length === 0) return { marches: [], arrets: [] };
+  const lignes = (liens ?? []) as any[];
+  if (lignes.length === 0) return { marches: [], arrets: [] };
+
+  const ids = lignes.map((l) => l.marche_id as string);
 
   const { data: wp, error: wErr } = await supabase
     .from('exploration_waypoints')
-    .select('id, after_marche_id, ordre, latitude, longitude, label')
+    .select('id, after_marche_id, latitude, longitude, label')
     .eq('marche_event_id', SAUNIERS_EVENT_ID)
-    .in(
-      'after_marche_id',
-      liste.map((m) => m.id),
-    )
-    .order('ordre', { ascending: true });
+    .in('after_marche_id', ids);
   if (wErr) throw new Error(`Lecture des arrêts : ${wErr.message}`);
 
-  const arrets: ArretParcours[] = (wp ?? []).map((w) => {
-    const marche = liste.find((m) => m.id === w.after_marche_id)!;
-    const meta = metaDe(w.label ?? '');
-    return {
+  const parMarche = new Map<string, any>();
+  for (const w of wp ?? []) parMarche.set(w.after_marche_id as string, w);
+
+  const marches: MarcheSegment[] = [];
+  const arrets: ArretParcours[] = [];
+
+  lignes.forEach((l, index) => {
+    const m = l.marches;
+    const nom = (m.nom_marche as string) ?? 'Arrêt';
+    const segment = segmentDe(nom, m.sous_themes as string[] | null);
+    marches.push({ id: m.id, nom, segment });
+
+    const w = parMarche.get(m.id as string);
+    if (!w) return;
+    const meta = metaDe(nom);
+    arrets.push({
       id: w.id,
-      marcheId: w.after_marche_id,
-      segment: marche.segment,
-      nom: w.label ?? 'Arrêt',
+      marcheId: m.id,
+      segment,
+      nom,
       sous: meta?.sous ?? 'Arrêt du parcours',
-      texte: meta?.texte ?? '',
+      texte: meta?.texte ?? (m.descriptif_court as string) ?? '',
       lat: Number(w.latitude),
       lng: Number(w.longitude),
-      ordre: w.ordre,
-    };
+      ordre: (l.ordre as number) ?? index + 1,
+    });
   });
 
-  // Ordre global : le village d'abord, puis le marais.
-  arrets.sort((a, b) => {
-    if (a.segment !== b.segment) return a.segment === 'amont' ? -1 : 1;
-    return a.ordre - b.ordre;
-  });
-
-  return { marches: liste, arrets };
+  arrets.sort((a, b) => a.ordre - b.ordre);
+  return { marches, arrets };
 }
 
 export function distanceKmDe(points: { lat: number; lng: number }[]): number {
@@ -98,20 +116,6 @@ export function distanceKmDe(points: { lat: number; lng: number }[]): number {
     m += haversineM(points[i].lat, points[i].lng, points[i + 1].lat, points[i + 1].lng);
   }
   return Math.round((m / 1000) * 100) / 100;
-}
-
-/** Recalcule distance et point de départ de la marche d'un segment. */
-async function majMarche(marcheId: string, arrets: ArretParcours[]) {
-  const suite = arrets.filter((a) => a.marcheId === marcheId).sort((a, b) => a.ordre - b.ordre);
-  if (suite.length === 0) return;
-  await supabase
-    .from('marches')
-    .update({
-      latitude: suite[0].lat,
-      longitude: suite[0].lng,
-      distance_km: distanceKmDe(suite),
-    })
-    .eq('id', marcheId);
 }
 
 /* ------------------------------- amorçage -------------------------------- */
@@ -123,93 +127,93 @@ export interface EtatAmorcage {
   erreur: string | null;
 }
 
+interface CreationPoint {
+  nom: string;
+  segment: Segment;
+  lat: number;
+  lng: number;
+  ordre: number;
+  userId: string | null;
+}
+
+/** Crée une marche pour un point, la rattache à l'expérience et pose son ancrage. */
+async function creerPoint({ nom, segment, lat, lng, ordre, userId }: CreationPoint) {
+  const { data: marche, error } = await supabase
+    .from('marches')
+    .insert({
+      nom_marche: nom,
+      ville: SAUNIERS_VILLE,
+      departement: 'Charente-Maritime',
+      region: 'Nouvelle-Aquitaine',
+      latitude: lat,
+      longitude: lng,
+      date: SAUNIERS_DATE,
+      radius_m: 500,
+      theme_principal: 'Marais salants',
+      sous_themes: [TAG_SEGMENT[segment]],
+      descriptif_court: descriptifDe(nom),
+    })
+    .select('id')
+    .single();
+  if (error) throw new Error(`Création de la marche « ${nom} » : ${error.message}`);
+
+  const { error: lErr } = await supabase.from('exploration_marches').insert({
+    exploration_id: SAUNIERS_EXPLORATION_ID,
+    marche_id: marche.id,
+    ordre,
+    publication_status: 'published_public',
+  });
+  if (lErr) throw new Error(`Rattachement à l’expérience : ${lErr.message}`);
+
+  const { data: wpt, error: wErr } = await supabase
+    .from('exploration_waypoints')
+    .insert({
+      marche_event_id: SAUNIERS_EVENT_ID,
+      after_marche_id: marche.id,
+      ordre: 1,
+      latitude: lat,
+      longitude: lng,
+      label: nom,
+      include_in_biodiversity: true,
+      created_by: userId,
+    })
+    .select('id')
+    .single();
+  if (wErr) throw new Error(`Enregistrement de l’arrêt : ${wErr.message}`);
+
+  return { marcheId: marche.id as string, waypointId: wpt.id as string };
+}
+
 /**
- * Crée, si elles manquent, les deux marches de l'événement et leurs arrêts.
- * Idempotent : ne crée que ce qui n'existe pas encore.
+ * Crée, si elles manquent, une marche par point de référence.
+ * Idempotent : un point déjà présent (par son nom) n'est jamais recréé.
  */
 async function amorcer(
   parcours: Parcours,
   userId: string,
   avance: (libelle: string, progression: number) => void,
 ): Promise<void> {
-  avance('Lecture du parcours…', 15);
+  avance('Lecture du parcours…', 8);
 
-  const segments: Segment[] = ['amont', 'aval'];
-  let fait = 15;
+  const dejaLa = new Set(parcours.marches.map((m) => m.nom));
+  const aCreer = PARCOURS_PROPOSE.filter((p) => !dejaLa.has(p.nom));
+  let ordre = Math.max(0, ...parcours.arrets.map((a) => a.ordre));
 
-  for (const segment of segments) {
-    let marche = parcours.marches.find((m) => m.segment === segment);
-
-    if (!marche) {
-      avance(
-        segment === 'amont'
-          ? 'Création de la marche du village…'
-          : 'Création de la marche du marais…',
-        (fait += 15),
-      );
-      const tete = PARCOURS_PROPOSE.find((p) => p.segment === segment)!;
-      const { data, error } = await supabase
-        .from('marches')
-        .insert({
-          nom_marche: SEGMENT_MARCHE_NOM[segment],
-          ville: SAUNIERS_VILLE,
-          departement: 'Charente-Maritime',
-          region: 'Nouvelle-Aquitaine',
-          latitude: tete.lat,
-          longitude: tete.lng,
-          date: SAUNIERS_DATE,
-          radius_m: 500,
-          theme_principal: 'Marais salants',
-          descriptif_court:
-            segment === 'amont'
-              ? "Les stations patrimoniales d'Ars-en-Ré, le sel raconté par le bâti."
-              : 'Le marais salant : le sel, l’eau, l’argile et le vivant.',
-        })
-        .select('id, nom_marche')
-        .single();
-      if (error) throw new Error(`Création de la marche : ${error.message}`);
-      marche = { id: data.id, nom: data.nom_marche ?? '', segment };
-
-      const { error: lErr } = await supabase
-        .from('exploration_marches')
-        .insert({ exploration_id: SAUNIERS_EXPLORATION_ID, marche_id: marche.id });
-      if (lErr && !lErr.message.includes('duplicate')) {
-        throw new Error(`Rattachement à l’expérience : ${lErr.message}`);
-      }
-    }
-
-    const dejaLa = parcours.arrets.filter((a) => a.marcheId === marche!.id);
-    if (dejaLa.length === 0) {
-      avance('Enregistrement des arrêts…', (fait += 25));
-      const aCreer = PARCOURS_PROPOSE.filter((p) => p.segment === segment);
-      const { error: wErr } = await supabase.from('exploration_waypoints').insert(
-        aCreer.map((p, i) => ({
-          marche_event_id: SAUNIERS_EVENT_ID,
-          after_marche_id: marche!.id,
-          ordre: i + 1,
-          latitude: p.lat,
-          longitude: p.lng,
-          label: p.nom,
-          include_in_biodiversity: true,
-          created_by: userId,
-        })),
-      );
-      if (wErr) throw new Error(`Enregistrement des arrêts : ${wErr.message}`);
-      await majMarche(
-        marche.id,
-        aCreer.map((p, i) => ({
-          id: '',
-          marcheId: marche!.id,
-          segment,
-          nom: p.nom,
-          sous: p.sous,
-          texte: p.texte,
-          lat: p.lat,
-          lng: p.lng,
-          ordre: i + 1,
-        })),
-      );
-    }
+  for (let i = 0; i < aCreer.length; i++) {
+    const p = aCreer[i];
+    avance(
+      `Création de la marche « ${p.nom} » (${i + 1}/${aCreer.length})…`,
+      8 + Math.round(((i + 1) / aCreer.length) * 90),
+    );
+    ordre += 1;
+    await creerPoint({
+      nom: p.nom,
+      segment: p.segment,
+      lat: p.lat,
+      lng: p.lng,
+      ordre,
+      userId,
+    });
   }
 
   avance('Parcours prêt.', 100);
@@ -234,10 +238,7 @@ export function useParcoursSauniers(peutEcrire: boolean) {
   });
 
   const parcours = requete.data;
-  const complet =
-    !!parcours &&
-    parcours.marches.length === 2 &&
-    parcours.marches.every((m) => parcours.arrets.some((a) => a.marcheId === m.id));
+  const complet = !!parcours && parcours.arrets.length >= PARCOURS_PROPOSE.length;
 
   const demarrer = React.useCallback(async () => {
     if (!parcours) return;
@@ -263,10 +264,6 @@ export function useParcoursSauniers(peutEcrire: boolean) {
     }
   }, [parcours, qc]);
 
-  // Aucun amorçage silencieux : la création est déclenchée par l'administrateur
-  // depuis la page (bouton « Créer les 12 arrêts »).
-
-
   const reessayer = React.useCallback(() => {
     lance.current = false;
     setEtat((e) => ({ ...e, erreur: null }));
@@ -275,11 +272,23 @@ export function useParcoursSauniers(peutEcrire: boolean) {
 
   const arrets = parcours?.arrets ?? [];
 
-  const apres = async (marcheId?: string) => {
+  const rafraichir = async () => {
     const frais = await lireParcours();
     qc.setQueryData(CLE, frais);
-    if (marcheId) await majMarche(marcheId, frais.arrets);
     await qc.invalidateQueries({ queryKey: CLE });
+    return frais;
+  };
+
+  /** Réécrit les numéros 1…n dans l'expérience selon l'ordre fourni. */
+  const renumeroter = async (marcheIds: string[]) => {
+    for (let i = 0; i < marcheIds.length; i++) {
+      const { error } = await supabase
+        .from('exploration_marches')
+        .update({ ordre: i + 1 })
+        .eq('exploration_id', SAUNIERS_EXPLORATION_ID)
+        .eq('marche_id', marcheIds[i]);
+      if (error) throw new Error(error.message);
+    }
   };
 
   const deplacer = useMutation({
@@ -290,27 +299,52 @@ export function useParcoursSauniers(peutEcrire: boolean) {
         .update({ latitude: lat, longitude: lng })
         .eq('id', id);
       if (error) throw new Error(error.message);
-      await apres(arret?.marcheId);
+      if (arret) {
+        const { error: mErr } = await supabase
+          .from('marches')
+          .update({ latitude: lat, longitude: lng })
+          .eq('id', arret.marcheId);
+        if (mErr) throw new Error(mErr.message);
+      }
+      await rafraichir();
     },
   });
 
   const renommer = useMutation({
     mutationFn: async ({ id, nom }: { id: string; nom: string }) => {
+      const arret = arrets.find((a) => a.id === id);
       const { error } = await supabase
         .from('exploration_waypoints')
         .update({ label: nom })
         .eq('id', id);
       if (error) throw new Error(error.message);
-      await apres();
+      if (arret) {
+        const { error: mErr } = await supabase
+          .from('marches')
+          .update({ nom_marche: nom })
+          .eq('id', arret.marcheId);
+        if (mErr) throw new Error(mErr.message);
+      }
+      await rafraichir();
     },
   });
 
   const supprimer = useMutation({
     mutationFn: async (id: string) => {
       const arret = arrets.find((a) => a.id === id);
-      const { error } = await supabase.from('exploration_waypoints').delete().eq('id', id);
-      if (error) throw new Error(error.message);
-      await apres(arret?.marcheId);
+      if (!arret) throw new Error('Arrêt introuvable.');
+      const { error: wErr } = await supabase.from('exploration_waypoints').delete().eq('id', id);
+      if (wErr) throw new Error(wErr.message);
+      const { error: lErr } = await supabase
+        .from('exploration_marches')
+        .delete()
+        .eq('exploration_id', SAUNIERS_EXPLORATION_ID)
+        .eq('marche_id', arret.marcheId);
+      if (lErr) throw new Error(lErr.message);
+      const { error: mErr } = await supabase.from('marches').delete().eq('id', arret.marcheId);
+      if (mErr) throw new Error(mErr.message);
+      await renumeroter(arrets.filter((a) => a.id !== id).map((a) => a.marcheId));
+      await rafraichir();
     },
   });
 
@@ -326,29 +360,20 @@ export function useParcoursSauniers(peutEcrire: boolean) {
       lat: number;
       lng: number;
     }) => {
-      const marche = parcours?.marches.find((m) => m.segment === segment);
-      if (!marche) throw new Error('La marche de ce segment n’existe pas encore.');
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      const max = Math.max(0, ...arrets.filter((a) => a.marcheId === marche.id).map((a) => a.ordre));
-      const { data, error } = await supabase
-        .from('exploration_waypoints')
-        .insert({
-          marche_event_id: SAUNIERS_EVENT_ID,
-          after_marche_id: marche.id,
-          ordre: max + 1,
-          latitude: lat,
-          longitude: lng,
-          label: nom,
-          include_in_biodiversity: true,
-          created_by: user?.id ?? null,
-        })
-        .select('id')
-        .single();
-      if (error) throw new Error(error.message);
-      await apres(marche.id);
-      return data.id as string;
+      const ordre = Math.max(0, ...arrets.map((a) => a.ordre)) + 1;
+      const { waypointId } = await creerPoint({
+        nom,
+        segment,
+        lat,
+        lng,
+        ordre,
+        userId: user?.id ?? null,
+      });
+      await rafraichir();
+      return waypointId;
     },
   });
 
@@ -356,52 +381,46 @@ export function useParcoursSauniers(peutEcrire: boolean) {
     mutationFn: async (id: string) => {
       const arret = arrets.find((a) => a.id === id);
       if (!arret) throw new Error('Arrêt introuvable.');
-      const cible = arret.segment === 'amont' ? 'aval' : 'amont';
-      const marche = parcours?.marches.find((m) => m.segment === cible);
-      if (!marche) throw new Error('La marche de destination n’existe pas encore.');
-      const max = Math.max(0, ...arrets.filter((a) => a.marcheId === marche.id).map((a) => a.ordre));
+      const cible: Segment = arret.segment === 'amont' ? 'aval' : 'amont';
       const { error } = await supabase
-        .from('exploration_waypoints')
-        .update({ after_marche_id: marche.id, ordre: max + 1 })
-        .eq('id', id);
+        .from('marches')
+        .update({ sous_themes: [TAG_SEGMENT[cible]] })
+        .eq('id', arret.marcheId);
       if (error) throw new Error(error.message);
-      await apres(marche.id);
-      await majMarche(arret.marcheId, (await lireParcours()).arrets);
+      await rafraichir();
     },
   });
 
   const reordonner = useMutation({
     mutationFn: async (idsOrdonnes: string[]) => {
-      const parMarche = new Map<string, number>();
-      for (const id of idsOrdonnes) {
-        const arret = arrets.find((a) => a.id === id);
-        if (!arret) continue;
-        const suivant = (parMarche.get(arret.marcheId) ?? 0) + 1;
-        parMarche.set(arret.marcheId, suivant);
-        const { error } = await supabase
-          .from('exploration_waypoints')
-          .update({ ordre: suivant })
-          .eq('id', id);
-        if (error) throw new Error(error.message);
-      }
-      const frais = await lireParcours();
-      qc.setQueryData(CLE, frais);
-      for (const marcheId of parMarche.keys()) await majMarche(marcheId, frais.arrets);
-      await qc.invalidateQueries({ queryKey: CLE });
+      const marcheIds = idsOrdonnes
+        .map((id) => arrets.find((a) => a.id === id)?.marcheId)
+        .filter((v): v is string => !!v);
+      await renumeroter(marcheIds);
+      await rafraichir();
     },
   });
 
   const reinitialiser = useMutation({
     mutationFn: async () => {
-      const ids = arrets.map((a) => a.id);
-      if (ids.length > 0) {
-        const { error } = await supabase.from('exploration_waypoints').delete().in('id', ids);
+      const wpIds = arrets.map((a) => a.id);
+      const marcheIds = arrets.map((a) => a.marcheId);
+      if (wpIds.length > 0) {
+        const { error } = await supabase.from('exploration_waypoints').delete().in('id', wpIds);
         if (error) throw new Error(error.message);
       }
-      const frais = await lireParcours();
-      qc.setQueryData(CLE, frais);
+      if (marcheIds.length > 0) {
+        const { error: lErr } = await supabase
+          .from('exploration_marches')
+          .delete()
+          .eq('exploration_id', SAUNIERS_EXPLORATION_ID)
+          .in('marche_id', marcheIds);
+        if (lErr) throw new Error(lErr.message);
+        const { error: mErr } = await supabase.from('marches').delete().in('id', marcheIds);
+        if (mErr) throw new Error(mErr.message);
+      }
       lance.current = false;
-      await qc.invalidateQueries({ queryKey: CLE });
+      await rafraichir();
     },
   });
 
