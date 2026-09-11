@@ -31,6 +31,8 @@ import {
   Maximize2,
   Minimize2,
   List,
+  PanelLeftClose,
+  PanelLeftOpen,
   CloudUpload,
   AlertTriangle,
   Sparkles,
