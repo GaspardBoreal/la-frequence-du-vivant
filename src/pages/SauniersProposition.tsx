@@ -20,6 +20,7 @@ import {
 import { usePublicGlobalStats } from '@/hooks/usePublicGlobalStats';
 import { BRAND_LOGO_LOCKUP_VERTICAL, BRAND_LOGO_MARK } from '@/content/brandLogo';
 import Footer from '@/components/Footer';
+import ParcoursPlanner from '@/components/sauniers/ParcoursPlanner';
 
 /* ------------------------------------------------------------------ *
  * Page de conviction — Coopérative des Sauniers de l'Île de Ré.
@@ -454,6 +455,20 @@ const SauniersProposition: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* ------------------------------ Le parcours ------------------------------ */}
+      <Section
+        eyebrow="Le tracé"
+        titre="La carte du parcours, point par point"
+      >
+        <p className="text-[14px] leading-relaxed text-muted-foreground">
+          Douze arrêts proposés : les huit stations du village, puis les quatre du marais. Les
+          repères sont approximatifs — ils seront ajustés avec vous sur le terrain.
+        </p>
+        <div className="mt-5">
+          <ParcoursPlanner />
+        </div>
+      </Section>
 
       {/* ------------------------------- Livrables ------------------------------- */}
       <Section eyebrow="Quinze jours après" titre="Ce qui reste, une fois tout le monde reparti.">
