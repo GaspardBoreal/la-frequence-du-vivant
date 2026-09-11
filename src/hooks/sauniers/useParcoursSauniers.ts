@@ -422,6 +422,8 @@ export function useParcoursSauniers(peutEcrire: boolean) {
     pret: complet,
     etat,
     reessayer,
+    demarrer,
+
     enEcriture,
     deplacer,
     renommer,
