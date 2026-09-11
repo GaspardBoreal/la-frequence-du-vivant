@@ -4752,6 +4752,69 @@ export type Database = {
           },
         ]
       }
+      marche_animation_idees: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          duree: string
+          groupe: string
+          id: string
+          marche_event_id: string
+          materiel: string
+          ordre: number
+          source: string
+          titre: string
+          updated_at: string
+          waypoint_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          duree?: string
+          groupe?: string
+          id?: string
+          marche_event_id: string
+          materiel?: string
+          ordre?: number
+          source?: string
+          titre: string
+          updated_at?: string
+          waypoint_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          duree?: string
+          groupe?: string
+          id?: string
+          marche_event_id?: string
+          materiel?: string
+          ordre?: number
+          source?: string
+          titre?: string
+          updated_at?: string
+          waypoint_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marche_animation_idees_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marche_animation_idees_waypoint_id_fkey"
+            columns: ["waypoint_id"]
+            isOneToOne: false
+            referencedRelation: "exploration_waypoints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marche_audio: {
         Row: {
           created_at: string
