@@ -392,13 +392,28 @@ export function useParcoursSauniers(peutEcrire: boolean) {
     },
   });
 
+  const reinitialiser = useMutation({
+    mutationFn: async () => {
+      const ids = arrets.map((a) => a.id);
+      if (ids.length > 0) {
+        const { error } = await supabase.from('exploration_waypoints').delete().in('id', ids);
+        if (error) throw new Error(error.message);
+      }
+      const frais = await lireParcours();
+      qc.setQueryData(CLE, frais);
+      lance.current = false;
+      await qc.invalidateQueries({ queryKey: CLE });
+    },
+  });
+
   const enEcriture =
     deplacer.isPending ||
     renommer.isPending ||
     supprimer.isPending ||
     ajouter.isPending ||
     changerSegment.isPending ||
-    reordonner.isPending;
+    reordonner.isPending ||
+    reinitialiser.isPending;
 
   return {
     arrets,
@@ -415,6 +430,7 @@ export function useParcoursSauniers(peutEcrire: boolean) {
     ajouter,
     changerSegment,
     reordonner,
+    reinitialiser,
   };
 }
 
