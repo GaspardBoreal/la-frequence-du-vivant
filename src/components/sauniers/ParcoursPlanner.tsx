@@ -422,16 +422,27 @@ const ParcoursPlanner: React.FC = () => {
       <button
         type="button"
         onClick={() => setListeOuverte((v) => !v)}
+        aria-label={listeOuverte ? 'Réduire le panneau du parcours' : 'Ouvrir le panneau du parcours'}
         className="inline-flex items-center gap-1.5 rounded-full bg-background/85 px-3.5 py-2 text-[11px] font-semibold text-foreground shadow-lg backdrop-blur"
       >
-        <List className="h-3.5 w-3.5" /> {listeOuverte ? 'Masquer' : 'Liste'}
+        {listeOuverte ? (
+          <PanelLeftClose className="h-3.5 w-3.5" />
+        ) : (
+          <PanelLeftOpen className="h-3.5 w-3.5" />
+        )}
+        {listeOuverte ? 'Réduire' : 'Panneau'}
       </button>
       <button
         type="button"
-        onClick={() => setPlein(false)}
-        className="inline-flex items-center gap-1.5 rounded-full bg-background/85 px-3.5 py-2 text-[11px] font-semibold text-foreground shadow-lg backdrop-blur"
+        onClick={() => {
+          setSelId(null);
+          setPlacement(false);
+          setPlein(false);
+        }}
+        aria-label="Fermer la carte et revenir à la page"
+        className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-2 text-[11px] font-semibold text-white shadow-lg backdrop-blur transition-colors hover:bg-emerald-500"
       >
-        <Minimize2 className="h-3.5 w-3.5" /> Quitter
+        <Minimize2 className="h-3.5 w-3.5" /> Quitter la carte
       </button>
     </div>
   );
