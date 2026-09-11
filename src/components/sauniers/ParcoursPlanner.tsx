@@ -431,6 +431,93 @@ const ParcoursPlanner: React.FC = () => {
     />
   ) : null;
 
+  const listeJSX = (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <SortableContext items={points.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+        <div className="space-y-2">
+          {points.map((p) => (
+            <div key={p.id} onClick={() => setSelId(p.id)} role="presentation">
+              <Ligne
+                point={p}
+                numero={numeroDe(p.id)}
+                editable={editable}
+                onToggle={() =>
+                  setPoints((prev) =>
+                    prev.map((q) => (q.id === p.id ? { ...q, actif: !q.actif } : q)),
+                  )
+                }
+                onSegment={() =>
+                  setPoints((prev) =>
+                    prev.map((q) =>
+                      q.id === p.id
+                        ? { ...q, segment: q.segment === 'amont' ? 'aval' : 'amont' }
+                        : q,
+                    ),
+                  )
+                }
+                onRename={(nom) =>
+                  setPoints((prev) => prev.map((q) => (q.id === p.id ? { ...q, nom } : q)))
+                }
+                onDelete={() => setPoints((prev) => prev.filter((q) => q.id !== p.id))}
+              />
+            </div>
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
+  );
+
+  const barreOutils = (
+    <div className="pointer-events-auto flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-3 rounded-full bg-background/85 px-4 py-2 text-[11px] shadow-lg backdrop-blur">
+        <span className="font-semibold tabular-nums text-emerald-300">{retenus.length} pts</span>
+        <span className="font-semibold tabular-nums text-sky-300">{totalKm.toFixed(1)} km</span>
+        <span className="tabular-nums text-muted-foreground">
+          {Math.floor(dureeMin / 60)} h {String(dureeMin % 60).padStart(2, '0')}
+        </span>
+      </div>
+      {editable && (
+        <button
+          type="button"
+          onClick={() => {
+            setAjoutActif((v) => !v);
+            setPlacement(false);
+          }}
+          className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[11px] font-semibold shadow-lg backdrop-blur transition-colors ${
+            ajoutActif ? 'bg-amber-500 text-slate-900' : 'bg-background/85 text-foreground'
+          }`}
+        >
+          {ajoutActif ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+          {ajoutActif ? 'Cliquez sur la carte' : 'Ajouter'}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => setListeOuverte((v) => !v)}
+        className="inline-flex items-center gap-1.5 rounded-full bg-background/85 px-3.5 py-2 text-[11px] font-semibold text-foreground shadow-lg backdrop-blur"
+      >
+        <List className="h-3.5 w-3.5" /> {listeOuverte ? 'Masquer' : 'Liste'}
+      </button>
+      {editable && (
+        <button
+          type="button"
+          onClick={() => setConfirmation(true)}
+          disabled={retenus.length === 0}
+          className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-2 text-[11px] font-semibold text-white shadow-lg hover:bg-emerald-500 disabled:opacity-40"
+        >
+          <MapPin className="h-3.5 w-3.5" /> Générer
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => setPlein(false)}
+        className="inline-flex items-center gap-1.5 rounded-full bg-background/85 px-3.5 py-2 text-[11px] font-semibold text-foreground shadow-lg backdrop-blur"
+      >
+        <Minimize2 className="h-3.5 w-3.5" /> Quitter
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {/* Carte */}
