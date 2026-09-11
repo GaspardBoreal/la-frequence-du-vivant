@@ -39,7 +39,11 @@ import { WaypointInsertConfirmDialog } from './WaypointInsertConfirmDialog';
 import MapOptionsMenu from './MapOptionsMenu';
 import WeatherStationsLayer from './WeatherStationsLayer';
 import { useMapLayers } from '@/hooks/useMapLayers';
+import { useIdeesCountsParMarche } from '@/hooks/sauniers/useIdeesCountsParMarche';
+import type { GroupeIdee } from '@/hooks/sauniers/useIdeesAnimation';
+import IdeesAnimationSheet from './IdeesAnimationSheet';
 import 'leaflet/dist/leaflet.css';
+
 
 interface MarcheStep {
   id: string;
@@ -520,6 +524,16 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   }, [marches]);
   const geoMarchesRef = useRef(geoMarches);
   useEffect(() => { geoMarchesRef.current = geoMarches; }, [geoMarches]);
+
+  // Idées d'animation rattachées aux étapes (via leur waypoint)
+  const { data: ideesCounts } = useIdeesCountsParMarche(useMemo(() => geoMarches.map(m => m.id), [geoMarches]));
+  const [ideesSheet, setIdeesSheet] = useState<{
+    waypointId: string;
+    nom: string;
+    index: number;
+    groupe: GroupeIdee;
+  } | null>(null);
+
   const waypointsRef = useRef(waypoints);
   useEffect(() => { waypointsRef.current = waypoints; }, [waypoints]);
 
@@ -1089,6 +1103,49 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                     )}
                   </div>
 
+                  {/* Idées d'animation */}
+                  {(() => {
+                    const ideesEntry = ideesCounts?.[marche.id];
+                    if (!ideesEntry) return null;
+                    return (
+                      <div className="mb-2.5">
+                        <p className="mb-1 text-[10px] uppercase tracking-[0.14em] text-white/45">
+                          Idées d’animation
+                        </p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            onClick={() =>
+                              setIdeesSheet({
+                                waypointId: ideesEntry.waypointId,
+                                nom: marche.nom_marche || marche.ville,
+                                index,
+                                groupe: 'lieu',
+                              })
+                            }
+                            className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-400/15 text-[11px] font-medium text-amber-200 transition-colors hover:bg-amber-400/25"
+                          >
+                            <MapPin className="h-3 w-3" /> Le lieu
+                            <span className="opacity-70">{ideesEntry.lieu}</span>
+                          </button>
+                          <button
+                            onClick={() =>
+                              setIdeesSheet({
+                                waypointId: ideesEntry.waypointId,
+                                nom: marche.nom_marche || marche.ville,
+                                index,
+                                groupe: 'vivant',
+                              })
+                            }
+                            className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-400/15 text-[11px] font-medium text-emerald-200 transition-colors hover:bg-emerald-400/25"
+                          >
+                            <Leaf className="h-3 w-3" /> Le vivant
+                            <span className="opacity-70">{ideesEntry.vivant}</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* CTA */}
                   {onSelectStep && (
                     <button
@@ -1098,6 +1155,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                       Explorer cette étape →
                     </button>
                   )}
+
 
                   {mapStyle === 'cadastre' && canEditGps && (
                     <button
@@ -1195,6 +1253,18 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
           );
         })()}
       </MapContainer>
+
+      {/* Fiche des idées d'animation d'une étape */}
+      <IdeesAnimationSheet
+        open={!!ideesSheet}
+        onOpenChange={(o) => { if (!o) setIdeesSheet(null); }}
+        waypointId={ideesSheet?.waypointId ?? null}
+        etapeNumero={(ideesSheet?.index ?? 0) + 1}
+        etapeNom={ideesSheet?.nom ?? ''}
+        groupeInitial={ideesSheet?.groupe ?? 'lieu'}
+        onExplorer={onSelectStep && ideesSheet ? () => { const i = ideesSheet.index; setIdeesSheet(null); onSelectStep(i); } : undefined}
+      />
+
 
       {/* Confirm dialog for waypoint insertion */}
       {pendingWaypoint && (() => {
