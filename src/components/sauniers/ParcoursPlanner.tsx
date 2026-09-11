@@ -640,7 +640,7 @@ const ParcoursPlanner: React.FC = () => {
       {/* Confirmation */}
       {confirmation && (
         <div
-          className="fixed inset-0 z-[1200] flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-[3300] flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
           onClick={() => !generer.isPending && setConfirmation(false)}
         >
           <div
