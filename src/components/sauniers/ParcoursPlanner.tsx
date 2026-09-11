@@ -562,6 +562,9 @@ const ParcoursPlanner: React.FC = () => {
         </div>
       )}
 
+      {/* Génération globale des idées d'animation */}
+      {editable && points.length > 0 && generationJSX}
+
       {/* Liste ordonnable */}
       {listeJSX}
 
