@@ -35,6 +35,8 @@ interface Props {
   numero: number | null;
   distancePrecedent: number | null;
   editable: boolean;
+  /** Une génération de tout le parcours est en cours : on bloque l'action unitaire. */
+  generationGlobale?: boolean;
   placementActif: boolean;
   peutAnnuler: boolean;
   onPlacement: () => void;
@@ -190,6 +192,7 @@ const PointWidget: React.FC<Props> = ({
   numero,
   distancePrecedent,
   editable,
+  generationGlobale = false,
   placementActif,
   peutAnnuler,
   onPlacement,
@@ -199,9 +202,28 @@ const PointWidget: React.FC<Props> = ({
 }) => {
   const [ouvertIdees, setOuvertIdees] = React.useState(false);
   const [confirmRegen, setConfirmRegen] = React.useState(false);
-  const { idees, lieu, vivant, chargement, generer, modifier, supprimer, ajouter } = useIdeesArret(
-    point.id,
-  );
+  const {
+    idees,
+    lieu,
+    vivant,
+    chargement,
+    derniereGeneration,
+    generer,
+    modifier,
+    supprimer,
+    ajouter,
+  } = useIdeesArret(point.id);
+
+  const occupe = generer.isPending || generationGlobale;
+
+  const dateGeneration = derniereGeneration
+    ? new Date(derniereGeneration).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
 
   React.useEffect(() => {
     setOuvertIdees(false);
@@ -302,6 +324,13 @@ const PointWidget: React.FC<Props> = ({
         <div className="min-w-0 flex-1">
           <div className="truncate text-[15px] font-semibold text-foreground">{point.nom}</div>
           <div className="text-[11px] text-muted-foreground">{point.sous}</div>
+          {idees.length > 0 && (
+            <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-200">
+              <Sparkles className="h-3 w-3" />
+              {idees.length} idée{idees.length > 1 ? 's' : ''}
+              {dateGeneration ? ` · ${dateGeneration}` : ''}
+            </div>
+          )}
         </div>
         <button
           type="button"
@@ -371,15 +400,11 @@ const PointWidget: React.FC<Props> = ({
         <button
           type="button"
           onClick={() => lancer(false)}
-          disabled={generer.isPending}
+          disabled={occupe}
           className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-sky-600 px-4 py-2.5 text-[12px] font-semibold text-white transition-transform hover:scale-[1.02] disabled:opacity-60"
         >
-          {generer.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Sparkles className="h-4 w-4" />
-          )}
-          6 idées de l’Assistant
+          {occupe ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {generationGlobale ? 'Génération en cours…' : '6 idées de l’Assistant'}
         </button>
       )}
 
@@ -430,10 +455,10 @@ const PointWidget: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => setConfirmRegen(true)}
-                    disabled={generer.isPending}
+                   disabled={occupe}
                     className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border/40 px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-50"
                   >
-                    {generer.isPending ? (
+                    {occupe ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <Sparkles className="h-3.5 w-3.5" />

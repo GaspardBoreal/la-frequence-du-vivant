@@ -15,14 +15,82 @@ export interface IdeeEnregistree {
   duree: string;
   materiel: string;
   source: 'assistant' | 'humain';
+  created_at?: string;
 }
 
-interface ContextePoint {
+export interface ContextePoint {
   nom: string;
   sous: string;
   texte: string;
   segment: Segment;
 }
+
+export const CHAMPS_IDEE =
+  'id, waypoint_id, groupe, ordre, titre, description, duree, materiel, source, created_at';
+
+/**
+ * Génère puis enregistre les six idées d'un arrêt.
+ * Logique partagée entre la fiche d'un arrêt et la génération globale.
+ */
+export async function genererIdeesPourArret(params: {
+  waypointId: string;
+  point: ContextePoint;
+  remplacer: boolean;
+  userId: string;
+}): Promise<{ secours: boolean }> {
+  const { waypointId, point, remplacer, userId } = params;
+
+  const secoursIdees = fallbackIdees(point.nom, point.segment);
+  let lieu = secoursIdees.lieu;
+  let vivant = secoursIdees.vivant;
+  let secours = true;
+
+  try {
+    const { data, error } = await supabase.functions.invoke('sauniers-animation-ideas', {
+      body: point,
+    });
+    const res = data as any;
+    if (error || !res || res.error || !res.lieu?.length || !res.vivant?.length) {
+      throw new Error(res?.error ?? error?.message ?? 'Assistant indisponible');
+    }
+    lieu = res.lieu.slice(0, 3);
+    vivant = res.vivant.slice(0, 3);
+    secours = false;
+  } catch {
+    secours = true;
+  }
+
+  if (remplacer) {
+    const { error: dErr } = await supabase
+      .from('marche_animation_idees')
+      .delete()
+      .eq('waypoint_id', waypointId)
+      .eq('source', 'assistant');
+    if (dErr) throw new Error(dErr.message);
+  }
+
+  const lignes = [
+    ...lieu.map((i, n) => ({ ...i, groupe: 'lieu' as GroupeIdee, ordre: n + 1 })),
+    ...vivant.map((i, n) => ({ ...i, groupe: 'vivant' as GroupeIdee, ordre: n + 1 })),
+  ].map((i) => ({
+    marche_event_id: SAUNIERS_EVENT_ID,
+    waypoint_id: waypointId,
+    groupe: i.groupe,
+    ordre: i.ordre,
+    titre: i.titre,
+    description: i.description,
+    duree: i.duree,
+    materiel: i.materiel,
+    source: 'assistant',
+    created_by: userId,
+  }));
+
+  const { error: iErr } = await supabase.from('marche_animation_idees').insert(lignes);
+  if (iErr) throw new Error(iErr.message);
+
+  return { secours };
+}
+
 
 /** Idées enregistrées pour un arrêt (lecture publique). */
 export function useIdeesArret(waypointId: string | null) {
@@ -36,7 +104,7 @@ export function useIdeesArret(waypointId: string | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('marche_animation_idees')
-        .select('id, waypoint_id, groupe, ordre, titre, description, duree, materiel, source')
+        .select(CHAMPS_IDEE)
         .eq('waypoint_id', waypointId!)
         .order('groupe', { ascending: true })
         .order('ordre', { ascending: true });
@@ -62,52 +130,12 @@ export function useIdeesArret(waypointId: string | null) {
       } = await supabase.auth.getUser();
       if (!user) throw new Error('Vous devez être connecté pour enregistrer des idées.');
 
-      let lieu = fallbackIdees(point.nom, point.segment).lieu;
-      let vivant = fallbackIdees(point.nom, point.segment).vivant;
-      let secours = true;
-
-      try {
-        const { data, error } = await supabase.functions.invoke('sauniers-animation-ideas', {
-          body: point,
-        });
-        const res = data as any;
-        if (error || !res || res.error || !res.lieu?.length || !res.vivant?.length) {
-          throw new Error(res?.error ?? error?.message ?? 'Assistant indisponible');
-        }
-        lieu = res.lieu.slice(0, 3);
-        vivant = res.vivant.slice(0, 3);
-        secours = false;
-      } catch {
-        secours = true;
-      }
-
-      if (remplacer) {
-        const { error: dErr } = await supabase
-          .from('marche_animation_idees')
-          .delete()
-          .eq('waypoint_id', waypointId)
-          .eq('source', 'assistant');
-        if (dErr) throw new Error(dErr.message);
-      }
-
-      const lignes = [
-        ...lieu.map((i, n) => ({ ...i, groupe: 'lieu' as GroupeIdee, ordre: n + 1 })),
-        ...vivant.map((i, n) => ({ ...i, groupe: 'vivant' as GroupeIdee, ordre: n + 1 })),
-      ].map((i) => ({
-        marche_event_id: SAUNIERS_EVENT_ID,
-        waypoint_id: waypointId,
-        groupe: i.groupe,
-        ordre: i.ordre,
-        titre: i.titre,
-        description: i.description,
-        duree: i.duree,
-        materiel: i.materiel,
-        source: 'assistant',
-        created_by: user.id,
-      }));
-
-      const { error: iErr } = await supabase.from('marche_animation_idees').insert(lignes);
-      if (iErr) throw new Error(iErr.message);
+      const { secours } = await genererIdeesPourArret({
+        waypointId,
+        point,
+        remplacer,
+        userId: user.id,
+      });
       await rafraichir();
       return { secours };
     },
@@ -159,11 +187,19 @@ export function useIdeesArret(waypointId: string | null) {
 
   const idees = requete.data ?? [];
 
+  const derniereGeneration =
+    idees
+      .filter((i) => i.source === 'assistant' && i.created_at)
+      .map((i) => i.created_at as string)
+      .sort()
+      .at(-1) ?? null;
+
   return {
     idees,
     lieu: idees.filter((i) => i.groupe === 'lieu'),
     vivant: idees.filter((i) => i.groupe === 'vivant'),
     chargement: requete.isLoading,
+    derniereGeneration,
     generer,
     modifier,
     supprimer,

@@ -33,7 +33,9 @@ import {
   List,
   CloudUpload,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
+import useGenerationIdeesGlobale from '@/hooks/sauniers/useGenerationIdeesGlobale';
 import PointWidget from './PointWidget';
 import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 import RichMap from '@/components/maps/RichMap';
@@ -192,6 +194,9 @@ const ParcoursPlanner: React.FC = () => {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
+  const gen = useGenerationIdeesGlobale(points);
+  const [regenTout, setRegenTout] = React.useState(false);
+
   const numeroDe = (id: string) => points.findIndex((p) => p.id === id) + 1;
   const parSegment = (s: Segment) => points.filter((p) => p.segment === s);
 
@@ -340,6 +345,7 @@ const ParcoursPlanner: React.FC = () => {
       numero={numeroDe(selection.id)}
       distancePrecedent={distancePrecedent}
       editable={editable}
+      generationGlobale={gen.etat.enCours}
       placementActif={placement}
       peutAnnuler={peutAnnuler}
       onPlacement={() => setPlacement((v) => !v)}
@@ -425,6 +431,102 @@ const ParcoursPlanner: React.FC = () => {
       >
         <Minimize2 className="h-3.5 w-3.5" /> Quitter
       </button>
+    </div>
+  );
+
+  /* --------------------- génération globale des idées --------------------- */
+
+
+  const generationJSX = (
+    <div className="rounded-3xl border border-emerald-500/25 bg-gradient-to-br from-emerald-950/50 to-sky-950/30 p-4">
+      <div className="flex items-start gap-2.5">
+        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[13px] font-semibold text-foreground">
+            Idées d’animation de tout le parcours
+          </h3>
+          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+            Six propositions par arrêt — trois liées au lieu, trois dans l’esprit des Marches du
+            Vivant. Les arrêts déjà remplis sont conservés, sauf si vous demandez la régénération.
+          </p>
+        </div>
+      </div>
+
+      {gen.etat.enCours ? (
+        <div className="mt-3">
+          <div className="flex items-center gap-2 text-[12px] text-emerald-100">
+            <Loader2 className="h-4 w-4 animate-spin text-emerald-300" />
+            Arrêt {gen.etat.index} / {gen.etat.total}
+            {gen.etat.nomCourant ? ` — ${gen.etat.nomCourant}` : ''}
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-emerald-900/50">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-sky-400 transition-all duration-500"
+              style={{ width: `${gen.progression}%` }}
+            />
+          </div>
+          <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+            <span className="tabular-nums">{gen.etat.ideesCreees} idées enregistrées</span>
+            <button
+              type="button"
+              onClick={gen.annuler}
+              className="rounded-full border border-border/40 px-3 py-1 hover:text-foreground"
+            >
+              Arrêter
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 space-y-2">
+          <button
+            type="button"
+            onClick={() => gen.lancer(regenTout)}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-sky-600 px-4 py-3 text-[13px] font-semibold text-white transition-transform hover:scale-[1.01]"
+          >
+            <Sparkles className="h-4 w-4" /> Générer toutes les idées d’animation
+          </button>
+          <label className="flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={regenTout}
+              onChange={(e) => setRegenTout(e.target.checked)}
+              className="h-3.5 w-3.5 accent-emerald-500"
+            />
+            Régénérer aussi les arrêts déjà remplis (vos idées ajoutées à la main sont conservées)
+          </label>
+        </div>
+      )}
+
+      {gen.etat.resultat && !gen.etat.enCours && (
+        <div className="mt-3 rounded-2xl border border-border/40 bg-background/40 p-3 text-[12px] text-muted-foreground">
+          <div className="flex items-center gap-1.5 font-medium text-foreground">
+            <Check className="h-3.5 w-3.5 text-emerald-400" /> {gen.etat.resultat.completes} arrêt
+            {gen.etat.resultat.completes > 1 ? 's' : ''} complété
+            {gen.etat.resultat.completes > 1 ? 's' : ''}, {gen.etat.resultat.ignores} déjà rempli
+            {gen.etat.resultat.ignores > 1 ? 's' : ''}, {gen.etat.resultat.echecs.length} échec
+            {gen.etat.resultat.echecs.length > 1 ? 's' : ''}
+          </div>
+          {gen.etat.resultat.secours > 0 && (
+            <p className="mt-1 text-amber-200/90">
+              Assistant indisponible sur {gen.etat.resultat.secours} arrêt
+              {gen.etat.resultat.secours > 1 ? 's' : ''} : des idées de secours ont été
+              enregistrées.
+            </p>
+          )}
+          {gen.etat.resultat.echecs.map((e) => (
+            <p key={e.nom} className="mt-1 text-red-300/90">
+              {e.nom} : {e.motif}
+            </p>
+          ))}
+          <button
+            type="button"
+            onClick={gen.effacerResultat}
+            className="mt-2 rounded-full border border-border/40 px-3 py-1 text-[11px] hover:text-foreground"
+          >
+            Fermer
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -561,6 +663,9 @@ const ParcoursPlanner: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Génération globale des idées d'animation */}
+      {editable && points.length > 0 && generationJSX}
 
       {/* Liste ordonnable */}
       {listeJSX}
