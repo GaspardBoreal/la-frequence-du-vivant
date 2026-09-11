@@ -104,7 +104,7 @@ export function useIdeesArret(waypointId: string | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('marche_animation_idees')
-        .select('id, waypoint_id, groupe, ordre, titre, description, duree, materiel, source')
+        .select(CHAMPS_IDEE)
         .eq('waypoint_id', waypointId!)
         .order('groupe', { ascending: true })
         .order('ordre', { ascending: true });
