@@ -277,8 +277,53 @@ const ParcoursPlanner: React.FC = () => {
       },
     ]);
     setAjoutActif(false);
+    setSelId(id);
     toast.success('Point ajouté — nommez-le dans la liste.');
   };
+
+  const deplacer = (id: string, lat: number, lng: number) => {
+    const avant = points.find((p) => p.id === id);
+    if (avant) {
+      undoRef.current = { id, lat: avant.lat, lng: avant.lng };
+      setPeutAnnuler(true);
+    }
+    setPoints((prev) => prev.map((q) => (q.id === id ? { ...q, lat, lng } : q)));
+  };
+
+  const annulerDeplacement = () => {
+    const u = undoRef.current;
+    if (!u) return;
+    setPoints((prev) => prev.map((q) => (q.id === u.id ? { ...q, lat: u.lat, lng: u.lng } : q)));
+    undoRef.current = null;
+    setPeutAnnuler(false);
+  };
+
+  const selection = points.find((p) => p.id === selId) ?? null;
+  const distancePrecedent = React.useMemo(() => {
+    if (!selection || !selection.actif) return null;
+    const i = retenus.findIndex((p) => p.id === selection.id);
+    if (i <= 0) return null;
+    return haversineM(retenus[i - 1].lat, retenus[i - 1].lng, selection.lat, selection.lng);
+  }, [selection, retenus]);
+
+  React.useEffect(() => {
+    if (!plein) return;
+    fullscreenSurfaces.push();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (selId) setSelId(null);
+        else setPlein(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      fullscreenSurfaces.pop();
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [plein, selId]);
 
   const lancerGeneration = () => {
     const segments = (['amont', 'aval'] as Segment[])
