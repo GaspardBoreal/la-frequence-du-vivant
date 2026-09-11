@@ -263,10 +263,9 @@ export function useParcoursSauniers(peutEcrire: boolean) {
     }
   }, [parcours, qc]);
 
-  React.useEffect(() => {
-    if (!peutEcrire || !parcours || complet || lance.current) return;
-    void demarrer();
-  }, [peutEcrire, parcours, complet, demarrer]);
+  // Aucun amorçage silencieux : la création est déclenchée par l'administrateur
+  // depuis la page (bouton « Créer les 12 arrêts »).
+
 
   const reessayer = React.useCallback(() => {
     lance.current = false;
@@ -423,6 +422,8 @@ export function useParcoursSauniers(peutEcrire: boolean) {
     pret: complet,
     etat,
     reessayer,
+    demarrer,
+
     enEcriture,
     deplacer,
     renommer,
