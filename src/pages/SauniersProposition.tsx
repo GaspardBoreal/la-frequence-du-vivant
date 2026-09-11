@@ -473,7 +473,14 @@ const SauniersProposition: React.FC = () => {
       </Section>
 
       {/* -------------------------------- Preuve -------------------------------- */}
-      <Section eyebrow="REJOIGNEZ LA DYNAMIQUE DES MARCHES DU VIVANT" titre="Plus de 60 marcheurs">
+      <Section
+        eyebrow="REJOIGNEZ LA DYNAMIQUE DES MARCHES DU VIVANT"
+        titre={
+          typeof stats?.marcheurs === 'number' && stats.marcheurs >= 10
+            ? `Plus de ${Math.floor(stats.marcheurs / 10) * 10} marcheurs`
+            : 'Rejoignez les marcheurs du réseau'
+        }
+      >
         <Reveal>
           <p className="text-[15px] leading-relaxed text-muted-foreground">
             Quelques chiffres pour découvrir les marches réalisées.
