@@ -33,7 +33,9 @@ import {
   List,
   CloudUpload,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
+import useGenerationIdeesGlobale from '@/hooks/sauniers/useGenerationIdeesGlobale';
 import PointWidget from './PointWidget';
 import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 import RichMap from '@/components/maps/RichMap';
