@@ -49,7 +49,7 @@ export function useAnimationIdeas(point: PointInput | null) {
           },
         });
         if (error || !data || (data as any).error || !(data as any).lieu) {
-          throw new Error((data as any)?.error ?? error?.message ?? 'IA indisponible');
+          throw new Error((data as any)?.error ?? error?.message ?? 'Assistant indisponible');
         }
         const result = data as IdeesPoint;
         cache.set(point.id, result);
