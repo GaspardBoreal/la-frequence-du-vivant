@@ -1,5 +1,5 @@
 /**
- * Idées d'animation de secours — affichées si l'IA est momentanément
+ * Idées d'animation de secours — affichées si l’Assistant est momentanément
  * indisponible. Volontairement génériques et fidèles aux quatre éléments du
  * récit (Sel / Eau / Argile / Vivant) : aucun fait historique inventé.
  */

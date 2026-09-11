@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
 
   try {
     const key = Deno.env.get('LOVABLE_API_KEY');
-    if (!key) return json({ error: 'Configuration IA manquante.' }, 500);
+    if (!key) return json({ error: 'Assistant non configuré.' }, 500);
 
     const body = await req.json().catch(() => ({}));
     const nom = String(body?.nom ?? '').slice(0, 120);
@@ -99,8 +99,8 @@ Chaque idée : titre court et évocateur (max 6 mots), description en 2 phrases 
     if (!res.ok || !res.body) {
       const detail = await res.text().catch(() => '');
       if (res.status === 429) return json({ error: 'Trop de demandes, réessayez dans un instant.' }, 429);
-      if (res.status === 402) return json({ error: 'Crédits IA épuisés.' }, 402);
-      return json({ error: 'IA indisponible.', detail: detail.slice(0, 300) }, 502);
+      if (res.status === 402) return json({ error: 'Crédits de l’Assistant épuisés.' }, 402);
+      return json({ error: 'Assistant indisponible.', detail: detail.slice(0, 300) }, 502);
     }
 
     // Lecture SSE : on accumule le texte final.
@@ -136,7 +136,7 @@ Chaque idée : titre court et évocateur (max 6 mots), description en 2 phrases 
       parsed = null;
     }
     if (!parsed?.lieu?.length || !parsed?.vivant?.length) {
-      return json({ error: 'Réponse IA illisible.' }, 502);
+      return json({ error: 'Réponse de l’Assistant illisible.' }, 502);
     }
 
     return json({ lieu: parsed.lieu.slice(0, 3), vivant: parsed.vivant.slice(0, 3) });
