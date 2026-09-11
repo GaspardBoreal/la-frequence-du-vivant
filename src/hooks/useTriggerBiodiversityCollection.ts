@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { explorationSpeciesCountKey } from '@/hooks/useExplorationSpeciesCount';
 
 interface CollectionResult {
   success: boolean;
@@ -31,11 +32,29 @@ export const useTriggerBiodiversityCollection = () => {
       if (error) throw new Error(error.message || 'Collection failed');
       return data as CollectionResult;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['event-biodiversity-snapshots'] });
-      queryClient.invalidateQueries({ queryKey: ['exploration-biodiversity'] });
-      queryClient.invalidateQueries({ queryKey: ['exploration-marche-ids'] });
-      queryClient.invalidateQueries({ queryKey: ['biodiversity-snapshots'] });
+    onSuccess: (_data, arg) => {
+      const explorationId = typeof arg === 'string' ? arg : arg?.explorationId;
+      // ⚠️ Les clés doivent correspondre EXACTEMENT à celles lues par les vues :
+      // react-query fait du préfixe par élément, donc 'event-biodiversity-snapshots'
+      // n'invalide PAS 'event-biodiversity-snapshots-all'.
+      [
+        'event-biodiversity-snapshots',
+        'event-biodiversity-snapshots-all',
+        'event-marcheur-observations',
+        'exploration-marche-ctx',
+        'event-all-marches',
+        'exploration-biodiversity',
+        'exploration-marche-ids',
+        'exploration-species-pool-rpc',
+        'exploration-marcheurs-names',
+        'biodiversity-snapshots',
+      ].forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
+
+      if (explorationId) {
+        queryClient.invalidateQueries({
+          queryKey: explorationSpeciesCountKey(explorationId),
+        });
+      }
     },
   });
 };
