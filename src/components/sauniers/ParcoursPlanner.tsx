@@ -699,6 +699,40 @@ const ParcoursPlanner: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Plein écran */}
+      {plein &&
+        createPortal(
+          <div className="fixed inset-0 z-[3000] bg-[#050a09]">
+            <div className="absolute inset-0">{carte('100%')}</div>
+
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-[800] flex justify-center p-3">
+              {barreOutils}
+            </div>
+
+            {listeOuverte && (
+              <div className="absolute inset-x-0 bottom-0 z-[750] max-h-[45%] overflow-y-auto border-t border-emerald-500/20 bg-background/92 p-3 backdrop-blur-xl sm:inset-y-0 sm:right-auto sm:left-0 sm:max-h-none sm:w-[330px] sm:border-r sm:border-t-0 sm:pt-24">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-emerald-300/90">
+                    Ordre du parcours
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setListeOuverte(false)}
+                    aria-label="Masquer la liste"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                {listeJSX}
+              </div>
+            )}
+
+            {widget}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };
