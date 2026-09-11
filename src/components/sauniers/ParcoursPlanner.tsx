@@ -50,7 +50,7 @@ import {
   SEGMENT_MARCHE_NOM,
   type Segment,
 } from '@/content/sauniers/parcoursPropose';
-import { useIsAdminUser } from '@/hooks/sauniers/useGenerateParcours';
+import { useIsAdminUser } from '@/hooks/sauniers/useIsAdminUser';
 import useParcoursSauniers, {
   distanceKmDe,
   type ArretParcours,
@@ -592,8 +592,8 @@ const ParcoursPlanner: React.FC = () => {
             Le parcours n’est pas encore enregistré
           </h3>
           <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-muted-foreground">
-            Les 12 arrêts proposés — 8 dans le village d’Ars-en-Ré, 4 dans le marais — seront
-            créés en deux marches rattachées à {SAUNIERS_EVENT_LABEL}.
+            Chaque arrêt proposé — 8 dans le village d’Ars-en-Ré, 4 dans le marais — devient une
+            marche à part entière, numérotée dans l’expérience de {SAUNIERS_EVENT_LABEL}.
           </p>
           {editable ? (
             <button
@@ -601,7 +601,7 @@ const ParcoursPlanner: React.FC = () => {
               onClick={parcours.demarrer}
               className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-500"
             >
-              <Plus className="h-4 w-4" /> Créer les 12 arrêts
+              <Plus className="h-4 w-4" /> Créer les 12 marches
             </button>
           ) : (
             <a
@@ -722,8 +722,8 @@ const ParcoursPlanner: React.FC = () => {
           >
             <h3 className="font-crimson text-2xl text-foreground">Rétablir le parcours proposé</h3>
             <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-              Les {points.length} arrêts actuels de {SAUNIERS_EVENT_LABEL} seront supprimés, ainsi
-              que leurs idées d’animation, puis les 12 arrêts d’origine seront recréés.
+              Les {points.length} marches actuelles de {SAUNIERS_EVENT_LABEL} seront supprimées,
+              ainsi que leurs idées d’animation, puis les 12 marches d’origine seront recréées.
             </p>
             <div className="mt-5 flex gap-2">
               <button
