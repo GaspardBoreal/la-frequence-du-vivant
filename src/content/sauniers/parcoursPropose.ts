@@ -102,22 +102,22 @@ export const PARCOURS_PROPOSE: PointPropose[] = [
   {
     id: 'amont-7',
     segment: 'amont',
-    nom: 'Le seuil des marais salants',
-    sous: "Le fondement de l'écosystème",
-    texte:
-      "L'argile brute entre les doigts. Son imperméabilité est la fondation invisible de tout le système salicole.",
-    lat: 46.2091,
-    lng: -1.5061,
-  },
-  {
-    id: 'amont-8',
-    segment: 'amont',
     nom: 'La coopérative',
     sous: 'Le passage au collectif',
     texte:
       "La carte du périple se reconstitue. Une pincée de fleur de sel scelle le passage d'apprenti à ambassadeur.",
     lat: 46.2083,
     lng: -1.5088,
+  },
+  {
+    id: 'amont-8',
+    segment: 'amont',
+    nom: 'Le seuil des marais salants',
+    sous: "Le fondement de l'écosystème",
+    texte:
+      "L'argile brute entre les doigts. Son imperméabilité est la fondation invisible de tout le système salicole.",
+    lat: 46.2091,
+    lng: -1.5061,
   },
   {
     id: 'aval-1',
