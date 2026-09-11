@@ -433,8 +433,6 @@ const ParcoursPlanner: React.FC = () => {
 
   /* --------------------- génération globale des idées --------------------- */
 
-  const gen = useGenerationIdeesGlobale(points);
-  const [regenTout, setRegenTout] = React.useState(false);
 
   const generationJSX = (
     <div className="rounded-3xl border border-emerald-500/25 bg-gradient-to-br from-emerald-950/50 to-sky-950/30 p-4">
