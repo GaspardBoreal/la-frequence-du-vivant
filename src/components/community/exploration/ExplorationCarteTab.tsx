@@ -520,6 +520,16 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
   }, [marches]);
   const geoMarchesRef = useRef(geoMarches);
   useEffect(() => { geoMarchesRef.current = geoMarches; }, [geoMarches]);
+
+  // Idées d'animation rattachées aux étapes (via leur waypoint)
+  const { data: ideesCounts } = useIdeesCountsParMarche(useMemo(() => geoMarches.map(m => m.id), [geoMarches]));
+  const [ideesSheet, setIdeesSheet] = useState<{
+    waypointId: string;
+    nom: string;
+    index: number;
+    groupe: GroupeIdee;
+  } | null>(null);
+
   const waypointsRef = useRef(waypoints);
   useEffect(() => { waypointsRef.current = waypoints; }, [waypoints]);
 
