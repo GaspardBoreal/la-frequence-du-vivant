@@ -57,8 +57,12 @@ const InvitedReadersTab: React.FC<InvitedReadersTabProps> = ({ eventId, eventTit
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['event-invited-readers', eventId],
     queryFn: async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error('Session expirée, reconnectez-vous.');
       const { data, error } = await supabase.functions.invoke('event-invited-readers-list', {
         body: { event_id: eventId },
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
