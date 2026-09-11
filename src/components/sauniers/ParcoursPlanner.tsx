@@ -351,47 +351,101 @@ const ParcoursPlanner: React.FC = () => {
     ? retenus.map((p) => [p.lat, p.lng] as [number, number])
     : undefined;
 
+  const carte = (hauteur: string | number) => (
+    <RichMap
+      key={plein ? 'plein' : 'inline'}
+      center={SAUNIERS_CENTRE}
+      zoom={14}
+      bounds={bounds}
+      fitPadding={[50, 50]}
+      initialStyle="satellite"
+      controls={{ zoom: true, style: true, geolocate: false }}
+      height={hauteur}
+      marcheRoute={{
+        steps: [],
+        polylinePositions: retenus.map((p) => [p.lat, p.lng] as [number, number]),
+        renderMarkers: false,
+      }}
+    >
+      <InvalidateOnResize dep={`${plein}-${listeOuverte}`} />
+      <ClickToAdd
+        enabled={editable && (ajoutActif || placement)}
+        onAdd={(lat, lng) => {
+          if (placement && selId) {
+            deplacer(selId, lat, lng);
+            setPlacement(false);
+            return;
+          }
+          if (ajoutActif) ajouter(lat, lng);
+        }}
+      />
+      {points.map((p) => (
+        <Marker
+          key={p.id}
+          position={[p.lat, p.lng]}
+          icon={pinIcon(numeroDe(p.id) ?? 0, p.actif, p.segment)}
+          draggable={editable}
+          eventHandlers={{
+            click: () => {
+              setSelId(p.id);
+              setPlacement(false);
+            },
+            dragend: (e: any) => {
+              const ll = e.target.getLatLng();
+              deplacer(p.id, ll.lat, ll.lng);
+              setSelId(p.id);
+            },
+          }}
+        >
+          <Tooltip direction="top" offset={[0, -14]}>
+            <span className="text-xs font-medium">{p.nom}</span>
+          </Tooltip>
+        </Marker>
+      ))}
+    </RichMap>
+  );
+
+  const widget = selection ? (
+    <PointWidget
+      point={selection}
+      numero={numeroDe(selection.id)}
+      distancePrecedent={distancePrecedent}
+      editable={editable}
+      placementActif={placement}
+      peutAnnuler={peutAnnuler}
+      onPlacement={() => setPlacement((v) => !v)}
+      onAnnuler={annulerDeplacement}
+      onSegment={() =>
+        setPoints((prev) =>
+          prev.map((q) =>
+            q.id === selection.id
+              ? { ...q, segment: q.segment === 'amont' ? 'aval' : 'amont' }
+              : q,
+          ),
+        )
+      }
+      onClose={() => {
+        setSelId(null);
+        setPlacement(false);
+      }}
+    />
+  ) : null;
+
   return (
     <div className="space-y-4">
       {/* Carte */}
-      <div className="overflow-hidden rounded-3xl border border-border/40">
-        <RichMap
-          center={SAUNIERS_CENTRE}
-          zoom={14}
-          bounds={bounds}
-          fitPadding={[50, 50]}
-          initialStyle="satellite"
-          controls={{ zoom: true, style: true, geolocate: false }}
-          height={420}
-          marcheRoute={{
-            steps: [],
-            polylinePositions: retenus.map((p) => [p.lat, p.lng] as [number, number]),
-            renderMarkers: false,
-          }}
+      <div className="relative overflow-hidden rounded-3xl border border-border/40">
+        {!plein && carte(420)}
+        {!plein && widget}
+        <button
+          type="button"
+          onClick={() => setPlein(true)}
+          className="absolute bottom-4 left-4 z-[700] inline-flex items-center gap-1.5 rounded-full bg-background/85 px-3.5 py-2 text-[11px] font-semibold text-foreground shadow-lg backdrop-blur hover:bg-background"
         >
-          <ClickToAdd enabled={ajoutActif && editable} onAdd={ajouter} />
-          {points.map((p) => (
-            <Marker
-              key={p.id}
-              position={[p.lat, p.lng]}
-              icon={pinIcon(numeroDe(p.id) ?? 0, p.actif, p.segment)}
-              draggable={editable}
-              eventHandlers={{
-                dragend: (e: any) => {
-                  const ll = e.target.getLatLng();
-                  setPoints((prev) =>
-                    prev.map((q) => (q.id === p.id ? { ...q, lat: ll.lat, lng: ll.lng } : q)),
-                  );
-                },
-              }}
-            >
-              <Tooltip direction="top" offset={[0, -14]}>
-                <span className="text-xs font-medium">{p.nom}</span>
-              </Tooltip>
-            </Marker>
-          ))}
-        </RichMap>
+          <Maximize2 className="h-3.5 w-3.5" /> Plein écran
+        </button>
       </div>
+
 
       {/* Compteurs */}
       <div className="grid grid-cols-3 gap-2">
