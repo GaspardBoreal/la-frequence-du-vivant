@@ -73,7 +73,25 @@ Deno.serve(async (req) => {
       return json(500, { error: 'readers_fetch_failed' });
     }
 
-    const userIds = Array.from(new Set((readers || []).map((r: any) => r.user_id)));
+    // Personnes réellement inscrites à une marche de l'exploration :
+    // elles ne sont jamais « invitées en attente », même sans contribution.
+    const { data: participations, error: pErr } = await admin
+      .from('marche_participations')
+      .select('user_id')
+      .in('marche_event_id', eventIds);
+    if (pErr) {
+      console.error('participations fetch error', pErr);
+      return json(500, { error: 'participations_fetch_failed' });
+    }
+    const participantUserIds = new Set<string>(
+      (participations || []).map((p: any) => p.user_id).filter(Boolean),
+    );
+
+    const effectiveReaders = (readers || []).filter(
+      (r: any) => !participantUserIds.has(r.user_id),
+    );
+
+    const userIds = Array.from(new Set(effectiveReaders.map((r: any) => r.user_id)));
     let profilesMap = new Map<string, any>();
     if (userIds.length > 0) {
       const { data: profs } = await admin
@@ -85,7 +103,7 @@ Deno.serve(async (req) => {
 
     // Dedup by user_id, keep most recent
     const byUser = new Map<string, any>();
-    (readers || []).forEach((r: any) => {
+    effectiveReaders.forEach((r: any) => {
       const prev = byUser.get(r.user_id);
       if (!prev || new Date(r.created_at) > new Date(prev.created_at)) byUser.set(r.user_id, r);
     });
