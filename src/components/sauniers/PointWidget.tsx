@@ -35,6 +35,8 @@ interface Props {
   numero: number | null;
   distancePrecedent: number | null;
   editable: boolean;
+  /** Une génération de tout le parcours est en cours : on bloque l'action unitaire. */
+  generationGlobale?: boolean;
   placementActif: boolean;
   peutAnnuler: boolean;
   onPlacement: () => void;
