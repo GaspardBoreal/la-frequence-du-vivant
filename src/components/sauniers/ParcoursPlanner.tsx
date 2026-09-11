@@ -342,6 +342,7 @@ const ParcoursPlanner: React.FC = () => {
       numero={numeroDe(selection.id)}
       distancePrecedent={distancePrecedent}
       editable={editable}
+      generationGlobale={gen.etat.enCours}
       placementActif={placement}
       peutAnnuler={peutAnnuler}
       onPlacement={() => setPlacement((v) => !v)}
