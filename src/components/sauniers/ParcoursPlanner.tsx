@@ -469,7 +469,38 @@ const ParcoursPlanner: React.FC = () => {
     <div className="space-y-4">
       {(preparation || parcours.etat.erreur) && bandeau}
 
+      {/* Parcours pas encore enregistré */}
+      {!parcours.chargement && !parcours.etat.actif && points.length === 0 && (
+        <div className="rounded-3xl border border-emerald-500/25 bg-emerald-950/30 p-5 text-center">
+          <MapPin className="mx-auto h-6 w-6 text-emerald-400" />
+          <h3 className="mt-2 font-crimson text-2xl text-foreground">
+            Le parcours n’est pas encore enregistré
+          </h3>
+          <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-muted-foreground">
+            Les 12 arrêts proposés — 8 dans le village d’Ars-en-Ré, 4 dans le marais — seront
+            créés en deux marches rattachées à {SAUNIERS_EVENT_LABEL}.
+          </p>
+          {editable ? (
+            <button
+              type="button"
+              onClick={parcours.demarrer}
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-500"
+            >
+              <Plus className="h-4 w-4" /> Créer les 12 arrêts
+            </button>
+          ) : (
+            <a
+              href="/admin/login"
+              className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/40 px-5 py-3 text-sm font-semibold text-emerald-200 hover:text-emerald-100"
+            >
+              Se connecter pour créer le parcours
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Carte */}
+
       <div className="relative overflow-hidden rounded-3xl border border-border/40">
         {!plein && carte(420)}
         {!plein && widget}
