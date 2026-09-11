@@ -194,6 +194,9 @@ const ParcoursPlanner: React.FC = () => {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
+  const gen = useGenerationIdeesGlobale(points);
+  const [regenTout, setRegenTout] = React.useState(false);
+
   const numeroDe = (id: string) => points.findIndex((p) => p.id === id) + 1;
   const parSegment = (s: Segment) => points.filter((p) => p.segment === s);
 
