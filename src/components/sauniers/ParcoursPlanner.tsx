@@ -492,38 +492,7 @@ const ParcoursPlanner: React.FC = () => {
       )}
 
       {/* Liste ordonnable */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={points.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2">
-            {points.map((p) => (
-              <Ligne
-                key={p.id}
-                point={p}
-                numero={numeroDe(p.id)}
-                editable={editable}
-                onToggle={() =>
-                  setPoints((prev) =>
-                    prev.map((q) => (q.id === p.id ? { ...q, actif: !q.actif } : q)),
-                  )
-                }
-                onSegment={() =>
-                  setPoints((prev) =>
-                    prev.map((q) =>
-                      q.id === p.id
-                        ? { ...q, segment: q.segment === 'amont' ? 'aval' : 'amont' }
-                        : q,
-                    ),
-                  )
-                }
-                onRename={(nom) =>
-                  setPoints((prev) => prev.map((q) => (q.id === p.id ? { ...q, nom } : q)))
-                }
-                onDelete={() => setPoints((prev) => prev.filter((q) => q.id !== p.id))}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+      {listeJSX}
 
       {/* Répartition */}
       <div className="grid gap-2 sm:grid-cols-2">
