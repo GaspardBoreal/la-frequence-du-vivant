@@ -1089,6 +1089,49 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                     )}
                   </div>
 
+                  {/* Idées d'animation */}
+                  {(() => {
+                    const ideesEntry = ideesCounts?.[marche.id];
+                    if (!ideesEntry) return null;
+                    return (
+                      <div className="mb-2.5">
+                        <p className="mb-1 text-[10px] uppercase tracking-[0.14em] text-white/45">
+                          Idées d’animation
+                        </p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            onClick={() =>
+                              setIdeesSheet({
+                                waypointId: ideesEntry.waypointId,
+                                nom: marche.nom_marche || marche.ville,
+                                index,
+                                groupe: 'lieu',
+                              })
+                            }
+                            className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-400/15 text-[11px] font-medium text-amber-200 transition-colors hover:bg-amber-400/25"
+                          >
+                            <MapPin className="h-3 w-3" /> Le lieu
+                            <span className="opacity-70">{ideesEntry.lieu}</span>
+                          </button>
+                          <button
+                            onClick={() =>
+                              setIdeesSheet({
+                                waypointId: ideesEntry.waypointId,
+                                nom: marche.nom_marche || marche.ville,
+                                index,
+                                groupe: 'vivant',
+                              })
+                            }
+                            className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-400/15 text-[11px] font-medium text-emerald-200 transition-colors hover:bg-emerald-400/25"
+                          >
+                            <Leaf className="h-3 w-3" /> Le vivant
+                            <span className="opacity-70">{ideesEntry.vivant}</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* CTA */}
                   {onSelectStep && (
                     <button
@@ -1098,6 +1141,7 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
                       Explorer cette étape →
                     </button>
                   )}
+
 
                   {mapStyle === 'cadastre' && canEditGps && (
                     <button
