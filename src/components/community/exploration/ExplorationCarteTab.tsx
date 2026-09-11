@@ -39,7 +39,11 @@ import { WaypointInsertConfirmDialog } from './WaypointInsertConfirmDialog';
 import MapOptionsMenu from './MapOptionsMenu';
 import WeatherStationsLayer from './WeatherStationsLayer';
 import { useMapLayers } from '@/hooks/useMapLayers';
+import { useIdeesCountsParMarche } from '@/hooks/sauniers/useIdeesCountsParMarche';
+import type { GroupeIdee } from '@/hooks/sauniers/useIdeesAnimation';
+import IdeesAnimationSheet from './IdeesAnimationSheet';
 import 'leaflet/dist/leaflet.css';
+
 
 interface MarcheStep {
   id: string;
