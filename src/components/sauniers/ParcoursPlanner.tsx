@@ -1,5 +1,6 @@
 import React from 'react';
-import { Marker, Tooltip, useMapEvents } from 'react-leaflet';
+import { createPortal } from 'react-dom';
+import { Marker, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import {
   DndContext,
@@ -27,7 +28,12 @@ import {
   Waves,
   Footprints,
   X,
+  Maximize2,
+  Minimize2,
+  List,
 } from 'lucide-react';
+import PointWidget from './PointWidget';
+import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 import RichMap from '@/components/maps/RichMap';
 import { haversineM } from '@/utils/geoDistance';
 import { toast } from 'sonner';
@@ -94,6 +100,15 @@ const ClickToAdd: React.FC<{ enabled: boolean; onAdd: (lat: number, lng: number)
       if (enabled) onAdd(e.latlng.lat, e.latlng.lng);
     },
   });
+  return null;
+};
+
+const InvalidateOnResize: React.FC<{ dep: unknown }> = ({ dep }) => {
+  const map = useMap();
+  React.useEffect(() => {
+    const t = setTimeout(() => map.invalidateSize(), 220);
+    return () => clearTimeout(t);
+  }, [dep, map]);
   return null;
 };
 
