@@ -400,15 +400,11 @@ const PointWidget: React.FC<Props> = ({
         <button
           type="button"
           onClick={() => lancer(false)}
-          disabled={generer.isPending}
+          disabled={occupe}
           className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-sky-600 px-4 py-2.5 text-[12px] font-semibold text-white transition-transform hover:scale-[1.02] disabled:opacity-60"
         >
-          {generer.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Sparkles className="h-4 w-4" />
-          )}
-          6 idées de l’Assistant
+          {occupe ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {generationGlobale ? 'Génération en cours…' : '6 idées de l’Assistant'}
         </button>
       )}
 
