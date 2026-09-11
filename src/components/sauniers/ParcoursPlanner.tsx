@@ -31,6 +31,8 @@ import {
   Maximize2,
   Minimize2,
   List,
+  PanelLeftClose,
+  PanelLeftOpen,
   CloudUpload,
   AlertTriangle,
   Sparkles,
@@ -420,16 +422,27 @@ const ParcoursPlanner: React.FC = () => {
       <button
         type="button"
         onClick={() => setListeOuverte((v) => !v)}
+        aria-label={listeOuverte ? 'Réduire le panneau du parcours' : 'Ouvrir le panneau du parcours'}
         className="inline-flex items-center gap-1.5 rounded-full bg-background/85 px-3.5 py-2 text-[11px] font-semibold text-foreground shadow-lg backdrop-blur"
       >
-        <List className="h-3.5 w-3.5" /> {listeOuverte ? 'Masquer' : 'Liste'}
+        {listeOuverte ? (
+          <PanelLeftClose className="h-3.5 w-3.5" />
+        ) : (
+          <PanelLeftOpen className="h-3.5 w-3.5" />
+        )}
+        {listeOuverte ? 'Réduire' : 'Panneau'}
       </button>
       <button
         type="button"
-        onClick={() => setPlein(false)}
-        className="inline-flex items-center gap-1.5 rounded-full bg-background/85 px-3.5 py-2 text-[11px] font-semibold text-foreground shadow-lg backdrop-blur"
+        onClick={() => {
+          setSelId(null);
+          setPlacement(false);
+          setPlein(false);
+        }}
+        aria-label="Fermer la carte et revenir à la page"
+        className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-2 text-[11px] font-semibold text-white shadow-lg backdrop-blur transition-colors hover:bg-emerald-500"
       >
-        <Minimize2 className="h-3.5 w-3.5" /> Quitter
+        <Minimize2 className="h-3.5 w-3.5" /> Quitter la carte
       </button>
     </div>
   );
@@ -759,7 +772,7 @@ const ParcoursPlanner: React.FC = () => {
             </div>
 
             {listeOuverte && (
-              <div className="absolute inset-x-0 bottom-0 z-[750] max-h-[45%] overflow-y-auto border-t border-emerald-500/20 bg-background/92 p-3 backdrop-blur-xl sm:inset-y-0 sm:right-auto sm:left-0 sm:max-h-none sm:w-[330px] sm:border-r sm:border-t-0 sm:pt-24">
+              <div className="absolute inset-x-0 bottom-0 z-[750] max-h-[45%] overflow-y-auto border-t border-emerald-500/20 bg-background/92 p-3 backdrop-blur-xl transition-transform duration-300 sm:inset-y-0 sm:right-auto sm:left-0 sm:max-h-none sm:w-[330px] sm:border-r sm:border-t-0 sm:pt-24">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-emerald-300/90">
                     Ordre du parcours
@@ -767,14 +780,28 @@ const ParcoursPlanner: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setListeOuverte(false)}
-                    aria-label="Masquer la liste"
-                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Réduire le panneau du parcours"
+                    className="inline-flex items-center gap-1 rounded-full border border-border/40 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
                   >
-                    <X className="h-4 w-4" />
+                    <PanelLeftClose className="h-4 w-4" /> Réduire
                   </button>
                 </div>
                 {listeJSX}
               </div>
+            )}
+
+            {/* Poignée de réouverture du panneau (visible quand il est réduit) */}
+            {!listeOuverte && (
+              <button
+                type="button"
+                onClick={() => setListeOuverte(true)}
+                aria-label="Ouvrir le panneau du parcours"
+                className="absolute bottom-20 left-3 z-[750] flex flex-col items-center gap-1.5 rounded-2xl border border-emerald-500/30 bg-background/90 px-2.5 py-3 text-emerald-200 shadow-xl backdrop-blur transition-all hover:bg-background sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2"
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+                <List className="h-4 w-4" />
+                <span className="text-[10px] font-semibold tabular-nums">{points.length}</span>
+              </button>
             )}
 
             {widget}
