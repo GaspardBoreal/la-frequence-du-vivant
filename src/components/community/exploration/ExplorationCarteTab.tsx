@@ -1254,6 +1254,18 @@ const ExplorationCarteTab: React.FC<ExplorationCarteTabProps> = ({
         })()}
       </MapContainer>
 
+      {/* Fiche des idées d'animation d'une étape */}
+      <IdeesAnimationSheet
+        open={!!ideesSheet}
+        onOpenChange={(o) => { if (!o) setIdeesSheet(null); }}
+        waypointId={ideesSheet?.waypointId ?? null}
+        etapeNumero={(ideesSheet?.index ?? 0) + 1}
+        etapeNom={ideesSheet?.nom ?? ''}
+        groupeInitial={ideesSheet?.groupe ?? 'lieu'}
+        onExplorer={onSelectStep && ideesSheet ? () => { const i = ideesSheet.index; setIdeesSheet(null); onSelectStep(i); } : undefined}
+      />
+
+
       {/* Confirm dialog for waypoint insertion */}
       {pendingWaypoint && (() => {
         // Display top 4 candidates, plus the selected one if it's outside that window
