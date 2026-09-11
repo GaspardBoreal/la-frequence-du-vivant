@@ -9,7 +9,10 @@
  */
 
 export const SAUNIERS_EVENT_ID = '1c201e08-af92-4583-9b7d-b916f19778a6';
+/** Expérience (exploration) rattachée à l'événement Les Secrets de Sauniers. */
+export const SAUNIERS_EXPLORATION_ID = 'c9c70428-82cc-498f-81f7-6eb7f816e6b7';
 export const SAUNIERS_EVENT_LABEL = 'Les Secrets de Sauniers — 12 septembre 2026';
+export const SAUNIERS_DATE = '2026-09-12';
 export const SAUNIERS_VILLE = 'Ars-en-Ré';
 export const SAUNIERS_CENTRE: [number, number] = [46.2069, -1.5122];
 
