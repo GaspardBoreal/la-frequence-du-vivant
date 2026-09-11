@@ -455,10 +455,10 @@ const PointWidget: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => setConfirmRegen(true)}
-                    disabled={generer.isPending}
+                   disabled={occupe}
                     className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border/40 px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-50"
                   >
-                    {generer.isPending ? (
+                    {occupe ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <Sparkles className="h-3.5 w-3.5" />
