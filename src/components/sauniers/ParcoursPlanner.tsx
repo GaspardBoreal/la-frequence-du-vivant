@@ -214,6 +214,12 @@ const ParcoursPlanner: React.FC = () => {
   const [ajoutActif, setAjoutActif] = React.useState(false);
   const [confirmation, setConfirmation] = React.useState(false);
   const [remplacer, setRemplacer] = React.useState(false);
+  const [plein, setPlein] = React.useState(false);
+  const [selId, setSelId] = React.useState<string | null>(null);
+  const [placement, setPlacement] = React.useState(false);
+  const [listeOuverte, setListeOuverte] = React.useState(true);
+  const undoRef = React.useRef<{ id: string; lat: number; lng: number } | null>(null);
+  const [peutAnnuler, setPeutAnnuler] = React.useState(false);
 
   const { data: estAdmin } = useIsAdminUser();
   const { data: marchesExistantes = [] } = useMarchesExistantes();
