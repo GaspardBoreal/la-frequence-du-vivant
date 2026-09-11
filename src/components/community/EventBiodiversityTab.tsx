@@ -539,7 +539,9 @@ const EventBiodiversityTab: React.FC<EventBiodiversityTabProps> = ({
           </div>
           <h3 className="text-foreground text-base font-semibold mb-2">Empreinte en attente</h3>
           <p className="text-muted-foreground text-sm max-w-sm leading-relaxed">
-            La biodiversité de cet événement n'a pas encore été collectée. Les données apparaîtront ici dès qu'une analyse des territoires traversés sera lancée.
+            {collectionMutation.isSuccess && (collectionMutation.data?.totalSpecies ?? 0) === 0
+              ? "La collecte s'est bien terminée, mais aucune espèce n'a été trouvée dans le rayon des étapes de cet événement. Élargissez le rayon ou vérifiez la position des étapes, puis relancez."
+              : "La biodiversité de cet événement n'a pas encore été collectée. Les données apparaîtront ici dès qu'une analyse des territoires traversés sera lancée."}
           </p>
           {canReveal && (
             <button
