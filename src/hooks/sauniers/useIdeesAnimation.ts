@@ -187,11 +187,19 @@ export function useIdeesArret(waypointId: string | null) {
 
   const idees = requete.data ?? [];
 
+  const derniereGeneration =
+    idees
+      .filter((i) => i.source === 'assistant' && i.created_at)
+      .map((i) => i.created_at as string)
+      .sort()
+      .at(-1) ?? null;
+
   return {
     idees,
     lieu: idees.filter((i) => i.groupe === 'lieu'),
     vivant: idees.filter((i) => i.groupe === 'vivant'),
     chargement: requete.isLoading,
+    derniereGeneration,
     generer,
     modifier,
     supprimer,
