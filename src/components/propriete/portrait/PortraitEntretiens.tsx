@@ -68,6 +68,9 @@ export const PortraitEntretiens: React.FC<Props> = ({ proprieteId, proprieteNom 
         )}
       </header>
 
+      <ConnaissanceJardinCard proprieteId={proprieteId} />
+
+
       {openForm && canEdit && (
         <EntretienForm
           proprieteId={proprieteId}
