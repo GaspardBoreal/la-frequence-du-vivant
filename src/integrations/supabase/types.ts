@@ -10231,6 +10231,10 @@ export type Database = {
         Args: { _propriete_id: string }
         Returns: boolean
       }
+      can_curate_propriete_gps: {
+        Args: { _propriete_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_curate_propriete_parcelles: {
         Args: { _propriete_id: string }
         Returns: boolean
@@ -11083,6 +11087,10 @@ export type Database = {
       }
       is_system_initialized: { Args: never; Returns: boolean }
       is_thumb_curator: { Args: { _user_id: string }; Returns: boolean }
+      is_within_propriete_scope: {
+        Args: { _lat: number; _lon: number; _propriete_id: string }
+        Returns: boolean
+      }
       list_event_invited_readers: {
         Args: { _event_id: string }
         Returns: {
@@ -11356,14 +11364,46 @@ export type Database = {
         }
         Returns: undefined
       }
-      reposition_marcheur_media_gps: {
-        Args: { _lat: number; _lon: number; _media_id: string; _note?: string }
-        Returns: Json
-      }
-      reposition_marcheur_observation_gps: {
-        Args: { _lat: number; _lon: number; _note?: string; _obs_id: string }
-        Returns: Json
-      }
+      reposition_marcheur_media_gps:
+        | {
+            Args: {
+              _lat: number
+              _lon: number
+              _media_id: string
+              _note?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _lat: number
+              _lon: number
+              _media_id: string
+              _note?: string
+              _propriete_id?: string
+            }
+            Returns: Json
+          }
+      reposition_marcheur_observation_gps:
+        | {
+            Args: {
+              _lat: number
+              _lon: number
+              _note?: string
+              _obs_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _lat: number
+              _lon: number
+              _note?: string
+              _obs_id: string
+              _propriete_id?: string
+            }
+            Returns: Json
+          }
       request_inaturalist_backfill: {
         Args: {
           p_exploration_id: string
