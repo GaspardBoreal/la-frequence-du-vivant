@@ -92,13 +92,12 @@ const repairSingleLineTable = (line: string): string[] | null => {
 export function repairChatMarkdown(content: string, streaming = false): string {
   if (!content) return content;
 
-  // Certains modèles écrivent les grandes étapes sans syntaxe Markdown, ou
-  // collent l'étape suivante à la fin d'un paragraphe. On ne transforme que
-  // les motifs explicites « 1. Titre » : les mesures (pH 7.2), dates et listes
-  // ordinaires restent intactes.
+  // Certains modèles écrivent les grandes étapes sous la forme « 1. **Titre** »
+  // sans syntaxe de titre, voire à la fin du paragraphe précédent. Ce motif
+  // volontairement strict évite de transformer une simple liste numérotée.
   const withReadableSections = content
-    .replace(/([^\n])\s+(\d{1,2}\.\s+[^\n.!?]{3,70})(?=\n|$)/g, '$1\n\n## $2')
-    .replace(/^(\d{1,2}\.\s+[^\n.!?]{3,70})$/gm, '## $1')
+    .replace(/([^\n])\s+(\d{1,2}\.\s+\*\*[^*\n]{3,70}\*\*)/g, '$1\n\n## $2')
+    .replace(/^(\d{1,2}\.\s+\*\*[^*\n]{3,70}\*\*)\s*$/gm, '## $1')
     .replace(/([^\n])\n(#{1,3}\s+)/g, '$1\n\n$2')
     .replace(/(#{1,3}\s+[^\n]+)\n(?!\n)/g, '$1\n\n');
 

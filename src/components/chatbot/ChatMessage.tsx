@@ -18,6 +18,37 @@ interface ChatMessageProps {
   image?: string;
 }
 
+const getNodeText = (node: React.ReactNode): string => {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(getNodeText).join('');
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return getNodeText(node.props.children);
+  }
+  return '';
+};
+
+const NumberedHeading = ({ level, children }: { level: 1 | 2 | 3; children: React.ReactNode }) => {
+  const label = getNodeText(children);
+  const match = label.match(/^\s*(\d{1,2})[.)]\s+(.+)$/);
+  const Tag = `h${level}` as 'h1' | 'h2' | 'h3';
+  const headingClass = level === 1
+    ? 'mt-7 mb-3 text-lg font-semibold leading-snug text-foreground'
+    : level === 2
+      ? 'mt-6 mb-3 text-base font-semibold leading-snug text-foreground'
+      : 'mt-5 mb-2 text-sm font-semibold leading-snug text-foreground';
+
+  if (!match) return <Tag className={headingClass}>{children}</Tag>;
+
+  return (
+    <Tag className={`${headingClass} flex items-start gap-2.5`}>
+      <span className="mt-0.5 flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
+        {match[1]}
+      </span>
+      <span className="pt-1">{match[2]}</span>
+    </Tag>
+  );
+};
+
 export function ChatMessage({ role, content, isExpanded, isStreaming, image }: ChatMessageProps) {
   const isUser = role === 'user';
   const { isSupported, isSpeaking, speak, stopSpeaking } = useSpeechSynthesis();
@@ -50,28 +81,6 @@ export function ChatMessage({ role, content, isExpanded, isStreaming, image }: C
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     }
-  };
-
-  const NumberedHeading = ({ level, children }: { level: 1 | 2 | 3; children: React.ReactNode }) => {
-    const label = React.Children.toArray(children).join('');
-    const match = label.match(/^\s*(\d{1,2})[.)]\s+(.+)$/);
-    const Tag = `h${level}` as 'h1' | 'h2' | 'h3';
-    const headingClass = level === 1
-      ? 'mt-7 mb-3 text-lg font-semibold leading-snug text-foreground'
-      : level === 2
-        ? 'mt-6 mb-3 text-base font-semibold leading-snug text-foreground'
-        : 'mt-5 mb-2 text-sm font-semibold leading-snug text-foreground';
-
-    if (!match) return <Tag className={headingClass}>{children}</Tag>;
-
-    return (
-      <Tag className={`${headingClass} flex items-start gap-2.5`}>
-        <span className="mt-0.5 flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
-          {match[1]}
-        </span>
-        <span className="pt-1">{match[2]}</span>
-      </Tag>
-    );
   };
 
   return (
