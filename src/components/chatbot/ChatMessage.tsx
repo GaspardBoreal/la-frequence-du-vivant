@@ -1,11 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import ChatTableBlock from './ChatTableBlock';
 import { repairChatMarkdown } from '@/lib/chatMarkdownRepair';
 import { Bot, User, Volume2, VolumeX, Copy, Check } from 'lucide-react';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
-import { Message, MessageContent } from '@/components/ai-elements/message';
+import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
 import { Button } from '@/components/ui/button';
 
 interface ChatMessageProps {
@@ -118,8 +116,8 @@ export function ChatMessage({ role, content, isExpanded, isStreaming, image }: C
               </div>
             ) : (
               <div className="prose prose-sm max-w-none break-words text-foreground dark:prose-invert [&_p]:my-3 [&_p]:leading-6 [&_ul]:my-3 [&_ul]:space-y-1.5 [&_ol]:my-3 [&_ol]:space-y-1.5 [&_li]:pl-1 [&_li]:leading-6 [&_blockquote]:my-4 [&_blockquote]:border-l-primary [&_blockquote]:py-1 [&_hr]:my-5 [&_strong]:font-semibold [&_strong]:text-foreground">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
+                <MessageResponse
+                  isAnimating={isStreaming}
                   components={{
                     table: ({ children }) => <ChatTableBlock>{children}</ChatTableBlock>,
                     h1: ({ children }) => <NumberedHeading level={1}>{children}</NumberedHeading>,
@@ -128,7 +126,7 @@ export function ChatMessage({ role, content, isExpanded, isStreaming, image }: C
                   }}
                 >
                   {markdown}
-                </ReactMarkdown>
+                </MessageResponse>
 
               </div>
             )}
