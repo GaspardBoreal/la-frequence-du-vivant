@@ -14,7 +14,7 @@ interface RepositionInput {
  * Mutation de repositionnement GPS — appelle la bonne RPC selon le préfixe id.
  * Invalide le cache `marcheur-unidentified-photos`.
  */
-export function useRepositionMediaGps(opts?: { explorationId?: string }) {
+export function useRepositionMediaGps(opts?: { explorationId?: string; proprieteId?: string | null }) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ candidateId, lat, lon, note }: RepositionInput) => {
@@ -24,9 +24,10 @@ export function useRepositionMediaGps(opts?: { explorationId?: string }) {
       if (!isMedia && !isObs) throw new Error('UNKNOWN_CANDIDATE');
 
       const fn = isMedia ? 'reposition_marcheur_media_gps' : 'reposition_marcheur_observation_gps';
+      const proprieteId = opts?.proprieteId ?? null;
       const params: any = isMedia
-        ? { _media_id: realId, _lat: lat, _lon: lon, _note: note ?? null }
-        : { _obs_id: realId, _lat: lat, _lon: lon, _note: note ?? null };
+        ? { _media_id: realId, _lat: lat, _lon: lon, _note: note ?? null, _propriete_id: proprieteId }
+        : { _obs_id: realId, _lat: lat, _lon: lon, _note: note ?? null, _propriete_id: proprieteId };
       const { data, error } = await supabase.rpc(fn as any, params);
       if (error) throw error;
       return data;
@@ -41,7 +42,8 @@ export function useRepositionMediaGps(opts?: { explorationId?: string }) {
     },
     onError: (err: any) => {
       const msg = String(err?.message || err);
-      if (msg.includes('FORBIDDEN')) toast.error('Vous n\'avez pas les droits pour repositionner');
+      if (msg.includes('FORBIDDEN')) toast.error('Vous n\'avez pas les droits pour repositionner cette observation');
+      else if (msg.includes('OUT_OF_SCOPE')) toast.error('Cette position sort du périmètre du jardin');
       else if (msg.includes('INVALID_COORDS')) toast.error('Coordonnées invalides');
       else toast.error('Échec du repositionnement');
     },

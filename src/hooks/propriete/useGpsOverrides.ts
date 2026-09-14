@@ -102,7 +102,8 @@ export function useSetGpsOverride() {
     },
     onError: (e: any) => {
       const msg = String(e?.message || e);
-      if (msg.includes('FORBIDDEN')) toast.error('Droits de curation insuffisants');
+      if (msg.includes('FORBIDDEN')) toast.error('Vous n’avez pas les droits pour repositionner cette observation');
+      else if (msg.includes('OUT_OF_SCOPE')) toast.error('Cette position sort du périmètre du jardin');
       else if (msg.includes('INVALID_COORDS')) toast.error('Coordonnées invalides');
       else toast.error('Échec de l’enregistrement', { description: msg });
     },
