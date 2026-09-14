@@ -102,6 +102,15 @@ serve(async (req) => {
       paletteRenseignee: (paletteRes.data ?? []).length > 0,
       chantiers: chantiersRes.data ?? [],
       consultations: consultRes.data ?? [],
+      entretien: connaissance.length
+        ? {
+            lignes_rouges: lignesRouges,
+            faits_du_lieu: parRegistre("fait"),
+            gestes_et_pratiques: parRegistre("geste"),
+            cap_et_intentions: parRegistre("cap"),
+            comment_accompagner: parRegistre("portrait"),
+          }
+        : null,
       ressourcesCitables: {
         secteurs: (zonesRes.data ?? []).map((z: any) => z.nom).filter(Boolean),
         prelevements: Array.isArray((solRes.data as any)?.samples)
