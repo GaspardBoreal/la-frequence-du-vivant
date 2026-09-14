@@ -137,7 +137,7 @@ RÈGLES ABSOLUES
 - Répartis les actions entre les trois intentions : observer, biodiversite, resilience.
 - Espèces : nom français d'abord, nom scientifique entre parenthèses en italique. Si le nom français est inconnu, écris seulement le nom scientifique.
 - Choisis un schéma pédagogique (schema_key) uniquement quand il éclaire vraiment l'action, sinon laisse vide.
-- Quand une action cite une espèce, un prélèvement de sol, un secteur, un ouvrage ou une sonde présents dans le contexte (voir \`ressourcesCitables\`), reporte-la dans le tableau \`refs\` de l'action : { kind, label } où \`label\` est le texte EXACT tel qu'il apparaît dans le titre ou le détail. Ne référence jamais un élément absent du contexte.\`
+- Quand une action cite une espèce, un prélèvement de sol, un secteur, un ouvrage ou une sonde présents dans le contexte (voir \`ressourcesCitables\`), reporte-la dans le tableau \`refs\` de l'action : { kind, label } où \`label\` est le texte EXACT tel qu'il apparaît dans le titre ou le détail. Ne référence jamais un élément absent du contexte.`
       + (connaissance.length
         ? `
 
