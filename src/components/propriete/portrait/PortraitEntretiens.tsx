@@ -305,8 +305,12 @@ const EntretienDetail: React.FC<{
   const { data: extraits = [], isLoading } = useEntretienExtraits(entretien.id);
   const harvest = useHarvestEntretien(proprieteId);
   const remove = useDeleteEntretien(proprieteId);
+  const valider = useValiderEntretien(proprieteId);
+  const rouvrir = useRouvrirEntretien(proprieteId);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [askValidation, setAskValidation] = useState(false);
 
+  const verrouille = isEntretienVerrouille(entretien);
   const aValider = extraits.filter((e) => e.statut === 'propose').length;
   const acceptes = extraits.filter((e) => e.statut === 'accepte').length;
 
@@ -319,16 +323,46 @@ const EntretienDetail: React.FC<{
     }
   };
 
+  const reopen = async () => {
+    const motif = window.prompt(
+      "Rouvrir cet entretien ? Les points reviennent en relecture et sortent de la base de connaissance du jardin.\n\nMotif de la réouverture :",
+    );
+    if (motif === null) return;
+    try {
+      await rouvrir.mutateAsync({ entretienId: entretien.id, motif });
+      toast.success('Entretien rouvert. La version validée reste consultable dans l’historique.');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Réouverture impossible');
+    }
+  };
+
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-border bg-card/60 p-4 flex flex-wrap items-center gap-3 justify-between">
+      <div
+        className={`rounded-2xl border p-4 flex flex-wrap items-center gap-3 justify-between ${
+          verrouille ? 'border-emerald-700/40 bg-emerald-600/[0.06]' : 'border-border bg-card/60'
+        }`}
+      >
         <div className="text-sm">
-          <div className="font-medium text-foreground">{entretien.titre}</div>
-          <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+          <div className="font-medium text-foreground flex items-center gap-2 flex-wrap">
+            {entretien.titre}
+            {verrouille && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1">
+                <BadgeCheck className="w-3 h-3" /> Validé · verrouillé
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5 flex-wrap">
             {entretien.tenu_le && <span>{new Date(entretien.tenu_le).toLocaleDateString('fr-FR')}</span>}
             <span>· {(entretien.transcript ?? '').length.toLocaleString('fr-FR')} signes</span>
-            {acceptes > 0 && <span>· {acceptes} cartes validées</span>}
-            {aValider > 0 && <span className="text-amber-600">· {aValider} à valider</span>}
+            {acceptes > 0 && <span>· {acceptes} cartes acceptées</span>}
+            {aValider > 0 && !verrouille && <span className="text-amber-600">· {aValider} à relire</span>}
+            {verrouille && entretien.validated_at && (
+              <span className="text-emerald-700 dark:text-emerald-400">
+                · validé le {new Date(entretien.validated_at).toLocaleDateString('fr-FR')}
+                {entretien.validated_with ? ` avec ${entretien.validated_with}` : ''}
+              </span>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -338,7 +372,7 @@ const EntretienDetail: React.FC<{
           >
             {showTranscript ? 'Masquer' : 'Lire'} la transcription
           </button>
-          {canEdit && (
+          {canEdit && !verrouille && (
             <>
               <button
                 onClick={run}
@@ -348,6 +382,14 @@ const EntretienDetail: React.FC<{
                 {harvest.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                 {extraits.length ? 'Relancer la récolte' : 'Récolter'}
               </button>
+              {acceptes > 0 && (
+                <button
+                  onClick={() => setAskValidation(true)}
+                  className="text-xs px-3 py-1.5 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white flex items-center gap-1.5"
+                >
+                  <BadgeCheck className="w-3.5 h-3.5" /> Valider l'entretien
+                </button>
+              )}
               <button
                 onClick={() => {
                   if (window.confirm('Supprimer cet entretien et ses cartes ?')) remove.mutate(entretien.id);
@@ -359,8 +401,45 @@ const EntretienDetail: React.FC<{
               </button>
             </>
           )}
+          {canEdit && verrouille && (
+            <button
+              onClick={reopen}
+              disabled={rouvrir.isPending}
+              className="text-xs px-3 py-1.5 rounded-full border border-border hover:bg-muted text-muted-foreground flex items-center gap-1.5 disabled:opacity-60"
+            >
+              {rouvrir.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+              Rouvrir
+            </button>
+          )}
         </div>
       </div>
+
+      {verrouille && (
+        <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+          <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-700 dark:text-emerald-400" />
+          Ces points font autorité pour l'IA de Jardin, le Tour de jardin et vos trois premiers gestes.
+          Une correction reste possible, mais elle est motivée, datée et conservée dans l'historique.
+        </p>
+      )}
+
+      {askValidation && (
+        <ValidationDialog
+          entretien={entretien}
+          extraits={extraits}
+          aValider={aValider}
+          isPending={valider.isPending}
+          onCancel={() => setAskValidation(false)}
+          onConfirm={async (validatedWith, tenuLe) => {
+            try {
+              const n = await valider.mutateAsync({ entretienId: entretien.id, validatedWith, tenuLe });
+              setAskValidation(false);
+              toast.success(`${n} points sont entrés dans la base de connaissance du jardin.`);
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : 'Validation impossible');
+            }
+          }}
+        />
+      )}
 
       {showTranscript && (
         <div className="rounded-2xl border border-border bg-muted/30 p-4 max-h-96 overflow-auto whitespace-pre-wrap text-xs text-muted-foreground leading-relaxed">
@@ -390,6 +469,7 @@ const EntretienDetail: React.FC<{
               proprieteId={proprieteId}
               entretienId={entretien.id}
               canEdit={canEdit}
+              verrouille={verrouille}
             />
           );
         })
