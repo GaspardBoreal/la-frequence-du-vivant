@@ -137,7 +137,15 @@ RÈGLES ABSOLUES
 - Répartis les actions entre les trois intentions : observer, biodiversite, resilience.
 - Espèces : nom français d'abord, nom scientifique entre parenthèses en italique. Si le nom français est inconnu, écris seulement le nom scientifique.
 - Choisis un schéma pédagogique (schema_key) uniquement quand il éclaire vraiment l'action, sinon laisse vide.
-- Quand une action cite une espèce, un prélèvement de sol, un secteur, un ouvrage ou une sonde présents dans le contexte (voir `ressourcesCitables`), reporte-la dans le tableau `refs` de l'action : { kind, label } où `label` est le texte EXACT tel qu'il apparaît dans le titre ou le détail. Ne référence jamais un élément absent du contexte.`;
+- Quand une action cite une espèce, un prélèvement de sol, un secteur, un ouvrage ou une sonde présents dans le contexte (voir `ressourcesCitables`), reporte-la dans le tableau `refs` de l'action : { kind, label } où `label` est le texte EXACT tel qu'il apparaît dans le titre ou le détail. Ne référence jamais un élément absent du contexte.`
+      + (connaissance.length
+        ? `
+
+ENTRETIEN FONDATEUR VALIDÉ AVEC LA PROPRIÉTAIRE (voir \`entretien\` dans le contexte)
+${lignesRouges.length ? `- INTERDICTION ABSOLUE : ne propose aucune action contraire à ces lignes rouges :\n${lignesRouges.map((l) => `  · ${l}`).join("\n")}\n  Une action qui les contredit, même partiellement, est un échec.` : ""}
+- Appuie-toi sur les faits du lieu et les gestes déjà pratiqués : ne fais pas redécouvrir ce qui est déjà su.
+- Oriente au moins deux actions vers le cap exprimé par la propriétaire.`
+        : "");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
