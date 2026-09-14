@@ -325,12 +325,25 @@ export function useSuggestTour(proprieteId?: string) {
       if (error) throw new Error(await messageErreurSuggestion(error));
 
       if ((data as any)?.error) throw new Error((data as any).error);
-      return data as { tourId: string; actionsAdded: number };
+      return data as {
+        tourId: string;
+        actionsAdded: number;
+        actionsEcartees?: number;
+        lignesRouges?: number;
+      };
     },
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: LIST_KEY(proprieteId) });
       qc.invalidateQueries({ queryKey: ACTIONS_KEY(res.tourId) });
-      toast.success(`Proposition prête · ${res.actionsAdded} action(s)`);
+      // On dit ce que le tour a respecté : c'est la preuve visible que
+      // l'entretien validé pèse vraiment sur la proposition.
+      const garde = res.lignesRouges
+        ? ` · ${res.lignesRouges} ligne(s) rouge(s) respectée(s)`
+        : '';
+      const ecarte = res.actionsEcartees
+        ? ` · ${res.actionsEcartees} écartée(s)`
+        : '';
+      toast.success(`Proposition prête · ${res.actionsAdded} action(s)${garde}${ecarte}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });

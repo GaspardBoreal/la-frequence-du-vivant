@@ -223,29 +223,23 @@ L'utilisateur n'a activé aucun contexte. Réponds sur la méthode et invite-le 
 
     let systemContent = SYSTEM_PROMPT + contextBlock;
 
-    // Garde-fou permanent : les lignes rouges validées en entretien fondateur
-    // s'appliquent quoi que l'utilisateur ait activé comme contexte.
+    // Garde-fou permanent : les lignes rouges de la BASE DE CONNAISSANCE du
+    // jardin — donc issues d'un entretien validé et verrouillé, jamais d'une
+    // récolte encore en relecture.
     if (proprieteId) {
-      const { data: entretiens } = await userClient
-        .from("propriete_entretiens")
-        .select("id")
-        .eq("propriete_id", proprieteId);
-      const ids = (entretiens ?? []).map((e: { id: string }) => e.id);
-      if (ids.length > 0) {
-        const { data: rouges } = await userClient
-          .from("propriete_entretien_extraits")
-          .select("titre, detail, verbatim")
-          .in("entretien_id", ids)
-          .eq("registre", "ligne_rouge")
-          .eq("statut", "accepte");
-        if (rouges && rouges.length > 0) {
-          systemContent += `\n\n## LIGNES ROUGES DE CE JARDIN (non négociables)
+      const { data: connaissance } = await userClient.rpc("get_propriete_connaissance", {
+        _propriete_id: proprieteId,
+      });
+      const rouges = (connaissance ?? []).filter(
+        (c: { registre: string }) => c.registre === "ligne_rouge",
+      );
+      if (rouges.length > 0) {
+        systemContent += `\n\n## LIGNES ROUGES DE CE JARDIN (non négociables, validées avec la propriétaire)
 ${rouges
-            .map((r: { titre: string; detail: string | null; verbatim: string | null }) =>
-              `- ${r.titre}${r.detail ? ` — ${r.detail}` : ""}${r.verbatim ? ` (« ${r.verbatim} »)` : ""}`)
-            .join("\n")}
+          .map((r: { titre: string; detail: string | null; verbatim: string | null }) =>
+            `- ${r.titre}${r.detail ? ` — ${r.detail}` : ""}${r.verbatim ? ` (« ${r.verbatim} »)` : ""}`)
+          .join("\n")}
 > Ne propose jamais, sous aucune forme, une action contraire à ces refus. Si la question l'implique, dis-le et propose une autre voie.`;
-        }
       }
     }
 

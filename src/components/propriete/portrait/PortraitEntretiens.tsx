@@ -1,17 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Mic, Loader2, Sparkles, Check, X, Pencil, Trash2, Plus, Quote, ShieldAlert, Clock,
-  Upload, FileText,
+  Upload, FileText, Lock, History, RotateCcw, BadgeCheck,
 } from 'lucide-react';
 import { useDocumentExtractor } from '@/hooks/useDocumentExtractor';
 import { toast } from 'sonner';
 import {
-  REGISTRES, REGISTRE_LABELS, REGISTRE_HINTS,
+  REGISTRES, REGISTRE_LABELS, REGISTRE_HINTS, isEntretienVerrouille,
   useProprieteEntretiens, useEntretienExtraits, useCreateEntretien, useDeleteEntretien,
   useHarvestEntretien, useUpdateExtrait,
+  useValiderEntretien, useRouvrirEntretien, useReviserExtrait, useExtraitVersions,
   type Entretien, type EntretienExtrait, type Registre,
 } from '@/hooks/propriete/useProprieteEntretiens';
 import { useCanEditIntention } from '@/hooks/propriete/usePropertyIntention';
+import { ConnaissanceJardinCard } from './ConnaissanceJardinCard';
 
 /**
  * L'Entretien fondateur — l'interview d'initialisation devient un objet vivant
@@ -65,6 +67,9 @@ export const PortraitEntretiens: React.FC<Props> = ({ proprieteId, proprieteNom 
           </button>
         )}
       </header>
+
+      <ConnaissanceJardinCard proprieteId={proprieteId} />
+
 
       {openForm && canEdit && (
         <EntretienForm
@@ -300,8 +305,12 @@ const EntretienDetail: React.FC<{
   const { data: extraits = [], isLoading } = useEntretienExtraits(entretien.id);
   const harvest = useHarvestEntretien(proprieteId);
   const remove = useDeleteEntretien(proprieteId);
+  const valider = useValiderEntretien(proprieteId);
+  const rouvrir = useRouvrirEntretien(proprieteId);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [askValidation, setAskValidation] = useState(false);
 
+  const verrouille = isEntretienVerrouille(entretien);
   const aValider = extraits.filter((e) => e.statut === 'propose').length;
   const acceptes = extraits.filter((e) => e.statut === 'accepte').length;
 
@@ -314,16 +323,46 @@ const EntretienDetail: React.FC<{
     }
   };
 
+  const reopen = async () => {
+    const motif = window.prompt(
+      "Rouvrir cet entretien ? Les points reviennent en relecture et sortent de la base de connaissance du jardin.\n\nMotif de la réouverture :",
+    );
+    if (motif === null) return;
+    try {
+      await rouvrir.mutateAsync({ entretienId: entretien.id, motif });
+      toast.success('Entretien rouvert. La version validée reste consultable dans l’historique.');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Réouverture impossible');
+    }
+  };
+
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-border bg-card/60 p-4 flex flex-wrap items-center gap-3 justify-between">
+      <div
+        className={`rounded-2xl border p-4 flex flex-wrap items-center gap-3 justify-between ${
+          verrouille ? 'border-emerald-700/40 bg-emerald-600/[0.06]' : 'border-border bg-card/60'
+        }`}
+      >
         <div className="text-sm">
-          <div className="font-medium text-foreground">{entretien.titre}</div>
-          <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+          <div className="font-medium text-foreground flex items-center gap-2 flex-wrap">
+            {entretien.titre}
+            {verrouille && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1">
+                <BadgeCheck className="w-3 h-3" /> Validé · verrouillé
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5 flex-wrap">
             {entretien.tenu_le && <span>{new Date(entretien.tenu_le).toLocaleDateString('fr-FR')}</span>}
             <span>· {(entretien.transcript ?? '').length.toLocaleString('fr-FR')} signes</span>
-            {acceptes > 0 && <span>· {acceptes} cartes validées</span>}
-            {aValider > 0 && <span className="text-amber-600">· {aValider} à valider</span>}
+            {acceptes > 0 && <span>· {acceptes} cartes acceptées</span>}
+            {aValider > 0 && !verrouille && <span className="text-amber-600">· {aValider} à relire</span>}
+            {verrouille && entretien.validated_at && (
+              <span className="text-emerald-700 dark:text-emerald-400">
+                · validé le {new Date(entretien.validated_at).toLocaleDateString('fr-FR')}
+                {entretien.validated_with ? ` avec ${entretien.validated_with}` : ''}
+              </span>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -333,7 +372,7 @@ const EntretienDetail: React.FC<{
           >
             {showTranscript ? 'Masquer' : 'Lire'} la transcription
           </button>
-          {canEdit && (
+          {canEdit && !verrouille && (
             <>
               <button
                 onClick={run}
@@ -343,6 +382,14 @@ const EntretienDetail: React.FC<{
                 {harvest.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                 {extraits.length ? 'Relancer la récolte' : 'Récolter'}
               </button>
+              {acceptes > 0 && (
+                <button
+                  onClick={() => setAskValidation(true)}
+                  className="text-xs px-3 py-1.5 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white flex items-center gap-1.5"
+                >
+                  <BadgeCheck className="w-3.5 h-3.5" /> Valider l'entretien
+                </button>
+              )}
               <button
                 onClick={() => {
                   if (window.confirm('Supprimer cet entretien et ses cartes ?')) remove.mutate(entretien.id);
@@ -354,8 +401,45 @@ const EntretienDetail: React.FC<{
               </button>
             </>
           )}
+          {canEdit && verrouille && (
+            <button
+              onClick={reopen}
+              disabled={rouvrir.isPending}
+              className="text-xs px-3 py-1.5 rounded-full border border-border hover:bg-muted text-muted-foreground flex items-center gap-1.5 disabled:opacity-60"
+            >
+              {rouvrir.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+              Rouvrir
+            </button>
+          )}
         </div>
       </div>
+
+      {verrouille && (
+        <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+          <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-700 dark:text-emerald-400" />
+          Ces points font autorité pour l'IA de Jardin, le Tour de jardin et vos trois premiers gestes.
+          Une correction reste possible, mais elle est motivée, datée et conservée dans l'historique.
+        </p>
+      )}
+
+      {askValidation && (
+        <ValidationDialog
+          entretien={entretien}
+          extraits={extraits}
+          aValider={aValider}
+          isPending={valider.isPending}
+          onCancel={() => setAskValidation(false)}
+          onConfirm={async (validatedWith, tenuLe) => {
+            try {
+              const n = await valider.mutateAsync({ entretienId: entretien.id, validatedWith, tenuLe });
+              setAskValidation(false);
+              toast.success(`${n} points sont entrés dans la base de connaissance du jardin.`);
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : 'Validation impossible');
+            }
+          }}
+        />
+      )}
 
       {showTranscript && (
         <div className="rounded-2xl border border-border bg-muted/30 p-4 max-h-96 overflow-auto whitespace-pre-wrap text-xs text-muted-foreground leading-relaxed">
@@ -385,6 +469,7 @@ const EntretienDetail: React.FC<{
               proprieteId={proprieteId}
               entretienId={entretien.id}
               canEdit={canEdit}
+              verrouille={verrouille}
             />
           );
         })
@@ -402,7 +487,8 @@ const RegistreBloc: React.FC<{
   proprieteId: string;
   entretienId: string;
   canEdit: boolean;
-}> = ({ registre, cards, ecarteesCount, proprieteId, entretienId, canEdit }) => {
+  verrouille: boolean;
+}> = ({ registre, cards, ecarteesCount, proprieteId, entretienId, canEdit, verrouille }) => {
   const rouge = registre === 'ligne_rouge';
   return (
     <section className="space-y-3">
@@ -425,6 +511,7 @@ const RegistreBloc: React.FC<{
             entretienId={entretienId}
             canEdit={canEdit}
             rouge={rouge}
+            verrouille={verrouille}
           />
         ))}
       </div>
@@ -440,18 +527,44 @@ const ExtraitCard: React.FC<{
   entretienId: string;
   canEdit: boolean;
   rouge: boolean;
-}> = ({ extrait, proprieteId, entretienId, canEdit, rouge }) => {
+  verrouille: boolean;
+}> = ({ extrait, proprieteId, entretienId, canEdit, rouge, verrouille }) => {
   const update = useUpdateExtrait(proprieteId);
+  const reviser = useReviserExtrait(proprieteId);
   const [editing, setEditing] = useState(false);
   const [titre, setTitre] = useState(extrait.titre);
   const [detail, setDetail] = useState(extrait.detail ?? '');
+  const [motif, setMotif] = useState('');
+  const [showHistorique, setShowHistorique] = useState(false);
+  const { data: versions = [] } = useExtraitVersions(extrait.id, showHistorique);
 
   const accepte = extrait.statut === 'accepte';
 
   const decide = (statut: 'accepte' | 'ecarte') =>
     update.mutate({ id: extrait.id, entretienId, patch: { statut } });
 
-  const saveEdit = () => {
+  const openEdit = () => {
+    setTitre(extrait.titre);
+    setDetail(extrait.detail ?? '');
+    setMotif('');
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    if (verrouille) {
+      if (!motif.trim()) {
+        toast.error('Indiquez le motif de la correction : il sera conservé dans l’historique.');
+        return;
+      }
+      try {
+        await reviser.mutateAsync({ id: extrait.id, entretienId, titre, detail, motif });
+        setEditing(false);
+        toast.success('Correction enregistrée. L’ancienne version reste consultable.');
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Correction impossible');
+      }
+      return;
+    }
     update.mutate(
       { id: extrait.id, entretienId, patch: { titre: titre.trim() || extrait.titre, detail, statut: 'accepte' } },
       { onSuccess: () => setEditing(false) },
@@ -481,10 +594,23 @@ const ExtraitCard: React.FC<{
             rows={3}
             className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground"
           />
+          {verrouille && (
+            <input
+              value={motif}
+              onChange={(e) => setMotif(e.target.value)}
+              placeholder="Motif de la correction (obligatoire)"
+              className="w-full rounded-lg border border-amber-500/50 bg-background px-2.5 py-1.5 text-xs text-foreground"
+            />
+          )}
         </>
       ) : (
         <>
-          <h4 className="text-sm font-medium text-foreground">{extrait.titre}</h4>
+          <h4 className="text-sm font-medium text-foreground flex items-start gap-1.5">
+            {verrouille && accepte && (
+              <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-700 dark:text-emerald-400" />
+            )}
+            <span>{extrait.titre}</span>
+          </h4>
           {extrait.detail && <p className="text-xs text-muted-foreground leading-relaxed">{extrait.detail}</p>}
         </>
       )}
@@ -504,21 +630,57 @@ const ExtraitCard: React.FC<{
         </blockquote>
       )}
 
+      {showHistorique && (
+        <div className="rounded-xl border border-border bg-muted/30 p-2.5 space-y-2">
+          <div className="text-[11px] font-medium text-foreground">Historique des versions</div>
+          {versions.length === 0 ? (
+            <p className="text-[11px] text-muted-foreground">Aucune correction depuis la validation.</p>
+          ) : (
+            versions.map((v) => (
+              <div key={v.id} className="text-[11px] text-muted-foreground border-l-2 border-border pl-2">
+                <div className="text-foreground">{v.titre}</div>
+                {v.detail && <div>{v.detail}</div>}
+                <div className="mt-0.5">
+                  {new Date(v.created_at).toLocaleString('fr-FR')}
+                  {v.motif ? ` · ${v.motif}` : ''}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {canEdit && (
-        <div className="flex items-center gap-1.5 pt-0.5">
+        <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
           {editing ? (
             <>
               <button
                 onClick={saveEdit}
-                className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-600 text-white flex items-center gap-1"
+                disabled={reviser.isPending}
+                className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-600 text-white flex items-center gap-1 disabled:opacity-60"
               >
-                <Check className="w-3 h-3" /> Enregistrer
+                <Check className="w-3 h-3" /> {verrouille ? 'Enregistrer la correction' : 'Enregistrer'}
               </button>
               <button
                 onClick={() => setEditing(false)}
                 className="text-[11px] px-2.5 py-1 rounded-full border border-border"
               >
                 Annuler
+              </button>
+            </>
+          ) : verrouille ? (
+            <>
+              <button
+                onClick={openEdit}
+                className="text-[11px] px-2.5 py-1 rounded-full border border-border flex items-center gap-1"
+              >
+                <Pencil className="w-3 h-3" /> Corriger
+              </button>
+              <button
+                onClick={() => setShowHistorique((v) => !v)}
+                className="text-[11px] px-2.5 py-1 rounded-full border border-border text-muted-foreground flex items-center gap-1"
+              >
+                <History className="w-3 h-3" /> Historique
               </button>
             </>
           ) : (
@@ -530,10 +692,10 @@ const ExtraitCard: React.FC<{
                   accepte ? 'bg-emerald-600/20 text-emerald-700 dark:text-emerald-400' : 'bg-emerald-600 text-white'
                 }`}
               >
-                <Check className="w-3 h-3" /> {accepte ? 'Validée' : 'Accepter'}
+                <Check className="w-3 h-3" /> {accepte ? 'Acceptée' : 'Accepter'}
               </button>
               <button
-                onClick={() => setEditing(true)}
+                onClick={openEdit}
                 className="text-[11px] px-2.5 py-1 rounded-full border border-border flex items-center gap-1"
               >
                 <Pencil className="w-3 h-3" /> Ajuster
@@ -549,5 +711,107 @@ const ExtraitCard: React.FC<{
         </div>
       )}
     </article>
+  );
+};
+
+/* ── Validation de l'entretien ──────────────────────────────────────────── */
+
+const ValidationDialog: React.FC<{
+  entretien: Entretien;
+  extraits: EntretienExtrait[];
+  aValider: number;
+  isPending: boolean;
+  onCancel: () => void;
+  onConfirm: (validatedWith: string, tenuLe: string | null) => void;
+}> = ({ entretien, extraits, aValider, isPending, onCancel, onConfirm }) => {
+  const [avec, setAvec] = useState(entretien.validated_with ?? '');
+  const [tenuLe, setTenuLe] = useState(entretien.tenu_le ?? '');
+
+  const acceptes = extraits.filter((e) => e.statut === 'accepte');
+  const lignesRouges = acceptes.filter((e) => e.registre === 'ligne_rouge');
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={onCancel}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full sm:max-w-lg max-h-[90vh] overflow-auto rounded-t-3xl sm:rounded-3xl border border-border bg-card p-5 space-y-4"
+      >
+        <h3 className="text-lg font-serif italic text-foreground flex items-center gap-2">
+          <BadgeCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+          Valider l'entretien
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          Ces points entreront dans la base de connaissance du jardin et seront verrouillés.
+          Ils guideront l'IA de Jardin, le Tour de jardin et vos trois premiers gestes.
+        </p>
+
+        {aValider > 0 && (
+          <p className="text-xs text-amber-600 border border-amber-500/40 bg-amber-500/10 rounded-xl p-2.5">
+            Il reste {aValider} carte{aValider > 1 ? 's' : ''} à accepter ou à écarter avant de pouvoir valider.
+          </p>
+        )}
+
+        <ul className="text-xs text-muted-foreground space-y-1">
+          {REGISTRES.map((r) => {
+            const n = acceptes.filter((e) => e.registre === r).length;
+            if (n === 0) return null;
+            return (
+              <li key={r}>
+                <span className="text-foreground">{REGISTRE_LABELS[r]}</span> · {n}
+              </li>
+            );
+          })}
+        </ul>
+
+        {lignesRouges.length > 0 && (
+          <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 space-y-1">
+            <div className="text-xs font-medium text-destructive flex items-center gap-1.5">
+              <ShieldAlert className="w-3.5 h-3.5" /> Ce que nous ne proposerons jamais
+            </div>
+            {lignesRouges.map((l) => (
+              <div key={l.id} className="text-xs text-foreground">• {l.titre}</div>
+            ))}
+          </div>
+        )}
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-xs text-muted-foreground space-y-1">
+            Relu avec
+            <input
+              value={avec}
+              onChange={(e) => setAvec(e.target.value)}
+              placeholder="Prénom de la personne"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+            />
+          </label>
+          <label className="text-xs text-muted-foreground space-y-1">
+            Date de l'entretien
+            <input
+              type="date"
+              value={tenuLe}
+              onChange={(e) => setTenuLe(e.target.value)}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+            />
+          </label>
+        </div>
+
+        <div className="flex gap-2 justify-end">
+          <button onClick={onCancel} className="text-xs px-3 py-1.5 rounded-full border border-border hover:bg-muted">
+            Annuler
+          </button>
+          <button
+            onClick={() => onConfirm(avec, tenuLe || null)}
+            disabled={isPending || aValider > 0 || acceptes.length === 0}
+            className="text-xs px-3 py-1.5 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white flex items-center gap-1.5 disabled:opacity-50"
+          >
+            {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lock className="w-3.5 h-3.5" />}
+            Valider et verrouiller
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };

@@ -7482,6 +7482,60 @@ export type Database = {
           },
         ]
       }
+      propriete_entretien_extrait_versions: {
+        Row: {
+          created_at: string
+          detail: string | null
+          entretien_id: string
+          extrait_id: string
+          id: string
+          motif: string | null
+          revised_by: string | null
+          statut: string
+          titre: string
+          verbatim: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          entretien_id: string
+          extrait_id: string
+          id?: string
+          motif?: string | null
+          revised_by?: string | null
+          statut: string
+          titre: string
+          verbatim?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          entretien_id?: string
+          extrait_id?: string
+          id?: string
+          motif?: string | null
+          revised_by?: string | null
+          statut?: string
+          titre?: string
+          verbatim?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propriete_entretien_extrait_versions_entretien_id_fkey"
+            columns: ["entretien_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_entretiens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propriete_entretien_extrait_versions_extrait_id_fkey"
+            columns: ["extrait_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_entretien_extraits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propriete_entretien_extraits: {
         Row: {
           cible: string | null
@@ -7547,12 +7601,17 @@ export type Database = {
           harvested_at: string | null
           id: string
           propriete_id: string
+          reopened_at: string | null
+          reopened_by: string | null
           source: string
           statut: string
           tenu_le: string | null
           titre: string
           transcript: string | null
           updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+          validated_with: string | null
         }
         Insert: {
           consentement?: boolean
@@ -7562,12 +7621,17 @@ export type Database = {
           harvested_at?: string | null
           id?: string
           propriete_id: string
+          reopened_at?: string | null
+          reopened_by?: string | null
           source?: string
           statut?: string
           tenu_le?: string | null
           titre?: string
           transcript?: string | null
           updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validated_with?: string | null
         }
         Update: {
           consentement?: boolean
@@ -7577,12 +7641,17 @@ export type Database = {
           harvested_at?: string | null
           id?: string
           propriete_id?: string
+          reopened_at?: string | null
+          reopened_by?: string | null
           source?: string
           statut?: string
           tenu_le?: string | null
           titre?: string
           transcript?: string | null
           updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validated_with?: string | null
         }
         Relationships: [
           {
@@ -10854,6 +10923,22 @@ export type Database = {
           role: string
         }[]
       }
+      get_propriete_connaissance: {
+        Args: { _propriete_id: string }
+        Returns: {
+          detail: string
+          entretien_id: string
+          entretien_titre: string
+          id: string
+          minutage: string
+          ordre: number
+          registre: string
+          titre: string
+          validated_at: string
+          validated_with: string
+          verbatim: string
+        }[]
+      }
       get_propriete_gallery: {
         Args: { _propriete_id: string }
         Returns: {
@@ -11421,8 +11506,21 @@ export type Database = {
         Args: { p_marche_id?: string; p_name: string }
         Returns: string
       }
+      reviser_extrait: {
+        Args: {
+          _detail: string
+          _extrait_id: string
+          _motif: string
+          _titre: string
+        }
+        Returns: undefined
+      }
       roadmap_week_is_public: { Args: { _week_id: string }; Returns: boolean }
       round_coord: { Args: { _v: number }; Returns: number }
+      rouvrir_entretien: {
+        Args: { _entretien_id: string; _motif?: string }
+        Returns: undefined
+      }
       save_propriete_onboarding: {
         Args: { _patch: Json; _propriete_id: string }
         Returns: Json
@@ -11861,6 +11959,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      valider_entretien: {
+        Args: {
+          _entretien_id: string
+          _tenu_le?: string
+          _validated_with?: string
+        }
+        Returns: Json
       }
     }
     Enums: {

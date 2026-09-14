@@ -66,10 +66,22 @@ serve(async (req) => {
       ]);
 
     // Ressources citables : l'IA ne peut lier que ce qui existe réellement.
-    const [zonesRes, capteursRes] = await Promise.all([
+    const [zonesRes, capteursRes, connaissanceRes] = await Promise.all([
       supabase.from("propriete_zones").select("id, nom").eq("propriete_id", proprieteId).limit(40),
       supabase.from("iot_capteurs").select("id, nom").eq("propriete_id", proprieteId).limit(40),
+      // Base de connaissance : uniquement les points d'un entretien VALIDÉ.
+      supabase.rpc("get_propriete_connaissance", { _propriete_id: proprieteId }),
     ]);
+
+    type Acquis = { registre: string; titre: string; detail: string | null; verbatim: string | null };
+    const connaissance: Acquis[] = (connaissanceRes.data as Acquis[] | null) ?? [];
+    const parRegistre = (r: string) =>
+      connaissance
+        .filter((c) => c.registre === r)
+        .map((c) => (c.detail ? `${c.titre} — ${c.detail}` : c.titre));
+    const lignesRouges = connaissance
+      .filter((c) => c.registre === "ligne_rouge")
+      .map((c) => (c.verbatim ? `${c.titre} (« ${c.verbatim} »)` : c.titre));
 
     const bio = (bioRes.data as any) ?? {};
     const mois = moisDemande ?? new Date().getMonth() + 1;
@@ -90,6 +102,15 @@ serve(async (req) => {
       paletteRenseignee: (paletteRes.data ?? []).length > 0,
       chantiers: chantiersRes.data ?? [],
       consultations: consultRes.data ?? [],
+      entretien: connaissance.length
+        ? {
+            lignes_rouges: lignesRouges,
+            faits_du_lieu: parRegistre("fait"),
+            gestes_et_pratiques: parRegistre("geste"),
+            cap_et_intentions: parRegistre("cap"),
+            comment_accompagner: parRegistre("portrait"),
+          }
+        : null,
       ressourcesCitables: {
         secteurs: (zonesRes.data ?? []).map((z: any) => z.nom).filter(Boolean),
         prelevements: Array.isArray((solRes.data as any)?.samples)
@@ -116,7 +137,15 @@ RÈGLES ABSOLUES
 - Répartis les actions entre les trois intentions : observer, biodiversite, resilience.
 - Espèces : nom français d'abord, nom scientifique entre parenthèses en italique. Si le nom français est inconnu, écris seulement le nom scientifique.
 - Choisis un schéma pédagogique (schema_key) uniquement quand il éclaire vraiment l'action, sinon laisse vide.
-- Quand une action cite une espèce, un prélèvement de sol, un secteur, un ouvrage ou une sonde présents dans le contexte (voir `ressourcesCitables`), reporte-la dans le tableau `refs` de l'action : { kind, label } où `label` est le texte EXACT tel qu'il apparaît dans le titre ou le détail. Ne référence jamais un élément absent du contexte.`;
+- Quand une action cite une espèce, un prélèvement de sol, un secteur, un ouvrage ou une sonde présents dans le contexte (voir \`ressourcesCitables\`), reporte-la dans le tableau \`refs\` de l'action : { kind, label } où \`label\` est le texte EXACT tel qu'il apparaît dans le titre ou le détail. Ne référence jamais un élément absent du contexte.`
+      + (connaissance.length
+        ? `
+
+ENTRETIEN FONDATEUR VALIDÉ AVEC LA PROPRIÉTAIRE (voir \`entretien\` dans le contexte)
+${lignesRouges.length ? `- INTERDICTION ABSOLUE : ne propose aucune action contraire à ces lignes rouges :\n${lignesRouges.map((l) => `  · ${l}`).join("\n")}\n  Une action qui les contredit, même partiellement, est un échec.` : ""}
+- Appuie-toi sur les faits du lieu et les gestes déjà pratiqués : ne fais pas redécouvrir ce qui est déjà su.
+- Oriente au moins deux actions vers le cap exprimé par la propriétaire.`
+        : "");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -287,10 +316,57 @@ RÈGLES ABSOLUES
       source: "ia",
     }));
 
-    const { error: actErr } = await supabase.from("propriete_tour_actions").insert(rows);
+    /* ── Garde-fou lexical : dernière barrière avant écriture ──────────────
+     * Une action est écartée quand elle réunit, dans son texte, un geste
+     * interdit (couper, bétonner…) nommé par une ligne rouge ET un objet cité
+     * par cette même ligne rouge. Filet de sécurité, pas garantie sémantique :
+     * la règle donnée au modèle reste la protection principale.               */
+    const norm = (s: string) =>
+      s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const GESTES_INTERDITS = [
+      "coupe", "couper", "abatt", "arrach", "dessouch", "beton", "maconn", "dalle",
+      "tond", "desherb", "pesticid", "herbicid", "laboure", "taille", "tailler",
+      "brul", "creuse", "terrass", "goudron", "bitum",
+    ];
+    const rougesNorm = lignesRouges.map((l) => {
+      const n = norm(l);
+      return {
+        texte: l,
+        gestes: GESTES_INTERDITS.filter((g) => n.includes(g)),
+        objets: n
+          .replace(/[^a-z0-9\s]/g, " ")
+          .split(/\s+/)
+          .filter((w) => w.length >= 5 && !GESTES_INTERDITS.some((g) => w.includes(g))),
+      };
+    });
+
+    const contredit = (texte: string) => {
+      const n = norm(texte);
+      return rougesNorm.some(
+        (r) =>
+          r.gestes.length > 0 &&
+          r.gestes.some((g) => n.includes(g)) &&
+          r.objets.some((o) => n.includes(o)),
+      );
+    };
+
+    const retenues = rows.filter((r: any) => !contredit(`${r.titre} ${r.detail ?? ""}`));
+    const ecartees = rows.length - retenues.length;
+    if (ecartees > 0) console.warn(`Tour ${targetTourId}: ${ecartees} action(s) écartée(s) (lignes rouges)`);
+    if (retenues.length === 0) {
+      return json({ error: "Toutes les actions proposées heurtaient vos lignes rouges. Réessayez." }, 502);
+    }
+    retenues.forEach((r: any, i: number) => { r.order_index = (last?.[0]?.order_index ?? -1) + 1 + i; });
+
+    const { error: actErr } = await supabase.from("propriete_tour_actions").insert(retenues);
     if (actErr) return json({ error: actErr.message }, 400);
 
-    return json({ tourId: targetTourId, actionsAdded: rows.length });
+    return json({
+      tourId: targetTourId,
+      actionsAdded: retenues.length,
+      actionsEcartees: ecartees,
+      lignesRouges: lignesRouges.length,
+    });
   } catch (e) {
     console.error("propriete-tour-suggest error:", e);
     return json({ error: (e as Error).message || "Erreur inattendue" }, 500);
