@@ -90,9 +90,20 @@ const repairSingleLineTable = (line: string): string[] | null => {
  *   ligne, potentiellement incomplète, est alors laissée intacte.
  */
 export function repairChatMarkdown(content: string, streaming = false): string {
-  if (!content || !content.includes('|')) return content;
+  if (!content) return content;
 
-  const lines = content.split('\n');
+  // Certains modèles écrivent les grandes étapes sous la forme « 1. **Titre** »
+  // sans syntaxe de titre, voire à la fin du paragraphe précédent. Ce motif
+  // volontairement strict évite de transformer une simple liste numérotée.
+  const withReadableSections = content
+    .replace(/([^\n])\s+(\d{1,2}\.\s+\*\*[^*\n]{3,70}\*\*)/g, '$1\n\n## $2')
+    .replace(/^(\d{1,2}\.\s+\*\*[^*\n]{3,70}\*\*)\s*$/gm, '## $1')
+    .replace(/([^\n])\n(#{1,3}\s+)/g, '$1\n\n$2')
+    .replace(/(#{1,3}\s+[^\n]+)\n(?!\n)/g, '$1\n\n');
+
+  if (!withReadableSections.includes('|')) return withReadableSections;
+
+  const lines = withReadableSections.split('\n');
   const out: string[] = [];
   let i = 0;
 
