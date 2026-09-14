@@ -316,10 +316,57 @@ ${lignesRouges.length ? `- INTERDICTION ABSOLUE : ne propose aucune action contr
       source: "ia",
     }));
 
-    const { error: actErr } = await supabase.from("propriete_tour_actions").insert(rows);
+    /* ── Garde-fou lexical : dernière barrière avant écriture ──────────────
+     * Une action est écartée quand elle réunit, dans son texte, un geste
+     * interdit (couper, bétonner…) nommé par une ligne rouge ET un objet cité
+     * par cette même ligne rouge. Filet de sécurité, pas garantie sémantique :
+     * la règle donnée au modèle reste la protection principale.               */
+    const norm = (s: string) =>
+      s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const GESTES_INTERDITS = [
+      "coupe", "couper", "abatt", "arrach", "dessouch", "beton", "maconn", "dalle",
+      "tond", "desherb", "pesticid", "herbicid", "laboure", "taille", "tailler",
+      "brul", "creuse", "terrass", "goudron", "bitum",
+    ];
+    const rougesNorm = lignesRouges.map((l) => {
+      const n = norm(l);
+      return {
+        texte: l,
+        gestes: GESTES_INTERDITS.filter((g) => n.includes(g)),
+        objets: n
+          .replace(/[^a-z0-9\s]/g, " ")
+          .split(/\s+/)
+          .filter((w) => w.length >= 5 && !GESTES_INTERDITS.some((g) => w.includes(g))),
+      };
+    });
+
+    const contredit = (texte: string) => {
+      const n = norm(texte);
+      return rougesNorm.some(
+        (r) =>
+          r.gestes.length > 0 &&
+          r.gestes.some((g) => n.includes(g)) &&
+          r.objets.some((o) => n.includes(o)),
+      );
+    };
+
+    const retenues = rows.filter((r: any) => !contredit(`${r.titre} ${r.detail ?? ""}`));
+    const ecartees = rows.length - retenues.length;
+    if (ecartees > 0) console.warn(`Tour ${targetTourId}: ${ecartees} action(s) écartée(s) (lignes rouges)`);
+    if (retenues.length === 0) {
+      return json({ error: "Toutes les actions proposées heurtaient vos lignes rouges. Réessayez." }, 502);
+    }
+    retenues.forEach((r: any, i: number) => { r.order_index = (last?.[0]?.order_index ?? -1) + 1 + i; });
+
+    const { error: actErr } = await supabase.from("propriete_tour_actions").insert(retenues);
     if (actErr) return json({ error: actErr.message }, 400);
 
-    return json({ tourId: targetTourId, actionsAdded: rows.length });
+    return json({
+      tourId: targetTourId,
+      actionsAdded: retenues.length,
+      actionsEcartees: ecartees,
+      lignesRouges: lignesRouges.length,
+    });
   } catch (e) {
     console.error("propriete-tour-suggest error:", e);
     return json({ error: (e as Error).message || "Erreur inattendue" }, 500);
