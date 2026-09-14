@@ -1,17 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Mic, Loader2, Sparkles, Check, X, Pencil, Trash2, Plus, Quote, ShieldAlert, Clock,
-  Upload, FileText,
+  Upload, FileText, Lock, History, RotateCcw, BadgeCheck,
 } from 'lucide-react';
 import { useDocumentExtractor } from '@/hooks/useDocumentExtractor';
 import { toast } from 'sonner';
 import {
-  REGISTRES, REGISTRE_LABELS, REGISTRE_HINTS,
+  REGISTRES, REGISTRE_LABELS, REGISTRE_HINTS, isEntretienVerrouille,
   useProprieteEntretiens, useEntretienExtraits, useCreateEntretien, useDeleteEntretien,
   useHarvestEntretien, useUpdateExtrait,
+  useValiderEntretien, useRouvrirEntretien, useReviserExtrait, useExtraitVersions,
   type Entretien, type EntretienExtrait, type Registre,
 } from '@/hooks/propriete/useProprieteEntretiens';
 import { useCanEditIntention } from '@/hooks/propriete/usePropertyIntention';
+import { ConnaissanceJardinCard } from './ConnaissanceJardinCard';
 
 /**
  * L'Entretien fondateur — l'interview d'initialisation devient un objet vivant
