@@ -66,10 +66,22 @@ serve(async (req) => {
       ]);
 
     // Ressources citables : l'IA ne peut lier que ce qui existe réellement.
-    const [zonesRes, capteursRes] = await Promise.all([
+    const [zonesRes, capteursRes, connaissanceRes] = await Promise.all([
       supabase.from("propriete_zones").select("id, nom").eq("propriete_id", proprieteId).limit(40),
       supabase.from("iot_capteurs").select("id, nom").eq("propriete_id", proprieteId).limit(40),
+      // Base de connaissance : uniquement les points d'un entretien VALIDÉ.
+      supabase.rpc("get_propriete_connaissance", { _propriete_id: proprieteId }),
     ]);
+
+    type Acquis = { registre: string; titre: string; detail: string | null; verbatim: string | null };
+    const connaissance: Acquis[] = (connaissanceRes.data as Acquis[] | null) ?? [];
+    const parRegistre = (r: string) =>
+      connaissance
+        .filter((c) => c.registre === r)
+        .map((c) => (c.detail ? `${c.titre} — ${c.detail}` : c.titre));
+    const lignesRouges = connaissance
+      .filter((c) => c.registre === "ligne_rouge")
+      .map((c) => (c.verbatim ? `${c.titre} (« ${c.verbatim} »)` : c.titre));
 
     const bio = (bioRes.data as any) ?? {};
     const mois = moisDemande ?? new Date().getMonth() + 1;
