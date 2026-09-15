@@ -179,24 +179,43 @@ export const IntentionQuestionEditor: React.FC<Props> = ({
               {[
                 { id: question.surface.totalId, label: 'Surface totale' },
                 { id: question.surface.freeId, label: 'Surface encore disponible' },
-              ].map((row) => (
-                <div key={row.id} className="rounded-2xl border border-border/70 bg-card p-5">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-muted-foreground">{row.label}</span>
-                    <span className="text-2xl font-semibold text-foreground">
-                      {Number(draft[row.id] ?? 0)} <span className="text-sm font-normal">m²</span>
-                    </span>
+              ].map((row) => {
+                const current = Number(draft[row.id] ?? 0);
+                const commit = (raw: string) => {
+                  const parsed = Math.round(Number(raw.replace(/\s/g, '').replace(',', '.')));
+                  if (!raw.trim() || Number.isNaN(parsed)) return;
+                  const clamped = Math.max(0, Math.min(question.surface!.max, parsed));
+                  setDraft((d) => ({ ...d, [row.id]: clamped }));
+                };
+                return (
+                  <div key={row.id} className="rounded-2xl border border-border/70 bg-card p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-muted-foreground">{row.label}</span>
+                      <div className="flex items-baseline gap-1.5">
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          max={question.surface!.max}
+                          value={Number.isFinite(current) ? current : 0}
+                          onChange={(e) => commit(e.target.value)}
+                          aria-label={`${row.label} en mètres carrés`}
+                          className="h-11 w-28 rounded-xl border-border/70 bg-background text-right text-2xl font-semibold [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        />
+                        <span className="text-sm text-muted-foreground">m²</span>
+                      </div>
+                    </div>
+                    <Slider
+                      className="mt-4"
+                      min={0}
+                      max={question.surface!.max}
+                      step={10}
+                      value={[current]}
+                      onValueChange={([v]) => setDraft((d) => ({ ...d, [row.id]: v }))}
+                    />
                   </div>
-                  <Slider
-                    className="mt-4"
-                    min={0}
-                    max={question.surface!.max}
-                    step={10}
-                    value={[Number(draft[row.id] ?? 0)]}
-                    onValueChange={([v]) => setDraft((d) => ({ ...d, [row.id]: v }))}
-                  />
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
