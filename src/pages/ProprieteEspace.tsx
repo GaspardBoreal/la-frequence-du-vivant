@@ -421,6 +421,25 @@ const PropTabs: React.FC<{
   }, [openAtelier]);
 
 
+  // Filet de sécurité : si plus aucune fenêtre ni panneau n'est ouvert,
+  // on relâche tout verrou de défilement résiduel (page figée).
+  React.useEffect(() => {
+    const release = () => {
+      if (document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) return;
+      const b = document.body;
+      if (b.style.overflow === 'hidden') b.style.overflow = '';
+      if (b.style.pointerEvents === 'none') b.style.pointerEvents = '';
+      if (b.hasAttribute('data-scroll-locked')) b.removeAttribute('data-scroll-locked');
+    };
+    const obs = new MutationObserver(() => window.setTimeout(release, 120));
+    obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-state', 'style'] });
+    const id = window.setInterval(release, 1000);
+    return () => {
+      obs.disconnect();
+      window.clearInterval(id);
+    };
+  }, []);
+
   const closeAtelier = React.useCallback(() => {
     setAtelierOpen(false);
     setAtelierIntent(null);
