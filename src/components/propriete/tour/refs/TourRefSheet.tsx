@@ -34,15 +34,17 @@ export const TourRefSheet: React.FC = () => {
     if (sample) openSampleCore(sample.id, index.samples, index.proprieteId);
   }, [open, ref, index]);
 
-  if (!ref || ref.kind === 'sample') return null;
+  // On garde toujours le Sheet monté : le démonter alors qu'il est ouvert
+  // laisserait le verrou de défilement en place et figerait toute la page.
+  const isOpen = open && !!ref && ref.kind !== 'sample';
 
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && closeTourRef()}>
+    <Sheet open={isOpen} onOpenChange={(v) => !v && closeTourRef()}>
       <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl">
         <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-muted-foreground/30" />
         <SheetHeader className="text-left">
           <SheetTitle className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            {TITLES[ref.kind]}
+            {ref && ref.kind !== 'sample' ? TITLES[ref.kind] : ''}
           </SheetTitle>
         </SheetHeader>
         <div className="pb-6 pt-3">
