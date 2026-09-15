@@ -164,10 +164,11 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
             exit={{ y: 16, opacity: 0, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
+            style={{ maxHeight: 'min(88dvh, 88%)', paddingBottom: 'env(safe-area-inset-bottom)' }}
             className="w-full sm:max-w-lg max-h-[88%] flex flex-col rounded-t-2xl sm:rounded-2xl border border-border bg-card shadow-2xl overflow-hidden"
           >
             {/* En-tête + jauge */}
-            <div className="shrink-0 border-b border-border bg-gradient-to-b from-primary/10 to-transparent px-4 pt-3.5 pb-3">
+            <div className="shrink-0 max-h-[45dvh] overflow-y-auto overscroll-contain border-b border-border bg-gradient-to-b from-primary/10 to-transparent px-4 pt-3.5 pb-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
@@ -294,7 +295,10 @@ export const ContextConsole: React.FC<ContextConsoleProps> = ({
             </div>
 
             {/* Liste des contextes */}
-            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+            <div
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-3 py-3 space-y-4"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
               {groups.map(([group, items]) => {
                 const groupActive = items.filter((p) => activeSet.has(contextSliceKey(p.id))).length;
                 return (

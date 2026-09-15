@@ -107,6 +107,13 @@ export function ChatBot({
   const [input, setInput] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
+  /** Menu 📎 contrôlé : il doit se refermer avant d'ouvrir une surface,
+   *  sinon le verrou de défilement de Radix bloque le tactile sur iPhone. */
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const closeMenuThen = (fn: () => void) => {
+    setAttachMenuOpen(false);
+    setTimeout(fn, 60);
+  };
 
   const [voiceMode, setVoiceMode] = useState(false);
   const [interruptBanner, setInterruptBanner] = useState(false);
@@ -862,7 +869,7 @@ export function ChatBot({
                     <div className="flex items-center gap-2">
                       {!isLoading && (
                         speciesPoolAvailable || hasContextConsole ? (
-                          <DropdownMenu>
+                          <DropdownMenu open={attachMenuOpen} onOpenChange={setAttachMenuOpen}>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 size="icon"
@@ -880,12 +887,12 @@ export function ChatBot({
                                 Joindre à la conversation
                               </DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); openFilePicker(); }}>
+                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); closeMenuThen(openFilePicker); }}>
                                 <FileText className="h-4 w-4 mr-2" />
                                 <span className="flex-1">Un document (PDF, TXT, CSV, MD)</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onSelect={(e) => { e.preventDefault(); openImagePicker(); }}
+                                onSelect={(e) => { e.preventDefault(); closeMenuThen(openImagePicker); }}
                                 disabled={imageProcessing || !!attachedImage}
                               >
                                 <ImageIcon className="h-4 w-4 mr-2 text-emerald-400" />
@@ -894,7 +901,7 @@ export function ChatBot({
                               </DropdownMenuItem>
                               {hasContextConsole && (
                                 <DropdownMenuItem
-                                  onSelect={(e) => { e.preventDefault(); setConsoleOpen(true); }}
+                                  onSelect={(e) => { e.preventDefault(); closeMenuThen(() => setConsoleOpen(true)); }}
                                 >
                                   <Gauge className="h-4 w-4 mr-2 text-primary" />
                                   <span className="flex-1">Console de contextes</span>
@@ -907,7 +914,7 @@ export function ChatBot({
                               )}
                               {speciesPoolAvailable && (
                                 <DropdownMenuItem
-                                  onSelect={(e) => { e.preventDefault(); attachSpeciesPool(); }}
+                                  onSelect={(e) => { e.preventDefault(); closeMenuThen(attachSpeciesPool); }}
                                   disabled={speciesPoolAttached}
                                 >
                                   <Leaf className="h-4 w-4 mr-2 text-secondary" />
@@ -918,7 +925,7 @@ export function ChatBot({
                             </DropdownMenuContent>
                           </DropdownMenu>
                         ) : (
-                          <DropdownMenu>
+                          <DropdownMenu open={attachMenuOpen} onOpenChange={setAttachMenuOpen}>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 size="icon"
@@ -936,12 +943,12 @@ export function ChatBot({
                                 Joindre à la conversation
                               </DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); openFilePicker(); }}>
+                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); closeMenuThen(openFilePicker); }}>
                                 <FileText className="h-4 w-4 mr-2" />
                                 <span className="flex-1">Un document (PDF, TXT, CSV, MD)</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onSelect={(e) => { e.preventDefault(); openImagePicker(); }}
+                                onSelect={(e) => { e.preventDefault(); closeMenuThen(openImagePicker); }}
                                 disabled={imageProcessing || !!attachedImage}
                               >
                                 <ImageIcon className="h-4 w-4 mr-2 text-emerald-400" />
