@@ -1,6 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { lockBodyScroll } from '@/lib/uiOverlayLevel';
 
 interface Props {
   photos: string[];
@@ -36,11 +37,10 @@ export const SpeciesPhotoViewer: React.FC<Props> = ({ photos, index, alt, onInde
       else if (e.key === 'ArrowLeft') go(-1);
     };
     document.addEventListener('keydown', onKey, true);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const release = lockBodyScroll();
     return () => {
       document.removeEventListener('keydown', onKey, true);
-      document.body.style.overflow = prev;
+      release();
     };
   }, [go, onClose]);
 
