@@ -15,7 +15,7 @@ interface Props {
   values: Record<string, AnswerValue | undefined>;
   saving?: boolean;
   onClose: () => void;
-  onSave: (patch: Record<string, AnswerValue | null>) => void;
+  onSave: (patch: Record<string, AnswerValue | null>) => void | Promise<void>;
 }
 
 const asArray = (v: AnswerValue | undefined): string[] =>
@@ -52,12 +52,15 @@ export const IntentionQuestionEditor: React.FC<Props> = ({
   }, [question, values]);
 
   const [draft, setDraft] = useState<Record<string, AnswerValue | null>>(initial);
+  /** Motif d'échec (refus de la base ou précision manquante), affiché sous le bouton. */
+  const [failure, setFailure] = useState<string | null>(null);
   /** Empreinte de l'écran ouvert : question + valeurs relues en base. */
   const stamp = question ? `${question.id}|${JSON.stringify(initial)}` : null;
   const [lastStamp, setLastStamp] = useState<string | null>(null);
   if (question && lastStamp !== stamp) {
     setLastStamp(stamp);
     setDraft(initial);
+    setFailure(null);
   }
 
 
