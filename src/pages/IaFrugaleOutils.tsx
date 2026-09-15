@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { ExternalLink, Gauge, Leaf } from 'lucide-react';
+import { ArrowRight, ExternalLink, Gauge, Leaf } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { OUTILS, CAS_LABEL } from '@/content/iaFrugale/casUsage';
 import {
   CONSTANTES_CODECARBON,
@@ -229,6 +230,13 @@ const IaFrugaleOutils: React.FC = () => {
             matériel mobilisé, et le nombre de fois où l'on relance. Le pays où tourne la machine
             arrive ensuite — puissant, mais rarement décidé par celui qui écrit le code.
           </p>
+          <Link
+            to="/innovation-robot"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-foreground underline decoration-dotted underline-offset-4"
+          >
+            Appliquer cette rigueur aux capteurs et robots de terrain
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
         </div>
       </footer>
 
