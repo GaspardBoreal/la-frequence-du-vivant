@@ -1,23 +1,23 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Pencil, Trash2, Check, X, Eye, Sprout, ShieldCheck, Star } from 'lucide-react';
+import { Check, Clock3, Eye, GripVertical, MoreHorizontal, Pencil, Sprout, ShieldCheck, Star, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { GardenSchema, SCHEMA_KEYS, SCHEMA_LABELS, type SchemaKey } from './GardenSchema';
-import { TOUR_VOLETS, type TourAction, type TourVolet } from '@/hooks/propriete/useProprieteTours';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { GardenSchema } from './GardenSchema';
+import { type TourAction, type TourVolet } from '@/hooks/propriete/useProprieteTours';
 import { linkifyTourText } from './refs/linkifyTourText';
 import { useTourRefIndex } from './refs/useTourRefIndex';
 import type { TourRef } from './refs/types';
+import TourActionEditorSheet from './TourActionEditorSheet';
+import { cn } from '@/lib/utils';
 
 const VOLET_ICON: Record<TourVolet, React.ReactNode> = {
   observer: <Eye className="h-3.5 w-3.5" />,
@@ -45,66 +45,34 @@ export const TourActionRow: React.FC<Props> = ({ action, readOnly, onUpdate, onR
     id: action.id,
   });
   const [editing, setEditing] = React.useState(false);
-  const [draft, setDraft] = React.useState({
-    titre: action.titre,
-    detail: action.detail ?? '',
-    volet: action.volet,
-    moment: action.moment ?? '',
-    schema_key: action.schema_key ?? '',
-    difficulte: action.difficulte,
-  });
-
-  React.useEffect(() => {
-    setDraft({
-      titre: action.titre,
-      detail: action.detail ?? '',
-      volet: action.volet,
-      moment: action.moment ?? '',
-      schema_key: action.schema_key ?? '',
-      difficulte: action.difficulte,
-    });
-  }, [action]);
-
-  const save = async () => {
-    await onUpdate(action.id, {
-      titre: draft.titre.trim() || action.titre,
-      detail: draft.detail.trim() || null,
-      volet: draft.volet,
-      moment: draft.moment.trim() || null,
-      schema_key: draft.schema_key || null,
-      difficulte: draft.difficulte,
-    });
-    setEditing(false);
-  };
 
   return (
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`rounded-lg border border-border bg-card p-3 ${isDragging ? 'opacity-70 shadow-lg' : ''}`}
+      className={cn(
+        'relative overflow-hidden rounded-lg border bg-card transition-shadow',
+        action.retenue ? 'border-primary/45 shadow-sm' : 'border-border',
+        isDragging && 'z-10 opacity-70 shadow-lg',
+      )}
     >
-      <div className="flex items-start gap-2.5">
+      <div className="flex min-h-12 items-center gap-1 border-b border-border/70 px-2 py-1.5">
         {!readOnly && (
           <button
             type="button"
-            className="mt-1 cursor-grab text-muted-foreground hover:text-foreground touch-none"
+            className="flex h-10 w-10 shrink-0 touch-none cursor-grab items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Réordonner l'action"
             {...attributes}
             {...listeners}
           >
-            <GripVertical className="h-4 w-4" />
+            <GripVertical className="h-5 w-5" />
           </button>
         )}
-
-        <Checkbox
-          checked={action.done}
-          disabled={readOnly}
-          aria-label="Action réalisée"
-          className="mt-1"
-          onCheckedChange={(v) =>
-            onUpdate(action.id, { done: !!v, done_at: v ? new Date().toISOString() : null })
-          }
-        />
+        <span className="inline-flex min-h-7 items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+          {VOLET_ICON[action.volet]}
+          {VOLET_LABEL[action.volet]}
+        </span>
+        <span className="flex-1" />
 
         {!readOnly && (
           <button
@@ -113,113 +81,90 @@ export const TourActionRow: React.FC<Props> = ({ action, readOnly, onUpdate, onR
             aria-label={action.retenue ? 'Retirer du carnet de terrain' : 'Emporter dans le carnet de terrain'}
             title={action.retenue ? 'Retirée du carnet' : 'À emporter sur le terrain'}
             onClick={() => onUpdate(action.id, { retenue: !action.retenue })}
-            className={`-mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-              action.retenue ? 'text-primary' : 'text-muted-foreground/50 hover:text-muted-foreground'
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              action.retenue ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
-            <Star className={`h-4 w-4 ${action.retenue ? 'fill-current' : ''}`} />
+            <Star className={`h-5 w-5 ${action.retenue ? 'fill-current' : ''}`} />
           </button>
         )}
-
-        <div className="flex-1 min-w-0">
-          {editing ? (
-            <div className="space-y-2">
-              <Input
-                value={draft.titre}
-                onChange={(e) => setDraft((d) => ({ ...d, titre: e.target.value }))}
-                placeholder="Titre de l'action"
-              />
-              <Textarea
-                value={draft.detail}
-                onChange={(e) => setDraft((d) => ({ ...d, detail: e.target.value }))}
-                placeholder="Comment faire, et pourquoi"
-                rows={3}
-              />
-              <div className="grid gap-2 sm:grid-cols-3">
-                <Select
-                  value={draft.volet}
-                  onValueChange={(v) => setDraft((d) => ({ ...d, volet: v as TourVolet }))}
-                >
-                  <SelectTrigger><SelectValue placeholder="Intention" /></SelectTrigger>
-                  <SelectContent className="bg-popover z-[100]">
-                    {TOUR_VOLETS.map((v) => (
-                      <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  value={draft.moment}
-                  onChange={(e) => setDraft((d) => ({ ...d, moment: e.target.value }))}
-                  placeholder="Moment (ex. matin frais)"
-                />
-                <Select
-                  value={draft.schema_key || 'none'}
-                  onValueChange={(v) => setDraft((d) => ({ ...d, schema_key: v === 'none' ? '' : v }))}
-                >
-                  <SelectTrigger><SelectValue placeholder="Schéma" /></SelectTrigger>
-                  <SelectContent className="bg-popover z-[100]">
-                    <SelectItem value="none">Aucun schéma</SelectItem>
-                    {SCHEMA_KEYS.map((k) => (
-                      <SelectItem key={k} value={k}>{SCHEMA_LABELS[k as SchemaKey]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={save}><Check className="h-3.5 w-3.5 mr-1" />Enregistrer</Button>
-                <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
-                  <X className="h-3.5 w-3.5 mr-1" />Annuler
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={`text-sm font-medium ${action.done ? 'line-through text-muted-foreground' : ''}`}>
-                  {linkifyTourText(action.titre, refIndex, explicitRefs)}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                  {VOLET_ICON[action.volet]}
-                  {VOLET_LABEL[action.volet]}
-                </span>
-                {action.moment && (
-                  <span className="text-[10px] text-muted-foreground">· {action.moment}</span>
-                )}
-              </div>
-              {action.detail && (
-                <p className="mt-1 text-sm text-muted-foreground whitespace-pre-line">{linkifyTourText(action.detail, refIndex, explicitRefs)}</p>
-              )}
-              <GardenSchema schemaKey={action.schema_key} className="mt-2" />
-              {action.done && !readOnly && (
-                <label className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                  Fait le
-                  <input
-                    type="date"
-                    value={action.done_at ? action.done_at.slice(0, 10) : ''}
-                    onChange={(e) =>
-                      onUpdate(action.id, {
-                        done_at: e.target.value ? new Date(`${e.target.value}T12:00:00`).toISOString() : null,
-                      })
-                    }
-                    className="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
-                </label>
-              )}
-            </>
-          )}
-        </div>
-
-        {!readOnly && !editing && (
-          <div className="flex shrink-0 gap-1">
-            <Button size="icon" variant="ghost" aria-label="Modifier" onClick={() => setEditing(true)}>
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-            <Button size="icon" variant="ghost" aria-label="Supprimer" onClick={() => onRemove(action.id)}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+        {!readOnly && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" aria-label="Actions sur cette fiche">
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem className="min-h-11 gap-2" onSelect={() => setEditing(true)}>
+                <Pencil className="h-4 w-4" /> Modifier
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="min-h-11 gap-2 text-destructive focus:text-destructive" onSelect={() => onRemove(action.id)}>
+                <Trash2 className="h-4 w-4" /> Supprimer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
+
+      <div className="px-4 py-4">
+        <h4 className={cn('text-base font-semibold leading-snug text-foreground', action.done && 'text-muted-foreground line-through')}>
+          {linkifyTourText(action.titre, refIndex, explicitRefs)}
+        </h4>
+        {action.moment && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <Clock3 className="h-3.5 w-3.5 text-primary" />
+            {action.moment}
+          </p>
+        )}
+        {action.detail && (
+          <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+            {linkifyTourText(action.detail, refIndex, explicitRefs)}
+          </p>
+        )}
+        <GardenSchema schemaKey={action.schema_key} className="mt-4 overflow-hidden rounded-lg border border-border/70 bg-muted/25 p-3 [&_svg]:mx-auto" />
+
+        {action.done && !readOnly && (
+          <label className="mt-4 flex min-h-11 flex-wrap items-center gap-2 rounded-md bg-muted/35 px-3 text-xs text-muted-foreground">
+            Réalisée le
+            <input
+              type="date"
+              value={action.done_at ? action.done_at.slice(0, 10) : ''}
+              onChange={(event) => onUpdate(action.id, {
+                done_at: event.target.value ? new Date(`${event.target.value}T12:00:00`).toISOString() : null,
+              })}
+              className="h-9 min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </label>
+        )}
+      </div>
+
+      <div className="flex min-h-12 items-center border-t border-border/70 bg-muted/20 px-3 py-1.5">
+        <label className={cn('flex min-h-10 cursor-pointer items-center gap-2.5 rounded-md px-1 text-sm font-medium', readOnly && 'cursor-default')}>
+          <Checkbox
+            checked={action.done}
+            disabled={readOnly}
+            aria-label="Action réalisée"
+            onCheckedChange={(value) => onUpdate(action.id, {
+              done: !!value,
+              done_at: value ? new Date().toISOString() : null,
+            })}
+          />
+          <span className={action.done ? 'text-primary' : 'text-muted-foreground'}>
+            {action.done ? <><Check className="mr-1 inline h-4 w-4" />Réalisée</> : 'À faire'}
+          </span>
+        </label>
+        {action.retenue && (
+          <span className="ml-auto inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+            <Star className="h-3.5 w-3.5 fill-current" /> Carnet
+          </span>
+        )}
+      </div>
+
+      {!readOnly && (
+        <TourActionEditorSheet action={action} open={editing} onOpenChange={setEditing} onSave={onUpdate} />
+      )}
     </li>
   );
 };
