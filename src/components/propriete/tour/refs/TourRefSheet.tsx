@@ -48,10 +48,10 @@ export const TourRefSheet: React.FC = () => {
           </SheetTitle>
         </SheetHeader>
         <div className="pb-6 pt-3">
-          {ref.kind === 'species' && <RefSpeciesPanel refItem={ref} index={index} />}
-          {ref.kind === 'zone' && <RefZonePanel refItem={ref} index={index} />}
-          {ref.kind === 'objet' && <RefObjetPanel refItem={ref} index={index} />}
-          {ref.kind === 'capteur' && <RefCapteurPanel refItem={ref} index={index} />}
+          {ref?.kind === 'species' && <RefSpeciesPanel refItem={ref} index={index} />}
+          {ref?.kind === 'zone' && <RefZonePanel refItem={ref} index={index} />}
+          {ref?.kind === 'objet' && <RefObjetPanel refItem={ref} index={index} />}
+          {ref?.kind === 'capteur' && <RefCapteurPanel refItem={ref} index={index} />}
         </div>
       </SheetContent>
     </Sheet>
