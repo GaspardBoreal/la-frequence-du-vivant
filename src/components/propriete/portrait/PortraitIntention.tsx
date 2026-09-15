@@ -117,24 +117,27 @@ export const PortraitIntention: React.FC<Props> = ({
   const objectif = questions.find((q) => q.id === 'objectif_6_mois');
   const objectifLabel = objectif ? readableAnswer(objectif, answers.objectif_6_mois, answers) : null;
 
-  const handleSave = (patch: Record<string, AnswerValue | null>) => {
-    save.mutate(
-      { answers: patch, version: DEFAULT_SEQUENCE.version },
-      {
-        onSuccess: () => {
-          toast.success('Intention mise à jour');
-          // Répondre au rêve doit remettre l'image en cohérence : si la famille
-          // choisie ne correspond plus au jardin-exemple, on rouvre la galerie.
-          const nextStyle = typeof patch.style === 'string' ? patch.style : null;
-          if (nextStyle && canEdit && intention?.gardenExample?.typeSlug !== nextStyle) {
-            setPickerSlug(nextStyle);
-            setPickerSignal((n) => n + 1);
-          }
-          setEditing(null);
-        },
-        onError: (e) => toast.error(e.message),
-      },
-    );
+  /**
+   * Le panneau ne se referme qu'une fois l'écriture confirmée par la base :
+   * en cas de refus, la saisie reste à l'écran avec le motif réel.
+   */
+  const handleSave = async (patch: Record<string, AnswerValue | null>) => {
+    try {
+      await save.mutateAsync({ answers: patch, version: DEFAULT_SEQUENCE.version });
+      toast.success('Intention mise à jour');
+      // Répondre au rêve doit remettre l'image en cohérence : si la famille
+      // choisie ne correspond plus au jardin-exemple, on rouvre la galerie.
+      const nextStyle = typeof patch.style === 'string' ? patch.style : null;
+      if (nextStyle && canEdit && intention?.gardenExample?.typeSlug !== nextStyle) {
+        setPickerSlug(nextStyle);
+        setPickerSignal((n) => n + 1);
+      }
+      setEditing(null);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Enregistrement impossible';
+      toast.error(message);
+      throw e instanceof Error ? e : new Error(message);
+    }
   };
 
   if (isLoading) {

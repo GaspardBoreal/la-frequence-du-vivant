@@ -199,15 +199,39 @@ export interface SaveIntentionInput {
   version?: number;
 }
 
+/** Traduction en français des refus de la base, pour ne jamais échouer en silence. */
+const humanSaveError = (raw: { message?: string; code?: string } | null): string => {
+  const msg = raw?.message ?? '';
+  const code = raw?.code ?? '';
+  if (code === '42501' || /non authentifi|accès refusé|permission denied/i.test(msg)) {
+    return "Enregistrement refusé : session expirée ou droits insuffisants sur ce jardin. Reconnectez-vous puis réessayez.";
+  }
+  if (code === 'P0002' || /introuvable/i.test(msg)) return 'Ce jardin est introuvable.';
+  if (/volumineuses/i.test(msg)) return 'Réponse trop longue pour être enregistrée.';
+  if (/Failed to fetch|NetworkError/i.test(msg)) return 'Réseau indisponible : votre réponse n’a pas été enregistrée.';
+  return msg || "Enregistrement impossible pour une raison inconnue.";
+};
+
 /** Appel typé de la RPC : elle renvoie l'objet `onboarding_preferences` complet. */
 const callSaveOnboarding = async (
   proprieteId: string,
   patch: Record<string, unknown>,
 ): Promise<PropertyIntention> => {
+  // Une session perdue se distingue d'un refus de droits : on le vérifie avant d'écrire.
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth?.user) {
+    throw new Error('Votre session a expiré. Reconnectez-vous, votre saisie est conservée.');
+  }
+
   const { data, error } = await (supabase as unknown as {
-    rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+    rpc: (fn: string, args: Record<string, unknown>) => Promise<{
+      data: unknown; error: { message: string; code?: string } | null;
+    }>;
   }).rpc('save_propriete_onboarding', { _propriete_id: proprieteId, _patch: patch });
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('[intention] écriture refusée', { proprieteId, patch, error });
+    throw new Error(humanSaveError(error));
+  }
   return normalize(data);
 };
 
