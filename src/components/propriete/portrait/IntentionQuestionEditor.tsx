@@ -223,9 +223,29 @@ export const IntentionQuestionEditor: React.FC<Props> = ({
           )}
         </div>
 
+        {failure && (
+          <p className="rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+            {failure}
+          </p>
+        )}
+
         <SheetFooter className="flex-row gap-2 sm:justify-between">
           <Button variant="ghost" onClick={onClose} disabled={saving}>Annuler</Button>
-          <Button onClick={() => onSave(draft)} disabled={saving || followUpMissing}>
+          <Button
+            onClick={async () => {
+              if (followUpMissing) {
+                setFailure(`Une phrase est attendue : ${followUp?.label ?? 'précisez votre réponse'}.`);
+                return;
+              }
+              setFailure(null);
+              try {
+                await onSave(draft);
+              } catch (e) {
+                setFailure(e instanceof Error ? e.message : "Enregistrement impossible.");
+              }
+            }}
+            disabled={saving}
+          >
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Enregistrer
           </Button>
