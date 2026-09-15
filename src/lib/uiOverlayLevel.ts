@@ -34,6 +34,30 @@ export function useFullscreenSurfaceOpen(): boolean {
   );
 }
 
+/**
+ * Verrou de défilement partagé : compteur unique pour toutes les surfaces
+ * faites main. Évite qu'une surface restaure une valeur d'`overflow` périmée
+ * et laisse la page figée.
+ */
+let scrollLocks = 0;
+let previousOverflow = '';
+
+export function lockBodyScroll(): () => void {
+  if (typeof document === 'undefined') return () => {};
+  if (scrollLocks === 0) {
+    previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+  scrollLocks += 1;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    scrollLocks = Math.max(0, scrollLocks - 1);
+    if (scrollLocks === 0) document.body.style.overflow = previousOverflow;
+  };
+}
+
 /** Niveaux de superposition du chatbot selon le contexte. */
 export const CHAT_Z = {
   base: 1200,
