@@ -107,6 +107,7 @@ const FrequenceJardinFiche = lazyWithRetry(() => import('./pages/FrequenceJardin
 const FrequenceJardinLogo = lazyWithRetry(() => import('./pages/FrequenceJardinLogo'));
 const EtudeDeSolPublique = lazyWithRetry(() => import('./pages/EtudeDeSolPublique'));
 const IaFrugaleOutils = lazyWithRetry(() => import('./pages/IaFrugaleOutils'));
+const InnovationRobot = lazyWithRetry(() => import('./pages/InnovationRobot'));
 const FrequenceJardinPilier = lazyWithRetry(() => import('./pages/FrequenceJardinPilier'));
 const FrequenceJardinDiagnostiquer = lazyWithRetry(() => import('./pages/FrequenceJardinDiagnostiquer'));
 const FrequenceJardinBioIndicatrices = lazyWithRetry(() => import('./pages/FrequenceJardinBioIndicatrices'));
@@ -416,6 +417,7 @@ function App() {
             <Route path="/roadmap/frequence-jardin/logo/:slug" element={<FrequenceJardinLogo />} />
             <Route path="/etude-de-sol" element={<EtudeDeSolPublique />} />
             <Route path="/ia-frugale/outils-de-mesure" element={<IaFrugaleOutils />} />
+            <Route path="/innovation-robot" element={<InnovationRobot />} />
 
             <Route path="/roadmap/:audience" element={<RoadmapPublic />} />
 

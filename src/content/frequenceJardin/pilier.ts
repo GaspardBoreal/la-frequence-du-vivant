@@ -30,6 +30,13 @@ export interface FjPageRef {
 /** Les pages satellites, maillées entre elles et depuis la vitrine. */
 export const FJ_PAGES: FjPageRef[] = [
   {
+    path: '/innovation-robot',
+    title: 'Robotique frugale : capteurs d’abord, robots ensuite',
+    short: 'Robotique frugale',
+    desc:
+      'Une feuille de route sourcée pour mesurer la biodiversité et le sol, comparer les solutions et automatiser seulement les gestes utiles.',
+  },
+  {
     path: '/frequence-jardin/diagnostiquer-son-jardin',
     title: 'Diagnostiquer son jardin : le guide complet',
     short: 'Diagnostiquer son jardin',
