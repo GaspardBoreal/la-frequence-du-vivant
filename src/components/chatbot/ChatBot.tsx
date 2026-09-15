@@ -107,6 +107,13 @@ export function ChatBot({
   const [input, setInput] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
+  /** Menu 📎 contrôlé : il doit se refermer avant d'ouvrir une surface,
+   *  sinon le verrou de défilement de Radix bloque le tactile sur iPhone. */
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const closeMenuThen = (fn: () => void) => {
+    setAttachMenuOpen(false);
+    setTimeout(fn, 60);
+  };
 
   const [voiceMode, setVoiceMode] = useState(false);
   const [interruptBanner, setInterruptBanner] = useState(false);
