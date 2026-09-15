@@ -424,19 +424,31 @@ const PropTabs: React.FC<{
   // Filet de sécurité : si plus aucune fenêtre ni panneau n'est ouvert,
   // on relâche tout verrou de défilement résiduel (page figée).
   React.useEffect(() => {
+    const OPEN_SURFACES =
+      '[data-state="open"][role="dialog"],[data-state="open"][role="alertdialog"],[aria-modal="true"],[data-radix-popper-content-wrapper]';
     const release = () => {
-      if (document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) return;
+      if (document.querySelector(OPEN_SURFACES)) return;
       const b = document.body;
       if (b.style.overflow === 'hidden') b.style.overflow = '';
       if (b.style.pointerEvents === 'none') b.style.pointerEvents = '';
       if (b.hasAttribute('data-scroll-locked')) b.removeAttribute('data-scroll-locked');
     };
-    const obs = new MutationObserver(() => window.setTimeout(release, 120));
-    obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-state', 'style'] });
-    const id = window.setInterval(release, 1000);
+    let timer = 0;
+    const schedule = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(release, 150);
+    };
+    schedule();
+    const obs = new MutationObserver(schedule);
+    obs.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-state', 'style'],
+    });
     return () => {
       obs.disconnect();
-      window.clearInterval(id);
+      window.clearTimeout(timer);
     };
   }, []);
 
