@@ -214,47 +214,50 @@ export const TourDetail: React.FC<Props> = ({
 
       {/* Actions */}
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="space-y-3 sm:flex sm:items-center sm:justify-between sm:space-y-0">
           <h3 className="text-sm font-semibold">Actions clés du tour</h3>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="outline" onClick={onEnrich} disabled={enriching}>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+            <Button className="min-w-0 px-2 sm:px-3" size="sm" variant="outline" onClick={onEnrich} disabled={enriching}>
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              {enriching ? 'L\u2019IA réfléchit…' : 'Enrichir avec l\u2019IA'}
+              <span className="truncate">{enriching ? 'L’Assistant réfléchit…' : 'Enrichir avec l’Assistant'}</span>
             </Button>
-            <Button size="sm" onClick={() => setCarnetOpen(true)} disabled={retenues.length === 0}>
+            <Button className="min-w-0 px-2 sm:px-3" size="sm" onClick={() => setCarnetOpen(true)} disabled={retenues.length === 0}>
               <NotebookPen className="h-3.5 w-3.5 mr-1.5" />
-              Carnet de terrain
+              <span className="truncate">Carnet de terrain</span>
             </Button>
           </div>
         </div>
 
         {actions.length > 0 && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
+          <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+            <span className="inline-flex min-w-0 items-center gap-1.5 font-medium">
               <Star className={`h-3.5 w-3.5 ${retenues.length ? 'fill-current text-primary' : ''}`} />
               {retenues.length === 0
                 ? 'Aucune action retenue pour le terrain'
                 : `${retenues.length} action${retenues.length > 1 ? 's' : ''} retenue${retenues.length > 1 ? 's' : ''}`}
             </span>
-            <span className="hidden sm:inline">·</span>
-            <button type="button" className="underline underline-offset-2 hover:text-foreground" onClick={() => setAllRetenues(true)}>
+            </div>
+            <div className="mt-2 flex items-center gap-4 border-t border-border/70 pt-2">
+            <button type="button" className="min-h-8 font-medium text-foreground underline decoration-border underline-offset-4 hover:text-primary" onClick={() => setAllRetenues(true)}>
               Tout sélectionner
             </button>
-            <button type="button" className="underline underline-offset-2 hover:text-foreground" onClick={() => setAllRetenues(false)}>
+            <button type="button" className="min-h-8 font-medium text-foreground underline decoration-border underline-offset-4 hover:text-primary" onClick={() => setAllRetenues(false)}>
               Aucune
             </button>
+            </div>
             {tour.carnet_edite_at && (
-              <span className="basis-full text-[11px] text-muted-foreground/80">
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground/80">
                 Carnet édité le {new Date(tour.carnet_edite_at).toLocaleDateString('fr-FR')} — pensez à reporter vos
                 dates.
-              </span>
+              </p>
             )}
           </div>
         )}
 
         {actions.length === 0 && (
           <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-            Aucune action pour l'instant. Ajoutez la vôtre ci-dessous, ou demandez une proposition à l'IA de Jardin.
+            Aucune action pour l'instant. Ajoutez la vôtre ci-dessous, ou demandez une proposition à l'Assistant du Jardin.
           </p>
         )}
 
