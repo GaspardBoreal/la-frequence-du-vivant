@@ -49,7 +49,7 @@ const DECISION_META: Record<RobotDecision, { label: string; className: string }>
   acheter: { label: 'Acheter', className: 'bg-primary/12 text-primary' },
   fabriquer: { label: 'Fabriquer', className: 'bg-secondary text-secondary-foreground' },
   louer: { label: 'Louer / mutualiser', className: 'bg-accent text-accent-foreground' },
-  surveiller: { label: 'Surveiller', className: 'bg-muted text-muted-foreground' },
+  surveiller: { label: 'Surveiller', className: 'bg-[hsl(var(--ds-line))]/50 text-[hsl(var(--ds-ink-soft))]' },
   ecarter: { label: 'Écarter du pilote', className: 'bg-destructive/10 text-destructive' },
 };
 
@@ -76,7 +76,7 @@ const FieldImage: React.FC<{ src: string; alt: string; caption: string; priority
       loading={priority ? 'eager' : 'lazy'}
       className="h-full w-full object-cover"
     />
-    <figcaption className="mt-2 text-xs leading-relaxed text-muted-foreground">Illustration de principe — {caption}</figcaption>
+    <figcaption className="mt-2 text-xs leading-relaxed text-[hsl(var(--ds-ink-soft))]">Illustration de principe — {caption}</figcaption>
   </figure>
 );
 
@@ -162,7 +162,7 @@ const InnovationRobot: React.FC = () => {
             <div className="mt-4 grid grid-cols-2 gap-2 sm:flex">
               {(Object.keys(AUDIENCE_COPY) as RobotAudience[]).map((key) => {
                 const Icon = AUDIENCE_ICONS[key];
-                return <Button key={key} variant={audience === key ? 'default' : 'outline'} onClick={() => setAudience(key)} className="justify-start sm:justify-center"><Icon className="h-4 w-4" />{AUDIENCE_COPY[key].label}</Button>;
+                return <Button key={key} variant="outline" onClick={() => setAudience(key)} className={cn('justify-start border-[hsl(var(--ds-line))] text-[hsl(var(--ds-forest-deep))] sm:justify-center', audience === key ? 'bg-[hsl(var(--ds-forest))] text-[hsl(var(--ds-cream))] hover:bg-[hsl(var(--ds-forest-deep))] hover:text-[hsl(var(--ds-cream))]' : 'bg-[hsl(var(--ds-cream))] hover:bg-[hsl(var(--ds-line))]/30')}><Icon className="h-4 w-4" />{AUDIENCE_COPY[key].label}</Button>;
               })}
             </div>
             <div className="mt-9 grid gap-8 lg:grid-cols-[1.15fr_.85fr] lg:items-end">
@@ -230,7 +230,7 @@ const InnovationRobot: React.FC = () => {
           </div>
         </section>
 
-        <section id="choisir" className="scroll-mt-28 border-y border-[hsl(var(--ds-line))] bg-card/45 py-16 sm:py-24">
+        <section id="choisir" className="scroll-mt-28 border-y border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-line))]/20 py-16 sm:py-24">
           <div className="mx-auto max-w-6xl px-5">
             <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
               <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[hsl(var(--ds-earth))]">Choisir</p><h2 className="mt-3 font-serif text-3xl text-[hsl(var(--ds-forest-deep))] sm:text-5xl">Acheter, fabriquer, louer ou écarter</h2></div>
@@ -239,17 +239,17 @@ const InnovationRobot: React.FC = () => {
 
             <div className="mt-8 grid gap-3 rounded-lg border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-4 sm:grid-cols-3">
               <label className="space-y-1.5 text-xs font-medium text-[hsl(var(--ds-ink-soft))]">Fonction
-                <select value={functionFilter} onChange={(event) => setFunctionFilter(event.target.value as RobotFunction | 'all')} className="h-11 w-full rounded-md border border-[hsl(var(--ds-line))] bg-background px-3 text-sm text-foreground">
+                <select value={functionFilter} onChange={(event) => setFunctionFilter(event.target.value as RobotFunction | 'all')} className="h-11 w-full rounded-md border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] px-3 text-sm text-[hsl(var(--ds-ink))]">
                   <option value="all">Toutes</option>{Object.entries(FUNCTION_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                 </select>
               </label>
               <label className="space-y-1.5 text-xs font-medium text-[hsl(var(--ds-ink-soft))]">Budget
-                <select value={budgetFilter} onChange={(event) => setBudgetFilter(event.target.value as RobotBudget | 'all')} className="h-11 w-full rounded-md border border-[hsl(var(--ds-line))] bg-background px-3 text-sm text-foreground">
+                <select value={budgetFilter} onChange={(event) => setBudgetFilter(event.target.value as RobotBudget | 'all')} className="h-11 w-full rounded-md border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] px-3 text-sm text-[hsl(var(--ds-ink))]">
                   <option value="all">Tous</option>{Object.entries(BUDGET_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                 </select>
               </label>
               <label className="space-y-1.5 text-xs font-medium text-[hsl(var(--ds-ink-soft))]">Maturité
-                <select value={maturityFilter} onChange={(event) => setMaturityFilter(event.target.value as RobotMaturity | 'all')} className="h-11 w-full rounded-md border border-[hsl(var(--ds-line))] bg-background px-3 text-sm text-foreground">
+                <select value={maturityFilter} onChange={(event) => setMaturityFilter(event.target.value as RobotMaturity | 'all')} className="h-11 w-full rounded-md border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] px-3 text-sm text-[hsl(var(--ds-ink))]">
                   <option value="all">Toutes</option>{Object.entries(MATURITY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                 </select>
               </label>
@@ -260,19 +260,19 @@ const InnovationRobot: React.FC = () => {
               {filtered.map((solution) => {
                 const decision = DECISION_META[solution.decision];
                 return (
-                  <article key={solution.id} className="rounded-lg border border-[hsl(var(--ds-line))] bg-background p-5 shadow-sm">
-                    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">{solution.type}</p><h3 className="mt-1 font-serif text-2xl text-[hsl(var(--ds-forest-deep))]">{solution.name}</h3></div><span className={cn('rounded-full px-3 py-1 text-xs font-semibold', decision.className)}>{decision.label}</span></div>
-                    <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{solution.summary}</p>
-                    <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-border py-4 text-sm">
-                      <div><dt className="text-xs text-muted-foreground">Coût</dt><dd className="mt-1 font-medium">{solution.cost}</dd></div>
-                      <div><dt className="text-xs text-muted-foreground">Maturité</dt><dd className="mt-1 font-medium">{MATURITY_LABELS[solution.maturity]}</dd></div>
-                      <div><dt className="text-xs text-muted-foreground">Énergie</dt><dd className="mt-1">{solution.energy}</dd></div>
-                      <div><dt className="text-xs text-muted-foreground">Réparabilité</dt><dd className="mt-1">{solution.repairability}</dd></div>
+                  <article key={solution.id} className="rounded-lg border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] p-5 text-[hsl(var(--ds-ink))] shadow-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs uppercase tracking-[0.12em] text-[hsl(var(--ds-ink-soft))]">{solution.type}</p><h3 className="mt-1 font-serif text-2xl text-[hsl(var(--ds-forest-deep))]">{solution.name}</h3></div><span className={cn('rounded-full px-3 py-1 text-xs font-semibold', decision.className)}>{decision.label}</span></div>
+                    <p className="mt-4 text-sm leading-relaxed text-[hsl(var(--ds-ink-soft))]">{solution.summary}</p>
+                    <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-[hsl(var(--ds-line))] py-4 text-sm">
+                      <div><dt className="text-xs text-[hsl(var(--ds-ink-soft))]">Coût</dt><dd className="mt-1 font-medium">{solution.cost}</dd></div>
+                      <div><dt className="text-xs text-[hsl(var(--ds-ink-soft))]">Maturité</dt><dd className="mt-1 font-medium">{MATURITY_LABELS[solution.maturity]}</dd></div>
+                      <div><dt className="text-xs text-[hsl(var(--ds-ink-soft))]">Énergie</dt><dd className="mt-1">{solution.energy}</dd></div>
+                      <div><dt className="text-xs text-[hsl(var(--ds-ink-soft))]">Réparabilité</dt><dd className="mt-1">{solution.repairability}</dd></div>
                     </dl>
-                    <p className="mt-4 text-sm"><strong>Pourquoi ce choix ?</strong> <span className="text-muted-foreground">{solution.why}</span></p>
-                    <details className="mt-4 border-t border-border pt-3">
+                    <p className="mt-4 text-sm"><strong>Pourquoi ce choix ?</strong> <span className="text-[hsl(var(--ds-ink-soft))]">{solution.why}</span></p>
+                    <details className="mt-4 border-t border-[hsl(var(--ds-line))] pt-3">
                       <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between text-sm font-medium">Données, intégration et limites <ChevronDown className="h-4 w-4" /></summary>
-                      <div className="space-y-2 pb-2 text-sm leading-relaxed text-muted-foreground"><p><strong className="text-foreground">Produit :</strong> {solution.output}</p><p><strong className="text-foreground">Intégration :</strong> {solution.integration}</p><p><strong className="text-foreground">Limites :</strong> {solution.limits}</p></div>
+                      <div className="space-y-2 pb-2 text-sm leading-relaxed text-[hsl(var(--ds-ink-soft))]"><p><strong className="text-[hsl(var(--ds-ink))]">Produit :</strong> {solution.output}</p><p><strong className="text-[hsl(var(--ds-ink))]">Intégration :</strong> {solution.integration}</p><p><strong className="text-[hsl(var(--ds-ink))]">Limites :</strong> {solution.limits}</p></div>
                     </details>
                   </article>
                 );
