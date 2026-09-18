@@ -497,6 +497,7 @@ const PropTabs: React.FC<{
 
 
   return (
+    <ProprieteTrackerProvider proprieteId={proprieteId} proprieteNom={proprieteNom}>
     <div className="space-y-5">
       <NudgeMarcheBanner
         proprieteNom={proprieteNom}
