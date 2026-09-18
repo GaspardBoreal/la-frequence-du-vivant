@@ -28,6 +28,7 @@ import {
 import TourStatusBadge from './TourStatusBadge';
 import TourActionRow from './TourActionRow';
 import CarnetTerrainDialog from './carnet/CarnetTerrainDialog';
+import { useProprieteTrack } from '@/contexts/ProprieteTrackerContext';
 import { useCarnetEnvois } from '@/hooks/propriete/useCarnetEnvoi';
 import {
   TOUR_STATUTS,

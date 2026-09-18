@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import TourStatusBadge from './TourStatusBadge';
 import NewTourDialog from './NewTourDialog';
 import type { ProprieteTour, TourStatut } from '@/hooks/propriete/useProprieteTours';
+import { useProprieteTrack } from '@/contexts/ProprieteTrackerContext';
 
 type Period = '3m' | '12m' | 'all' | 'custom';
 
