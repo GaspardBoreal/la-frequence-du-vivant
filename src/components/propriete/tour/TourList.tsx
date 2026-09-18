@@ -66,6 +66,7 @@ export const TourList: React.FC<Props> = ({
   const [period, setPeriod] = React.useState<Period>('all');
   const [from, setFrom] = React.useState('');
   const [to, setTo] = React.useState('');
+  const track = useProprieteTrack();
 
   const { data: index } = useToursActionsIndex(tours.map((t) => t.id));
 
