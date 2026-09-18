@@ -28,6 +28,7 @@ import NewMarcheurDialog from '@/components/admin/community/NewMarcheurDialog';
 import UnvalidatedRegistrationsTab from '@/components/admin/community/UnvalidatedRegistrationsTab';
 import RecherchesPanel from '@/components/admin/community/RecherchesPanel';
 import UsageDashboard from '@/components/admin/community/usage/UsageDashboard';
+import ParcoursTab from '@/components/admin/community/parcours/ParcoursTab';
 import DeleteMarcheurDialog, { type DeletableMarcheur } from '@/components/admin/community/DeleteMarcheurDialog';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdminProfileEmails } from '@/hooks/useAdminProfileEmails';
@@ -266,6 +267,10 @@ const CommunityProfilesAdmin: React.FC = () => {
             <TabsTrigger value="usages">
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
               Usages
+            </TabsTrigger>
+            <TabsTrigger value="parcours">
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              Parcours
             </TabsTrigger>
             <TabsTrigger value="activites">Activités</TabsTrigger>
             <TabsTrigger value="recherches">Recherches</TabsTrigger>
@@ -717,6 +722,10 @@ const CommunityProfilesAdmin: React.FC = () => {
 
           <TabsContent value="a-valider">
             <UnvalidatedRegistrationsTab />
+          </TabsContent>
+
+          <TabsContent value="parcours">
+            <ParcoursTab />
           </TabsContent>
         </Tabs>
       </div>

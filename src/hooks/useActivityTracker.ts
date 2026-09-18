@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 interface TrackOptions {
   explorationId?: string;
   marcheEventId?: string;
+  /** Jardin concerné : tracé dans les métadonnées pour reconstituer le parcours. */
+  proprieteId?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -32,6 +34,7 @@ export function useActivityTracker() {
             marche_event_id: options?.marcheEventId || null,
             metadata: {
               ...options?.metadata,
+              ...(options?.proprieteId ? { propriete_id: options.proprieteId } : {}),
               user_agent: navigator.userAgent,
               viewport: `${window.innerWidth}x${window.innerHeight}`,
               timestamp: new Date().toISOString(),

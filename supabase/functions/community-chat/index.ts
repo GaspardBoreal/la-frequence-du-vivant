@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
+import { questionText, teeAndLogAssistant } from "../_shared/assistant-log.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -218,7 +219,17 @@ ${JSON.stringify(entityContext, null, 2)}
       );
     }
 
-    return new Response(aiResp.body, {
+    const loggedBody = teeAndLogAssistant(aiResp.body, {
+      userId: userData.user.id,
+      surface: "communaute",
+      explorationId: entity?.type === "exploration" ? entity.id : null,
+      marcheEventId: entity?.type === "marche_event" ? entity.id : null,
+      model: "google/gemini-3-flash-preview",
+      contexts: visibleKeys,
+      question: questionText(messages),
+    });
+
+    return new Response(loggedBody, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
