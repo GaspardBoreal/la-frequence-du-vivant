@@ -168,6 +168,7 @@ const SiteSearchMount = lazyWithRetry(() => import('./components/search/SiteSear
 const AdminRecherche = lazyWithRetry(() => import('./pages/AdminRecherche'));
 const AdminNewsletter = lazyWithRetry(() => import('./pages/AdminNewsletter'));
 const AdminNewsletterEditor = lazyWithRetry(() => import('./pages/AdminNewsletterEditor'));
+const AdminConnaissance = lazyWithRetry(() => import('./pages/AdminConnaissance'));
 
 import { SiteSearchProvider } from './components/search/SiteSearchContext';
 import { TrophicFullscreenProvider } from './components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenProvider';
@@ -482,6 +483,11 @@ function App() {
             <Route path="/admin/outils/newsletter/:id" element={
               <AdminAuth>
                 <AdminNewsletterEditor />
+              </AdminAuth>
+            } />
+            <Route path="/admin/outils/connaissance" element={
+              <AdminAuth>
+                <AdminConnaissance />
               </AdminAuth>
             } />
 

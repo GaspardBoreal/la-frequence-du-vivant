@@ -4813,6 +4813,214 @@ export type Database = {
           },
         ]
       }
+      kb_article_sources: {
+        Row: {
+          article_id: string
+          consulted_at: string
+          created_at: string
+          id: string
+          name: string
+          note: string | null
+          url: string | null
+        }
+        Insert: {
+          article_id: string
+          consulted_at?: string
+          created_at?: string
+          id?: string
+          name: string
+          note?: string | null
+          url?: string | null
+        }
+        Update: {
+          article_id?: string
+          consulted_at?: string
+          created_at?: string
+          id?: string
+          name?: string
+          note?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kb_article_sources_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "kb_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kb_article_versions: {
+        Row: {
+          article_id: string
+          changed_by: string | null
+          created_at: string
+          id: string
+          reason: string | null
+          snapshot: Json
+        }
+        Insert: {
+          article_id: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          snapshot: Json
+        }
+        Update: {
+          article_id?: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kb_article_versions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "kb_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kb_articles: {
+        Row: {
+          audiences: string[]
+          author_id: string | null
+          body_md: string
+          created_at: string
+          id: string
+          is_public: boolean
+          origin: string
+          question_principale: string | null
+          reviewer_id: string | null
+          search_vector: unknown
+          short_answer: string
+          stable_id: string | null
+          status: string
+          title: string
+          topic: string | null
+          univers: string
+          updated_at: string
+          validated_at: string | null
+        }
+        Insert: {
+          audiences?: string[]
+          author_id?: string | null
+          body_md?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          origin?: string
+          question_principale?: string | null
+          reviewer_id?: string | null
+          search_vector?: unknown
+          short_answer?: string
+          stable_id?: string | null
+          status?: string
+          title: string
+          topic?: string | null
+          univers?: string
+          updated_at?: string
+          validated_at?: string | null
+        }
+        Update: {
+          audiences?: string[]
+          author_id?: string | null
+          body_md?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          origin?: string
+          question_principale?: string | null
+          reviewer_id?: string | null
+          search_vector?: unknown
+          short_answer?: string
+          stable_id?: string | null
+          status?: string
+          title?: string
+          topic?: string | null
+          univers?: string
+          updated_at?: string
+          validated_at?: string | null
+        }
+        Relationships: []
+      }
+      kb_question_articles: {
+        Row: {
+          article_id: string
+          created_at: string
+          question_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          question_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kb_question_articles_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "kb_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kb_question_articles_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "kb_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kb_questions: {
+        Row: {
+          audience: string
+          created_at: string
+          id: string
+          label: string
+          normalized: string | null
+          occurrences: number
+          origin: string
+          status: string
+          univers: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string
+          created_at?: string
+          id?: string
+          label: string
+          normalized?: string | null
+          occurrences?: number
+          origin?: string
+          status?: string
+          univers?: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          created_at?: string
+          id?: string
+          label?: string
+          normalized?: string | null
+          occurrences?: number
+          origin?: string
+          status?: string
+          univers?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kigo_entries: {
         Row: {
           created_at: string
@@ -11099,6 +11307,7 @@ export type Database = {
       }
       get_iot_ai_credit: { Args: { _fournisseur_id: string }; Returns: Json }
       get_iot_trust_report: { Args: { p_since: string }; Returns: Json }
+      get_kb_coverage: { Args: never; Returns: Json }
       get_marche_events_dashboard_stats:
         | {
             Args: {
@@ -11945,6 +12154,14 @@ export type Database = {
       shares_marche_event: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
+      }
+      suggest_kb_questions_from_assistant: {
+        Args: { _limit?: number }
+        Returns: {
+          derniere: string
+          label: string
+          occurrences: number
+        }[]
       }
       suggest_science_accounts: {
         Args: never
