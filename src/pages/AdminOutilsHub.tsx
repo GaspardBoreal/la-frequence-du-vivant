@@ -2,9 +2,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route, Search, Mail } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route, Search, Mail, BookOpen } from 'lucide-react';
 
 const OUTILS = [
+  {
+    titre: 'Base de connaissance',
+    description: 'Les réponses de référence de Fréquence Jardin : fiches sourcées, questions réelles, couverture.',
+    icon: BookOpen,
+    to: '/admin/outils/connaissance',
+    active: true,
+  },
   {
     titre: 'Studio Newsletter',
     description: 'Composer, cibler, tester, envoyer et mesurer les lettres et campagnes des quatre univers.',
