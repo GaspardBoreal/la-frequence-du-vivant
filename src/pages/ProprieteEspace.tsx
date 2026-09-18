@@ -35,6 +35,8 @@ import OrganicButton from '@/components/immersive-garden/OrganicButton';
 import SampleCoreDrawerHost from '@/components/propriete/analyze/sample/SampleCoreDrawer';
 import { ProprieteChatBotMount } from '@/components/propriete/chatbot/ProprieteChatBotMount';
 import ScenographeMount from '@/components/propriete/scenographe/ScenographeMount';
+import { useProprieteTracker } from '@/hooks/useProprieteTracker';
+import { ProprieteTrackerProvider } from '@/contexts/ProprieteTrackerContext';
 
 
 const ProprieteEspace: React.FC = () => {
@@ -361,6 +363,7 @@ const PropTabs: React.FC<{
   proprieteCenter?: [number, number] | null;
 }> = ({ proprieteId, proprieteNom, proprieteVille, proprieteAdresse, proprieteCodePostal, proprieteCenter }) => {
   const { data: bio } = usePropertyBiodiversity(proprieteId);
+  const track = useProprieteTracker(proprieteId, proprieteNom);
   const [searchParams] = useSearchParams();
   // Un lien externe peut demander un onglet précis : /propriete/slug?tab=tour
   const initialTab = React.useMemo(() => {
@@ -371,10 +374,16 @@ const PropTabs: React.FC<{
   const [tab, setTab] = React.useState<string>(initialTab);
   const [atelierOpen, setAtelierOpen] = React.useState(false);
 
+  // Ouverture du jardin + onglet d'entrée.
+  React.useEffect(() => {
+    track('jardin', 'ouverture', initialTab);
+  }, [track, initialTab]);
+
   const handleTabChange = React.useCallback((value: string) => {
     setTab(value);
+    track(value, 'ouverture');
     scrollToDiagnosticPersistent();
-  }, []);
+  }, [track]);
 
   React.useEffect(() => {
     const onGoto = (e: Event) => {
@@ -387,10 +396,15 @@ const PropTabs: React.FC<{
 
   const [portraitSub, setPortraitSub] = React.useState<'galerie' | 'cadastre' | 'intention' | 'entretiens'>('galerie');
 
-  const goPortrait = React.useCallback((sub: 'galerie' | 'cadastre' | 'intention' | 'entretiens') => {
+  const changeSub = React.useCallback((sub: 'galerie' | 'cadastre' | 'intention' | 'entretiens') => {
     setPortraitSub(sub);
+    track('portrait', 'ouverture', sub);
+  }, [track]);
+
+  const goPortrait = React.useCallback((sub: 'galerie' | 'cadastre' | 'intention' | 'entretiens') => {
+    changeSub(sub);
     handleTabChange('portrait');
-  }, [handleTabChange]);
+  }, [changeSub, handleTabChange]);
 
 
   const [atelierIntent, setAtelierIntent] = React.useState<{ focus?: 'capteurs' } | null>(null);
@@ -405,7 +419,8 @@ const PropTabs: React.FC<{
     atelierReturnTabRef.current = returnTab ?? tabRef.current ?? 'palette';
     handleTabChange('palette');
     setAtelierOpen(true);
-  }, [handleTabChange]);
+    track('atelier', 'ouverture', intent?.focus ?? null);
+  }, [handleTabChange, track]);
 
   // Ouverture de l'atelier depuis « Capteurs et sondes » (pose GPS d'un capteur).
   React.useEffect(() => {
@@ -455,10 +470,11 @@ const PropTabs: React.FC<{
   const closeAtelier = React.useCallback(() => {
     setAtelierOpen(false);
     setAtelierIntent(null);
+    track('atelier', 'fermeture');
     const back = atelierReturnTabRef.current;
     atelierReturnTabRef.current = null;
     if (back && back !== 'palette') handleTabChange(back);
-  }, [handleTabChange]);
+  }, [handleTabChange, track]);
 
 
 
@@ -481,6 +497,7 @@ const PropTabs: React.FC<{
 
 
   return (
+    <ProprieteTrackerProvider proprieteId={proprieteId} proprieteNom={proprieteNom}>
     <div className="space-y-5">
       <NudgeMarcheBanner
         proprieteNom={proprieteNom}
@@ -541,7 +558,10 @@ const PropTabs: React.FC<{
 
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new Event('frequence:open-chatbot'))}
+            onClick={() => {
+              track('assistant', 'ouverture');
+              window.dispatchEvent(new Event('frequence:open-chatbot'));
+            }}
             className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-gold))]/60 bg-[hsl(var(--ds-forest-deep))] px-3 py-1.5 text-[11px] font-medium text-[hsl(var(--ds-cream))] shadow-sm hover:brightness-110 transition"
             aria-label="Ouvrir l'IA de Jardin"
           >
@@ -564,7 +584,7 @@ const PropTabs: React.FC<{
             proprieteCodePostal={proprieteCodePostal}
             proprieteCenter={proprieteCenter}
             subTab={portraitSub}
-            onSubTabChange={setPortraitSub}
+            onSubTabChange={changeSub}
           />
         </TabsContent>
         <TabsContent value="observe" className="pt-5 min-h-[calc(100vh-8rem)]">
@@ -647,6 +667,8 @@ const PropTabs: React.FC<{
       <ProprieteChatBotMount proprieteId={proprieteId} proprieteNom={proprieteNom} />
       <ScenographeMount proprieteId={proprieteId} propertyName={proprieteNom} commune={proprieteVille} />
     </div>
+    </ProprieteTrackerProvider>
+
 
   );
 };

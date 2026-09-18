@@ -14,6 +14,7 @@ import {
 } from '@/hooks/propriete/useProprieteEntretiens';
 import { useCanEditIntention } from '@/hooks/propriete/usePropertyIntention';
 import { ConnaissanceJardinCard } from './ConnaissanceJardinCard';
+import { useProprieteTrack } from '@/contexts/ProprieteTrackerContext';
 
 /**
  * L'Entretien fondateur — l'interview d'initialisation devient un objet vivant
@@ -39,6 +40,7 @@ export const PortraitEntretiens: React.FC<Props> = ({ proprieteId, proprieteNom 
   const { data: canEdit = false } = useCanEditIntention(proprieteId);
   const [openForm, setOpenForm] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const track = useProprieteTrack();
 
   const selected = useMemo(
     () => entretiens.find((e) => e.id === selectedId) ?? entretiens[0] ?? null,
@@ -60,7 +62,7 @@ export const PortraitEntretiens: React.FC<Props> = ({ proprieteId, proprieteNom 
         </div>
         {canEdit && (
           <button
-            onClick={() => setOpenForm((v) => !v)}
+            onClick={() => { track('entretiens', 'depot_formulaire'); setOpenForm((v) => !v); }}
             className="text-xs px-3 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" /> Déposer un entretien
@@ -99,7 +101,7 @@ export const PortraitEntretiens: React.FC<Props> = ({ proprieteId, proprieteNom 
               {entretiens.map((e) => (
                 <button
                   key={e.id}
-                  onClick={() => setSelectedId(e.id)}
+                  onClick={() => { track('entretiens', 'ouverture_fiche', e.id); setSelectedId(e.id); }}
                   className={`shrink-0 text-xs px-3 py-1.5 rounded-full border ${
                     selected?.id === e.id
                       ? 'bg-amber-500 text-white border-amber-500'
@@ -309,12 +311,19 @@ const EntretienDetail: React.FC<{
   const rouvrir = useRouvrirEntretien(proprieteId);
   const [showTranscript, setShowTranscript] = useState(false);
   const [askValidation, setAskValidation] = useState(false);
+  const track = useProprieteTrack();
 
   const verrouille = isEntretienVerrouille(entretien);
   const aValider = extraits.filter((e) => e.statut === 'propose').length;
   const acceptes = extraits.filter((e) => e.statut === 'accepte').length;
 
+  // Consultation de l'entretien affiché.
+  useEffect(() => {
+    track('entretiens', 'consultation', entretien.id, { titre: entretien.titre });
+  }, [track, entretien.id, entretien.titre]);
+
   const run = async () => {
+    track('entretiens', 'recolte', entretien.id);
     try {
       const n = await harvest.mutateAsync({ entretienId: entretien.id });
       toast.success(n > 0 ? `${n} cartes proposées.` : 'Aucune carte fiable extraite.');
@@ -330,6 +339,7 @@ const EntretienDetail: React.FC<{
     if (motif === null) return;
     try {
       await rouvrir.mutateAsync({ entretienId: entretien.id, motif });
+      track('entretiens', 'reouverture', entretien.id);
       toast.success('Entretien rouvert. La version validée reste consultable dans l’historique.');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Réouverture impossible');
@@ -433,6 +443,7 @@ const EntretienDetail: React.FC<{
             try {
               const n = await valider.mutateAsync({ entretienId: entretien.id, validatedWith, tenuLe });
               setAskValidation(false);
+              track('entretiens', 'validation', entretien.id, { points: n });
               toast.success(`${n} points sont entrés dans la base de connaissance du jardin.`);
             } catch (e) {
               toast.error(e instanceof Error ? e.message : 'Validation impossible');
