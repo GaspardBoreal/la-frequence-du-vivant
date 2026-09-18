@@ -219,7 +219,17 @@ ${JSON.stringify(entityContext, null, 2)}
       );
     }
 
-    return new Response(aiResp.body, {
+    const loggedBody = teeAndLogAssistant(aiResp.body, {
+      userId: userData.user.id,
+      surface: "communaute",
+      explorationId: entity?.type === "exploration" ? entity.id : null,
+      marcheEventId: entity?.type === "marche_event" ? entity.id : null,
+      model: "google/gemini-3-flash-preview",
+      contexts: visibleKeys,
+      question: questionText(messages),
+    });
+
+    return new Response(loggedBody, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
