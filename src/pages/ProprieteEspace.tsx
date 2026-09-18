@@ -557,7 +557,10 @@ const PropTabs: React.FC<{
 
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new Event('frequence:open-chatbot'))}
+            onClick={() => {
+              track('assistant', 'ouverture');
+              window.dispatchEvent(new Event('frequence:open-chatbot'));
+            }}
             className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-gold))]/60 bg-[hsl(var(--ds-forest-deep))] px-3 py-1.5 text-[11px] font-medium text-[hsl(var(--ds-cream))] shadow-sm hover:brightness-110 transition"
             aria-label="Ouvrir l'IA de Jardin"
           >
@@ -580,7 +583,7 @@ const PropTabs: React.FC<{
             proprieteCodePostal={proprieteCodePostal}
             proprieteCenter={proprieteCenter}
             subTab={portraitSub}
-            onSubTabChange={setPortraitSub}
+            onSubTabChange={changeSub}
           />
         </TabsContent>
         <TabsContent value="observe" className="pt-5 min-h-[calc(100vh-8rem)]">
