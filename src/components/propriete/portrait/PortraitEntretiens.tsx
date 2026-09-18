@@ -443,6 +443,7 @@ const EntretienDetail: React.FC<{
             try {
               const n = await valider.mutateAsync({ entretienId: entretien.id, validatedWith, tenuLe });
               setAskValidation(false);
+              track('entretiens', 'validation', entretien.id, { points: n });
               toast.success(`${n} points sont entrés dans la base de connaissance du jardin.`);
             } catch (e) {
               toast.error(e instanceof Error ? e.message : 'Validation impossible');
