@@ -68,12 +68,21 @@ export const PortraitIntention: React.FC<Props> = ({
   const [pickerSignal, setPickerSignal] = useState(0);
   const [pickerSlug, setPickerSlug] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const track = useProprieteTrack();
+
+  /** Ouverture d'une carte question : tracée pour reconstituer le parcours. */
+  const openEditor = (q: OnboardingQuestion) => {
+    track('intention', 'ouverture_carte', q.id);
+    setEditing(q);
+  };
 
   const controlled = sectionProp != null;
   const section: IntentionSection = controlled
     ? sectionProp
     : (searchParams.get('intention') === 'projet' ? 'projet' : 'jardin');
+
   const setSection = (s: IntentionSection) => {
+    track('intention', 'section', s);
     if (controlled) { onSectionChange?.(s); return; }
     const next = new URLSearchParams(searchParams);
     if (s === 'jardin') next.delete('intention');
