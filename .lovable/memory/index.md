@@ -6,3 +6,4 @@
 - [OFJ → jardin après confirmation](mem://features/propriete/ofj-claim-jardin-apres-confirmation) — Lien de confirmation FJ → `/jardin/bienvenue` LFDV → RPC idempotente `onboard_claim_from_metadata` → `/propriete/<slug>`, marqueur `auth_brand=fj`
 - [Recherche pages publiques](mem://features/recherche-pages-publiques) — Moteur ⌘K des pages publiques, 5 univers ordonnés, catalogue + règles dans /admin/outils/recherche
 - [Parcours Sauniers](mem://features/marches-du-vivant/sauniers-parcours-une-marche-par-point) — Chaque point de /sauniers = 1 marche numérotée dans l'expérience + ancrage waypoint pour les idées d'animation
+- [Parcours d'usage marcheur](mem://features/admin/parcours-usage-marcheur) — Onglet « Parcours » /admin/community : RPC get_marcheur_parcours, journal des échanges Assistant, traces jardin
