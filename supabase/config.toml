@@ -144,3 +144,13 @@ verify_jwt = false
 
 [functions.api-mcp-remediate]
 verify_jwt = true
+
+# Studio Newsletter — envoi (JWT admin validé en code), suivi et webhook publics
+[functions.newsletter-send]
+verify_jwt = false
+
+[functions.newsletter-track]
+verify_jwt = false
+
+[functions.newsletter-webhook]
+verify_jwt = false
