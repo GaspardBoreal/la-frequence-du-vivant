@@ -317,7 +317,10 @@ toutes les briques     →  50 000 €`}
           </div>
         </div>
 
-        <Footer variant="marches" />
+        {/* Pied de page identique à /association : fond sombre sous le footer */}
+        <div className="bg-background">
+          <Footer variant="marches" />
+        </div>
       </div>
 
       <RecapSheet
