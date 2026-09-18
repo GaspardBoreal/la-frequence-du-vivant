@@ -135,6 +135,7 @@ export const PortraitIntention: React.FC<Props> = ({
     try {
       await save.mutateAsync({ answers: patch, version: DEFAULT_SEQUENCE.version });
       toast.success('Intention mise à jour');
+      track('intention', 'enregistrement', Object.keys(patch).join(','));
       // Répondre au rêve doit remettre l'image en cohérence : si la famille
       // choisie ne correspond plus au jardin-exemple, on rouvre la galerie.
       const nextStyle = typeof patch.style === 'string' ? patch.style : null;
@@ -286,7 +287,7 @@ export const PortraitIntention: React.FC<Props> = ({
                         key={q.id}
                         type="button"
                         disabled={!canEdit}
-                        onClick={() => canEdit && setEditing(q)}
+                        onClick={() => canEdit && openEditor(q)}
                         className="text-left rounded-2xl border border-border/70 bg-card p-4 transition-colors hover:bg-muted/40 disabled:cursor-default disabled:hover:bg-card"
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -316,7 +317,7 @@ export const PortraitIntention: React.FC<Props> = ({
           <button
             type="button"
             disabled={!canEdit || !priorite}
-            onClick={() => canEdit && priorite && setEditing(priorite)}
+            onClick={() => canEdit && priorite && openEditor(priorite)}
             className="w-full text-left rounded-2xl border border-amber-500/40 bg-amber-500/5 p-5 transition-colors hover:bg-amber-500/10 disabled:cursor-default disabled:hover:bg-amber-500/5"
           >
             <div className="flex items-center justify-between gap-2">
@@ -343,7 +344,7 @@ export const PortraitIntention: React.FC<Props> = ({
             <button
               type="button"
               disabled={!canEdit}
-              onClick={() => canEdit && setEditing(objectif)}
+              onClick={() => canEdit && openEditor(objectif)}
               className="w-full text-left rounded-2xl border border-primary/30 bg-primary/5 p-5 transition-colors hover:bg-primary/10 disabled:cursor-default"
             >
               <div className="flex items-center justify-between gap-2">
