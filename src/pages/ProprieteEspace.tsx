@@ -667,6 +667,8 @@ const PropTabs: React.FC<{
       <ProprieteChatBotMount proprieteId={proprieteId} proprieteNom={proprieteNom} />
       <ScenographeMount proprieteId={proprieteId} propertyName={proprieteNom} commune={proprieteVille} />
     </div>
+    </ProprieteTrackerProvider>
+
 
   );
 };
