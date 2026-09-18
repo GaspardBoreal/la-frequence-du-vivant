@@ -35,6 +35,8 @@ import OrganicButton from '@/components/immersive-garden/OrganicButton';
 import SampleCoreDrawerHost from '@/components/propriete/analyze/sample/SampleCoreDrawer';
 import { ProprieteChatBotMount } from '@/components/propriete/chatbot/ProprieteChatBotMount';
 import ScenographeMount from '@/components/propriete/scenographe/ScenographeMount';
+import { useProprieteTracker } from '@/hooks/useProprieteTracker';
+import { ProprieteTrackerProvider } from '@/contexts/ProprieteTrackerContext';
 
 
 const ProprieteEspace: React.FC = () => {
