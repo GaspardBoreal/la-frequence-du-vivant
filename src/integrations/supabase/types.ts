@@ -6569,6 +6569,244 @@ export type Database = {
         }
         Relationships: []
       }
+      newsletter_audience_tags: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          profile_id: string
+          univers: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          profile_id: string
+          univers: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          profile_id?: string
+          univers?: string
+        }
+        Relationships: []
+      }
+      newsletter_campaigns: {
+        Row: {
+          audience: Json
+          blocks: Json
+          created_at: string
+          created_by: string | null
+          from_email: string | null
+          from_name: string
+          id: string
+          nom: string
+          objet: string
+          preheader: string | null
+          recipients_count: number
+          reply_to: string | null
+          sent_at: string | null
+          sent_count: number
+          statut: string
+          univers: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: Json
+          blocks?: Json
+          created_at?: string
+          created_by?: string | null
+          from_email?: string | null
+          from_name?: string
+          id?: string
+          nom: string
+          objet?: string
+          preheader?: string | null
+          recipients_count?: number
+          reply_to?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          statut?: string
+          univers?: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: Json
+          blocks?: Json
+          created_at?: string
+          created_by?: string | null
+          from_email?: string | null
+          from_name?: string
+          id?: string
+          nom?: string
+          objet?: string
+          preheader?: string | null
+          recipients_count?: number
+          reply_to?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          statut?: string
+          univers?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      newsletter_events: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          id: string
+          payload: Json | null
+          recipient_id: string | null
+          type: string
+          url: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          recipient_id?: string | null
+          type: string
+          url?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          recipient_id?: string | null
+          type?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "newsletter_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "newsletter_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "newsletter_events_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "newsletter_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      newsletter_recipients: {
+        Row: {
+          bounced_at: string | null
+          campaign_id: string
+          click_count: number
+          clicked_at: string | null
+          created_at: string
+          delivered_at: string | null
+          email: string
+          error: string | null
+          id: string
+          nom: string | null
+          open_count: number
+          opened_at: string | null
+          profile_id: string | null
+          resend_message_id: string | null
+          sent_at: string | null
+          statut: string
+          token: string
+          unsubscribed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          bounced_at?: string | null
+          campaign_id: string
+          click_count?: number
+          clicked_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          email: string
+          error?: string | null
+          id?: string
+          nom?: string | null
+          open_count?: number
+          opened_at?: string | null
+          profile_id?: string | null
+          resend_message_id?: string | null
+          sent_at?: string | null
+          statut?: string
+          token?: string
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bounced_at?: string | null
+          campaign_id?: string
+          click_count?: number
+          clicked_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          email?: string
+          error?: string | null
+          id?: string
+          nom?: string | null
+          open_count?: number
+          opened_at?: string | null
+          profile_id?: string | null
+          resend_message_id?: string | null
+          sent_at?: string | null
+          statut?: string
+          token?: string
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "newsletter_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "newsletter_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      newsletter_unsubscribes: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          email: string
+          id: string
+          motif: string | null
+          profile_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          motif?: string | null
+          profile_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          motif?: string | null
+          profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "newsletter_unsubscribes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "newsletter_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       observation_gps_overrides: {
         Row: {
           created_at: string
@@ -11023,6 +11261,25 @@ export type Database = {
           marche_id: string
           scientific_name: string
         }[]
+      }
+      get_newsletter_audience: {
+        Args: { _profile_ids?: string[]; _univers?: string }
+        Returns: {
+          email: string
+          last_activity: string
+          nom: string
+          prenom: string
+          profile_id: string
+          role: string
+          univers: string[]
+          unsubscribed: boolean
+          user_id: string
+          ville: string
+        }[]
+      }
+      get_newsletter_campaign_kpis: {
+        Args: { _campaign_id: string }
+        Returns: Json
       }
       get_propriete_biodiversity: {
         Args: { p_propriete_id: string }

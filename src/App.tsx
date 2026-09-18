@@ -166,6 +166,8 @@ const CommunityChatBotMount = lazyWithRetry(() =>
 const AdhesionFab = lazyWithRetry(() => import('./components/adhesion/AdhesionFab'));
 const SiteSearchMount = lazyWithRetry(() => import('./components/search/SiteSearchMount'));
 const AdminRecherche = lazyWithRetry(() => import('./pages/AdminRecherche'));
+const AdminNewsletter = lazyWithRetry(() => import('./pages/AdminNewsletter'));
+const AdminNewsletterEditor = lazyWithRetry(() => import('./pages/AdminNewsletterEditor'));
 
 import { SiteSearchProvider } from './components/search/SiteSearchContext';
 import { TrophicFullscreenProvider } from './components/biodiversity/species-modal/trophic-fullscreen/TrophicFullscreenProvider';
@@ -470,6 +472,16 @@ function App() {
             <Route path="/admin/outils/recherche" element={
               <AdminAuth>
                 <AdminRecherche />
+              </AdminAuth>
+            } />
+            <Route path="/admin/outils/newsletter" element={
+              <AdminAuth>
+                <AdminNewsletter />
+              </AdminAuth>
+            } />
+            <Route path="/admin/outils/newsletter/:id" element={
+              <AdminAuth>
+                <AdminNewsletterEditor />
               </AdminAuth>
             } />
 

@@ -2,9 +2,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route, Search } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route, Search, Mail } from 'lucide-react';
 
 const OUTILS = [
+  {
+    titre: 'Studio Newsletter',
+    description: 'Composer, cibler, tester, envoyer et mesurer les lettres et campagnes des quatre univers.',
+    icon: Mail,
+    to: '/admin/outils/newsletter',
+    active: true,
+  },
   {
     titre: 'Ma Fréquence du jour',
     description: 'Citation journalière d\'auteurs engagés dans la biodiversité, bioacoustique, géopoétique.',
