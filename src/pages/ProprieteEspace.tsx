@@ -419,7 +419,8 @@ const PropTabs: React.FC<{
     atelierReturnTabRef.current = returnTab ?? tabRef.current ?? 'palette';
     handleTabChange('palette');
     setAtelierOpen(true);
-  }, [handleTabChange]);
+    track('atelier', 'ouverture', intent?.focus ?? null);
+  }, [handleTabChange, track]);
 
   // Ouverture de l'atelier depuis « Capteurs et sondes » (pose GPS d'un capteur).
   React.useEffect(() => {
@@ -469,10 +470,11 @@ const PropTabs: React.FC<{
   const closeAtelier = React.useCallback(() => {
     setAtelierOpen(false);
     setAtelierIntent(null);
+    track('atelier', 'fermeture');
     const back = atelierReturnTabRef.current;
     atelierReturnTabRef.current = null;
     if (back && back !== 'palette') handleTabChange(back);
-  }, [handleTabChange]);
+  }, [handleTabChange, track]);
 
 
 
