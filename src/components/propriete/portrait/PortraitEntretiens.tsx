@@ -311,12 +311,19 @@ const EntretienDetail: React.FC<{
   const rouvrir = useRouvrirEntretien(proprieteId);
   const [showTranscript, setShowTranscript] = useState(false);
   const [askValidation, setAskValidation] = useState(false);
+  const track = useProprieteTrack();
 
   const verrouille = isEntretienVerrouille(entretien);
   const aValider = extraits.filter((e) => e.statut === 'propose').length;
   const acceptes = extraits.filter((e) => e.statut === 'accepte').length;
 
+  // Consultation de l'entretien affiché.
+  useEffect(() => {
+    track('entretiens', 'consultation', entretien.id, { titre: entretien.titre });
+  }, [track, entretien.id, entretien.titre]);
+
   const run = async () => {
+    track('entretiens', 'recolte', entretien.id);
     try {
       const n = await harvest.mutateAsync({ entretienId: entretien.id });
       toast.success(n > 0 ? `${n} cartes proposées.` : 'Aucune carte fiable extraite.');
@@ -332,6 +339,7 @@ const EntretienDetail: React.FC<{
     if (motif === null) return;
     try {
       await rouvrir.mutateAsync({ entretienId: entretien.id, motif });
+      track('entretiens', 'reouverture', entretien.id);
       toast.success('Entretien rouvert. La version validée reste consultable dans l’historique.');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Réouverture impossible');
