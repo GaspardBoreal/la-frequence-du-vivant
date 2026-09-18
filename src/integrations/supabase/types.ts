@@ -330,6 +330,117 @@ export type Database = {
         }
         Relationships: []
       }
+      assistant_conversations: {
+        Row: {
+          created_at: string
+          exploration_id: string | null
+          id: string
+          last_message_at: string
+          marche_event_id: string | null
+          propriete_id: string | null
+          started_at: string
+          surface: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exploration_id?: string | null
+          id?: string
+          last_message_at?: string
+          marche_event_id?: string | null
+          propriete_id?: string | null
+          started_at?: string
+          surface: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exploration_id?: string | null
+          id?: string
+          last_message_at?: string
+          marche_event_id?: string | null
+          propriete_id?: string | null
+          started_at?: string
+          surface?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_conversations_exploration_id_fkey"
+            columns: ["exploration_id"]
+            isOneToOne: false
+            referencedRelation: "explorations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_conversations_marche_event_id_fkey"
+            columns: ["marche_event_id"]
+            isOneToOne: false
+            referencedRelation: "marche_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_conversations_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistant_messages: {
+        Row: {
+          content: string
+          contexts: Json
+          conversation_id: string
+          created_at: string
+          error: string | null
+          id: string
+          latency_ms: number | null
+          model: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          contexts?: Json
+          conversation_id: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          latency_ms?: number | null
+          model?: string | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          contexts?: Json
+          conversation_id?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          latency_ms?: number | null
+          model?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_prompt_templates: {
         Row: {
           created_at: string
@@ -10879,6 +10990,10 @@ export type Database = {
           texts_count: number
           user_id: string
         }[]
+      }
+      get_marcheur_parcours: {
+        Args: { _from: string; _to: string; _user_id: string }
+        Returns: Json
       }
       get_maronnier_matches_for_company: {
         Args: { p_company_id: string; p_limit?: number }
