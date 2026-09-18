@@ -40,6 +40,7 @@ export const PortraitEntretiens: React.FC<Props> = ({ proprieteId, proprieteNom 
   const { data: canEdit = false } = useCanEditIntention(proprieteId);
   const [openForm, setOpenForm] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const track = useProprieteTrack();
 
   const selected = useMemo(
     () => entretiens.find((e) => e.id === selectedId) ?? entretiens[0] ?? null,
