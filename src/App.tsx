@@ -474,6 +474,16 @@ function App() {
                 <AdminRecherche />
               </AdminAuth>
             } />
+            <Route path="/admin/outils/newsletter" element={
+              <AdminAuth>
+                <AdminNewsletter />
+              </AdminAuth>
+            } />
+            <Route path="/admin/outils/newsletter/:id" element={
+              <AdminAuth>
+                <AdminNewsletterEditor />
+              </AdminAuth>
+            } />
 
 
 
