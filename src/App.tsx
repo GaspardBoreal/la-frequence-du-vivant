@@ -143,6 +143,7 @@ const PartenaireOffre = lazyWithRetry(() => import('./pages/PartenaireOffre'));
 const SauniersProposition = lazyWithRetry(() => import('./pages/SauniersProposition'));
 const PartnersSoilAcoustics = lazyWithRetry(() => import('./pages/PartnersSoilAcoustics'));
 const PartenaireFeuilleDeRoute = lazyWithRetry(() => import('./pages/PartenaireFeuilleDeRoute'));
+const VdtpConfigurateur = lazyWithRetry(() => import('./pages/VdtpConfigurateur'));
 const TrustInFrequenceVivant = lazyWithRetry(() => import('./pages/TrustInFrequenceVivant'));
 const PartenaireIot = lazyWithRetry(() => import('./pages/PartenaireIot'));
 const TrustTableRonde = lazyWithRetry(() => import('./pages/TrustTableRonde'));
@@ -479,6 +480,7 @@ function App() {
             <Route path="/partenaire-iot/:slug" element={<PartenaireIot />} />
             <Route path="/trust-in-frequence-vivant/table-ronde" element={<TrustTableRonde />} />
             <Route path="/partenaires/:slug/offre" element={<PartenaireOffre />} />
+            <Route path="/partenaires/vdtp/configurateur" element={<VdtpConfigurateur />} />
             <Route path="/partenaires/:slug/:date" element={<PartenaireFeuilleDeRoute />} />
             <Route path="/partenaires/:slug" element={<PartenaireAudit />} />
             <Route path="/sauniers" element={<SauniersProposition />} />
