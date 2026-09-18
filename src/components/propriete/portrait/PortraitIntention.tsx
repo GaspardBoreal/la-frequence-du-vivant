@@ -13,6 +13,7 @@ import { buildSequence, CHAPTERS, type AnswerValue, type OnboardingQuestion } fr
 import { PERSONA_LABELS } from '@/config/onboarding/personas';
 import { IntentionQuestionEditor } from './IntentionQuestionEditor';
 import { GardenExampleCard } from './GardenExampleCard';
+import { useProprieteTrack } from '@/contexts/ProprieteTrackerContext';
 
 type IntentionSection = 'jardin' | 'projet';
 
