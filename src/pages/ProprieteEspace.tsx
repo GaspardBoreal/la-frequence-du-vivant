@@ -361,6 +361,7 @@ const PropTabs: React.FC<{
   proprieteCenter?: [number, number] | null;
 }> = ({ proprieteId, proprieteNom, proprieteVille, proprieteAdresse, proprieteCodePostal, proprieteCenter }) => {
   const { data: bio } = usePropertyBiodiversity(proprieteId);
+  const track = useProprieteTracker(proprieteId, proprieteNom);
   const [searchParams] = useSearchParams();
   // Un lien externe peut demander un onglet précis : /propriete/slug?tab=tour
   const initialTab = React.useMemo(() => {
@@ -371,10 +372,16 @@ const PropTabs: React.FC<{
   const [tab, setTab] = React.useState<string>(initialTab);
   const [atelierOpen, setAtelierOpen] = React.useState(false);
 
+  // Ouverture du jardin + onglet d'entrée.
+  React.useEffect(() => {
+    track('jardin', 'ouverture', initialTab);
+  }, [track, initialTab]);
+
   const handleTabChange = React.useCallback((value: string) => {
     setTab(value);
+    track(value, 'ouverture');
     scrollToDiagnosticPersistent();
-  }, []);
+  }, [track]);
 
   React.useEffect(() => {
     const onGoto = (e: Event) => {
@@ -387,10 +394,15 @@ const PropTabs: React.FC<{
 
   const [portraitSub, setPortraitSub] = React.useState<'galerie' | 'cadastre' | 'intention' | 'entretiens'>('galerie');
 
-  const goPortrait = React.useCallback((sub: 'galerie' | 'cadastre' | 'intention' | 'entretiens') => {
+  const changeSub = React.useCallback((sub: 'galerie' | 'cadastre' | 'intention' | 'entretiens') => {
     setPortraitSub(sub);
+    track('portrait', 'ouverture', sub);
+  }, [track]);
+
+  const goPortrait = React.useCallback((sub: 'galerie' | 'cadastre' | 'intention' | 'entretiens') => {
+    changeSub(sub);
     handleTabChange('portrait');
-  }, [handleTabChange]);
+  }, [changeSub, handleTabChange]);
 
 
   const [atelierIntent, setAtelierIntent] = React.useState<{ focus?: 'capteurs' } | null>(null);
