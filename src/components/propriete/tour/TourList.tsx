@@ -116,7 +116,7 @@ export const TourList: React.FC<Props> = ({
           />
         </div>
         <NewTourDialog onCreate={onCreate} />
-        <Button size="sm" onClick={onSuggest} disabled={suggesting}>
+        <Button size="sm" onClick={() => { track('tour', 'proposer_tour'); onSuggest(); }} disabled={suggesting}>
           <Sparkles className="h-4 w-4 mr-1.5" />
           {suggesting ? 'L\u2019IA réfléchit…' : 'Proposer un tour'}
         </Button>
@@ -173,7 +173,7 @@ export const TourList: React.FC<Props> = ({
               <li key={t.id}>
                 <button
                   type="button"
-                  onClick={() => onOpen(t)}
+                  onClick={() => { track('tour', 'ouverture_tour', t.id, { titre: t.titre }); onOpen(t); }}
                   className="w-full text-left rounded-xl border border-border bg-card p-4 transition hover:border-primary/40 hover:shadow-sm"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
