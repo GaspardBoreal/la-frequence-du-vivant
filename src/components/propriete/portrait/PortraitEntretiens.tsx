@@ -14,6 +14,7 @@ import {
 } from '@/hooks/propriete/useProprieteEntretiens';
 import { useCanEditIntention } from '@/hooks/propriete/usePropertyIntention';
 import { ConnaissanceJardinCard } from './ConnaissanceJardinCard';
+import { useProprieteTrack } from '@/contexts/ProprieteTrackerContext';
 
 /**
  * L'Entretien fondateur — l'interview d'initialisation devient un objet vivant
