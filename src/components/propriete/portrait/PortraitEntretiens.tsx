@@ -62,7 +62,7 @@ export const PortraitEntretiens: React.FC<Props> = ({ proprieteId, proprieteNom 
         </div>
         {canEdit && (
           <button
-            onClick={() => setOpenForm((v) => !v)}
+            onClick={() => { track('entretiens', 'depot_formulaire'); setOpenForm((v) => !v); }}
             className="text-xs px-3 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" /> Déposer un entretien
@@ -101,7 +101,7 @@ export const PortraitEntretiens: React.FC<Props> = ({ proprieteId, proprieteNom 
               {entretiens.map((e) => (
                 <button
                   key={e.id}
-                  onClick={() => setSelectedId(e.id)}
+                  onClick={() => { track('entretiens', 'ouverture_fiche', e.id); setSelectedId(e.id); }}
                   className={`shrink-0 text-xs px-3 py-1.5 rounded-full border ${
                     selected?.id === e.id
                       ? 'bg-amber-500 text-white border-amber-500'
