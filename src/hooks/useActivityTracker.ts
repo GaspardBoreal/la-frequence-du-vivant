@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 interface TrackOptions {
   explorationId?: string;
   marcheEventId?: string;
+  /** Jardin concerné : tracé dans les métadonnées pour reconstituer le parcours. */
+  proprieteId?: string;
   metadata?: Record<string, unknown>;
 }
 
