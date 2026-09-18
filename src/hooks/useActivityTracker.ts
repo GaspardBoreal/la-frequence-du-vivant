@@ -34,6 +34,7 @@ export function useActivityTracker() {
             marche_event_id: options?.marcheEventId || null,
             metadata: {
               ...options?.metadata,
+              ...(options?.proprieteId ? { propriete_id: options.proprieteId } : {}),
               user_agent: navigator.userAgent,
               viewport: `${window.innerWidth}x${window.innerHeight}`,
               timestamp: new Date().toISOString(),
