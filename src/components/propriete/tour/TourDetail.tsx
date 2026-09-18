@@ -158,7 +158,10 @@ export const TourDetail: React.FC<Props> = ({
             <TourStatusBadge statut={tour.statut} />
             <Select
               value={tour.statut}
-              onValueChange={(v) => onUpdateTour(tour.id, { statut: v as TourStatut })}
+              onValueChange={(v) => {
+                track('tour', 'statut', tour.id, { statut: v });
+                onUpdateTour(tour.id, { statut: v as TourStatut });
+              }}
             >
               <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue /></SelectTrigger>
               <SelectContent className="bg-popover z-[100]">
@@ -228,7 +231,7 @@ export const TourDetail: React.FC<Props> = ({
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
               <span className="truncate">{enriching ? 'L’Assistant réfléchit…' : 'Enrichir avec l’Assistant'}</span>
             </Button>
-            <Button className="min-w-0 px-2 sm:px-3" size="sm" onClick={() => setCarnetOpen(true)} disabled={retenues.length === 0}>
+            <Button className="min-w-0 px-2 sm:px-3" size="sm" onClick={() => { track('tour', 'carnet_terrain', tour.id); setCarnetOpen(true); }} disabled={retenues.length === 0}>
               <NotebookPen className="h-3.5 w-3.5 mr-1.5" />
               <span className="truncate">Carnet de terrain</span>
             </Button>
