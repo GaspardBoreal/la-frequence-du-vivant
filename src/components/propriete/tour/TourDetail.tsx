@@ -70,10 +70,16 @@ export const TourDetail: React.FC<Props> = ({
   const [newTitle, setNewTitle] = React.useState('');
   const [carnetOpen, setCarnetOpen] = React.useState(false);
   const [notes, setNotes] = React.useState(tour.notes ?? '');
+  const track = useProprieteTrack();
 
   const retenues = React.useMemo(() => actions.filter((a) => a.retenue), [actions]);
 
   React.useEffect(() => setNotes(tour.notes ?? ''), [tour.id, tour.notes]);
+
+  // Consultation du tour ouvert.
+  React.useEffect(() => {
+    track('tour', 'consultation', tour.id, { titre: tour.titre });
+  }, [track, tour.id, tour.titre]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
