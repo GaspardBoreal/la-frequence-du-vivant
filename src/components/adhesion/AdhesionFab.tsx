@@ -29,6 +29,7 @@ export const AdhesionFab: React.FC = () => {
     '/adhesion',
     '/marches-du-vivant/carte-marches-du-vivant',
     '/jardin/',
+    '/partenaires/',
   ];
   if (hideOn.some((p) => location.pathname.startsWith(p))) return null;
 
