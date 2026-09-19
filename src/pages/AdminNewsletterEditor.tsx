@@ -171,6 +171,20 @@ const AdminNewsletterEditor: React.FC = () => {
                   <Label className="text-xs text-muted-foreground">Adresse de réponse</Label>
                   <Input value={draft.reply_to ?? ''} onChange={(e) => set({ reply_to: e.target.value })} placeholder="contact@la-frequence-du-vivant.com" />
                 </div>
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label className="text-xs text-muted-foreground">Adresse d'expéditeur</Label>
+                  <Input
+                    value={draft.from_email ?? ''}
+                    onChange={(e) => set({ from_email: e.target.value })}
+                    placeholder={DEFAULT_FROM_EMAIL}
+                  />
+                  {!draft.from_email?.trim() && (
+                    <p className="text-xs text-amber-600">
+                      Aucune adresse choisie : la lettre partira de l'adresse du Carnet de terrain. Indiquez une adresse
+                      de votre domaine vérifié, par exemple {DEFAULT_FROM_EMAIL}.
+                    </p>
+                  )}
+                </div>
               </div>
             </Card>
 
