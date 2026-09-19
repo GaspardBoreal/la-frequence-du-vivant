@@ -36,10 +36,13 @@ import {
   useNewsletterMutations,
   useSendNewsletter,
   type NewsletterCampaign,
+  type SendResult,
 } from '@/hooks/admin/useNewsletter';
 import { UNIVERS_THEMES, type NewsletterBlock, type NewsletterUnivers } from '@/lib/newsletter/blocks';
 
 const MAX_TEST = 10;
+/** Domaine déjà vérifié chez Resend pour ce projet. */
+const DEFAULT_FROM_EMAIL = 'lettre@mail.la-frequence-du-vivant.com';
 
 /** Studio Newsletter — composition, ciblage, test, envoi et résultats d'une lettre. */
 const AdminNewsletterEditor: React.FC = () => {
@@ -51,6 +54,7 @@ const AdminNewsletterEditor: React.FC = () => {
   const [draft, setDraft] = React.useState<NewsletterCampaign | null>(null);
   const [testOpen, setTestOpen] = React.useState(false);
   const [sendOpen, setSendOpen] = React.useState(false);
+  const [testResult, setTestResult] = React.useState<SendResult | null>(null);
 
   React.useEffect(() => {
     if (campaign && !draft) setDraft(campaign);
@@ -89,6 +93,7 @@ const AdminNewsletterEditor: React.FC = () => {
         objet: draft.objet,
         preheader: draft.preheader,
         from_name: draft.from_name,
+        from_email: draft.from_email?.trim() || null,
         reply_to: draft.reply_to,
         blocks: draft.blocks,
         audience: draft.audience,
@@ -171,6 +176,20 @@ const AdminNewsletterEditor: React.FC = () => {
                   <Label className="text-xs text-muted-foreground">Adresse de réponse</Label>
                   <Input value={draft.reply_to ?? ''} onChange={(e) => set({ reply_to: e.target.value })} placeholder="contact@la-frequence-du-vivant.com" />
                 </div>
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label className="text-xs text-muted-foreground">Adresse d'expéditeur</Label>
+                  <Input
+                    value={draft.from_email ?? ''}
+                    onChange={(e) => set({ from_email: e.target.value })}
+                    placeholder={DEFAULT_FROM_EMAIL}
+                  />
+                  {!draft.from_email?.trim() && (
+                    <p className="text-xs text-amber-600">
+                      Aucune adresse choisie : la lettre partira de l'adresse du Carnet de terrain. Indiquez une adresse
+                      de votre domaine vérifié, par exemple {DEFAULT_FROM_EMAIL}.
+                    </p>
+                  )}
+                </div>
               </div>
             </Card>
 
@@ -214,10 +233,20 @@ const AdminNewsletterEditor: React.FC = () => {
             return;
           }
           const res = await send.mutateAsync({ campaignId: draft.id, test: true, testEmails: emails });
-          toast.success(`Test envoyé à ${res.sent} adresse${res.sent > 1 ? 's' : ''}`);
+          setTestResult(res);
+          if (res.sent > 0) {
+            toast.success(
+              `Test accepté pour ${res.sent} adresse${res.sent > 1 ? 's' : ''} — expéditeur ${res.from ?? '(inconnu)'}`,
+            );
+          }
+          if (res.failed > 0) {
+            toast.error(`${res.failed} adresse${res.failed > 1 ? 's' : ''} refusée${res.failed > 1 ? 's' : ''}`);
+            return; // la fenêtre reste ouverte pour afficher le motif
+          }
           setTestOpen(false);
         }}
         pending={send.isPending}
+        result={testResult}
       />
 
       <AlertDialog open={sendOpen} onOpenChange={setSendOpen}>
@@ -269,7 +298,8 @@ const TestDialog: React.FC<{
   onOpenChange: (o: boolean) => void;
   onSend: (emails: string[]) => Promise<void>;
   pending: boolean;
-}> = ({ open, onOpenChange, onSend, pending }) => {
+  result?: SendResult | null;
+}> = ({ open, onOpenChange, onSend, pending, result }) => {
   const { data: rows = [] } = useNewsletterAudience('tous');
   const [selected, setSelected] = React.useState<string[]>([]);
   const [manual, setManual] = React.useState('');
@@ -319,6 +349,21 @@ const TestDialog: React.FC<{
           <Label className="text-xs text-muted-foreground">Autres adresses (séparées par une virgule)</Label>
           <Input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="moi@exemple.fr" />
         </div>
+
+        {result && (
+          <div className="space-y-1.5 rounded-lg border p-3 text-xs">
+            <p>
+              Dernier test : <strong>{result.sent}</strong> accepté{result.sent > 1 ? 's' : ''},{' '}
+              <strong>{result.failed}</strong> refusé{result.failed > 1 ? 's' : ''}
+              {result.from ? ` — expéditeur ${result.from}` : ''}
+            </p>
+            {result.failures?.map((f) => (
+              <p key={f.email} className="text-destructive">
+                {f.email} : {f.error}
+              </p>
+            ))}
+          </div>
+        )}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

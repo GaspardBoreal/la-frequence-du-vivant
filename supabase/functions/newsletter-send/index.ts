@@ -175,12 +175,48 @@ Deno.serve(async (req) => {
           'List-Unsubscribe': `<${unsubscribeUrl}>`,
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         },
-        tags: [{ name: 'campaign_id', value: String(campaignId).replace(/-/g, '') }],
+        // Les étiquettes ne sont pas acceptées par l'envoi groupé de Resend :
+        // on ne les met que sur l'envoi unitaire.
+        ...(isTest ? {} : { tags: [{ name: 'campaign_id', value: String(campaignId).replace(/-/g, '') }] }),
       };
     };
 
     let sent = 0;
     const failures: Array<{ email: string; error: string }> = [];
+    const messageIds: string[] = [];
+
+    console.log(
+      `[newsletter-send] campagne=${campaignId} test=${isTest} destinataires=${dests.length} expediteur=${fromAddress}`,
+    );
+
+    // Test : envoi unitaire (canal simple), qui accepte tous les champs.
+    if (isTest) {
+      for (const d of dests) {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildEmail(d)),
+        });
+        const bodyText = await res.text();
+        if (!res.ok) {
+          console.error(`[newsletter-send] test ${d.email} — Resend ${res.status}: ${bodyText}`);
+          failures.push({ email: d.email, error: `${res.status}: ${bodyText.slice(0, 250)}` });
+          continue;
+        }
+        const id = (JSON.parse(bodyText || '{}') as any)?.id;
+        console.log(`[newsletter-send] test ${d.email} accepté — id=${id}`);
+        if (id) messageIds.push(id);
+        sent += 1;
+      }
+      return json({
+        ok: failures.length === 0,
+        sent,
+        failed: failures.length,
+        from: fromAddress,
+        messageIds,
+        failures,
+      });
+    }
 
     for (let i = 0; i < dests.length; i += BATCH) {
       const chunk = dests.slice(i, i + BATCH);
@@ -234,7 +270,14 @@ Deno.serve(async (req) => {
         .eq('id', campaignId);
     }
 
-    return json({ ok: failures.length === 0, sent, failed: failures.length, failures: failures.slice(0, 10) });
+    console.log(`[newsletter-send] terminé — envoyés=${sent} échecs=${failures.length}`);
+    return json({
+      ok: failures.length === 0,
+      sent,
+      failed: failures.length,
+      from: fromAddress,
+      failures: failures.slice(0, 10),
+    });
   } catch (e) {
     console.error('[newsletter-send] erreur:', (e as Error).message);
     return json({ error: "L'envoi a échoué", details: (e as Error).message }, 500);
