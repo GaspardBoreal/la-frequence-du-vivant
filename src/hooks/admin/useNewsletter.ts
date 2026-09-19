@@ -148,6 +148,8 @@ export function useNewsletterMutations() {
           from_email: c.from_email,
           reply_to: c.reply_to,
           blocks: c.blocks,
+          presentation: c.presentation ?? 'journal',
+          tracking_enabled: c.tracking_enabled ?? true,
           audience: c.audience,
           created_by: auth.user?.id ?? null,
         })
