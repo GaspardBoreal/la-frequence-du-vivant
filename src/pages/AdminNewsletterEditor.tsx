@@ -299,7 +299,7 @@ const AdminNewsletterEditor: React.FC = () => {
   );
 };
 
-/** Traduction des événements de livraison Resend. */
+/** Traduction des événements de livraison Resend (relecture directe). */
 const DELIVERY_LABELS: Record<string, string> = {
   sent: "accepté par le service d'envoi, remise en cours",
   delivered: 'remis à la boîte du destinataire',
@@ -310,20 +310,43 @@ const DELIVERY_LABELS: Record<string, string> = {
   clicked: 'remis, ouvert et cliqué',
 };
 
+/** Traduction du statut de suivi enregistré par le webhook Resend. */
+const RECIPIENT_LABELS: Record<string, string> = {
+  queued: "en file d'attente",
+  sent: "accepté par le service d'envoi, remise en cours",
+  delivered: 'remis à la boîte du destinataire',
+  delayed: 'remise retardée — nouvelle tentative en cours',
+  bounced: 'rejeté par la boîte du destinataire',
+  complained: 'signalé comme indésirable par le destinataire',
+  opened: 'remis, puis ouvert',
+  clicked: 'remis, ouvert et cliqué',
+  failed: 'envoi échoué',
+};
+
+/** Adresse que Resend appelle pour annoncer la remise, l'ouverture, etc. */
+const WEBHOOK_URL = 'https://xzbunrtgbfbhinkzkzhf.supabase.co/functions/v1/newsletter-webhook';
+
 /** Choix des adresses de test parmi les marcheurs, ou saisie libre. */
 const TestDialog: React.FC<{
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  campaignId: string;
+  /** Adresses du dernier test : leur sort est suivi en direct. */
+  watchEmails: string[];
   onSend: (emails: string[]) => Promise<void>;
   pending: boolean;
   result?: SendResult | null;
-}> = ({ open, onOpenChange, onSend, pending, result }) => {
+}> = ({ open, onOpenChange, campaignId, watchEmails, onSend, pending, result }) => {
   const { data: rows = [] } = useNewsletterAudience('tous');
   const statusCheck = useDeliveryStatus();
-  const [statuses, setStatuses] = React.useState<DeliveryStatus[] | null>(null);
+  const [statuses, setStatuses] = React.useState<DeliveryStatusResult | null>(null);
   const [selected, setSelected] = React.useState<string[]>([]);
   const [manual, setManual] = React.useState('');
   const [q, setQ] = React.useState('');
+
+  // Suivi en direct : le webhook Resend met à jour les lignes de test.
+  const watch = useTestDeliveryWatch(campaignId, watchEmails, open && (result?.sent ?? 0) > 0);
+  const watchRows = watch.data ?? [];
 
   React.useEffect(() => {
     setStatuses(null);
