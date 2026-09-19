@@ -962,15 +962,9 @@
 
 /* ---------- IMPRESSION : une section = une page A4 paysage ---------- */
 
+/* Le format paysage (@page) est injecté par la page elle-même et retiré
+   quand on la quitte : une règle @page ici resterait active pour tout le site. */
 @media print {
-  @page { size: A4 landscape; margin: 0; }
-
-  html, body {
-    background: #fff !important;
-    margin: 0;
-    padding: 0;
-  }
-
   .lfdv-sa {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;

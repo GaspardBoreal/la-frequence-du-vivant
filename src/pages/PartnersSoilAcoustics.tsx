@@ -144,6 +144,19 @@ const PartnersSoilAcoustics: React.FC = () => {
   const t = soilAcousticsContent[lang];
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // Format paysage réservé à cette page : la règle est retirée en quittant,
+  // sinon elle s'appliquerait aux impressions des autres pages.
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.setAttribute('data-sa-print', '');
+    style.textContent = '@media print { @page { size: A4 landscape; margin: 0; } html, body { background: #fff !important; margin: 0; padding: 0; } }';
+    document.head.appendChild(style);
+    return () => {
+      style.remove();
+    };
+  }, []);
+
+
   // Révélation au scroll — même comportement que la maquette d'origine.
   useEffect(() => {
     const els = rootRef.current?.querySelectorAll('.sa-reveal');

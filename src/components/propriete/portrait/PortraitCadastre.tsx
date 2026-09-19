@@ -35,6 +35,7 @@ import CadastreOptionsMenu, {
 } from './CadastreOptionsMenu';
 import PropertyAddressCard from './PropertyAddressCard';
 import NearestWeatherStationCard from './NearestWeatherStationCard';
+import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 
 const SAVED_STYLE: L.PathOptions = {
   color: '#2f5d3a',
@@ -217,11 +218,13 @@ export const PortraitCadastre: React.FC<Props> = ({
     if (!fullscreen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    fullscreenSurfaces.push();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setFullscreen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => {
+      fullscreenSurfaces.pop();
       document.body.style.overflow = prev;
       window.removeEventListener('keydown', onKey);
     };

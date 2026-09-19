@@ -79,15 +79,24 @@ Deno.serve(async (req) => {
         mode === 'selection' && Array.isArray(aud.profileIds) && aud.profileIds.length ? aud.profileIds : null;
       if (mode === 'selection' && !profileIds) return json({ error: 'Aucun destinataire sélectionné' }, 400);
 
-      const { data: audience, error: audErr } = await supabase.rpc('get_newsletter_audience', {
-        _univers: mode === 'selection' ? 'tous' : campaign.univers ?? 'tous',
-        _profile_ids: profileIds,
-      });
-      if (audErr) {
-        console.error('[newsletter-send] audience:', audErr.message);
-        return json({ error: "Impossible de constituer la liste des destinataires", details: audErr.message }, 500);
+      // Même plafond de 1000 lignes côté RPC : on pagine l'audience.
+      const audience: any[] = [];
+      const AUD_PAGE = 1000;
+      for (let from = 0; ; from += AUD_PAGE) {
+        const { data: pageRows, error: audErr } = await supabase
+          .rpc('get_newsletter_audience', {
+            _univers: mode === 'selection' ? 'tous' : campaign.univers ?? 'tous',
+            _profile_ids: profileIds,
+          })
+          .range(from, from + AUD_PAGE - 1);
+        if (audErr) {
+          console.error('[newsletter-send] audience:', audErr.message);
+          return json({ error: "Impossible de constituer la liste des destinataires", details: audErr.message }, 500);
+        }
+        audience.push(...((pageRows as any[]) ?? []));
+        if (!pageRows || (pageRows as any[]).length < AUD_PAGE) break;
       }
-      const joignables = (audience ?? []).filter((r: any) => r.email && !r.unsubscribed);
+      const joignables = audience.filter((r: any) => r.email && !r.unsubscribed);
       if (!joignables.length) return json({ error: 'Aucun destinataire joignable pour ce ciblage' }, 400);
 
       const rows = joignables.map((r: any) => ({
@@ -105,12 +114,25 @@ Deno.serve(async (req) => {
         return json({ error: 'Impossible d’enregistrer la liste des destinataires', details: upErr.message }, 500);
       }
 
-      const { data: recipients } = await service
-        .from('newsletter_recipients')
-        .select('id, email, nom, profile_id, token, sent_at')
-        .eq('campaign_id', campaignId);
+      // PostgREST plafonne à 1000 lignes : on pagine pour n'oublier personne.
+      const recipients: any[] = [];
+      const PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const { data: pageRows, error: pageErr } = await service
+          .from('newsletter_recipients')
+          .select('id, email, nom, profile_id, token, sent_at')
+          .eq('campaign_id', campaignId)
+          .order('id')
+          .range(from, from + PAGE - 1);
+        if (pageErr) {
+          console.error('[newsletter-send] lecture destinataires:', pageErr.message);
+          return json({ error: 'Impossible de relire la liste des destinataires', details: pageErr.message }, 500);
+        }
+        recipients.push(...(pageRows ?? []));
+        if (!pageRows || pageRows.length < PAGE) break;
+      }
 
-      dests = (recipients ?? [])
+      dests = recipients
         .filter((r: any) => !r.sent_at)
         .map((r: any) => ({
           email: r.email,

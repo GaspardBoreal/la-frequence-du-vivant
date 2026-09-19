@@ -79,7 +79,8 @@ const AdminNewsletterEditor: React.FC = () => {
 
   const set = (patch: Partial<NewsletterCampaign>) => setDraft({ ...draft, ...patch } as NewsletterCampaign);
 
-  const save = async () => {
+  /** Renvoie false si l'enregistrement a échoué : on n'envoie jamais une version périmée. */
+  const save = async (): Promise<boolean> => {
     try {
       await update.mutateAsync({
         id: draft.id,
@@ -93,8 +94,10 @@ const AdminNewsletterEditor: React.FC = () => {
         audience: draft.audience,
       });
       toast.success('Lettre enregistrée');
+      return true;
     } catch {
       /* message déjà affiché */
+      return false;
     }
   };
 
@@ -206,7 +209,10 @@ const AdminNewsletterEditor: React.FC = () => {
         open={testOpen}
         onOpenChange={setTestOpen}
         onSend={async (emails) => {
-          await save();
+          if (!(await save())) {
+            toast.error("Enregistrement impossible : le test n'a pas été envoyé.");
+            return;
+          }
           const res = await send.mutateAsync({ campaignId: draft.id, test: true, testEmails: emails });
           toast.success(`Test envoyé à ${res.sent} adresse${res.sent > 1 ? 's' : ''}`);
           setTestOpen(false);
@@ -234,7 +240,10 @@ const AdminNewsletterEditor: React.FC = () => {
             <AlertDialogAction
               onClick={async (e) => {
                 e.preventDefault();
-                await save();
+                if (!(await save())) {
+                  toast.error("Enregistrement impossible : la lettre n'a pas été envoyée.");
+                  return;
+                }
                 try {
                   const res = await send.mutateAsync({ campaignId: draft.id });
                   toast.success(`Lettre envoyée à ${res.sent} destinataire${res.sent > 1 ? 's' : ''}`);

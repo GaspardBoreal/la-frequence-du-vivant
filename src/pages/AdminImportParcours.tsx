@@ -102,7 +102,25 @@ const AdminImportParcours: React.FC = () => {
       const track = await parseTrackFile(file);
       setParsed(track);
 
-      const baseSteps: EditableStep[] = track.steps.map((s) => ({
+      // Fichier ne contenant que le tracé (fréquent en GPX) : on propose des
+      // étapes réparties le long du parcours, modifiables comme les autres.
+      let sourceSteps = track.steps;
+      if (sourceSteps.length === 0 && track.track.length > 0) {
+        const wanted = Math.min(10, track.track.length);
+        const stride = Math.max(1, Math.floor((track.track.length - 1) / Math.max(1, wanted - 1)));
+        const picked: typeof track.track = [];
+        for (let i = 0; i < track.track.length && picked.length < wanted; i += stride) picked.push(track.track[i]);
+        sourceSteps = picked.map((p, i) => ({
+          id: `track-${i}`,
+          name: `Étape ${i + 1}`,
+          description: null,
+          lat: p.lat,
+          lng: p.lng,
+        }));
+        toast.info(`Aucun point nommé dans ce fichier : ${sourceSteps.length} étapes ont été déduites du tracé.`);
+      }
+
+      const baseSteps: EditableStep[] = sourceSteps.map((s) => ({
         id: s.id,
         name: s.name,
         ville: '',
@@ -142,9 +160,23 @@ const AdminImportParcours: React.FC = () => {
     }
     setImporting(true);
     try {
+      // Chaque point du tracé est rattaché à l'étape retenue la plus proche,
+      // sinon tout le tracé se retrouverait collé entre l'étape 1 et l'étape 2.
+      const nearestStepIndex = (lat: number, lng: number) => {
+        let best = 0;
+        let bestD = Infinity;
+        selected.forEach((s, i) => {
+          const d = (s.lat - lat) ** 2 + (s.lng - lng) ** 2;
+          if (d < bestD) {
+            bestD = d;
+            best = i;
+          }
+        });
+        return best;
+      };
       const waypoints =
         importWaypoints && parsed?.track?.length
-          ? parsed.track.map((p) => ({ lat: p.lat, lng: p.lng, afterIndex: 0 }))
+          ? parsed.track.map((p) => ({ lat: p.lat, lng: p.lng, afterIndex: nearestStepIndex(p.lat, p.lng) }))
           : [];
 
       const { data, error } = await supabase.functions.invoke('import-parcours', {

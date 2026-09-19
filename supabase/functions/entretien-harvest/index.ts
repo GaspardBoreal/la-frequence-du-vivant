@@ -36,7 +36,8 @@ const MAX_CARTES = 8;
 const chunk = (text: string, size = 18000): string[] => {
   const out: string[] = [];
   for (let i = 0; i < text.length; i += size) out.push(text.slice(i, i + size));
-  return out.slice(0, 3);
+  // Jusqu'à 12 morceaux (~216 000 signes) : un entretien de 2 h passe entier.
+  return out.slice(0, 12);
 };
 
 serve(async (req) => {

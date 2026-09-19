@@ -167,12 +167,19 @@ export function useNewsletterAudience(univers: NewsletterUnivers) {
     queryKey: ['newsletter-audience', univers],
     staleTime: 60_000,
     queryFn: async (): Promise<AudienceRow[]> => {
-      const { data, error } = await db.rpc('get_newsletter_audience', {
-        _univers: univers,
-        _profile_ids: null,
-      });
-      if (error) throw error;
-      return data ?? [];
+      // PostgREST renvoie au maximum 1000 lignes : on pagine pour compter tout le monde.
+      const rows: AudienceRow[] = [];
+      const PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await db
+          .rpc('get_newsletter_audience', { _univers: univers, _profile_ids: null })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const page = (data ?? []) as AudienceRow[];
+        rows.push(...page);
+        if (page.length < PAGE) break;
+      }
+      return rows;
     },
   });
 }

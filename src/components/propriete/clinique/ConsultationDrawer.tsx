@@ -8,6 +8,7 @@ import {
   CalendarClock, CloudRain, Clock, Award, Pencil, Trash2, Check, X, Maximize2,
 } from 'lucide-react';
 import {
+  useConsultations,
   useConsultationDetail, useToggleAction, useAddConsultationMedia, useUpdateConsultation,
   useDeleteConsultation,
   type Consultation, type CareAction, type ConsultationMedia,
@@ -87,7 +88,14 @@ export const ConsultationDrawer: React.FC<{
   onClose: () => void;
   /** Ouverte depuis un écran plein (Atelier du jardin) : passe au-dessus. */
   elevated?: boolean;
-}> = ({ consultation, proprieteId, onClose, elevated }) => {
+}> = ({ consultation: consultationProp, proprieteId, onClose, elevated }) => {
+  // Le parent garde l'objet figé à l'ouverture : on relit la version à jour
+  // de la liste pour que renommage et changement d'état s'affichent aussitôt.
+  const { data: consultationsList } = useConsultations(proprieteId);
+  const consultation = React.useMemo(
+    () => consultationsList?.find((c) => c.id === consultationProp?.id) ?? consultationProp,
+    [consultationsList, consultationProp],
+  );
   const { data, isLoading } = useConsultationDetail(consultation?.id);
   const toggle = useToggleAction(proprieteId);
   const addMedia = useAddConsultationMedia(proprieteId);
