@@ -29,6 +29,36 @@ Deno.serve(async (req) => {
     const isTest = payload?.test === true;
     const testEmails: string[] = Array.isArray(payload?.testEmails) ? payload.testEmails : [];
 
+    // --- Action « status » : relit le statut de livraison Resend des messages d'un test. ---
+    if (payload?.action === 'status') {
+      const ids: string[] = Array.isArray(payload?.messageIds)
+        ? payload.messageIds.filter((x: unknown) => typeof x === 'string' && x.trim()).slice(0, 10)
+        : [];
+      if (!ids.length) return json({ error: 'Aucun message à vérifier' }, 400);
+      const resendApiKey = Deno.env.get('RESEND_API_KEY');
+      if (!resendApiKey) return json({ error: "L'envoi d'emails n'est pas configuré" }, 500);
+      const statuses: Array<{ id: string; to?: string; lastEvent?: string; error?: string }> = [];
+      for (const id of ids) {
+        const res = await fetch(`https://api.resend.com/emails/${encodeURIComponent(id)}`, {
+          headers: { Authorization: `Bearer ${resendApiKey}` },
+        });
+        const bodyText = await res.text();
+        if (!res.ok) {
+          console.error(`[newsletter-send] statut ${id} — Resend ${res.status}: ${bodyText}`);
+          statuses.push({ id, error: `${res.status}: ${bodyText.slice(0, 200)}` });
+          continue;
+        }
+        const parsed = JSON.parse(bodyText || '{}') as any;
+        statuses.push({
+          id,
+          to: Array.isArray(parsed?.to) ? parsed.to[0] : parsed?.to,
+          lastEvent: parsed?.last_event,
+        });
+      }
+      console.log(`[newsletter-send] statuts lus: ${statuses.map((s) => `${s.id}=${s.lastEvent ?? s.error}`).join(', ')}`);
+      return json({ ok: true, statuses });
+    }
+
     if (!UUID_RE.test(campaignId ?? '')) return json({ error: 'Campagne introuvable' }, 400);
     if (isTest) {
       if (!testEmails.length) return json({ error: 'Choisissez au moins une adresse de test' }, 400);
