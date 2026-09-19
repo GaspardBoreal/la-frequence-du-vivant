@@ -442,6 +442,9 @@ const PropTabs: React.FC<{
     const OPEN_SURFACES =
       '[data-state="open"][role="dialog"],[data-state="open"][role="alertdialog"],[aria-modal="true"],[data-radix-popper-content-wrapper]';
     const release = () => {
+      // Les surfaces plein écran faites main (Atelier, carotte de sol, cadastre)
+      // ne portent pas d'attribut « dialog » : on interroge leur registre.
+      if (fullscreenSurfaces.get() > 0) return;
       if (document.querySelector(OPEN_SURFACES)) return;
       const b = document.body;
       if (b.style.overflow === 'hidden') b.style.overflow = '';
