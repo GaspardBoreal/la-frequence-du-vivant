@@ -8,6 +8,7 @@ import {
   CalendarClock, CloudRain, Clock, Award, Pencil, Trash2, Check, X, Maximize2,
 } from 'lucide-react';
 import {
+  useConsultations,
   useConsultationDetail, useToggleAction, useAddConsultationMedia, useUpdateConsultation,
   useDeleteConsultation,
   type Consultation, type CareAction, type ConsultationMedia,
