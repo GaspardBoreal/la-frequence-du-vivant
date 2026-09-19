@@ -225,6 +225,48 @@ export type SendResult = {
   failures?: Array<{ email: string; error: string }>;
 };
 
+/** Statut de livraison lu chez Resend pour un message déjà envoyé. */
+export type DeliveryStatus = {
+  id: string;
+  to?: string;
+  /** Événement Resend brut : sent, delivered, delivery_delayed, bounced, complained, opened, clicked. */
+  lastEvent?: string;
+  error?: string;
+};
+
+/** Relit le statut de livraison des messages d'un test (action « status »). */
+export function useDeliveryStatus() {
+  return useMutation({
+    mutationFn: async (vars: { messageIds: string[] }) => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error('Votre session a expiré, reconnectez-vous.');
+
+      const { data, error } = await supabase.functions.invoke('newsletter-send', {
+        body: { action: 'status', messageIds: vars.messageIds },
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (error) {
+        let detail = error.message;
+        try {
+          const ctx = (error as any).context;
+          if (ctx?.text) {
+            const body = await ctx.text();
+            const parsed = JSON.parse(body);
+            detail = parsed.error || parsed.details || body;
+          }
+        } catch {
+          /* on garde le message initial */
+        }
+        throw new Error(detail);
+      }
+      if (data?.error) throw new Error(data.error);
+      return (data?.statuses ?? []) as DeliveryStatus[];
+    },
+    onError: (e) => toast.error(humanError(e)),
+  });
+}
+
 export function useSendNewsletter() {
   const qc = useQueryClient();
   return useMutation({
