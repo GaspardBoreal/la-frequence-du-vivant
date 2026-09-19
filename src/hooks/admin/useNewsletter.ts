@@ -304,7 +304,10 @@ export function useDeliveryStatus() {
         throw new Error(detail);
       }
       if (data?.error) throw new Error(data.error);
-      return (data?.statuses ?? []) as DeliveryStatus[];
+      return {
+        restricted: data?.code === 'key_restricted',
+        statuses: (data?.statuses ?? []) as DeliveryStatus[],
+      };
     },
     onError: (e) => toast.error(humanError(e)),
   });
