@@ -646,7 +646,9 @@ export const SampleCoreDrawerHost: React.FC = () => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    fullscreenSurfaces.push();
     return () => {
+      fullscreenSurfaces.pop();
       document.body.style.overflow = prev;
     };
   }, [open]);
