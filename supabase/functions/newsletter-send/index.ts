@@ -247,8 +247,23 @@ Deno.serve(async (req) => {
         sent += 1;
         // On trace le test comme un destinataire marqué « is_test » : le webhook Resend
         // pourra y rattacher les événements de remise (remis, rejeté, ouvert…).
-        const { error: testRowErr } = await service.from('newsletter_recipients').upsert(
-          {
+        // On ne touche jamais une ligne réelle (non-test) existante pour cette adresse.
+        const { data: existing } = await service
+          .from('newsletter_recipients')
+          .select('id, is_test')
+          .eq('campaign_id', campaignId)
+          .eq('email', d.email)
+          .maybeSingle();
+        if (existing) {
+          if (existing.is_test) {
+            const { error: updErr } = await service
+              .from('newsletter_recipients')
+              .update({ statut: 'sent', sent_at: new Date().toISOString(), resend_message_id: id ?? null, error: null })
+              .eq('id', existing.id);
+            if (updErr) console.error(`[newsletter-send] trace test ${d.email}:`, updErr.message);
+          }
+        } else {
+          const { error: insErr } = await service.from('newsletter_recipients').insert({
             campaign_id: campaignId,
             email: d.email,
             nom: null,
@@ -256,12 +271,10 @@ Deno.serve(async (req) => {
             statut: 'sent',
             sent_at: new Date().toISOString(),
             resend_message_id: id ?? null,
-            error: null,
             is_test: true,
-          },
-          { onConflict: 'campaign_id,email' },
-        );
-        if (testRowErr) console.error(`[newsletter-send] trace test ${d.email}:`, testRowErr.message);
+          });
+          if (insErr) console.error(`[newsletter-send] trace test ${d.email}:`, insErr.message);
+        }
       }
       return json({
         ok: failures.length === 0,
