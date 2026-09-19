@@ -117,6 +117,9 @@ Deno.serve(async (req) => {
     let totalErrors = 0;
     let totalSpeciesCollected = 0;
 
+    // La collecte peut dépasser la limite de 150s d'une requête : on l'exécute
+    // en tâche de fond et on répond immédiatement avec le logId à suivre.
+    const runCollection = async () => {
     // Process each marche sequentially
     for (const em of marchesToProcess) {
       const marche = (em as any).marches;
@@ -322,14 +325,35 @@ Deno.serve(async (req) => {
     }
 
     console.log(`🌿 Done: ${totalProcessed} marches, ${totalSpeciesCollected} species, ${totalErrors} errors`);
+    };
+
+    const task = runCollection().catch(async (err) => {
+      console.error('❌ background collection failed:', err);
+      if (logId) {
+        await serviceClient
+          .from('data_collection_logs')
+          .update({
+            status: 'failed',
+            marches_processed: totalProcessed,
+            errors_count: totalErrors + 1,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', logId);
+      }
+    });
+    // @ts-ignore EdgeRuntime est fourni par le runtime Supabase
+    if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(task);
 
     return new Response(JSON.stringify({
       success: true,
-      marchesProcessed: totalProcessed,
-      totalSpecies: totalSpeciesCollected,
-      errors: totalErrors,
+      started: true,
+      marchesTotal: marchesToProcess.length,
+      marchesProcessed: 0,
+      totalSpecies: 0,
+      errors: 0,
       logId,
     }), {
+      status: 202,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 

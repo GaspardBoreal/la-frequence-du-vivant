@@ -9,8 +9,35 @@ interface CollectionResult {
   errors: number;
   logId?: string;
   alreadyCollected?: boolean;
+  started?: boolean;
+  marchesTotal?: number;
   message?: string;
 }
+
+/** La collecte tourne en tâche de fond côté serveur : on suit le journal. */
+const waitForCollection = async (logId: string, totalSteps: number): Promise<CollectionResult> => {
+  const deadline = Date.now() + 15 * 60 * 1000;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 4000));
+    const { data } = await supabase
+      .from('data_collection_logs')
+      .select('status, marches_processed, errors_count, summary_stats')
+      .eq('id', logId)
+      .maybeSingle();
+    if (!data) continue;
+    if (data.status === 'completed' || data.status === 'failed') {
+      return {
+        success: data.status === 'completed',
+        marchesProcessed: data.marches_processed ?? 0,
+        totalSpecies: (data.summary_stats as any)?.total_species_collected ?? 0,
+        errors: data.errors_count ?? 0,
+        logId,
+        marchesTotal: totalSteps,
+      };
+    }
+  }
+  throw new Error("La collecte prend plus de temps que prévu. Elle continue en arrière-plan : rechargez la page dans quelques minutes.");
+};
 
 interface TriggerArgs {
   explorationId: string;
@@ -30,7 +57,11 @@ export const useTriggerBiodiversityCollection = () => {
         body,
       });
       if (error) throw new Error(error.message || 'Collection failed');
-      return data as CollectionResult;
+      const result = data as CollectionResult;
+      if (result?.started && result.logId) {
+        return await waitForCollection(result.logId, result.marchesTotal ?? 0);
+      }
+      return result;
     },
     onSuccess: (_data, arg) => {
       const explorationId = typeof arg === 'string' ? arg : arg?.explorationId;
