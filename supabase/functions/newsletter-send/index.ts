@@ -193,14 +193,18 @@ Deno.serve(async (req) => {
 
     // --- Rendu + envoi ---
     const subject = isTest ? `[TEST] ${campaign.objet}` : campaign.objet;
+    // Suivi des clics : la réécriture des liens est un marqueur « promotionnel »
+    // pour Gmail — on la désactive quand la lettre le demande.
+    const trackingEnabled = campaign.tracking_enabled !== false;
     const buildEmail = (d: Dest) => {
       const unsubscribeUrl = isTest ? `${base}/u/test` : `${base}/u/${d.token}`;
       const linkHref = (url: string) =>
-        isTest ? url : `${base}/r/${d.token}?u=${b64url(url)}`;
+        isTest || !trackingEnabled ? url : `${base}/r/${d.token}?u=${b64url(url)}`;
       const html = renderNewsletterHtml({
         blocks: campaign.blocks,
         univers: campaign.univers ?? 'tous',
         preheader: campaign.preheader,
+        presentation: campaign.presentation ?? 'journal',
         unsubscribeUrl,
         linkHref,
       });

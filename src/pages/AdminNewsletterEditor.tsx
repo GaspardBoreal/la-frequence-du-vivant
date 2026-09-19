@@ -41,7 +41,13 @@ import {
   type NewsletterCampaign,
   type SendResult,
 } from '@/hooks/admin/useNewsletter';
-import { UNIVERS_THEMES, type NewsletterBlock, type NewsletterUnivers } from '@/lib/newsletter/blocks';
+import {
+  PRESENTATION_LABELS,
+  UNIVERS_THEMES,
+  type NewsletterBlock,
+  type NewsletterPresentation,
+  type NewsletterUnivers,
+} from '@/lib/newsletter/blocks';
 
 const MAX_TEST = 10;
 /** Domaine déjà vérifié chez Resend pour ce projet. */
@@ -100,6 +106,8 @@ const AdminNewsletterEditor: React.FC = () => {
         from_email: draft.from_email?.trim() || null,
         reply_to: draft.reply_to,
         blocks: draft.blocks,
+        presentation: draft.presentation ?? 'journal',
+        tracking_enabled: draft.tracking_enabled ?? true,
         audience: draft.audience,
       });
       toast.success('Lettre enregistrée');
@@ -195,18 +203,78 @@ const AdminNewsletterEditor: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              <div className="grid gap-3 rounded-lg border bg-muted/30 p-3 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Présentation</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {(Object.keys(PRESENTATION_LABELS) as NewsletterPresentation[]).map((p) => (
+                      <Button
+                        key={p}
+                        type="button"
+                        size="sm"
+                        variant={(draft.presentation ?? 'journal') === p ? 'default' : 'outline'}
+                        onClick={() => set({ presentation: p })}
+                      >
+                        {PRESENTATION_LABELS[p]}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    La présentation « Lettre » ressemble à un courrier écrit à la main : pas de bandeau, pas de bouton
+                    coloré. C'est le réglage qui donne le plus de chances d'arriver dans l'onglet « Principale » de
+                    Gmail plutôt que dans « Promotions ».
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Comptage des clics</Label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={(draft.tracking_enabled ?? true) ? 'default' : 'outline'}
+                      onClick={() => set({ tracking_enabled: true })}
+                    >
+                      Activé
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={(draft.tracking_enabled ?? true) ? 'outline' : 'default'}
+                      onClick={() => set({ tracking_enabled: false })}
+                    >
+                      Désactivé
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Quand le comptage est activé, chaque lien est remplacé par un lien de mesure : c'est pratique pour
+                    les statistiques, mais c'est aussi un signal « publicité ». Les statuts remis / rejeté continuent
+                    de fonctionner dans les deux cas.
+                  </p>
+                </div>
+              </div>
             </Card>
 
             <div className="grid gap-4 lg:grid-cols-[1fr_minmax(320px,42%)]">
               <BlockEditor blocks={draft.blocks ?? []} onChange={(blocks: NewsletterBlock[]) => set({ blocks })} />
               <div className="hidden lg:block">
-                <EmailPreview blocks={draft.blocks ?? []} univers={draft.univers} preheader={draft.preheader} />
+                <EmailPreview
+                  blocks={draft.blocks ?? []}
+                  univers={draft.univers}
+                  preheader={draft.preheader}
+                  presentation={draft.presentation ?? 'journal'}
+                />
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="apercu" className="pt-4">
-            <EmailPreview blocks={draft.blocks ?? []} univers={draft.univers} preheader={draft.preheader} />
+            <EmailPreview
+              blocks={draft.blocks ?? []}
+              univers={draft.univers}
+              preheader={draft.preheader}
+              presentation={draft.presentation ?? 'journal'}
+            />
           </TabsContent>
 
           <TabsContent value="ciblage" className="pt-4">
@@ -395,6 +463,10 @@ const TestDialog: React.FC<{
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Autres adresses (séparées par une virgule)</Label>
           <Input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="moi@exemple.fr" />
+          <p className="text-xs text-muted-foreground">
+            Ajoutez aussi une adresse qui n'est pas chez Gmail (Outlook, Orange, adresse professionnelle) : cela permet
+            de voir tout de suite si un classement en « Promotions » vient de Gmail seul ou de la lettre elle-même.
+          </p>
         </div>
 
         {result && (
@@ -423,11 +495,27 @@ const TestDialog: React.FC<{
                   </p>
                 ))}
                 {watchRows.some((r) => ['delivered', 'opened', 'clicked'].includes(r.statut)) && (
-                  <p className="text-muted-foreground">
-                    Le message a été remis à la boîte du destinataire. S'il n'apparaît pas dans la boîte de réception,
-                    vérifiez le dossier « Courrier indésirable / Spam » et marquez-le « non spam » : cela améliore la
-                    réputation du domaine d'envoi pour les prochains envois.
-                  </p>
+                  <div className="space-y-1 text-muted-foreground">
+                    <p>
+                      Le message a bien été remis. S'il n'apparaît pas dans la boîte de réception, regardez l'onglet
+                      « Promotions » de Gmail, puis le dossier « Courrier indésirable / Spam ».
+                    </p>
+                    <p>Pour qu'il arrive dans « Principale » les prochaines fois :</p>
+                    <ul className="list-disc space-y-0.5 pl-4">
+                      <li>
+                        côté destinataire : faire glisser une fois le message de « Promotions » vers « Principale » et
+                        accepter « Faire cela pour tous les messages futurs », ou ajouter l'expéditeur aux contacts ;
+                      </li>
+                      <li>
+                        côté lettre : choisir la présentation « Lettre (texte simple) » et désactiver le comptage des
+                        clics dans l'onglet Composer ;
+                      </li>
+                      <li>
+                        le classement s'améliore aussi avec la régularité des envois et les ouvertures ou réponses
+                        réelles de vos lecteurs.
+                      </li>
+                    </ul>
+                  </div>
                 )}
               </div>
             )}

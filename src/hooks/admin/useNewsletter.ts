@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import type { NewsletterBlock, NewsletterUnivers } from '@/lib/newsletter/blocks';
+import type { NewsletterBlock, NewsletterPresentation, NewsletterUnivers } from '@/lib/newsletter/blocks';
 
 const db = supabase as any;
 
@@ -15,6 +15,10 @@ export interface NewsletterCampaign {
   from_email: string | null;
   reply_to: string | null;
   blocks: NewsletterBlock[];
+  /** « journal » = mise en page riche, « lettre » = texte simple (moins « promotionnel »). */
+  presentation: NewsletterPresentation;
+  /** Réécriture des liens pour compter les clics. */
+  tracking_enabled: boolean;
   audience: { mode: 'univers' | 'selection'; profileIds: string[] };
   statut: 'brouillon' | 'test' | 'envoi_en_cours' | 'envoyee' | 'arretee';
   recipients_count: number;
@@ -144,6 +148,8 @@ export function useNewsletterMutations() {
           from_email: c.from_email,
           reply_to: c.reply_to,
           blocks: c.blocks,
+          presentation: c.presentation ?? 'journal',
+          tracking_enabled: c.tracking_enabled ?? true,
           audience: c.audience,
           created_by: auth.user?.id ?? null,
         })

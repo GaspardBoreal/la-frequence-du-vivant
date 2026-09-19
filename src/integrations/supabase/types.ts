@@ -6813,11 +6813,13 @@ export type Database = {
           nom: string
           objet: string
           preheader: string | null
+          presentation: string
           recipients_count: number
           reply_to: string | null
           sent_at: string | null
           sent_count: number
           statut: string
+          tracking_enabled: boolean
           univers: string
           updated_at: string
         }
@@ -6832,11 +6834,13 @@ export type Database = {
           nom: string
           objet?: string
           preheader?: string | null
+          presentation?: string
           recipients_count?: number
           reply_to?: string | null
           sent_at?: string | null
           sent_count?: number
           statut?: string
+          tracking_enabled?: boolean
           univers?: string
           updated_at?: string
         }
@@ -6851,11 +6855,13 @@ export type Database = {
           nom?: string
           objet?: string
           preheader?: string | null
+          presentation?: string
           recipients_count?: number
           reply_to?: string | null
           sent_at?: string | null
           sent_count?: number
           statut?: string
+          tracking_enabled?: boolean
           univers?: string
           updated_at?: string
         }
