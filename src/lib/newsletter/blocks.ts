@@ -161,15 +161,75 @@ export function renderBlock(
   }
 }
 
+/** Deux présentations : « journal » (mise en page riche) ou « lettre » (texte simple). */
+export type NewsletterPresentation = 'journal' | 'lettre';
+
+export const PRESENTATION_LABELS: Record<NewsletterPresentation, string> = {
+  journal: 'Journal (mise en page riche)',
+  lettre: 'Lettre (texte simple)',
+};
+
 export interface RenderOptions {
   blocks: NewsletterBlock[];
   univers: NewsletterUnivers;
   preheader?: string | null;
   unsubscribeUrl?: string | null;
   linkHref?: (url: string) => string;
+  presentation?: NewsletterPresentation | null;
+}
+
+/** Rendu « lettre » : proche d'un courrier écrit à la main, sans bandeau ni bouton coloré. */
+function renderLetterBlock(block: NewsletterBlock, link: (u: string) => string): string {
+  const p = "margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.7;color:#1a1a1a;";
+  const a = 'color:#0b5d4c;';
+  switch (block.type) {
+    case 'heading':
+      return `<p style="${p}font-weight:700;">${escapeHtml(block.text)}</p>`;
+    case 'text':
+      return `<p style="${p}">${nl2br(block.text)}</p>`;
+    case 'quote':
+      return `<p style="${p}font-style:italic;">« ${nl2br(block.text)} »${block.author ? ` — ${escapeHtml(block.author)}` : ''}</p>`;
+    case 'button':
+      return block.href
+        ? `<p style="${p}"><a href="${escapeHtml(link(block.href))}" style="${a}">${escapeHtml(block.label)}</a></p>`
+        : '';
+    case 'image':
+      return block.href
+        ? `<p style="${p}"><a href="${escapeHtml(link(block.href))}" style="${a}">${escapeHtml(block.alt || block.href)}</a></p>`
+        : '';
+    case 'card': {
+      const lien = block.href
+        ? ` <a href="${escapeHtml(link(block.href))}" style="${a}">${escapeHtml(block.cta || 'En savoir plus')}</a>`
+        : '';
+      return `<p style="${p}"><strong>${escapeHtml(block.title)}</strong>${block.text ? `<br />${nl2br(block.text)}` : ''}${lien}</p>`;
+    }
+    case 'divider':
+      return `<p style="${p}text-align:center;color:#999;">* * *</p>`;
+    case 'footer':
+      return `<p style="margin:0 0 12px;font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.6;color:#555;">${nl2br(block.text)}</p>`;
+    default:
+      return '';
+  }
+}
+
+function renderLetterHtml(opts: RenderOptions): string {
+  const link = opts.linkHref ?? ((u: string) => u);
+  const body = opts.blocks.map((b) => renderLetterBlock(b, link)).join('\n');
+  const unsub = opts.unsubscribeUrl
+    ? `<p style="margin:24px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:12px;color:#777;"><a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:#777;">Se désinscrire de ces envois</a></p>`
+    : '';
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#ffffff;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(opts.preheader ?? '')}</div>
+<div style="max-width:600px;margin:0 auto;padding:24px 20px;">
+${body}
+${unsub}
+</div>
+</body></html>`;
 }
 
 export function renderNewsletterHtml(opts: RenderOptions): string {
+  if (opts.presentation === 'lettre') return renderLetterHtml(opts);
   const theme = UNIVERS_THEMES[opts.univers] ?? UNIVERS_THEMES.tous;
   const link = opts.linkHref ?? ((u: string) => u);
   const body = opts.blocks.map((b) => renderBlock(b, theme, link)).join('');
