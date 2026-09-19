@@ -31,10 +31,12 @@ import EmailPreview from '@/components/admin/newsletter/EmailPreview';
 import AudiencePicker from '@/components/admin/newsletter/AudiencePicker';
 import CampaignKpis from '@/components/admin/newsletter/CampaignKpis';
 import {
+  useDeliveryStatus,
   useNewsletterAudience,
   useNewsletterCampaign,
   useNewsletterMutations,
   useSendNewsletter,
+  type DeliveryStatus,
   type NewsletterCampaign,
   type SendResult,
 } from '@/hooks/admin/useNewsletter';
