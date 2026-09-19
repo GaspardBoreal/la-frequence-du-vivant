@@ -209,7 +209,10 @@ const AdminNewsletterEditor: React.FC = () => {
         open={testOpen}
         onOpenChange={setTestOpen}
         onSend={async (emails) => {
-          await save();
+          if (!(await save())) {
+            toast.error("Enregistrement impossible : le test n'a pas été envoyé.");
+            return;
+          }
           const res = await send.mutateAsync({ campaignId: draft.id, test: true, testEmails: emails });
           toast.success(`Test envoyé à ${res.sent} adresse${res.sent > 1 ? 's' : ''}`);
           setTestOpen(false);
