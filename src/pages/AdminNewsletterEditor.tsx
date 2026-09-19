@@ -350,6 +350,21 @@ const TestDialog: React.FC<{
           <Input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="moi@exemple.fr" />
         </div>
 
+        {result && (
+          <div className="space-y-1.5 rounded-lg border p-3 text-xs">
+            <p>
+              Dernier test : <strong>{result.sent}</strong> accepté{result.sent > 1 ? 's' : ''},{' '}
+              <strong>{result.failed}</strong> refusé{result.failed > 1 ? 's' : ''}
+              {result.from ? ` — expéditeur ${result.from}` : ''}
+            </p>
+            {result.failures?.map((f) => (
+              <p key={f.email} className="text-destructive">
+                {f.email} : {f.error}
+              </p>
+            ))}
+          </div>
+        )}
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
