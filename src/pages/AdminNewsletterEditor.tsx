@@ -41,7 +41,13 @@ import {
   type NewsletterCampaign,
   type SendResult,
 } from '@/hooks/admin/useNewsletter';
-import { UNIVERS_THEMES, type NewsletterBlock, type NewsletterUnivers } from '@/lib/newsletter/blocks';
+import {
+  PRESENTATION_LABELS,
+  UNIVERS_THEMES,
+  type NewsletterBlock,
+  type NewsletterPresentation,
+  type NewsletterUnivers,
+} from '@/lib/newsletter/blocks';
 
 const MAX_TEST = 10;
 /** Domaine déjà vérifié chez Resend pour ce projet. */
@@ -195,6 +201,56 @@ const AdminNewsletterEditor: React.FC = () => {
                       de votre domaine vérifié, par exemple {DEFAULT_FROM_EMAIL}.
                     </p>
                   )}
+                </div>
+              </div>
+
+              <div className="grid gap-3 rounded-lg border bg-muted/30 p-3 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Présentation</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {(Object.keys(PRESENTATION_LABELS) as NewsletterPresentation[]).map((p) => (
+                      <Button
+                        key={p}
+                        type="button"
+                        size="sm"
+                        variant={(draft.presentation ?? 'journal') === p ? 'default' : 'outline'}
+                        onClick={() => set({ presentation: p })}
+                      >
+                        {PRESENTATION_LABELS[p]}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    La présentation « Lettre » ressemble à un courrier écrit à la main : pas de bandeau, pas de bouton
+                    coloré. C'est le réglage qui donne le plus de chances d'arriver dans l'onglet « Principale » de
+                    Gmail plutôt que dans « Promotions ».
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Comptage des clics</Label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={(draft.tracking_enabled ?? true) ? 'default' : 'outline'}
+                      onClick={() => set({ tracking_enabled: true })}
+                    >
+                      Activé
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={(draft.tracking_enabled ?? true) ? 'outline' : 'default'}
+                      onClick={() => set({ tracking_enabled: false })}
+                    >
+                      Désactivé
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Quand le comptage est activé, chaque lien est remplacé par un lien de mesure : c'est pratique pour
+                    les statistiques, mais c'est aussi un signal « publicité ». Les statuts remis / rejeté continuent
+                    de fonctionner dans les deux cas.
+                  </p>
                 </div>
               </div>
             </Card>
