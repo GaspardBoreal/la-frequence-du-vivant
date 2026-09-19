@@ -463,6 +463,10 @@ const TestDialog: React.FC<{
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Autres adresses (séparées par une virgule)</Label>
           <Input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="moi@exemple.fr" />
+          <p className="text-xs text-muted-foreground">
+            Ajoutez aussi une adresse qui n'est pas chez Gmail (Outlook, Orange, adresse professionnelle) : cela permet
+            de voir tout de suite si un classement en « Promotions » vient de Gmail seul ou de la lettre elle-même.
+          </p>
         </div>
 
         {result && (
