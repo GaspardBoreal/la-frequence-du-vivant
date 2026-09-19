@@ -495,11 +495,27 @@ const TestDialog: React.FC<{
                   </p>
                 ))}
                 {watchRows.some((r) => ['delivered', 'opened', 'clicked'].includes(r.statut)) && (
-                  <p className="text-muted-foreground">
-                    Le message a été remis à la boîte du destinataire. S'il n'apparaît pas dans la boîte de réception,
-                    vérifiez le dossier « Courrier indésirable / Spam » et marquez-le « non spam » : cela améliore la
-                    réputation du domaine d'envoi pour les prochains envois.
-                  </p>
+                  <div className="space-y-1 text-muted-foreground">
+                    <p>
+                      Le message a bien été remis. S'il n'apparaît pas dans la boîte de réception, regardez l'onglet
+                      « Promotions » de Gmail, puis le dossier « Courrier indésirable / Spam ».
+                    </p>
+                    <p>Pour qu'il arrive dans « Principale » les prochaines fois :</p>
+                    <ul className="list-disc space-y-0.5 pl-4">
+                      <li>
+                        côté destinataire : faire glisser une fois le message de « Promotions » vers « Principale » et
+                        accepter « Faire cela pour tous les messages futurs », ou ajouter l'expéditeur aux contacts ;
+                      </li>
+                      <li>
+                        côté lettre : choisir la présentation « Lettre (texte simple) » et désactiver le comptage des
+                        clics dans l'onglet Composer ;
+                      </li>
+                      <li>
+                        le classement s'améliore aussi avec la régularité des envois et les ouvertures ou réponses
+                        réelles de vos lecteurs.
+                      </li>
+                    </ul>
+                  </div>
                 )}
               </div>
             )}
