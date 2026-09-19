@@ -35,6 +35,7 @@ import CadastreOptionsMenu, {
 } from './CadastreOptionsMenu';
 import PropertyAddressCard from './PropertyAddressCard';
 import NearestWeatherStationCard from './NearestWeatherStationCard';
+import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 
 const SAVED_STYLE: L.PathOptions = {
   color: '#2f5d3a',
