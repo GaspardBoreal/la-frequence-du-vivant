@@ -36,7 +36,8 @@ import {
   useNewsletterCampaign,
   useNewsletterMutations,
   useSendNewsletter,
-  type DeliveryStatus,
+  useTestDeliveryWatch,
+  type DeliveryStatusResult,
   type NewsletterCampaign,
   type SendResult,
 } from '@/hooks/admin/useNewsletter';
@@ -57,6 +58,7 @@ const AdminNewsletterEditor: React.FC = () => {
   const [testOpen, setTestOpen] = React.useState(false);
   const [sendOpen, setSendOpen] = React.useState(false);
   const [testResult, setTestResult] = React.useState<SendResult | null>(null);
+  const [lastTestEmails, setLastTestEmails] = React.useState<string[]>([]);
 
   React.useEffect(() => {
     if (campaign && !draft) setDraft(campaign);
