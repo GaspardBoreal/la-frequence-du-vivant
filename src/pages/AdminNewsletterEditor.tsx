@@ -36,6 +36,7 @@ import {
   useNewsletterMutations,
   useSendNewsletter,
   type NewsletterCampaign,
+  type SendResult,
 } from '@/hooks/admin/useNewsletter';
 import { UNIVERS_THEMES, type NewsletterBlock, type NewsletterUnivers } from '@/lib/newsletter/blocks';
 
