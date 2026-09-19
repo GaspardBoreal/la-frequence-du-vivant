@@ -206,6 +206,7 @@ export function useCampaignRecipients(campaignId?: string) {
         .from('newsletter_recipients')
         .select('id, email, nom, statut, sent_at, opened_at, clicked_at, open_count, click_count, error')
         .eq('campaign_id', campaignId)
+        .eq('is_test', false)
         .order('opened_at', { ascending: false, nullsFirst: false })
         .limit(500);
       if (error) throw error;
