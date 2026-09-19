@@ -370,6 +370,42 @@ const TestDialog: React.FC<{
                 {f.email} : {f.error}
               </p>
             ))}
+            {statuses?.map((s) => (
+              <p key={s.id}>
+                {s.to ?? s.id} :{' '}
+                {s.error ? (
+                  <span className="text-destructive">statut illisible ({s.error})</span>
+                ) : (
+                  <strong>{DELIVERY_LABELS[s.lastEvent ?? ''] ?? `en file d'attente (${s.lastEvent ?? 'inconnu'})`}</strong>
+                )}
+              </p>
+            ))}
+            {statuses?.some((s) => ['delivered', 'opened', 'clicked'].includes(s.lastEvent ?? '')) && (
+              <p className="text-muted-foreground">
+                Le message a été remis à la boîte du destinataire. S'il n'apparaît pas dans la boîte de réception,
+                vérifiez le dossier « Courrier indésirable / Spam » et marquez-le « non spam » : cela améliore la
+                réputation du domaine d'envoi pour les prochains envois.
+              </p>
+            )}
+            {(result.messageIds?.length ?? 0) > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={statusCheck.isPending}
+                onClick={async () => {
+                  const res = await statusCheck.mutateAsync({ messageIds: result.messageIds ?? [] });
+                  setStatuses(res);
+                }}
+              >
+                {statusCheck.isPending ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                Vérifier la livraison
+              </Button>
+            )}
           </div>
         )}
 
