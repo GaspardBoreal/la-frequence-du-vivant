@@ -117,6 +117,9 @@ Deno.serve(async (req) => {
     let totalErrors = 0;
     let totalSpeciesCollected = 0;
 
+    // La collecte peut dépasser la limite de 150s d'une requête : on l'exécute
+    // en tâche de fond et on répond immédiatement avec le logId à suivre.
+    const runCollection = async () => {
     // Process each marche sequentially
     for (const em of marchesToProcess) {
       const marche = (em as any).marches;
