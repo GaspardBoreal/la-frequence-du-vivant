@@ -258,13 +258,23 @@ const AdminNewsletterEditor: React.FC = () => {
             <div className="grid gap-4 lg:grid-cols-[1fr_minmax(320px,42%)]">
               <BlockEditor blocks={draft.blocks ?? []} onChange={(blocks: NewsletterBlock[]) => set({ blocks })} />
               <div className="hidden lg:block">
-                <EmailPreview blocks={draft.blocks ?? []} univers={draft.univers} preheader={draft.preheader} />
+                <EmailPreview
+                  blocks={draft.blocks ?? []}
+                  univers={draft.univers}
+                  preheader={draft.preheader}
+                  presentation={draft.presentation ?? 'journal'}
+                />
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="apercu" className="pt-4">
-            <EmailPreview blocks={draft.blocks ?? []} univers={draft.univers} preheader={draft.preheader} />
+            <EmailPreview
+              blocks={draft.blocks ?? []}
+              univers={draft.univers}
+              preheader={draft.preheader}
+              presentation={draft.presentation ?? 'journal'}
+            />
           </TabsContent>
 
           <TabsContent value="ciblage" className="pt-4">
