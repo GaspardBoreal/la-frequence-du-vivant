@@ -32,9 +32,12 @@ function decodeUrl(v: string | null): string | null {
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
-  const parts = url.pathname.split('/').filter(Boolean); // [newsletter-track, r|u, token]
-  const kind = parts[1];
-  const token = parts[2];
+  // Le chemin réel est /functions/v1/newsletter-track/<r|u>/<token> :
+  // on repère la fonction plutôt que de compter les segments depuis la racine.
+  const parts = url.pathname.split('/').filter(Boolean);
+  const i = parts.indexOf('newsletter-track');
+  const kind = i >= 0 ? parts[i + 1] : parts[parts.length - 2];
+  const token = i >= 0 ? parts[i + 2] : parts[parts.length - 1];
 
   if (!kind || !token) return page('Lien invalide', "Ce lien n'est plus valide.");
 
