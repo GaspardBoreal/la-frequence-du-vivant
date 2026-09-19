@@ -100,6 +100,8 @@ const AdminNewsletterEditor: React.FC = () => {
         from_email: draft.from_email?.trim() || null,
         reply_to: draft.reply_to,
         blocks: draft.blocks,
+        presentation: draft.presentation ?? 'journal',
+        tracking_enabled: draft.tracking_enabled ?? true,
         audience: draft.audience,
       });
       toast.success('Lettre enregistrée');
