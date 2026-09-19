@@ -94,8 +94,10 @@ const AdminNewsletterEditor: React.FC = () => {
         audience: draft.audience,
       });
       toast.success('Lettre enregistrée');
+      return true;
     } catch {
       /* message déjà affiché */
+      return false;
     }
   };
 
