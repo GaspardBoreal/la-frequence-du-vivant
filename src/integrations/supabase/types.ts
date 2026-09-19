@@ -6917,6 +6917,7 @@ export type Database = {
           email: string
           error: string | null
           id: string
+          is_test: boolean
           nom: string | null
           open_count: number
           opened_at: string | null
@@ -6938,6 +6939,7 @@ export type Database = {
           email: string
           error?: string | null
           id?: string
+          is_test?: boolean
           nom?: string | null
           open_count?: number
           opened_at?: string | null
@@ -6959,6 +6961,7 @@ export type Database = {
           email?: string
           error?: string | null
           id?: string
+          is_test?: boolean
           nom?: string | null
           open_count?: number
           opened_at?: string | null

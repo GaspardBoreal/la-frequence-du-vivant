@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
       if (!ids.length) return json({ error: 'Aucun message à vérifier' }, 400);
       const resendApiKey = Deno.env.get('RESEND_API_KEY');
       if (!resendApiKey) return json({ error: "L'envoi d'emails n'est pas configuré" }, 500);
-      const statuses: Array<{ id: string; to?: string; lastEvent?: string; error?: string }> = [];
+      const statuses: Array<{ id: string; to?: string; lastEvent?: string; error?: string; restricted?: boolean }> = [];
       for (const id of ids) {
         const res = await fetch(`https://api.resend.com/emails/${encodeURIComponent(id)}`, {
           headers: { Authorization: `Bearer ${resendApiKey}` },
@@ -45,6 +45,11 @@ Deno.serve(async (req) => {
         const bodyText = await res.text();
         if (!res.ok) {
           console.error(`[newsletter-send] statut ${id} — Resend ${res.status}: ${bodyText}`);
+          // Clé Resend « envoi seul » : la relecture du statut est impossible, le suivi passe par le webhook.
+          if (bodyText.includes('restricted_api_key')) {
+            statuses.push({ id, restricted: true });
+            continue;
+          }
           statuses.push({ id, error: `${res.status}: ${bodyText.slice(0, 200)}` });
           continue;
         }
@@ -55,8 +60,11 @@ Deno.serve(async (req) => {
           lastEvent: parsed?.last_event,
         });
       }
-      console.log(`[newsletter-send] statuts lus: ${statuses.map((s) => `${s.id}=${s.lastEvent ?? s.error}`).join(', ')}`);
-      return json({ ok: true, statuses });
+      const restricted = statuses.length > 0 && statuses.every((s) => s.restricted);
+      console.log(
+        `[newsletter-send] statuts lus: ${statuses.map((s) => `${s.id}=${s.restricted ? 'cle-envoi-seul' : (s.lastEvent ?? s.error)}`).join(', ')}`,
+      );
+      return json({ ok: !restricted, ...(restricted ? { code: 'key_restricted' } : {}), statuses });
     }
 
     if (!UUID_RE.test(campaignId ?? '')) return json({ error: 'Campagne introuvable' }, 400);
@@ -128,6 +136,9 @@ Deno.serve(async (req) => {
       }
       const joignables = audience.filter((r: any) => r.email && !r.unsubscribed);
       if (!joignables.length) return json({ error: 'Aucun destinataire joignable pour ce ciblage' }, 400);
+
+      // Les lignes créées par les tests ne doivent pas empêcher l'envoi réel à la même adresse.
+      await service.from('newsletter_recipients').delete().eq('campaign_id', campaignId).eq('is_test', true);
 
       const rows = joignables.map((r: any) => ({
         campaign_id: campaignId,
@@ -237,6 +248,36 @@ Deno.serve(async (req) => {
         console.log(`[newsletter-send] test ${d.email} accepté — id=${id}`);
         if (id) messageIds.push(id);
         sent += 1;
+        // On trace le test comme un destinataire marqué « is_test » : le webhook Resend
+        // pourra y rattacher les événements de remise (remis, rejeté, ouvert…).
+        // On ne touche jamais une ligne réelle (non-test) existante pour cette adresse.
+        const { data: existing } = await service
+          .from('newsletter_recipients')
+          .select('id, is_test')
+          .eq('campaign_id', campaignId)
+          .eq('email', d.email)
+          .maybeSingle();
+        if (existing) {
+          if (existing.is_test) {
+            const { error: updErr } = await service
+              .from('newsletter_recipients')
+              .update({ statut: 'sent', sent_at: new Date().toISOString(), resend_message_id: id ?? null, error: null })
+              .eq('id', existing.id);
+            if (updErr) console.error(`[newsletter-send] trace test ${d.email}:`, updErr.message);
+          }
+        } else {
+          const { error: insErr } = await service.from('newsletter_recipients').insert({
+            campaign_id: campaignId,
+            email: d.email,
+            nom: null,
+            profile_id: null,
+            statut: 'sent',
+            sent_at: new Date().toISOString(),
+            resend_message_id: id ?? null,
+            is_test: true,
+          });
+          if (insErr) console.error(`[newsletter-send] trace test ${d.email}:`, insErr.message);
+        }
       }
       return json({
         ok: failures.length === 0,
