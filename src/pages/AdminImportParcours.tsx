@@ -142,9 +142,23 @@ const AdminImportParcours: React.FC = () => {
     }
     setImporting(true);
     try {
+      // Chaque point du tracé est rattaché à l'étape retenue la plus proche,
+      // sinon tout le tracé se retrouverait collé entre l'étape 1 et l'étape 2.
+      const nearestStepIndex = (lat: number, lng: number) => {
+        let best = 0;
+        let bestD = Infinity;
+        selected.forEach((s, i) => {
+          const d = (s.lat - lat) ** 2 + (s.lng - lng) ** 2;
+          if (d < bestD) {
+            bestD = d;
+            best = i;
+          }
+        });
+        return best;
+      };
       const waypoints =
         importWaypoints && parsed?.track?.length
-          ? parsed.track.map((p) => ({ lat: p.lat, lng: p.lng, afterIndex: 0 }))
+          ? parsed.track.map((p) => ({ lat: p.lat, lng: p.lng, afterIndex: nearestStepIndex(p.lat, p.lng) }))
           : [];
 
       const { data, error } = await supabase.functions.invoke('import-parcours', {
