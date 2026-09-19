@@ -91,6 +91,7 @@ const AdminNewsletterEditor: React.FC = () => {
         objet: draft.objet,
         preheader: draft.preheader,
         from_name: draft.from_name,
+        from_email: draft.from_email?.trim() || null,
         reply_to: draft.reply_to,
         blocks: draft.blocks,
         audience: draft.audience,
