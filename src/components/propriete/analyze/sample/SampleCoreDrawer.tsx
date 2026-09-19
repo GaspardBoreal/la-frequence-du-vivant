@@ -55,6 +55,7 @@ import {
 import { useImageZoomPan } from '@/hooks/useImageZoomPan';
 import SampleCoreSvg, { type CoreStratum } from './SampleCoreSvg';
 import { useSampleDrawer, closeSampleCore, focusSampleCore } from './sampleDrawerStore';
+import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 
 const TEXTURE_COLOR: Record<TextureResultId, string> = {
   sable: '#d8b26a',
