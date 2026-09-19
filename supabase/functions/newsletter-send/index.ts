@@ -105,12 +105,25 @@ Deno.serve(async (req) => {
         return json({ error: 'Impossible d’enregistrer la liste des destinataires', details: upErr.message }, 500);
       }
 
-      const { data: recipients } = await service
-        .from('newsletter_recipients')
-        .select('id, email, nom, profile_id, token, sent_at')
-        .eq('campaign_id', campaignId);
+      // PostgREST plafonne à 1000 lignes : on pagine pour n'oublier personne.
+      const recipients: any[] = [];
+      const PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const { data: pageRows, error: pageErr } = await service
+          .from('newsletter_recipients')
+          .select('id, email, nom, profile_id, token, sent_at')
+          .eq('campaign_id', campaignId)
+          .order('id')
+          .range(from, from + PAGE - 1);
+        if (pageErr) {
+          console.error('[newsletter-send] lecture destinataires:', pageErr.message);
+          return json({ error: 'Impossible de relire la liste des destinataires', details: pageErr.message }, 500);
+        }
+        recipients.push(...(pageRows ?? []));
+        if (!pageRows || pageRows.length < PAGE) break;
+      }
 
-      dests = (recipients ?? [])
+      dests = recipients
         .filter((r: any) => !r.sent_at)
         .map((r: any) => ({
           email: r.email,
