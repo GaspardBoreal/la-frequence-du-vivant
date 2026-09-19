@@ -57,7 +57,11 @@ export const useTriggerBiodiversityCollection = () => {
         body,
       });
       if (error) throw new Error(error.message || 'Collection failed');
-      return data as CollectionResult;
+      const result = data as CollectionResult;
+      if (result?.started && result.logId) {
+        return await waitForCollection(result.logId, result.marchesTotal ?? 0);
+      }
+      return result;
     },
     onSuccess: (_data, arg) => {
       const explorationId = typeof arg === 'string' ? arg : arg?.explorationId;
