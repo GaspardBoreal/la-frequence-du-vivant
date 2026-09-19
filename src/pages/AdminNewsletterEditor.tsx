@@ -231,6 +231,8 @@ const AdminNewsletterEditor: React.FC = () => {
       <TestDialog
         open={testOpen}
         onOpenChange={setTestOpen}
+        campaignId={draft.id}
+        watchEmails={lastTestEmails}
         onSend={async (emails) => {
           if (!(await save())) {
             toast.error("Enregistrement impossible : le test n'a pas été envoyé.");
@@ -238,6 +240,7 @@ const AdminNewsletterEditor: React.FC = () => {
           }
           const res = await send.mutateAsync({ campaignId: draft.id, test: true, testEmails: emails });
           setTestResult(res);
+          setLastTestEmails(emails);
           if (res.sent > 0) {
             toast.success(
               `Test accepté pour ${res.sent} adresse${res.sent > 1 ? 's' : ''} — expéditeur ${res.from ?? '(inconnu)'}`,
@@ -247,7 +250,7 @@ const AdminNewsletterEditor: React.FC = () => {
             toast.error(`${res.failed} adresse${res.failed > 1 ? 's' : ''} refusée${res.failed > 1 ? 's' : ''}`);
             return; // la fenêtre reste ouverte pour afficher le motif
           }
-          setTestOpen(false);
+          // La fenêtre reste ouverte : le suivi de remise s'y met à jour en direct.
         }}
         pending={send.isPending}
         result={testResult}
