@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import type { NewsletterBlock, NewsletterUnivers } from '@/lib/newsletter/blocks';
+import type { NewsletterBlock, NewsletterPresentation, NewsletterUnivers } from '@/lib/newsletter/blocks';
 
 const db = supabase as any;
 
