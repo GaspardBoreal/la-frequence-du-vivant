@@ -245,6 +245,23 @@ Deno.serve(async (req) => {
         console.log(`[newsletter-send] test ${d.email} accepté — id=${id}`);
         if (id) messageIds.push(id);
         sent += 1;
+        // On trace le test comme un destinataire marqué « is_test » : le webhook Resend
+        // pourra y rattacher les événements de remise (remis, rejeté, ouvert…).
+        const { error: testRowErr } = await service.from('newsletter_recipients').upsert(
+          {
+            campaign_id: campaignId,
+            email: d.email,
+            nom: null,
+            profile_id: null,
+            statut: 'sent',
+            sent_at: new Date().toISOString(),
+            resend_message_id: id ?? null,
+            error: null,
+            is_test: true,
+          },
+          { onConflict: 'campaign_id,email' },
+        );
+        if (testRowErr) console.error(`[newsletter-send] trace test ${d.email}:`, testRowErr.message);
       }
       return json({
         ok: failures.length === 0,
