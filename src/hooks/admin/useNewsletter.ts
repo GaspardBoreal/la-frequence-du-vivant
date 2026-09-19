@@ -15,6 +15,10 @@ export interface NewsletterCampaign {
   from_email: string | null;
   reply_to: string | null;
   blocks: NewsletterBlock[];
+  /** « journal » = mise en page riche, « lettre » = texte simple (moins « promotionnel »). */
+  presentation: NewsletterPresentation;
+  /** Réécriture des liens pour compter les clics. */
+  tracking_enabled: boolean;
   audience: { mode: 'univers' | 'selection'; profileIds: string[] };
   statut: 'brouillon' | 'test' | 'envoi_en_cours' | 'envoyee' | 'arretee';
   recipients_count: number;

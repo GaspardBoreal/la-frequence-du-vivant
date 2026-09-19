@@ -1,16 +1,22 @@
 import React from 'react';
 import { Monitor, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { renderNewsletterHtml, type NewsletterBlock, type NewsletterUnivers } from '@/lib/newsletter/blocks';
+import {
+  renderNewsletterHtml,
+  type NewsletterBlock,
+  type NewsletterPresentation,
+  type NewsletterUnivers,
+} from '@/lib/newsletter/blocks';
 
 interface Props {
   blocks: NewsletterBlock[];
   univers: NewsletterUnivers;
   preheader?: string | null;
+  presentation?: NewsletterPresentation | null;
 }
 
 /** Aperçu fidèle du message, en ordinateur ou en téléphone. */
-export const EmailPreview: React.FC<Props> = ({ blocks, univers, preheader }) => {
+export const EmailPreview: React.FC<Props> = ({ blocks, univers, preheader, presentation }) => {
   const [device, setDevice] = React.useState<'desktop' | 'mobile'>('desktop');
 
   const html = React.useMemo(
@@ -19,9 +25,10 @@ export const EmailPreview: React.FC<Props> = ({ blocks, univers, preheader }) =>
         blocks,
         univers,
         preheader,
+        presentation,
         unsubscribeUrl: '#',
       }),
-    [blocks, univers, preheader],
+    [blocks, univers, preheader, presentation],
   );
 
   return (
