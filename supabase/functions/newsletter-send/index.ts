@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
       if (!ids.length) return json({ error: 'Aucun message à vérifier' }, 400);
       const resendApiKey = Deno.env.get('RESEND_API_KEY');
       if (!resendApiKey) return json({ error: "L'envoi d'emails n'est pas configuré" }, 500);
-      const statuses: Array<{ id: string; to?: string; lastEvent?: string; error?: string }> = [];
+      const statuses: Array<{ id: string; to?: string; lastEvent?: string; error?: string; restricted?: boolean }> = [];
       for (const id of ids) {
         const res = await fetch(`https://api.resend.com/emails/${encodeURIComponent(id)}`, {
           headers: { Authorization: `Bearer ${resendApiKey}` },
@@ -45,6 +45,11 @@ Deno.serve(async (req) => {
         const bodyText = await res.text();
         if (!res.ok) {
           console.error(`[newsletter-send] statut ${id} — Resend ${res.status}: ${bodyText}`);
+          // Clé Resend « envoi seul » : la relecture du statut est impossible, le suivi passe par le webhook.
+          if (bodyText.includes('restricted_api_key')) {
+            statuses.push({ id, restricted: true });
+            continue;
+          }
           statuses.push({ id, error: `${res.status}: ${bodyText.slice(0, 200)}` });
           continue;
         }
@@ -55,8 +60,11 @@ Deno.serve(async (req) => {
           lastEvent: parsed?.last_event,
         });
       }
-      console.log(`[newsletter-send] statuts lus: ${statuses.map((s) => `${s.id}=${s.lastEvent ?? s.error}`).join(', ')}`);
-      return json({ ok: true, statuses });
+      const restricted = statuses.length > 0 && statuses.every((s) => s.restricted);
+      console.log(
+        `[newsletter-send] statuts lus: ${statuses.map((s) => `${s.id}=${s.restricted ? 'cle-envoi-seul' : (s.lastEvent ?? s.error)}`).join(', ')}`,
+      );
+      return json({ ok: !restricted, ...(restricted ? { code: 'key_restricted' } : {}), statuses });
     }
 
     if (!UUID_RE.test(campaignId ?? '')) return json({ error: 'Campagne introuvable' }, 400);
