@@ -294,6 +294,17 @@ const AdminNewsletterEditor: React.FC = () => {
   );
 };
 
+/** Traduction des événements de livraison Resend. */
+const DELIVERY_LABELS: Record<string, string> = {
+  sent: "accepté par le service d'envoi, remise en cours",
+  delivered: 'remis à la boîte du destinataire',
+  delivery_delayed: 'remise retardée — nouvelle tentative en cours',
+  bounced: 'rejeté par la boîte du destinataire',
+  complained: 'signalé comme indésirable par le destinataire',
+  opened: 'remis, puis ouvert',
+  clicked: 'remis, ouvert et cliqué',
+};
+
 /** Choix des adresses de test parmi les marcheurs, ou saisie libre. */
 const TestDialog: React.FC<{
   open: boolean;
