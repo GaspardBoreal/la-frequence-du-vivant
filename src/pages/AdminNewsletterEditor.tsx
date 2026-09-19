@@ -231,10 +231,20 @@ const AdminNewsletterEditor: React.FC = () => {
             return;
           }
           const res = await send.mutateAsync({ campaignId: draft.id, test: true, testEmails: emails });
-          toast.success(`Test envoyé à ${res.sent} adresse${res.sent > 1 ? 's' : ''}`);
+          setTestResult(res);
+          if (res.sent > 0) {
+            toast.success(
+              `Test accepté pour ${res.sent} adresse${res.sent > 1 ? 's' : ''} — expéditeur ${res.from ?? '(inconnu)'}`,
+            );
+          }
+          if (res.failed > 0) {
+            toast.error(`${res.failed} adresse${res.failed > 1 ? 's' : ''} refusée${res.failed > 1 ? 's' : ''}`);
+            return; // la fenêtre reste ouverte pour afficher le motif
+          }
           setTestOpen(false);
         }}
         pending={send.isPending}
+        result={testResult}
       />
 
       <AlertDialog open={sendOpen} onOpenChange={setSendOpen}>
