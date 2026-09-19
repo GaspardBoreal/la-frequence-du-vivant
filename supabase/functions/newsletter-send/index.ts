@@ -137,6 +137,9 @@ Deno.serve(async (req) => {
       const joignables = audience.filter((r: any) => r.email && !r.unsubscribed);
       if (!joignables.length) return json({ error: 'Aucun destinataire joignable pour ce ciblage' }, 400);
 
+      // Les lignes créées par les tests ne doivent pas empêcher l'envoi réel à la même adresse.
+      await service.from('newsletter_recipients').delete().eq('campaign_id', campaignId).eq('is_test', true);
+
       const rows = joignables.map((r: any) => ({
         campaign_id: campaignId,
         profile_id: r.profile_id,
