@@ -1,18 +1,24 @@
-# Newsletter : débloquer l'envoi (domaine non vérifié chez Resend)
+# Newsletter : « accepté » mais rien reçu — tracer la livraison
 
-## Cause confirmée
+## État des lieux (confirmé)
 
-Le test part bien vers Resend, mais Resend répond `403 — The la-frequence-du-vivant.com domain is not verified`. L'expéditeur `contact@la-frequence-du-vivant.com` appartient à un domaine non vérifié dans le compte Resend. Resend n'envoie que depuis un domaine vérifié (enregistrements DNS DKIM/SPF) ou depuis son adresse d'essai `onboarding@resend.dev` (livrée uniquement au propriétaire du compte Resend).
+- Le test avec `contact@mail.la-frequence-du-vivant.com` renvoie `{ ok: true, sent: 1, messageIds: ["01a0ba2c-…"] }` : **Resend a accepté le message**. Le domaine `mail.la-frequence-du-vivant.com` est donc bien vérifié.
+- « Accepté » ne signifie pas « délivré » : le message peut être en file d'attente, rejeté par Gmail (bounce), ou filtré en spam.
 
-## Changements
+## Pistes probables (par ordre)
 
-1. **Expéditeur par défaut** (`AdminNewsletterEditor.tsx`) : champ « Adresse d'expéditeur » vide par défaut → `onboarding@resend.dev`. Les tests vers gaspard.boreal@gmail.com passent immédiatement (si c'est l'adresse du compte Resend), sans configuration.
-2. **Avertissement à la saisie** : si l'expéditeur saisi n'est pas en `resend.dev`, message non bloquant rappelant que le domaine doit être vérifié sur https://resend.com/domains.
-3. **Résumé de test enrichi** : quand Resend répond « domain is not verified », le dialogue affiche en français : le domaine de l'adresse d'expédition n'est pas vérifié chez Resend + les deux options (vérifier le domaine, ou laisser vide pour utiliser l'adresse d'essai).
-4. **Guide de vérification du domaine** (texte d'aide dans le dialogue) : ajouter le domaine sur resend.com/domains, copier les enregistrements DKIM/SPF dans la zone DNS du domaine (réglages du projet Lovable si le domaine a été acheté via Lovable, sinon chez le registrar), attendre la validation, puis saisir l'adresse d'expédition.
+1. **Dossier spam/courrier indésirable** de gaspard.boreal@gmail.com — le plus fréquent pour un domaine d'envoi récent sans historique.
+2. **Délai Resend** : quelques minutes possibles avant remise.
+3. **Bounce ou mise en quarantaine** : visible uniquement dans le statut du message côté Resend.
+
+## Ce que je fais
+
+1. **Lecture du statut réel du message** : j'interroge Resend (`GET /emails/{id}`) via la connexion du projet pour lire le statut exact des deux envois de test (delivered / bounced / complained / delivery_delayed) et le motif éventuel. Je vous donne le résultat en clair.
+2. **Statut visible dans le Studio Newsletter** : dans le dialogue « Tester », après l'envoi, un bouton « Vérifier la livraison » relit le statut Resend du ou des messages du dernier test (via `newsletter-send`, nouvelle action `status`, qui appelle `GET https://api.resend.com/emails/{id}` avec la clé existante — pas de nouveau secret) et l'affiche en français : « remis à la boîte », « rejeté par le destinataire (motif) », « en attente de remise ».
+3. **Aide à la délivrabilité** : si le statut est « delivered » mais rien en boîte de réception, le dialogue recommande de vérifier le dossier spam et, si le message y est, de le marquer « non spam » (cela entraîne la réputation du domaine d'envoi).
 
 ## Vérification
 
-- `bunx tsgo --noEmit -p tsconfig.app.json` passe.
-- L'utilisateur relance « Tester » : résumé « 1 accepté, 0 refusé » et réception sur gaspard.boreal@gmail.com.
-- Lecture des journaux de `newsletter-send` pour confirmer l'identifiant Resend.
+- Statut Resend des deux messages de test lu et communiqué.
+- `bunx tsgo --noEmit -p tsconfig.app.json` passe ; fonction `newsletter-send` déployée.
+- L'utilisateur refait un test, clique « Vérifier la livraison » et confirme la réception (ou me transmet le motif de rejet affiché).
