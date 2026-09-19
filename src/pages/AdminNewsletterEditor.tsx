@@ -240,7 +240,10 @@ const AdminNewsletterEditor: React.FC = () => {
             <AlertDialogAction
               onClick={async (e) => {
                 e.preventDefault();
-                await save();
+                if (!(await save())) {
+                  toast.error("Enregistrement impossible : la lettre n'a pas été envoyée.");
+                  return;
+                }
                 try {
                   const res = await send.mutateAsync({ campaignId: draft.id });
                   toast.success(`Lettre envoyée à ${res.sent} destinataire${res.sent > 1 ? 's' : ''}`);
