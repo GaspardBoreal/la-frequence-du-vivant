@@ -218,11 +218,13 @@ export const PortraitCadastre: React.FC<Props> = ({
     if (!fullscreen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    fullscreenSurfaces.push();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setFullscreen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => {
+      fullscreenSurfaces.pop();
       document.body.style.overflow = prev;
       window.removeEventListener('keydown', onKey);
     };
