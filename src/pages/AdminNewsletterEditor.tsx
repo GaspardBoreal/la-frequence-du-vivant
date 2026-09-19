@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, BarChart3, Eye, Loader2, Mail, Save, Send, TestTube2, Users } from 'lucide-react';
+import { ArrowLeft, BarChart3, Eye, Loader2, Mail, RefreshCw, Save, Send, TestTube2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,10 +31,12 @@ import EmailPreview from '@/components/admin/newsletter/EmailPreview';
 import AudiencePicker from '@/components/admin/newsletter/AudiencePicker';
 import CampaignKpis from '@/components/admin/newsletter/CampaignKpis';
 import {
+  useDeliveryStatus,
   useNewsletterAudience,
   useNewsletterCampaign,
   useNewsletterMutations,
   useSendNewsletter,
+  type DeliveryStatus,
   type NewsletterCampaign,
   type SendResult,
 } from '@/hooks/admin/useNewsletter';
@@ -292,6 +294,17 @@ const AdminNewsletterEditor: React.FC = () => {
   );
 };
 
+/** Traduction des événements de livraison Resend. */
+const DELIVERY_LABELS: Record<string, string> = {
+  sent: "accepté par le service d'envoi, remise en cours",
+  delivered: 'remis à la boîte du destinataire',
+  delivery_delayed: 'remise retardée — nouvelle tentative en cours',
+  bounced: 'rejeté par la boîte du destinataire',
+  complained: 'signalé comme indésirable par le destinataire',
+  opened: 'remis, puis ouvert',
+  clicked: 'remis, ouvert et cliqué',
+};
+
 /** Choix des adresses de test parmi les marcheurs, ou saisie libre. */
 const TestDialog: React.FC<{
   open: boolean;
@@ -301,9 +314,15 @@ const TestDialog: React.FC<{
   result?: SendResult | null;
 }> = ({ open, onOpenChange, onSend, pending, result }) => {
   const { data: rows = [] } = useNewsletterAudience('tous');
+  const statusCheck = useDeliveryStatus();
+  const [statuses, setStatuses] = React.useState<DeliveryStatus[] | null>(null);
   const [selected, setSelected] = React.useState<string[]>([]);
   const [manual, setManual] = React.useState('');
   const [q, setQ] = React.useState('');
+
+  React.useEffect(() => {
+    setStatuses(null);
+  }, [result]);
 
   const emails = React.useMemo(() => {
     const libres = manual
@@ -362,6 +381,42 @@ const TestDialog: React.FC<{
                 {f.email} : {f.error}
               </p>
             ))}
+            {statuses?.map((s) => (
+              <p key={s.id}>
+                {s.to ?? s.id} :{' '}
+                {s.error ? (
+                  <span className="text-destructive">statut illisible ({s.error})</span>
+                ) : (
+                  <strong>{DELIVERY_LABELS[s.lastEvent ?? ''] ?? `en file d'attente (${s.lastEvent ?? 'inconnu'})`}</strong>
+                )}
+              </p>
+            ))}
+            {statuses?.some((s) => ['delivered', 'opened', 'clicked'].includes(s.lastEvent ?? '')) && (
+              <p className="text-muted-foreground">
+                Le message a été remis à la boîte du destinataire. S'il n'apparaît pas dans la boîte de réception,
+                vérifiez le dossier « Courrier indésirable / Spam » et marquez-le « non spam » : cela améliore la
+                réputation du domaine d'envoi pour les prochains envois.
+              </p>
+            )}
+            {(result.messageIds?.length ?? 0) > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={statusCheck.isPending}
+                onClick={async () => {
+                  const res = await statusCheck.mutateAsync({ messageIds: result.messageIds ?? [] });
+                  setStatuses(res);
+                }}
+              >
+                {statusCheck.isPending ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                Vérifier la livraison
+              </Button>
+            )}
           </div>
         )}
 
