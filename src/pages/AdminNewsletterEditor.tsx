@@ -303,9 +303,15 @@ const TestDialog: React.FC<{
   result?: SendResult | null;
 }> = ({ open, onOpenChange, onSend, pending, result }) => {
   const { data: rows = [] } = useNewsletterAudience('tous');
+  const statusCheck = useDeliveryStatus();
+  const [statuses, setStatuses] = React.useState<DeliveryStatus[] | null>(null);
   const [selected, setSelected] = React.useState<string[]>([]);
   const [manual, setManual] = React.useState('');
   const [q, setQ] = React.useState('');
+
+  React.useEffect(() => {
+    setStatuses(null);
+  }, [result]);
 
   const emails = React.useMemo(() => {
     const libres = manual
