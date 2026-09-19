@@ -1,30 +1,18 @@
-# Newsletter : domaine d'expédition non vérifié chez Resend
+# Newsletter : débloquer l'envoi (domaine non vérifié chez Resend)
 
-## Diagnostic
+## Cause confirmée
 
-Le test d'envoi fonctionne désormais correctement (le message part bien vers Resend), mais Resend le refuse avec :
+Le test part bien vers Resend, mais Resend répond `403 — The la-frequence-du-vivant.com domain is not verified`. L'expéditeur `contact@la-frequence-du-vivant.com` appartient à un domaine non vérifié dans le compte Resend. Resend n'envoie que depuis un domaine vérifié (enregistrements DNS DKIM/SPF) ou depuis son adresse d'essai `onboarding@resend.dev` (livrée uniquement au propriétaire du compte Resend).
 
-```
-403 — The la-frequence-du-vivant.com domain is not verified.
-```
+## Changements
 
-Le bouton « Tester » a utilisé l'expéditeur `contact@la-frequence-du-vivant.com`. Resend n'accepte d'envoyer que depuis un domaine vérifié dans le compte Resend (DNS : enregistrements SPF/DKIM). Ce n'est **pas** un bug de l'application : c'est une étape de configuration côté Resend.
-
-## Ce qu'il faut faire (côté Resend — action de l'utilisateur)
-
-1. Ouvrir https://resend.com/domains et vérifier quels domaines sont listés et « Verified ».
-2. Deux cas possibles :
-   - **`la-frequence-du-vivant.com` n'y est pas** : l'ajouter, copier les enregistrements DNS (DKIM/SPF) fournis par Resend dans la zone DNS du domaine, attendre la validation (quelques minutes à quelques heures).
-   - **Un autre domaine est déjà vérifié** (par ex. `mail.la-frequence-du-vivant.com`) : utiliser une adresse de ce domaine comme expéditeur, par ex. `lettre@mail.la-frequence-du-vivant.com`, dans le champ « Adresse d'expéditeur » de l'onglet Composer.
-3. Solution de contournement immédiate pour les tests uniquement : utiliser `onboarding@resend.dev` comme expéditeur — Resend le délivre **uniquement** à l'adresse du propriétaire du compte Resend (si c'est gaspard.boreal@gmail.com, le test arrivera).
-
-## Ce que je fais dans le code
-
-1. **`AdminNewsletterEditor.tsx`** : quand un refus Resend mentionne « domain is not verified », le résumé du test affiche une consigne claire en français : le domaine de l'expéditeur n'est pas vérifié chez Resend, avec les deux options ci-dessus (vérifier le domaine, ou utiliser un domaine déjà vérifié / `onboarding@resend.dev` pour tester).
-2. **`AdminNewsletterEditor.tsx`** : validation à la saisie du champ « Adresse d'expéditeur » — avertissement (non bloquant) si le domaine saisi n'est pas `resend.dev`, invitant à confirmer qu'il est vérifié chez Resend.
-3. **Valeur par défaut** : laisser le champ vide par défaut (expéditeur `Lovable Emails <onboarding@resend.dev>` géré), plutôt que pré-remplir une adresse d'un domaine non vérifié.
+1. **Expéditeur par défaut** (`AdminNewsletterEditor.tsx`) : champ « Adresse d'expéditeur » vide par défaut → `onboarding@resend.dev`. Les tests vers gaspard.boreal@gmail.com passent immédiatement (si c'est l'adresse du compte Resend), sans configuration.
+2. **Avertissement à la saisie** : si l'expéditeur saisi n'est pas en `resend.dev`, message non bloquant rappelant que le domaine doit être vérifié sur https://resend.com/domains.
+3. **Résumé de test enrichi** : quand Resend répond « domain is not verified », le dialogue affiche en français : le domaine de l'adresse d'expédition n'est pas vérifié chez Resend + les deux options (vérifier le domaine, ou laisser vide pour utiliser l'adresse d'essai).
+4. **Guide de vérification du domaine** (texte d'aide dans le dialogue) : ajouter le domaine sur resend.com/domains, copier les enregistrements DKIM/SPF dans la zone DNS du domaine (réglages du projet Lovable si le domaine a été acheté via Lovable, sinon chez le registrar), attendre la validation, puis saisir l'adresse d'expédition.
 
 ## Vérification
 
-- L'utilisateur renseigne l'expéditeur choisi après vérification du domaine chez Resend, relance le test vers gaspard.boreal@gmail.com.
-- Je lis les journaux de `newsletter-send` pour confirmer `id` Resend et `1 accepté, 0 refusé`.
+- `bunx tsgo --noEmit -p tsconfig.app.json` passe.
+- L'utilisateur relance « Tester » : résumé « 1 accepté, 0 refusé » et réception sur gaspard.boreal@gmail.com.
+- Lecture des journaux de `newsletter-send` pour confirmer l'identifiant Resend.
