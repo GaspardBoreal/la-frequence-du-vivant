@@ -102,7 +102,25 @@ const AdminImportParcours: React.FC = () => {
       const track = await parseTrackFile(file);
       setParsed(track);
 
-      const baseSteps: EditableStep[] = track.steps.map((s) => ({
+      // Fichier ne contenant que le tracé (fréquent en GPX) : on propose des
+      // étapes réparties le long du parcours, modifiables comme les autres.
+      let sourceSteps = track.steps;
+      if (sourceSteps.length === 0 && track.track.length > 0) {
+        const wanted = Math.min(10, track.track.length);
+        const stride = Math.max(1, Math.floor((track.track.length - 1) / Math.max(1, wanted - 1)));
+        const picked: typeof track.track = [];
+        for (let i = 0; i < track.track.length && picked.length < wanted; i += stride) picked.push(track.track[i]);
+        sourceSteps = picked.map((p, i) => ({
+          id: `track-${i}`,
+          name: `Étape ${i + 1}`,
+          description: null,
+          lat: p.lat,
+          lng: p.lng,
+        }));
+        toast.info(`Aucun point nommé dans ce fichier : ${sourceSteps.length} étapes ont été déduites du tracé.`);
+      }
+
+      const baseSteps: EditableStep[] = sourceSteps.map((s) => ({
         id: s.id,
         name: s.name,
         ville: '',
