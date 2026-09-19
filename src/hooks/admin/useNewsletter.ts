@@ -206,6 +206,7 @@ export function useCampaignRecipients(campaignId?: string) {
         .from('newsletter_recipients')
         .select('id, email, nom, statut, sent_at, opened_at, clicked_at, open_count, click_count, error')
         .eq('campaign_id', campaignId)
+        .eq('is_test', false)
         .order('opened_at', { ascending: false, nullsFirst: false })
         .limit(500);
       if (error) throw error;
@@ -232,12 +233,55 @@ export type DeliveryStatus = {
   /** Événement Resend brut : sent, delivered, delivery_delayed, bounced, complained, opened, clicked. */
   lastEvent?: string;
   error?: string;
+  /** Vrai si la clé Resend est limitée à l'envoi : la relecture du statut est impossible. */
+  restricted?: boolean;
 };
+
+export type DeliveryStatusResult = {
+  /** Vrai si la clé Resend ne permet aucune relecture (clé « envoi seul »). */
+  restricted: boolean;
+  statuses: DeliveryStatus[];
+};
+
+/** Ligne de suivi d'un destinataire de test, alimentée par le webhook Resend. */
+export type TestRecipientRow = {
+  email: string;
+  statut: string;
+  sent_at: string | null;
+  delivered_at: string | null;
+  opened_at: string | null;
+  clicked_at: string | null;
+  bounced_at: string | null;
+  error: string | null;
+};
+
+/**
+ * Suit en direct le sort des messages de test (remis, rejeté, ouvert…)
+ * grâce aux lignes destinataires mises à jour par le webhook Resend.
+ * Interroge la base toutes les 5 s tant que la fenêtre de test est ouverte.
+ */
+export function useTestDeliveryWatch(campaignId: string | undefined, emails: string[], enabled: boolean) {
+  return useQuery({
+    queryKey: ['newsletter-test-watch', campaignId, emails],
+    enabled: enabled && !!campaignId && emails.length > 0,
+    refetchInterval: 5_000,
+    queryFn: async (): Promise<TestRecipientRow[]> => {
+      const { data, error } = await db
+        .from('newsletter_recipients')
+        .select('email, statut, sent_at, delivered_at, opened_at, clicked_at, bounced_at, error')
+        .eq('campaign_id', campaignId)
+        .eq('is_test', true)
+        .in('email', emails);
+      if (error) throw error;
+      return (data ?? []) as TestRecipientRow[];
+    },
+  });
+}
 
 /** Relit le statut de livraison des messages d'un test (action « status »). */
 export function useDeliveryStatus() {
   return useMutation({
-    mutationFn: async (vars: { messageIds: string[] }) => {
+    mutationFn: async (vars: { messageIds: string[] }): Promise<DeliveryStatusResult> => {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) throw new Error('Votre session a expiré, reconnectez-vous.');
@@ -261,7 +305,10 @@ export function useDeliveryStatus() {
         throw new Error(detail);
       }
       if (data?.error) throw new Error(data.error);
-      return (data?.statuses ?? []) as DeliveryStatus[];
+      return {
+        restricted: data?.code === 'key_restricted',
+        statuses: (data?.statuses ?? []) as DeliveryStatus[],
+      };
     },
     onError: (e) => toast.error(humanError(e)),
   });
