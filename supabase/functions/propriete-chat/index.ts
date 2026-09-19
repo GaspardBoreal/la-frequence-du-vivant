@@ -186,13 +186,16 @@ serve(async (req) => {
         });
         if (creditErr || !credit?.allowed) {
           const reason = credit?.reason ?? "forbidden";
-          const message = reason === "quota_exhausted"
+          // La fonction SQL renvoie 'exhausted' / 'disabled'.
+          const exhausted = reason === "exhausted" || reason === "quota_exhausted";
+          const disabled = reason === "disabled" || reason === "ai_disabled";
+          const message = exhausted
             ? `Crédits IA épuisés (${credit?.used ?? "?"}/${credit?.quota ?? "?"} messages ce mois-ci).`
-            : reason === "ai_disabled"
+            : disabled
               ? "L'IA de Jardin n'est pas ouverte sur votre compte partenaire."
               : "Forbidden — accès partenaire requis";
           return new Response(JSON.stringify({ error: message, reason }), {
-            status: reason === "quota_exhausted" ? 429 : 403,
+            status: exhausted ? 429 : 403,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
