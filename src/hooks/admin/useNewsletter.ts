@@ -242,7 +242,7 @@ export function useSendNewsletter() {
         throw new Error(detail);
       }
       if (data?.error) throw new Error(data.error);
-      return data as { ok: boolean; sent: number; failed: number };
+      return data as SendResult;
     },
     onSuccess: (res, vars) => {
       qc.invalidateQueries({ queryKey: ['newsletter-campaign', vars.campaignId] });
