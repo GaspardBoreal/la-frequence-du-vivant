@@ -409,24 +409,75 @@ const TestDialog: React.FC<{
                 {f.email} : {f.error}
               </p>
             ))}
-            {statuses?.map((s) => (
-              <p key={s.id}>
-                {s.to ?? s.id} :{' '}
-                {s.error ? (
-                  <span className="text-destructive">statut illisible ({s.error})</span>
-                ) : (
-                  <strong>{DELIVERY_LABELS[s.lastEvent ?? ''] ?? `en file d'attente (${s.lastEvent ?? 'inconnu'})`}</strong>
+
+            {/* Suivi en direct alimenté par le webhook Resend */}
+            {watchRows.length > 0 && (
+              <div className="space-y-1 border-t pt-2">
+                <p className="text-muted-foreground">
+                  Suivi de remise{watch.isFetching ? ' (actualisation…)' : ''} — mis à jour automatiquement :
+                </p>
+                {watchRows.map((r) => (
+                  <p key={r.email}>
+                    {r.email} : <strong>{RECIPIENT_LABELS[r.statut] ?? r.statut}</strong>
+                    {r.error ? <span className="text-destructive"> — {r.error}</span> : null}
+                  </p>
+                ))}
+                {watchRows.some((r) => ['delivered', 'opened', 'clicked'].includes(r.statut)) && (
+                  <p className="text-muted-foreground">
+                    Le message a été remis à la boîte du destinataire. S'il n'apparaît pas dans la boîte de réception,
+                    vérifiez le dossier « Courrier indésirable / Spam » et marquez-le « non spam » : cela améliore la
+                    réputation du domaine d'envoi pour les prochains envois.
+                  </p>
                 )}
-              </p>
-            ))}
-            {statuses?.some((s) => ['delivered', 'opened', 'clicked'].includes(s.lastEvent ?? '')) && (
+              </div>
+            )}
+
+            {/* Relecture directe (bloquée si la clé Resend est limitée à l'envoi) */}
+            {statuses?.restricted ? (
+              <div className="space-y-1.5 border-t pt-2">
+                <p>
+                  Votre clé Resend est limitée à l'envoi : elle ne permet pas de relire le statut d'un message après
+                  coup. Le suivi de remise passe par le « webhook » — Resend nous annonce chaque événement (remis,
+                  rejeté, ouvert, cliqué). Pour l'activer :
+                </p>
+                <ol className="list-decimal space-y-1 pl-4 text-muted-foreground">
+                  <li>Ouvrez resend.com/webhooks et cliquez « Add webhook ».</li>
+                  <li>
+                    Adresse : <code className="break-all rounded bg-muted px-1">{WEBHOOK_URL}</code>
+                  </li>
+                  <li>
+                    Événements : email.delivered, email.bounced, email.delivery_delayed, email.complained,
+                    email.opened, email.clicked
+                  </li>
+                  <li>
+                    Copiez la clé de signature affichée (elle commence par whsec_) et transmettez-la à l'assistant :
+                    il la rangera dans le coffre-fort du projet.
+                  </li>
+                </ol>
+                <p className="text-muted-foreground">
+                  Une fois actif, le statut « remis / rejeté / ouvert » de chaque test s'affiche ici automatiquement.
+                </p>
+              </div>
+            ) : (
+              statuses?.statuses.map((s) => (
+                <p key={s.id}>
+                  {s.to ?? s.id} :{' '}
+                  {s.error ? (
+                    <span className="text-destructive">statut illisible ({s.error})</span>
+                  ) : (
+                    <strong>{DELIVERY_LABELS[s.lastEvent ?? ''] ?? `en file d'attente (${s.lastEvent ?? 'inconnu'})`}</strong>
+                  )}
+                </p>
+              ))
+            )}
+            {statuses?.statuses.some((s) => ['delivered', 'opened', 'clicked'].includes(s.lastEvent ?? '')) && (
               <p className="text-muted-foreground">
                 Le message a été remis à la boîte du destinataire. S'il n'apparaît pas dans la boîte de réception,
                 vérifiez le dossier « Courrier indésirable / Spam » et marquez-le « non spam » : cela améliore la
                 réputation du domaine d'envoi pour les prochains envois.
               </p>
             )}
-            {(result.messageIds?.length ?? 0) > 0 && (
+            {!statuses?.restricted && (result.messageIds?.length ?? 0) > 0 && (
               <Button
                 type="button"
                 variant="outline"
