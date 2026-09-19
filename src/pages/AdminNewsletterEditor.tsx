@@ -53,6 +53,7 @@ const AdminNewsletterEditor: React.FC = () => {
   const [draft, setDraft] = React.useState<NewsletterCampaign | null>(null);
   const [testOpen, setTestOpen] = React.useState(false);
   const [sendOpen, setSendOpen] = React.useState(false);
+  const [testResult, setTestResult] = React.useState<SendResult | null>(null);
 
   React.useEffect(() => {
     if (campaign && !draft) setDraft(campaign);
