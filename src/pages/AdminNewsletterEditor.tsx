@@ -40,6 +40,8 @@ import {
 import { UNIVERS_THEMES, type NewsletterBlock, type NewsletterUnivers } from '@/lib/newsletter/blocks';
 
 const MAX_TEST = 10;
+/** Domaine déjà vérifié chez Resend pour ce projet. */
+const DEFAULT_FROM_EMAIL = 'lettre@mail.la-frequence-du-vivant.com';
 
 /** Studio Newsletter — composition, ciblage, test, envoi et résultats d'une lettre. */
 const AdminNewsletterEditor: React.FC = () => {
