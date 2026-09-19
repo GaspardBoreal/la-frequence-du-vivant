@@ -79,7 +79,8 @@ const AdminNewsletterEditor: React.FC = () => {
 
   const set = (patch: Partial<NewsletterCampaign>) => setDraft({ ...draft, ...patch } as NewsletterCampaign);
 
-  const save = async () => {
+  /** Renvoie false si l'enregistrement a échoué : on n'envoie jamais une version périmée. */
+  const save = async (): Promise<boolean> => {
     try {
       await update.mutateAsync({
         id: draft.id,
