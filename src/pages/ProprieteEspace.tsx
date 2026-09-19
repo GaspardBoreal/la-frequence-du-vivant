@@ -37,6 +37,7 @@ import { ProprieteChatBotMount } from '@/components/propriete/chatbot/ProprieteC
 import ScenographeMount from '@/components/propriete/scenographe/ScenographeMount';
 import { useProprieteTracker } from '@/hooks/useProprieteTracker';
 import { ProprieteTrackerProvider } from '@/contexts/ProprieteTrackerContext';
+import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 
 
 const ProprieteEspace: React.FC = () => {
