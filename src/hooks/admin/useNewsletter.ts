@@ -215,6 +215,16 @@ export function useCampaignRecipients(campaignId?: string) {
 }
 
 /** Envoi (test ou réel) via la fonction sécurisée. */
+export type SendResult = {
+  ok: boolean;
+  sent: number;
+  failed: number;
+  /** Adresse d'expéditeur réellement utilisée par Resend. */
+  from?: string;
+  messageIds?: string[];
+  failures?: Array<{ email: string; error: string }>;
+};
+
 export function useSendNewsletter() {
   const qc = useQueryClient();
   return useMutation({
