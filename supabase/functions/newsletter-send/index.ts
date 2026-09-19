@@ -270,7 +270,14 @@ Deno.serve(async (req) => {
         .eq('id', campaignId);
     }
 
-    return json({ ok: failures.length === 0, sent, failed: failures.length, failures: failures.slice(0, 10) });
+    console.log(`[newsletter-send] terminé — envoyés=${sent} échecs=${failures.length}`);
+    return json({
+      ok: failures.length === 0,
+      sent,
+      failed: failures.length,
+      from: fromAddress,
+      failures: failures.slice(0, 10),
+    });
   } catch (e) {
     console.error('[newsletter-send] erreur:', (e as Error).message);
     return json({ error: "L'envoi a échoué", details: (e as Error).message }, 500);
