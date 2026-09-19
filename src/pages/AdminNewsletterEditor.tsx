@@ -298,7 +298,8 @@ const TestDialog: React.FC<{
   onOpenChange: (o: boolean) => void;
   onSend: (emails: string[]) => Promise<void>;
   pending: boolean;
-}> = ({ open, onOpenChange, onSend, pending }) => {
+  result?: SendResult | null;
+}> = ({ open, onOpenChange, onSend, pending, result }) => {
   const { data: rows = [] } = useNewsletterAudience('tous');
   const [selected, setSelected] = React.useState<string[]>([]);
   const [manual, setManual] = React.useState('');
