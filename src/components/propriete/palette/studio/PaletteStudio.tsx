@@ -274,6 +274,12 @@ export const PaletteStudio: React.FC<Props> = ({
   /** Dessin d'un ouvrage lancé depuis Le Chantier : on y revient une fois tracé. */
   const [chantierDraw, setChantierDraw] = React.useState<PaysageTool | null>(null);
   const [chantierPreselect, setChantierPreselect] = React.useState<string[]>([]);
+  /** « Redessiner » : le prochain tracé remplace la géométrie de cet ouvrage. */
+  const [redrawObjetId, setRedrawObjetId] = React.useState<string | null>(null);
+  /** Idem pour un emplacement (sinon « Redessiner » créait un doublon). */
+  const [zoneRedrawId, setZoneRedrawId] = React.useState<string | null>(null);
+  /** Remonte le DrawLayer pour vider un tracé en cours (« Recommencer »). */
+  const [drawNonce, setDrawNonce] = React.useState(0);
 
   const [panelOpen, setPanelOpen] = React.useState(true);
   const [activeCalqueId, setActiveCalqueId] = React.useState<string | null>(null);
@@ -700,11 +706,40 @@ export const PaletteStudio: React.FC<Props> = ({
   const handleDrawFinish = React.useCallback(
     async (geometry: any) => {
       if (zoneDraw) {
-        onCreateZone(geometry, Math.round(geometryAreaM2(geometry)));
+        if (zoneRedrawId) {
+          // Redessiner un emplacement : le nouveau contour remplace l'ancien
+          const z = zones.find((x) => x.id === zoneRedrawId);
+          if (z) onPatchZone(z, { geometry });
+          setZoneRedrawId(null);
+        } else {
+          onCreateZone(geometry, Math.round(geometryAreaM2(geometry)));
+        }
         setZoneDraw(false);
         return;
       }
       if (!tool) return;
+      if (redrawObjetId) {
+        // Redessiner un ouvrage : la nouvelle forme remplace l'ancienne,
+        // photos, nom et réglages conservés
+        const o = objets.find((x) => x.id === redrawObjetId);
+        if (o) {
+          await upsertObjet({
+            id: o.id,
+            outil_key: o.outil_key,
+            geometry,
+            calque_id: o.calque_id,
+            zone_id: o.zone_id,
+            nom: o.nom,
+            style: o.style,
+            meta: o.meta,
+            ordre: o.ordre,
+          }).catch(() => {});
+          setSelectedObjetId(o.id);
+        }
+        setRedrawObjetId(null);
+        setTool(null);
+        return;
+      }
       const createdId = await upsertObjet({
         outil_key: tool.key,
         geometry,
@@ -728,12 +763,16 @@ export const PaletteStudio: React.FC<Props> = ({
     },
     [
       zoneDraw,
+      zoneRedrawId,
+      zones,
+      redrawObjetId,
+      objets,
       tool,
       activeCalqueId,
       activeZoneId,
       pendingInspiration,
-      objets.length,
       onCreateZone,
+      onPatchZone,
       upsertObjet,
       chantierDraw,
     ],
