@@ -112,9 +112,14 @@ export const ChantierOverlay: React.FC<Props> = ({
   );
 
   /* ---------- A. Les espèces réellement dans le lot ---------- */
+  /** Lot sans ouvrage = chantier « tout le jardin » : on garde l'ensemble du vivant. */
+  const wholeGarden = geometries.length === 0;
   const scoped = React.useMemo(
-    () => scopeWaypoints(geometries, pool.waypoints ?? [], rigour),
-    [geometries, pool.waypoints, rigour],
+    () =>
+      wholeGarden
+        ? (pool.waypoints ?? [])
+        : scopeWaypoints(geometries, pool.waypoints ?? [], rigour),
+    [wholeGarden, geometries, pool.waypoints, rigour],
   );
   const beforeWaypoints = React.useMemo(
     () => scoped.filter((w) => !isAfterWorks(w.observationDate, active?.date_travaux)),
