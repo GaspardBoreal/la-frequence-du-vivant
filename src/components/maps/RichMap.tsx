@@ -207,7 +207,11 @@ export const RichMap: React.FC<RichMapProps> = ({
         {children}
       </SafeMapContainer>
 
-      {controls.style && <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />}
+      {controls.style && (
+        <div className={mutedCls}>
+          <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
+        </div>
+      )}
       {controls.marcheRouteVisibility && marcheRoute && marcheRoute.steps.length > 0 && (
         <MarcheRouteToggle visible={markersVisible} onToggle={handleMarkersToggle} />
       )}
