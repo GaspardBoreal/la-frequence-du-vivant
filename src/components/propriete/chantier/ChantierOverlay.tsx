@@ -270,7 +270,7 @@ export const ChantierOverlay: React.FC<Props> = ({
         const fresh = (await objetPhotos.refetch()).data ?? [];
         const added = fresh.filter((p) => p.objet_id === objetId && !before.has(p.id));
         for (const p of added) await setPhase(p.id, phase);
-        if (added.length) toast.success(`${added.length} image(s) rangée(s) en « ${phase} »`);
+        if (added.length) toast.success(`${added.length} média(s) rangé(s) en « ${phase} »`);
       } finally {
         setFiling(false);
       }

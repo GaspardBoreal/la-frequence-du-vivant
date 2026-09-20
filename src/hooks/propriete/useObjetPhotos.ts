@@ -1,7 +1,7 @@
 /**
- * Carnet photo des ouvrages de l'Atelier.
+ * Carnet visuel des ouvrages de l'Atelier.
  *
- * Une photo est rattachée à un objet (`propriete_objets`) : mare, massif,
+ * Une photo ou vidéo est rattachée à un objet (`propriete_objets`) : mare, massif,
  * potager, pas japonais… Chaque photo porte sa date de prise de vue (EXIF)
  * ET sa date d'ajout — ce qui permet de filtrer par saison / année.
  *
