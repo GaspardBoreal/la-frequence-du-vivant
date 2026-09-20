@@ -228,7 +228,8 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
       // Une saisie survenue pendant l'enregistrement reste « à enregistrer ».
       if (revisionRef.current === revisionAtStart) dirtyRef.current = false;
       // Cette écriture devient la version la plus récente connue.
-      freshestRef.current = Math.max(freshestRef.current, Date.now());
+      // Tolérance de 3 s : absorbe l'écart d'horloge entre navigateur et serveur.
+      freshestRef.current = Math.max(freshestRef.current, Date.now() - 3000);
       setSavedAt(new Date().toISOString());
       if (completed) {
         setLocalRaw((s) => ({ ...s, completed_at: new Date().toISOString() }));
