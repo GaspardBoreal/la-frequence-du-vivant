@@ -64,6 +64,8 @@ export interface RichMapProps {
   maxZoom?: number;
   /** Notified when the user toggles marche step markers visibility (only when controls.marcheRouteVisibility is on) */
   onMarcheVisibilityChange?: (visible: boolean) => void;
+  /** Estompe et neutralise les contrôles (fonds, zoom, géoloc) : mode édition focalisé. */
+  chromeMuted?: boolean;
 }
 
 /**
@@ -92,7 +94,11 @@ export const RichMap: React.FC<RichMapProps> = ({
   scrollWheelZoom = true,
   maxZoom = 19,
   onMarcheVisibilityChange,
+  chromeMuted = false,
 }) => {
+  const mutedCls = chromeMuted
+    ? 'pointer-events-none opacity-20 transition-opacity duration-300'
+    : 'transition-opacity duration-300';
   const [mapStyle, setMapStyle] = useState<MapStyle>(initialStyle);
   const [markersVisible, setMarkersVisible] = useState<boolean>(
     marcheRoute?.renderMarkers !== false,
@@ -186,14 +192,26 @@ export const RichMap: React.FC<RichMapProps> = ({
         )}
 
         {/* Custom controls inside map context */}
-        {controls.zoom && <ZoomControls mapStyle={mapStyle} />}
-        {controls.geolocate && <GeolocateControl disableTracking />}
+        {controls.zoom && (
+          <div className={mutedCls}>
+            <ZoomControls mapStyle={mapStyle} />
+          </div>
+        )}
+        {controls.geolocate && (
+          <div className={mutedCls}>
+            <GeolocateControl disableTracking />
+          </div>
+        )}
 
         {/* Business markers / overlays */}
         {children}
       </SafeMapContainer>
 
-      {controls.style && <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />}
+      {controls.style && (
+        <div className={mutedCls}>
+          <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
+        </div>
+      )}
       {controls.marcheRouteVisibility && marcheRoute && marcheRoute.steps.length > 0 && (
         <MarcheRouteToggle visible={markersVisible} onToggle={handleMarkersToggle} />
       )}

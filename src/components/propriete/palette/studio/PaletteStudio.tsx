@@ -305,6 +305,14 @@ export const PaletteStudio: React.FC<Props> = ({
     },
     [objets, readOnly, zoneTransform, objetTransform],
   );
+  /** Mode Atelier : une forme en cours de transformation → l'écran se met en retrait. */
+  const transforming = !!objetTransform.objet || !!zoneTransform.zone;
+  /** Fiche de droite rangée en onglet pendant le geste, rappelable d'un clic. */
+  const [inspectorPeek, setInspectorPeek] = React.useState(false);
+  React.useEffect(() => {
+    if (transforming) setInspectorPeek(false);
+  }, [transforming]);
+
   const [inspirationOpen, setInspirationOpen] = React.useState(false);
   const [pendingInspiration, setPendingInspiration] = React.useState<InspirationCard | null>(null);
   const [timeIndex, setTimeIndex] = React.useState(0);
@@ -966,6 +974,7 @@ export const PaletteStudio: React.FC<Props> = ({
             fitPadding={[60, 60]}
             fitAnimate={false}
             controls={{ zoom: true, style: true, geolocate: true, cadastre: true }}
+            chromeMuted={transforming}
             maxZoom={24}
             scrollWheelZoom
             height="100%"
@@ -1240,6 +1249,11 @@ export const PaletteStudio: React.FC<Props> = ({
 
 
 
+          {/* Mode Atelier : rideau de théâtre — la scène, c'est la forme */}
+          {transforming && (
+            <div className="pointer-events-none absolute inset-0 z-[450] bg-[hsl(var(--ds-forest-deep))]/10 ring-2 ring-inset ring-[#c8a24a]/45 transition-opacity duration-300" />
+          )}
+
           <InlineGpsBar curation={inlineGps} />
 
           <ObjetTransformBar
@@ -1301,7 +1315,11 @@ export const PaletteStudio: React.FC<Props> = ({
           )}
 
           {/* Curseur temporel */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[500] flex justify-center p-3">
+          <div
+            className={`pointer-events-none absolute inset-x-0 bottom-0 z-[500] flex justify-center p-3 transition-opacity duration-300 ${
+              transforming ? 'opacity-0' : ''
+            }`}
+          >
             <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/95 px-4 py-2 shadow-lg backdrop-blur">
               <Clock className="h-3.5 w-3.5 opacity-55" />
               {TIME_STEPS.map((s, i) => (
@@ -1340,9 +1358,31 @@ export const PaletteStudio: React.FC<Props> = ({
             </div>
           )}
 
+          {/* Onglet de rappel de la fiche, pendant le geste */}
+          {transforming && !inspectorPeek && (selectedObjet || selectedZone) && (
+            <button
+              onClick={() => setInspectorPeek(true)}
+              className="absolute right-0 top-1/2 z-[758] hidden -translate-y-1/2 items-center gap-1 rounded-l-xl border border-r-0 border-[#c8a24a]/50 bg-[hsl(var(--ds-cream))]/96 px-2 py-3 text-[11px] text-[hsl(var(--ds-forest-deep))] shadow-xl backdrop-blur transition hover:px-3 sm:inline-flex"
+              title="Revoir la fiche"
+            >
+              <span className="[writing-mode:vertical-rl] rotate-180 font-serif italic">
+                {selectedObjet?.nom ||
+                  (selectedObjet ? TOOL_BY_KEY[selectedObjet.outil_key]?.label : null) ||
+                  selectedZone?.nom ||
+                  'Fiche'}
+              </span>
+            </button>
+          )}
+
           {/* Inspecteur objet — colonne droite, centrée verticalement */}
           {selectedObjet && (
-            <div className={MAP_CHROME_SIDE_CENTER}>
+            <div
+              className={`${MAP_CHROME_SIDE_CENTER} transition-all duration-300 ${
+                transforming && !inspectorPeek
+                  ? 'pointer-events-none opacity-0 sm:translate-x-[115%]'
+                  : ''
+              }`}
+            >
               <ObjectInspector
                 proprieteId={proprieteId}
                 onOpenScenarioLibrary={() => setLibraryOpen(true)}
@@ -1388,7 +1428,13 @@ export const PaletteStudio: React.FC<Props> = ({
 
           {/* Inspecteur emplacement — même ancrage */}
           {!selectedObjet && selectedZone && (
-            <div className={MAP_CHROME_SIDE_CENTER}>
+            <div
+              className={`${MAP_CHROME_SIDE_CENTER} transition-all duration-300 ${
+                transforming && !inspectorPeek
+                  ? 'pointer-events-none opacity-0 sm:translate-x-[115%]'
+                  : ''
+              }`}
+            >
               <ZoneInspector
                 zone={selectedZone}
                 color={selectedZoneColor}
