@@ -86,7 +86,7 @@ export const EmpriseRealPanel: React.FC<{ api: ObjetTransformApi; color: string 
 
   if (!open) {
     return (
-      <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[600] flex justify-center px-3">
+      <div className="pointer-events-none absolute inset-x-0 bottom-[5.25rem] z-[600] flex justify-center px-3">
         <button
           onClick={() => setOpen(true)}
           className="pointer-events-auto group inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[12px] shadow-2xl backdrop-blur transition"
@@ -113,7 +113,7 @@ export const EmpriseRealPanel: React.FC<{ api: ObjetTransformApi; color: string 
   }
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[600] flex justify-center px-3">
+    <div className="pointer-events-none absolute inset-x-0 bottom-[5.25rem] z-[600] flex justify-center px-3">
       <div className="pointer-events-auto w-full max-w-xl rounded-3xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/97 p-4 shadow-2xl backdrop-blur">
         {/* En-tête */}
         <div className="mb-3 flex items-center gap-2">
