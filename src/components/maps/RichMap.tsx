@@ -192,8 +192,16 @@ export const RichMap: React.FC<RichMapProps> = ({
         )}
 
         {/* Custom controls inside map context */}
-        {controls.zoom && <ZoomControls mapStyle={mapStyle} />}
-        {controls.geolocate && <GeolocateControl disableTracking />}
+        {controls.zoom && (
+          <div className={mutedCls}>
+            <ZoomControls mapStyle={mapStyle} />
+          </div>
+        )}
+        {controls.geolocate && (
+          <div className={mutedCls}>
+            <GeolocateControl disableTracking />
+          </div>
+        )}
 
         {/* Business markers / overlays */}
         {children}
