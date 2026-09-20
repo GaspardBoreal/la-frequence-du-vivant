@@ -362,7 +362,7 @@ export const ChantierOverlay: React.FC<Props> = ({
           <>
             <span className="hidden items-center gap-1 rounded-full border border-white/15 px-2.5 py-1 text-[11px] sm:inline-flex">
               <Layers className="h-3 w-3 opacity-60" />
-              {lotObjets.map(labelOfObjet).join(' · ') || 'lot vide'}
+              {lotObjets.map(labelOfObjet).join(' · ') || 'tout le jardin'}
             </span>
             <label className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 text-[11px]">
               <CalendarDays className="h-3 w-3 opacity-60" />
