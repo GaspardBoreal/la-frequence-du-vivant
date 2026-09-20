@@ -94,7 +94,11 @@ export const RichMap: React.FC<RichMapProps> = ({
   scrollWheelZoom = true,
   maxZoom = 19,
   onMarcheVisibilityChange,
+  chromeMuted = false,
 }) => {
+  const mutedCls = chromeMuted
+    ? 'pointer-events-none opacity-20 transition-opacity duration-300'
+    : 'transition-opacity duration-300';
   const [mapStyle, setMapStyle] = useState<MapStyle>(initialStyle);
   const [markersVisible, setMarkersVisible] = useState<boolean>(
     marcheRoute?.renderMarkers !== false,
