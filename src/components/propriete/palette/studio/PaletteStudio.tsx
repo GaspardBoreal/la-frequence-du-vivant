@@ -305,6 +305,14 @@ export const PaletteStudio: React.FC<Props> = ({
     },
     [objets, readOnly, zoneTransform, objetTransform],
   );
+  /** Mode Atelier : une forme en cours de transformation → l'écran se met en retrait. */
+  const transforming = !!objetTransform.objet || !!zoneTransform.zone;
+  /** Fiche de droite rangée en onglet pendant le geste, rappelable d'un clic. */
+  const [inspectorPeek, setInspectorPeek] = React.useState(false);
+  React.useEffect(() => {
+    if (transforming) setInspectorPeek(false);
+  }, [transforming]);
+
   const [inspirationOpen, setInspirationOpen] = React.useState(false);
   const [pendingInspiration, setPendingInspiration] = React.useState<InspirationCard | null>(null);
   const [timeIndex, setTimeIndex] = React.useState(0);
