@@ -48,6 +48,22 @@ const KEY = (id?: string) => ['propriete-objet-photos', id];
 
 const extOf = (name: string) => (name.split('.').pop() || 'jpg').toLowerCase();
 
+/** Dérive la variante Image Transform d'une URL Storage signée privée. */
+const thumbUrlOf = (signedUrl?: string) => {
+  if (!signedUrl) return undefined;
+  try {
+    const url = new URL(signedUrl);
+    url.pathname = url.pathname.replace('/storage/v1/object/sign/', '/storage/v1/render/image/sign/');
+    url.searchParams.set('width', '480');
+    url.searchParams.set('height', '360');
+    url.searchParams.set('resize', 'cover');
+    url.searchParams.set('quality', '68');
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+};
+
 export type UploadItemStatus = 'pending' | 'reading' | 'uploading' | 'saving' | 'done' | 'error';
 
 export interface UploadItem {
@@ -127,26 +143,13 @@ export function useObjetPhotos(proprieteId?: string) {
       (signed ?? []).forEach((s: any) => {
         if (s?.path && s?.signedUrl) byPath.set(s.path, s.signedUrl);
       });
-      const imageRows = rows.filter(
-        (r) => r.media_type !== 'video' && !r.mime?.startsWith('video/'),
-      );
-      const { data: thumbs } = imageRows.length
-        ? await supabase.storage
-            .from(OUVRAGE_PHOTO_BUCKET)
-            .createSignedUrls(
-              imageRows.map((r) => r.storage_path),
-              3600,
-              { transform: { width: 480, height: 360, resize: 'cover', quality: 68 } },
-            )
-        : { data: [] };
-      const thumbByPath = new Map<string, string>();
-      (thumbs ?? []).forEach((s: any) => {
-        if (s?.path && s?.signedUrl) thumbByPath.set(s.path, s.signedUrl);
-      });
       return rows.map((r) => ({
         ...r,
         url: byPath.get(r.storage_path),
-        thumb_url: thumbByPath.get(r.storage_path),
+        thumb_url:
+          r.media_type === 'video' || r.mime?.startsWith('video/')
+            ? undefined
+            : thumbUrlOf(byPath.get(r.storage_path)),
       }));
     },
   });
