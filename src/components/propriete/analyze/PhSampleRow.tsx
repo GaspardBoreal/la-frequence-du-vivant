@@ -103,13 +103,14 @@ export const PhSampleRow: React.FC<{
             <span className="text-[8.5px] font-bold tracking-[0.2em] uppercase text-[hsl(var(--ds-forest))]/60">
               pH mesuré
             </span>
-            {value != null && (
+            {(value != null || test != null) && (
               <button
                 type="button"
-                onClick={() => onPatch({ ph_value: null })}
+                onClick={() => onPatch({ ph_value: null, ph_test: null })}
+                aria-label={`Effacer la mesure de pH du prélèvement ${sample.label}`}
                 className="inline-flex items-center gap-1 text-[9.5px] font-semibold text-[hsl(var(--ds-forest-deep))]/50 hover:text-[hsl(var(--ds-forest-deep))] transition"
               >
-                <RotateCcw className="w-2.5 h-2.5" /> effacer
+                <RotateCcw className="w-2.5 h-2.5" /> Effacer la mesure
               </button>
             )}
           </div>
