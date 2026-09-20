@@ -271,6 +271,9 @@ export const PaletteStudio: React.FC<Props> = ({
   const [libraryOpen, setLibraryOpen] = React.useState(false);
   /** « Le Chantier » : lecture avant / après d'un lot d'ouvrages. */
   const [chantierOpen, setChantierOpen] = React.useState(false);
+  /** Dessin d'un ouvrage lancé depuis Le Chantier : on y revient une fois tracé. */
+  const [chantierDraw, setChantierDraw] = React.useState<PaysageTool | null>(null);
+  const [chantierPreselect, setChantierPreselect] = React.useState<string[]>([]);
 
   const [panelOpen, setPanelOpen] = React.useState(true);
   const [activeCalqueId, setActiveCalqueId] = React.useState<string | null>(null);
