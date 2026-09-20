@@ -1,7 +1,7 @@
 import React from 'react';
-import { Check, Hammer, Plus, Trash2, CalendarDays } from 'lucide-react';
+import { Check, Hammer, Plus, Trash2, CalendarDays, PenLine, Trees } from 'lucide-react';
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
-import { TOOL_BY_KEY } from '@/lib/paysageTools';
+import { TOOL_BY_KEY, type PaysageTool } from '@/lib/paysageTools';
 import type { ProprieteChantier } from '@/hooks/propriete/useProprieteChantiers';
 
 interface Props {
@@ -11,7 +11,16 @@ interface Props {
   onCreate: (input: { nom: string; objet_ids: string[]; date_travaux: string | null }) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
+  /** Droit d'écriture sur le jardin (propriétaire, prestataire, équipe). */
+  canEdit?: boolean;
+  /** Arme un outil de dessin sur le plan pour créer un ouvrage sans quitter le chantier. */
+  onDrawNew?: (tool: PaysageTool) => void;
+  /** Ouvrages à cocher d'emblée (retour de dessin). */
+  preselect?: string[];
 }
+
+/** Tracés les plus courants proposés directement dans la fenêtre du chantier. */
+const QUICK_TOOL_KEYS = ['massif', 'potager', 'haie', 'mare', 'arbre', 'allee'];
 
 const fmtDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : 'date à fixer';
