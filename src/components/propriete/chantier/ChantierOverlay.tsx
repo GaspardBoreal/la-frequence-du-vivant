@@ -147,7 +147,8 @@ export const ChantierOverlay: React.FC<Props> = ({
     const samples = (soil.state.samples ?? []).filter(
       (s) => s.lat != null && s.lng != null,
     );
-    if (!geometries.length || !samples.length) return [];
+    if (!samples.length) return [];
+    if (wholeGarden) return samples;
     const keep = new Map<string, (typeof samples)[number]>();
     for (const g of geometries) {
       const res = classifyObservations(
