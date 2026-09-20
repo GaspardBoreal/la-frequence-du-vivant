@@ -14,6 +14,9 @@ import {
   PanelLeftOpen,
   Wand2,
   Hammer,
+  Check,
+  RotateCcw,
+  Undo2,
 
 } from 'lucide-react';
 import RichMap from '@/components/maps/RichMap';
@@ -40,7 +43,12 @@ import { useProprieteCalques } from '@/hooks/propriete/usePropertyCalques';
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
 import { DEFAULT_LAYERS, TOOL_BY_KEY, type PaysageTool } from '@/lib/paysageTools';
 import type { InspirationCard } from '@/lib/inspirationsKb';
-import DrawLayer from './DrawLayer';
+import DrawLayer, {
+  type DrawDraftState,
+  type DrawLayerHandle,
+  type ZoneDrawMode,
+} from './DrawLayer';
+import ZoneShapePicker from './ZoneShapePicker';
 import ObjectsLayer from './ObjectsLayer';
 import LayersPanel, { type SystemLayerState } from './LayersPanel';
 import ToolPalette from './ToolPalette';
@@ -110,6 +118,7 @@ import { MAP_CHROME_SIDE_CENTER } from '@/components/maps/mapChrome';
 import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 import { openGardenAi, useProprieteChatFocus } from '@/components/propriete/chatbot/proprieteChatFocus';
 import { Circle as LeafletCircle, Polygon as LeafletPolygon } from 'react-leaflet';
+import { Button } from '@/components/ui/button';
 
 
 type PanelTab = 'calques' | 'outils' | 'vivant' | 'bilan';
@@ -285,6 +294,15 @@ export const PaletteStudio: React.FC<Props> = ({
   const [activeCalqueId, setActiveCalqueId] = React.useState<string | null>(null);
   const [tool, setTool] = React.useState<PaysageTool | null>(null);
   const [zoneDraw, setZoneDraw] = React.useState(false);
+  const [zoneDrawMode, setZoneDrawMode] = React.useState<ZoneDrawMode>('polygon');
+  const [drawDraft, setDrawDraft] = React.useState<DrawDraftState>({
+    pointCount: 0,
+    canUndo: false,
+    canFinish: false,
+    lengthM: null,
+    angleDeg: null,
+  });
+  const drawLayerRef = React.useRef<DrawLayerHandle | null>(null);
   const zoneTransform = useZoneTransform(onPatchZone);
   const [selectedObjetId, setSelectedObjetId] = React.useState<string | null>(null);
   /** Mode Transformer d'un ouvrage : géométrie éditée en local, écrite au « Valider ». */
@@ -899,7 +917,9 @@ export const PaletteStudio: React.FC<Props> = ({
             <button
               onClick={() => {
                 setTool(null);
-                setZoneDraw((v) => !v);
+                setZoneDraw(true);
+                setDrawDraft({ pointCount: 0, canUndo: false, canFinish: false, lengthM: null, angleDeg: null });
+                setDrawNonce((n) => n + 1);
               }}
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] transition-all ${
                 zoneDraw
@@ -1223,10 +1243,13 @@ export const PaletteStudio: React.FC<Props> = ({
 
             {!readOnly && (
               <DrawLayer
+                ref={drawLayerRef}
                 key={`${drawNonce}-${drawGeom ?? 'none'}-${redrawObjetId ?? ''}-${zoneRedrawId ?? ''}`}
                 geom={drawGeom as any}
                 color={drawColor}
-                freehand={zoneDraw}
+                freehand={zoneDraw && zoneDrawMode === 'freehand'}
+                zoneMode={zoneDraw ? zoneDrawMode : undefined}
+                onDraftChange={setDrawDraft}
                 onFinish={handleDrawFinish}
               />
             )}
@@ -1366,25 +1389,82 @@ export const PaletteStudio: React.FC<Props> = ({
           {/* Bandeau de guidage */}
           {(drawGeom || pendingInspiration) && (
             <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] flex justify-center p-3">
-              <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-[hsl(var(--ds-forest-deep))]/95 px-4 py-2 text-[11px] text-[hsl(var(--ds-cream))] shadow-lg backdrop-blur">
+              <div className="pointer-events-auto flex max-w-[calc(100vw-1.5rem)] flex-col items-center gap-2">
+                {zoneDraw && (
+                  <ZoneShapePicker
+                    value={zoneDrawMode}
+                    onChange={(mode) => {
+                      setZoneDrawMode(mode);
+                      setDrawDraft({ pointCount: 0, canUndo: false, canFinish: false, lengthM: null, angleDeg: null });
+                      setDrawNonce((n) => n + 1);
+                    }}
+                  />
+                )}
+                <div className="flex max-w-full flex-wrap items-center justify-center gap-2 rounded-lg bg-[hsl(var(--ds-forest-deep))]/95 px-3 py-2 text-[11px] text-[hsl(var(--ds-cream))] shadow-lg backdrop-blur">
                 <span className="font-semibold tracking-wide">
                   {zoneRedrawId || redrawObjetId
                     ? 'Tracez la nouvelle forme — elle remplacera l’ancienne.'
                     : zoneDraw
-                      ? 'Tracez le contour d’un doigt — relâchez pour fermer.'
+                      ? zoneDrawMode === 'freehand'
+                        ? 'Dessinez le contour, puis validez.'
+                        : zoneDrawMode === 'rectangle'
+                          ? 'Posez le premier côté, puis la largeur.'
+                          : zoneDrawMode === 'hexagon'
+                            ? 'Posez le centre, puis le rayon et l’orientation.'
+                            : zoneDrawMode === 'orthogonal'
+                              ? 'Posez les sommets : chaque côté suit un angle droit.'
+                              : 'Posez chaque sommet, puis validez.'
                       : tool?.geom === 'point'
                         ? `${tool.glyph} ${tool.label} : cliquez pour poser.`
                         : `${tool?.glyph} ${tool?.label} : cliquez les sommets, double-clic pour terminer.`}
                 </span>
-                {(drawGeom === 'polygon' || drawGeom === 'line' || zoneDraw) && (
-                  <button
-                    onClick={() => setDrawNonce((n) => n + 1)}
-                    className="rounded-full bg-white/15 px-2 py-0.5 hover:bg-white/25"
-                  >
-                    Recommencer
-                  </button>
+                {zoneDraw && drawDraft.lengthM != null && (
+                  <span className="tabular-nums opacity-75">
+                    {drawDraft.lengthM < 10
+                      ? `${drawDraft.lengthM.toFixed(1)} m`
+                      : `${Math.round(drawDraft.lengthM)} m`}
+                    {drawDraft.angleDeg ? ` · ${drawDraft.angleDeg}°` : ''}
+                  </span>
                 )}
-                <button
+                {zoneDraw && zoneDrawMode !== 'freehand' && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={!drawDraft.canUndo}
+                    onClick={() => drawLayerRef.current?.undo()}
+                    title="Annuler le dernier point"
+                    className="h-7 px-2 text-[hsl(var(--ds-cream))] hover:bg-[hsl(var(--ds-cream))]/15 hover:text-[hsl(var(--ds-cream))]"
+                  >
+                    <Undo2 className="h-3 w-3" /> Dernier point
+                  </Button>
+                )}
+                {(drawGeom === 'polygon' || drawGeom === 'line' || zoneDraw) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => drawLayerRef.current?.reset()}
+                    className="h-7 px-2 text-[hsl(var(--ds-cream))] hover:bg-[hsl(var(--ds-cream))]/15 hover:text-[hsl(var(--ds-cream))]"
+                  >
+                    <RotateCcw className="h-3 w-3" /> Recommencer
+                  </Button>
+                )}
+                {zoneDraw && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!drawDraft.canFinish}
+                    onClick={() => drawLayerRef.current?.finish()}
+                    className="h-7 px-2"
+                  >
+                    <Check className="h-3 w-3" /> Valider
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     setZoneDraw(false);
                     setTool(null);
@@ -1392,10 +1472,11 @@ export const PaletteStudio: React.FC<Props> = ({
                     setRedrawObjetId(null);
                     setZoneRedrawId(null);
                   }}
-                  className="rounded-full bg-white/15 px-2 py-0.5 hover:bg-white/25"
+                  className="h-7 px-2 text-[hsl(var(--ds-cream))] hover:bg-[hsl(var(--ds-cream))]/15 hover:text-[hsl(var(--ds-cream))]"
                 >
                   Annuler
-                </button>
+                </Button>
+                </div>
               </div>
             </div>
           )}
