@@ -13,7 +13,7 @@ const STEPS = ['Humidifier', 'Mesurer', 'Lire', 'Noter'];
 
 export const PhBlock: React.FC<{
   value?: number | null;
-  onChange: (v: number) => void;
+  onChange: (v: number | null) => void;
   samples?: SoilSample[];
   onUpdateSample?: (id: string, patch: Partial<SoilSample>) => void;
   /** Pastille médias par prélèvement (preuves de terrain). */
