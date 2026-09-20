@@ -90,6 +90,7 @@ export const ChantierOverlay: React.FC<Props> = ({
   canEdit = true,
   onDrawNew,
   preselectObjetIds,
+  onRenameObjet,
 }) => {
   const queryClient = useQueryClient();
   const scenoState = useScenographeState();
@@ -459,6 +460,8 @@ export const ChantierOverlay: React.FC<Props> = ({
               canEdit={canEdit}
               onDrawNew={onDrawNew}
               preselect={preselectObjetIds}
+              onRenameObjet={onRenameObjet}
+              onPatch={(id, values) => patch(id, values as any)}
             />
           </div>
         ) : (
