@@ -2,8 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
 import {
   Sprout, KeyRound, MapPin, Star, ArrowRight, Loader2, Crosshair, Copy, Check, Share2, Sparkles,
+  Map, Ruler, FlaskConical, Footprints, Hammer, Trees,
 } from 'lucide-react';
 
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -15,6 +19,8 @@ import {
 import GardenExampleGallery, {
   type GardenStyleSelection,
 } from '@/components/onboarding/GardenExampleGallery';
+import Footer from '@/components/Footer';
+import { RichMap } from '@/components/maps';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +34,27 @@ const ROLE_LABELS: Record<InvitationRole, string> = {
   marcheur_historique: 'Marcheur — regard complice sur le jardin',
 };
 
+type GardenMapPoint = {
+  garden_key: string;
+  approximate_latitude: number;
+  approximate_longitude: number;
+  garden_type: string | null;
+  surface_m2: number | null;
+  species_count: number;
+  soil_analyses_count: number;
+  soil_type: string | null;
+  garden_tours_count: number;
+  completed_projects_count: number;
+};
+
+const gardenIcon = L.divIcon({
+  className: 'garden-map-marker',
+  iconSize: [38, 46],
+  iconAnchor: [19, 42],
+  popupAnchor: [0, -38],
+  html: '<div class="garden-map-marker__pin"><span>♧</span></div>',
+});
+
 /**
  * Écran d'entrée de Fréquence Jardin : ouvrir un jardin existant,
  * en créer un nouveau, ou en rejoindre un avec un code d'invitation.
@@ -36,6 +63,7 @@ export default function JardinDemarrer() {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuthContext();
   const { data: access, isLoading: accessLoading } = useUserAppsAccess(user?.id);
+  const [section, setSection] = useState<'create' | 'map'>('create');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -60,7 +88,7 @@ export default function JardinDemarrer() {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:py-16">
+      <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:py-16">
         <header className="mb-10 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15 ring-1 ring-emerald-400/30">
             <Sprout className="h-7 w-7 text-emerald-300" />
@@ -72,7 +100,26 @@ export default function JardinDemarrer() {
           </p>
         </header>
 
-        {accessLoading ? (
+        <nav aria-label="Sections de la page" className="mx-auto mb-8 grid max-w-md grid-cols-2 rounded-lg border border-white/15 bg-white/5 p-1">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setSection('create')}
+            className={section === 'create' ? 'bg-emerald-400 text-emerald-950 hover:bg-emerald-300' : 'text-emerald-100 hover:bg-white/10 hover:text-white'}
+          >
+            <Sprout className="mr-2 h-4 w-4" /> Créer
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setSection('map')}
+            className={section === 'map' ? 'bg-emerald-400 text-emerald-950 hover:bg-emerald-300' : 'text-emerald-100 hover:bg-white/10 hover:text-white'}
+          >
+            <Map className="mr-2 h-4 w-4" /> Carte des jardins
+          </Button>
+        </nav>
+
+        {section === 'create' && (accessLoading ? (
           <div className="flex items-center justify-center gap-2 py-12 text-emerald-100/60">
             <Loader2 className="h-4 w-4 animate-spin" /> Nous cherchons vos jardins…
           </div>
@@ -127,10 +174,134 @@ export default function JardinDemarrer() {
               <JoinGardenCard />
             </div>
 
-            {mesJardins.length > 0 && <InvitePanel jardins={mesJardins} />}
+            {mesJardins.length > 0 ? <InvitePanel jardins={mesJardins} /> : <InviteEmptyCard />}
           </div>
-        )}
+        ))}
+
+        {section === 'map' && <GardensMap />}
+      </main>
+      <Footer variant="marches" />
+      <style>{`
+        .garden-map-marker__pin{width:38px;height:38px;border-radius:50% 50% 50% 8px;transform:rotate(-45deg);display:grid;place-items:center;background:hsl(var(--primary));border:3px solid hsl(var(--background));box-shadow:0 5px 14px rgba(0,0,0,.35)}
+        .garden-map-marker__pin span{transform:rotate(45deg);font-size:22px;color:hsl(var(--primary-foreground));line-height:1}
+      `}</style>
+    </div>
+  );
+}
+
+function InviteEmptyCard() {
+  return (
+    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 opacity-70">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-500/20">
+          <Share2 className="h-5 w-5 text-sky-300" />
+        </div>
+        <div>
+          <h2 className="font-semibold">Inviter quelqu'un dans un de vos jardins</h2>
+          <p className="text-xs text-emerald-100/60">Créez d’abord votre jardin pour pouvoir transmettre une invitation.</p>
+        </div>
       </div>
+    </section>
+  );
+}
+
+function GardensMap() {
+  const query = useQuery<GardenMapPoint[]>({
+    queryKey: ['gardens-public-map'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_gardens_public_map' as never);
+      if (error) throw error;
+      return (data ?? []) as GardenMapPoint[];
+    },
+  });
+
+  const points = query.data ?? [];
+  const bounds = useMemo<Array<[number, number]> | undefined>(
+    () => points.length > 1
+      ? points.map((point) => [point.approximate_latitude, point.approximate_longitude])
+      : undefined,
+    [points],
+  );
+  const center: [number, number] = points.length
+    ? [points[0].approximate_latitude, points[0].approximate_longitude]
+    : [46.6, 2.4];
+
+  if (query.isLoading) {
+    return <div className="flex items-center justify-center gap-2 py-24 text-emerald-100/70"><Loader2 className="h-5 w-5 animate-spin" /> La carte des jardins se dessine…</div>;
+  }
+
+  if (query.isError) {
+    return <div className="rounded-lg border border-red-300/20 bg-red-300/10 p-5 text-center text-sm text-red-100">La carte des jardins est momentanément indisponible.</div>;
+  }
+
+  if (!points.length) {
+    return <div className="rounded-lg border border-white/15 bg-white/5 p-8 text-center text-emerald-100/70">Aucun jardin géolocalisé pour le moment.</div>;
+  }
+
+  return (
+    <section aria-labelledby="gardens-map-title">
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <div>
+          <h2 id="gardens-map-title" className="text-xl font-semibold">Carte des jardins</h2>
+          <p className="mt-1 text-sm text-emerald-100/65">Les positions sont volontairement approximatives pour préserver chaque lieu.</p>
+        </div>
+        <span className="shrink-0 text-sm text-emerald-200/70">{points.length} jardin{points.length > 1 ? 's' : ''}</span>
+      </div>
+
+      <div className="h-[62vh] min-h-[480px] overflow-hidden rounded-lg border border-white/15 shadow-2xl">
+        <RichMap
+          center={center}
+          zoom={points.length === 1 ? 11 : 6}
+          bounds={bounds}
+          fitMaxZoom={11}
+          fitPadding={[40, 40]}
+          fitAnimate={false}
+          initialStyle="terrain"
+          controls={{ zoom: true, style: true, geolocate: true }}
+          height="100%"
+          scrollWheelZoom
+        >
+          {points.map((point) => (
+            <Marker
+              key={point.garden_key}
+              position={[point.approximate_latitude, point.approximate_longitude]}
+              icon={gardenIcon}
+            >
+              <Popup minWidth={250} maxWidth={300}>
+                <GardenPopup point={point} />
+              </Popup>
+            </Marker>
+          ))}
+        </RichMap>
+      </div>
+    </section>
+  );
+}
+
+function GardenPopup({ point }: { point: GardenMapPoint }) {
+  const value = (content: string | number | null) => content === null || content === '' ? 'Non renseigné' : content;
+  const rows = [
+    { icon: Trees, label: 'Type de jardin', value: value(point.garden_type) },
+    { icon: Ruler, label: 'Surface', value: point.surface_m2 === null ? 'Non renseignée' : `${point.surface_m2.toLocaleString('fr-FR')} m²` },
+    { icon: Sprout, label: 'Espèces identifiées', value: point.species_count },
+    { icon: FlaskConical, label: 'Analyses de sol', value: point.soil_analyses_count },
+    { icon: MapPin, label: 'Type de sol', value: value(point.soil_type) },
+    { icon: Footprints, label: 'Tours de jardin', value: point.garden_tours_count },
+    { icon: Hammer, label: 'Chantiers réalisés', value: point.completed_projects_count },
+  ];
+
+  return (
+    <div className="min-w-0 text-foreground">
+      <div className="mb-2 font-semibold">Un jardin vivant</div>
+      <dl className="space-y-1.5">
+        {rows.map(({ icon: Icon, label, value: rowValue }) => (
+          <div key={label} className="flex items-center gap-2 text-xs">
+            <Icon className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="ml-auto max-w-[130px] text-right font-medium">{rowValue}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
