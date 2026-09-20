@@ -165,6 +165,7 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
       dirtyRef.current = false;
       destructiveRef.current = false;
       serverStampRef.current = null;
+      freshestRef.current = 0;
       setLocalRaw(EMPTY);
       setSavedAt(null);
       loadedIdRef.current = null;
