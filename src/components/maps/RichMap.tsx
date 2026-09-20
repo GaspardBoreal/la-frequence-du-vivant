@@ -100,7 +100,7 @@ export const RichMap: React.FC<RichMapProps> = ({
   chromeHidden = false,
 }) => {
   const chromeCls = chromeHidden
-    ? 'pointer-events-none opacity-0 transition-opacity duration-200'
+    ? 'pointer-events-none invisible opacity-0 transition-[opacity,visibility] duration-200'
     : chromeMuted
       ? 'pointer-events-none opacity-20 transition-opacity duration-300'
       : 'transition-opacity duration-200';
@@ -198,12 +198,12 @@ export const RichMap: React.FC<RichMapProps> = ({
 
         {/* Custom controls inside map context */}
         {controls.zoom && (
-          <div className={chromeCls} aria-hidden={chromeHidden} inert={chromeHidden ? true : undefined}>
+          <div className={chromeCls} aria-hidden={chromeHidden}>
             <ZoomControls mapStyle={mapStyle} />
           </div>
         )}
         {controls.geolocate && (
-          <div className={chromeCls} aria-hidden={chromeHidden} inert={chromeHidden ? true : undefined}>
+          <div className={chromeCls} aria-hidden={chromeHidden}>
             <GeolocateControl disableTracking />
           </div>
         )}
@@ -213,7 +213,7 @@ export const RichMap: React.FC<RichMapProps> = ({
       </SafeMapContainer>
 
       {controls.style && (
-        <div className={chromeCls} aria-hidden={chromeHidden} inert={chromeHidden ? true : undefined}>
+        <div className={chromeCls} aria-hidden={chromeHidden}>
           <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
         </div>
       )}
