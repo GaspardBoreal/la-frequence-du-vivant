@@ -177,10 +177,16 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
   useEffect(() => {
     if (!proprieteId || !query.data) return;
     const stamp = query.data.updated_at ?? 'init';
+    const stampMs = query.data.updated_at ? Date.parse(query.data.updated_at) : 0;
     if (loadedIdRef.current === proprieteId) {
       if (dirtyRef.current) return;
       if (serverStampRef.current === stamp) return;
+      // Lecture en retard : une réponse plus ancienne que la version la plus
+      // récente connue (serveur appliqué ou écriture réussie) ne doit jamais
+      // ressusciter une valeur effacée.
+      if (Number.isFinite(stampMs) && stampMs > 0 && stampMs < freshestRef.current) return;
     }
+    if (Number.isFinite(stampMs) && stampMs > freshestRef.current) freshestRef.current = stampMs;
     serverStampRef.current = stamp;
     setLocalRaw(query.data);
     setSavedAt(query.data.updated_at ?? null);
