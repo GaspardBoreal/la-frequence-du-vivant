@@ -21,7 +21,7 @@ import { useScenographeState } from '@/components/propriete/scenographe/scenogra
 
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
 import { classifyObservations } from '@/lib/ouvrageScope';
-import { TOOL_BY_KEY } from '@/lib/paysageTools';
+import { TOOL_BY_KEY, type PaysageTool } from '@/lib/paysageTools';
 import {
   RIGOUR_LABEL,
   cortegeEntries,
@@ -61,6 +61,12 @@ interface Props {
   propertyName?: string;
   commune?: string | null;
   onClose: () => void;
+  /** Droit d'écriture sur le jardin (propriétaire, prestataire, équipe). */
+  canEdit?: boolean;
+  /** Arme un outil de dessin dans l'Atelier pour créer un ouvrage manquant. */
+  onDrawNew?: (tool: PaysageTool) => void;
+  /** Ouvrages à cocher d'emblée au retour d'un dessin. */
+  preselectObjetIds?: string[];
 }
 
 const RIGOURS: ChantierRigour[] = ['strict', 'lisiere', 'voisinage'];
@@ -79,6 +85,9 @@ export const ChantierOverlay: React.FC<Props> = ({
   propertyName,
   commune,
   onClose,
+  canEdit = true,
+  onDrawNew,
+  preselectObjetIds,
 }) => {
   const queryClient = useQueryClient();
   const scenoState = useScenographeState();
@@ -112,9 +121,14 @@ export const ChantierOverlay: React.FC<Props> = ({
   );
 
   /* ---------- A. Les espèces réellement dans le lot ---------- */
+  /** Lot sans ouvrage = chantier « tout le jardin » : on garde l'ensemble du vivant. */
+  const wholeGarden = geometries.length === 0;
   const scoped = React.useMemo(
-    () => scopeWaypoints(geometries, pool.waypoints ?? [], rigour),
-    [geometries, pool.waypoints, rigour],
+    () =>
+      wholeGarden
+        ? (pool.waypoints ?? [])
+        : scopeWaypoints(geometries, pool.waypoints ?? [], rigour),
+    [wholeGarden, geometries, pool.waypoints, rigour],
   );
   const beforeWaypoints = React.useMemo(
     () => scoped.filter((w) => !isAfterWorks(w.observationDate, active?.date_travaux)),
@@ -142,7 +156,8 @@ export const ChantierOverlay: React.FC<Props> = ({
     const samples = (soil.state.samples ?? []).filter(
       (s) => s.lat != null && s.lng != null,
     );
-    if (!geometries.length || !samples.length) return [];
+    if (!samples.length) return [];
+    if (wholeGarden) return samples;
     const keep = new Map<string, (typeof samples)[number]>();
     for (const g of geometries) {
       const res = classifyObservations(
@@ -158,7 +173,7 @@ export const ChantierOverlay: React.FC<Props> = ({
       ].forEach((s: any) => keep.set(s.item.id, s.item));
     }
     return Array.from(keep.values());
-  }, [soil.state.samples, geometries, rigour]);
+  }, [soil.state.samples, geometries, rigour, wholeGarden]);
 
   const lotSoil = React.useMemo(
     () =>
@@ -356,7 +371,7 @@ export const ChantierOverlay: React.FC<Props> = ({
           <>
             <span className="hidden items-center gap-1 rounded-full border border-white/15 px-2.5 py-1 text-[11px] sm:inline-flex">
               <Layers className="h-3 w-3 opacity-60" />
-              {lotObjets.map(labelOfObjet).join(' · ') || 'lot vide'}
+              {lotObjets.map(labelOfObjet).join(' · ') || 'tout le jardin'}
             </span>
             <label className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 text-[11px]">
               <CalendarDays className="h-3 w-3 opacity-60" />
@@ -439,6 +454,9 @@ export const ChantierOverlay: React.FC<Props> = ({
                 if (activeId === id) setActiveId(null);
               }}
               onClose={onClose}
+              canEdit={canEdit}
+              onDrawNew={onDrawNew}
+              preselect={preselectObjetIds}
             />
           </div>
         ) : (

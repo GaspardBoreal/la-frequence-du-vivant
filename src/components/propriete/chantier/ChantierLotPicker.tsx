@@ -1,7 +1,7 @@
 import React from 'react';
-import { Check, Hammer, Plus, Trash2, CalendarDays } from 'lucide-react';
+import { Check, Hammer, Plus, Trash2, CalendarDays, PenLine, Trees } from 'lucide-react';
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
-import { TOOL_BY_KEY } from '@/lib/paysageTools';
+import { TOOL_BY_KEY, type PaysageTool } from '@/lib/paysageTools';
 import type { ProprieteChantier } from '@/hooks/propriete/useProprieteChantiers';
 
 interface Props {
@@ -11,7 +11,23 @@ interface Props {
   onCreate: (input: { nom: string; objet_ids: string[]; date_travaux: string | null }) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
+  /** Droit d'écriture sur le jardin (propriétaire, prestataire, équipe). */
+  canEdit?: boolean;
+  /** Arme un outil de dessin sur le plan pour créer un ouvrage sans quitter le chantier. */
+  onDrawNew?: (tool: PaysageTool) => void;
+  /** Ouvrages à cocher d'emblée (retour de dessin). */
+  preselect?: string[];
 }
+
+/** Tracés les plus courants proposés directement dans la fenêtre du chantier. */
+const QUICK_TOOL_KEYS = [
+  'massif-polychrome',
+  'potager',
+  'haie-bocagere',
+  'mare',
+  'verger',
+  'cheminement',
+];
 
 const fmtDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : 'date à fixer';
@@ -27,21 +43,44 @@ export const ChantierLotPicker: React.FC<Props> = ({
   onCreate,
   onDelete,
   onClose,
+  canEdit = true,
+  onDrawNew,
+  preselect,
 }) => {
-  const [selected, setSelected] = React.useState<string[]>([]);
+  const [selected, setSelected] = React.useState<string[]>(preselect ?? []);
+  const [scope, setScope] = React.useState<'ouvrages' | 'jardin'>('ouvrages');
   const [nom, setNom] = React.useState('');
   const [date, setDate] = React.useState('');
 
-  const toggle = (id: string) =>
+  /** Retour de dessin : le nouvel ouvrage arrive déjà coché. */
+  const preselectKey = (preselect ?? []).join(',');
+  React.useEffect(() => {
+    if (!preselectKey) return;
+    setScope('ouvrages');
+    setSelected((s) => Array.from(new Set([...s, ...preselectKey.split(',')])));
+  }, [preselectKey]);
+
+  const toggle = (id: string) => {
+    setScope('ouvrages');
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  };
 
   const labelOf = (o: ProprieteObjet) =>
     o.nom?.trim() || TOOL_BY_KEY[o.outil_key]?.label || 'Ouvrage';
 
+  const quickTools = React.useMemo(
+    () => QUICK_TOOL_KEYS.map((k) => TOOL_BY_KEY[k]).filter(Boolean) as PaysageTool[],
+    [],
+  );
+
   const defaultName =
-    selected.length === 1
-      ? labelOf(objets.find((o) => o.id === selected[0])!)
-      : `Chantier de ${selected.length} ouvrages`;
+    scope === 'jardin'
+      ? 'Chantier · tout le jardin'
+      : selected.length === 1
+        ? labelOf(objets.find((o) => o.id === selected[0])!)
+        : `Chantier de ${selected.length} ouvrages`;
+
+  const canSubmit = canEdit && (scope === 'jardin' || selected.length > 0);
 
   const ink = 'text-[hsl(var(--ds-ink))]';
   const soft = 'text-[hsl(var(--ds-ink-soft))]';
@@ -143,10 +182,71 @@ export const ChantierLotPicker: React.FC<Props> = ({
               })}
               {objets.length === 0 && (
                 <li className={`text-[12.5px] italic ${soft}`}>
-                  Dessinez d'abord un ouvrage dans l'Atelier.
+                  Aucun ouvrage dessiné pour l'instant — créez-en un ci-dessous, ou prenez tout le
+                  jardin.
                 </li>
               )}
             </ul>
+
+            {/* Tout le jardin : aucun tracé nécessaire */}
+            <button
+              type="button"
+              onClick={() => {
+                setScope((s) => (s === 'jardin' ? 'ouvrages' : 'jardin'));
+                setSelected([]);
+              }}
+              className={`mb-4 flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-[13px] transition ${
+                scope === 'jardin'
+                  ? 'border-[hsl(var(--ds-gold))] bg-[hsl(var(--ds-gold))]/15 font-semibold'
+                  : 'border-dashed border-[hsl(var(--ds-line))] bg-white/40 hover:border-[hsl(var(--ds-gold))]/70'
+              }`}
+            >
+              <Trees className="h-4 w-4 text-[hsl(var(--ds-forest))]" />
+              <span className="min-w-0 flex-1">
+                Tout le jardin
+                <span className={`block text-[11px] font-normal ${soft}`}>
+                  Le chantier prend l'ensemble de la propriété, sans tracé.
+                </span>
+              </span>
+              {scope === 'jardin' && <Check className="h-4 w-4 text-[hsl(var(--ds-forest))]" />}
+            </button>
+
+            {/* Créer un ouvrage sans quitter la fenêtre */}
+            {canEdit && onDrawNew && (
+              <div className="mb-4 rounded-xl border border-[hsl(var(--ds-line))] bg-white/45 p-3">
+                <p
+                  className={`mb-2 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] ${soft}`}
+                >
+                  <PenLine className="h-3 w-3" /> Nouvel ouvrage
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {quickTools.map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => onDrawNew(t)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] px-3 py-1.5 text-[12px] transition hover:border-[hsl(var(--ds-gold))] hover:bg-white"
+                    >
+                      <span className="leading-none">{t.glyph}</span>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <p className={`mt-2 text-[11px] italic ${soft}`}>
+                  Le plan s'ouvre pour le tracé, puis le chantier revient avec l'ouvrage coché.
+                </p>
+              </div>
+            )}
+
+            {!canEdit && (
+              <p
+                className={`mb-4 rounded-xl border border-dashed border-[hsl(var(--ds-line))] bg-white/50 px-3.5 py-3 text-[12px] italic ${soft}`}
+              >
+                Vous consultez ce jardin en lecture seule : la création de chantier est réservée au
+                propriétaire et à l'équipe.
+              </p>
+            )}
+
 
             <label className="mb-3 block">
               <span
@@ -157,7 +257,7 @@ export const ChantierLotPicker: React.FC<Props> = ({
               <input
                 value={nom}
                 onChange={(e) => setNom(e.target.value)}
-                placeholder={selected.length ? defaultName : 'Massif Fréquence 01'}
+                placeholder={canSubmit ? defaultName : 'Massif Fréquence 01'}
                 className="w-full rounded-lg border border-[hsl(var(--ds-line))] bg-white/60 px-3 py-2 text-[13px] text-[hsl(var(--ds-ink))] placeholder:text-[hsl(var(--ds-ink-soft))]/60 outline-none transition focus:border-[hsl(var(--ds-gold))] focus:bg-white"
               />
             </label>
@@ -177,20 +277,22 @@ export const ChantierLotPicker: React.FC<Props> = ({
 
             <button
               type="button"
-              disabled={selected.length === 0}
+              disabled={!canSubmit}
               onClick={() =>
                 onCreate({
                   nom: nom.trim() || defaultName,
-                  objet_ids: selected,
+                  objet_ids: scope === 'jardin' ? [] : selected,
                   date_travaux: date || null,
                 })
               }
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[hsl(var(--ds-forest-deep))] px-4 py-2.5 text-[13px] font-semibold text-[hsl(var(--ds-cream))] shadow-[0_6px_18px_-8px_rgba(0,0,0,0.6)] transition hover:bg-[hsl(var(--ds-forest))] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
             >
               <Plus className="h-4 w-4" />
-              {selected.length > 1
-                ? `Ouvrir le chantier · ${selected.length} ouvrages`
-                : 'Ouvrir le chantier'}
+              {scope === 'jardin'
+                ? 'Ouvrir le chantier · tout le jardin'
+                : selected.length > 1
+                  ? `Ouvrir le chantier · ${selected.length} ouvrages`
+                  : 'Ouvrir le chantier'}
             </button>
           </section>
         </div>

@@ -271,6 +271,9 @@ export const PaletteStudio: React.FC<Props> = ({
   const [libraryOpen, setLibraryOpen] = React.useState(false);
   /** « Le Chantier » : lecture avant / après d'un lot d'ouvrages. */
   const [chantierOpen, setChantierOpen] = React.useState(false);
+  /** Dessin d'un ouvrage lancé depuis Le Chantier : on y revient une fois tracé. */
+  const [chantierDraw, setChantierDraw] = React.useState<PaysageTool | null>(null);
+  const [chantierPreselect, setChantierPreselect] = React.useState<string[]>([]);
 
   const [panelOpen, setPanelOpen] = React.useState(true);
   const [activeCalqueId, setActiveCalqueId] = React.useState<string | null>(null);
@@ -694,7 +697,7 @@ export const PaletteStudio: React.FC<Props> = ({
         return;
       }
       if (!tool) return;
-      await upsertObjet({
+      const createdId = await upsertObjet({
         outil_key: tool.key,
         geometry,
         calque_id: activeCalqueId,
@@ -707,8 +710,25 @@ export const PaletteStudio: React.FC<Props> = ({
       });
       setPendingInspiration(null);
       if (tool.geom !== 'point') setTool(null);
+      // Retour au Chantier avec le nouvel ouvrage déjà coché
+      if (chantierDraw) {
+        setChantierDraw(null);
+        setTool(null);
+        if (typeof createdId === 'string') setChantierPreselect([createdId]);
+        setChantierOpen(true);
+      }
     },
-    [zoneDraw, tool, activeCalqueId, activeZoneId, pendingInspiration, objets.length, onCreateZone, upsertObjet],
+    [
+      zoneDraw,
+      tool,
+      activeCalqueId,
+      activeZoneId,
+      pendingInspiration,
+      objets.length,
+      onCreateZone,
+      upsertObjet,
+      chantierDraw,
+    ],
   );
 
   const patchObjet = React.useCallback(
@@ -1490,8 +1510,41 @@ export const PaletteStudio: React.FC<Props> = ({
           <ChantierOverlay
             proprieteId={proprieteId}
             objets={objets}
-            onClose={() => setChantierOpen(false)}
+            canEdit={!!canCurate}
+            preselectObjetIds={chantierPreselect}
+            onDrawNew={(t) => {
+              setChantierOpen(false);
+              setChantierDraw(t);
+              setTool(t);
+            }}
+            onClose={() => {
+              setChantierOpen(false);
+              setChantierPreselect([]);
+            }}
           />
+        )}
+
+        {/* Tracé lancé depuis Le Chantier : bandeau de retour */}
+        {chantierDraw && !chantierOpen && (
+          <div className="pointer-events-auto fixed inset-x-0 bottom-6 z-[3500] flex justify-center px-4">
+            <div className="flex items-center gap-3 rounded-full border border-[#c8a24a]/60 bg-[#12211c]/95 px-4 py-2.5 text-[12.5px] text-[#f2ead8] shadow-[0_18px_40px_-18px_rgba(0,0,0,0.8)] backdrop-blur">
+              <span className="leading-none">{chantierDraw.glyph}</span>
+              <span>
+                Tracez votre {chantierDraw.label.toLowerCase()} — il rejoindra le chantier.
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setChantierDraw(null);
+                  setTool(null);
+                  setChantierOpen(true);
+                }}
+                className="rounded-full border border-white/20 px-3 py-1 text-[11.5px] transition hover:bg-white/10"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
         )}
 
       </div>
