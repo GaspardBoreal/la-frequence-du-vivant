@@ -61,6 +61,12 @@ interface Props {
   propertyName?: string;
   commune?: string | null;
   onClose: () => void;
+  /** Droit d'écriture sur le jardin (propriétaire, prestataire, équipe). */
+  canEdit?: boolean;
+  /** Arme un outil de dessin dans l'Atelier pour créer un ouvrage manquant. */
+  onDrawNew?: (tool: PaysageToolType) => void;
+  /** Ouvrages à cocher d'emblée au retour d'un dessin. */
+  preselectObjetIds?: string[];
 }
 
 const RIGOURS: ChantierRigour[] = ['strict', 'lisiere', 'voisinage'];
