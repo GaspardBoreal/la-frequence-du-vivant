@@ -11314,6 +11314,21 @@ export type Database = {
           url: string
         }[]
       }
+      get_gardens_public_map: {
+        Args: never
+        Returns: {
+          approximate_latitude: number
+          approximate_longitude: number
+          completed_projects_count: number
+          garden_key: string
+          garden_tours_count: number
+          garden_type: string
+          soil_analyses_count: number
+          soil_type: string
+          species_count: number
+          surface_m2: number
+        }[]
+      }
       get_iot_ai_credit: { Args: { _fournisseur_id: string }; Returns: Json }
       get_iot_trust_report: { Args: { p_since: string }; Returns: Json }
       get_kb_coverage: { Args: never; Returns: Json }
