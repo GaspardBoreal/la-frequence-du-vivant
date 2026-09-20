@@ -771,6 +771,16 @@ const CommunityProfilesAdmin: React.FC = () => {
 
       <MarcheurEditSheet profile={editing} open={editOpen} onOpenChange={setEditOpen} />
       <DeleteMarcheurDialog marcheur={deleting} open={deleteOpen} onOpenChange={setDeleteOpen} />
+      <GrantAdminDialog
+        open={adminDialogOpen}
+        onOpenChange={setAdminDialogOpen}
+        target={adminTarget}
+        mode={adminMode}
+        onDone={() => {
+          queryClient.invalidateQueries({ queryKey: ['community-admins-set'] });
+          queryClient.invalidateQueries({ queryKey: ['community-profiles-admin'] });
+        }}
+      />
     </div>
   );
 };
