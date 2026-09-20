@@ -20,7 +20,14 @@ interface Props {
 }
 
 /** Tracés les plus courants proposés directement dans la fenêtre du chantier. */
-const QUICK_TOOL_KEYS = ['massif', 'potager', 'haie', 'mare', 'arbre', 'allee'];
+const QUICK_TOOL_KEYS = [
+  'massif-polychrome',
+  'potager',
+  'haie-bocagere',
+  'mare',
+  'verger',
+  'cheminement',
+];
 
 const fmtDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : 'date à fixer';
