@@ -1203,6 +1203,7 @@ export const PaletteStudio: React.FC<Props> = ({
 
             {!readOnly && (
               <DrawLayer
+                key={`${drawNonce}-${drawGeom ?? 'none'}-${redrawObjetId ?? ''}-${zoneRedrawId ?? ''}`}
                 geom={drawGeom as any}
                 color={drawColor}
                 freehand={zoneDraw}
