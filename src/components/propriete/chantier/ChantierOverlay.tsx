@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { X, Printer, Hammer, Layers, CalendarDays, Sprout, FlaskConical } from 'lucide-react';
+import { X, Printer, Hammer, Layers, CalendarDays, Sprout, FlaskConical, PenLine } from 'lucide-react';
 import { toast } from 'sonner';
 
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
