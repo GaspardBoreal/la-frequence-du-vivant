@@ -85,6 +85,9 @@ export const ChantierOverlay: React.FC<Props> = ({
   propertyName,
   commune,
   onClose,
+  canEdit = true,
+  onDrawNew,
+  preselectObjetIds,
 }) => {
   const queryClient = useQueryClient();
   const scenoState = useScenographeState();
