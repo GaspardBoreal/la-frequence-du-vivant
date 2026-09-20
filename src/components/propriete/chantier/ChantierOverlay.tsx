@@ -21,7 +21,7 @@ import { useScenographeState } from '@/components/propriete/scenographe/scenogra
 
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
 import { classifyObservations } from '@/lib/ouvrageScope';
-import { TOOL_BY_KEY } from '@/lib/paysageTools';
+import { TOOL_BY_KEY, type PaysageTool } from '@/lib/paysageTools';
 import {
   RIGOUR_LABEL,
   cortegeEntries,
