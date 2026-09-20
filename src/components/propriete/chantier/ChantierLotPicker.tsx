@@ -257,7 +257,7 @@ export const ChantierLotPicker: React.FC<Props> = ({
               <input
                 value={nom}
                 onChange={(e) => setNom(e.target.value)}
-                placeholder={selected.length ? defaultName : 'Massif Fréquence 01'}
+                placeholder={canSubmit ? defaultName : 'Massif Fréquence 01'}
                 className="w-full rounded-lg border border-[hsl(var(--ds-line))] bg-white/60 px-3 py-2 text-[13px] text-[hsl(var(--ds-ink))] placeholder:text-[hsl(var(--ds-ink-soft))]/60 outline-none transition focus:border-[hsl(var(--ds-gold))] focus:bg-white"
               />
             </label>
