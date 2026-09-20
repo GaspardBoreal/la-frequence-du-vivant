@@ -64,6 +64,8 @@ export interface RichMapProps {
   maxZoom?: number;
   /** Notified when the user toggles marche step markers visibility (only when controls.marcheRouteVisibility is on) */
   onMarcheVisibilityChange?: (visible: boolean) => void;
+  /** Estompe et neutralise les contrôles (fonds, zoom, géoloc) : mode édition focalisé. */
+  chromeMuted?: boolean;
 }
 
 /**
