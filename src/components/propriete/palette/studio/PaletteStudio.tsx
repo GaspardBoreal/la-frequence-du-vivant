@@ -1249,6 +1249,11 @@ export const PaletteStudio: React.FC<Props> = ({
 
 
 
+          {/* Mode Atelier : rideau de théâtre — la scène, c'est la forme */}
+          {transforming && (
+            <div className="pointer-events-none absolute inset-0 z-[450] bg-[hsl(var(--ds-forest-deep))]/10 ring-2 ring-inset ring-[#c8a24a]/45 transition-opacity duration-300" />
+          )}
+
           <InlineGpsBar curation={inlineGps} />
 
           <ObjetTransformBar
