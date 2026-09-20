@@ -86,7 +86,9 @@ const ViewController: React.FC<{ center: [number, number]; zoom?: number }> = ({
     // du passage plein écran peut rappeler Leaflet sur un pane déjà détruit.
     map.stop();
     map.setView(center, zoom ?? map.getZoom(), { animate: false });
-    return () => map.stop();
+    return () => {
+      map.stop();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center[0], center[1]]);
   return null;
