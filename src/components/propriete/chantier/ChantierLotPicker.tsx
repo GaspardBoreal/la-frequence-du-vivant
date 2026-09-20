@@ -43,21 +43,44 @@ export const ChantierLotPicker: React.FC<Props> = ({
   onCreate,
   onDelete,
   onClose,
+  canEdit = true,
+  onDrawNew,
+  preselect,
 }) => {
-  const [selected, setSelected] = React.useState<string[]>([]);
+  const [selected, setSelected] = React.useState<string[]>(preselect ?? []);
+  const [scope, setScope] = React.useState<'ouvrages' | 'jardin'>('ouvrages');
   const [nom, setNom] = React.useState('');
   const [date, setDate] = React.useState('');
 
-  const toggle = (id: string) =>
+  /** Retour de dessin : le nouvel ouvrage arrive déjà coché. */
+  const preselectKey = (preselect ?? []).join(',');
+  React.useEffect(() => {
+    if (!preselectKey) return;
+    setScope('ouvrages');
+    setSelected((s) => Array.from(new Set([...s, ...preselectKey.split(',')])));
+  }, [preselectKey]);
+
+  const toggle = (id: string) => {
+    setScope('ouvrages');
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  };
 
   const labelOf = (o: ProprieteObjet) =>
     o.nom?.trim() || TOOL_BY_KEY[o.outil_key]?.label || 'Ouvrage';
 
+  const quickTools = React.useMemo(
+    () => QUICK_TOOL_KEYS.map((k) => TOOL_BY_KEY[k]).filter(Boolean) as PaysageTool[],
+    [],
+  );
+
   const defaultName =
-    selected.length === 1
-      ? labelOf(objets.find((o) => o.id === selected[0])!)
-      : `Chantier de ${selected.length} ouvrages`;
+    scope === 'jardin'
+      ? 'Chantier · tout le jardin'
+      : selected.length === 1
+        ? labelOf(objets.find((o) => o.id === selected[0])!)
+        : `Chantier de ${selected.length} ouvrages`;
+
+  const canSubmit = canEdit && (scope === 'jardin' || selected.length > 0);
 
   const ink = 'text-[hsl(var(--ds-ink))]';
   const soft = 'text-[hsl(var(--ds-ink-soft))]';
