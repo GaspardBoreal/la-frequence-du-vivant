@@ -706,6 +706,19 @@ export const PaletteStudio: React.FC<Props> = ({
   const selectedZone = selectedZoneIndex >= 0 ? zones[selectedZoneIndex] : null;
   const selectedZoneColor =
     selectedZone?.couleur || ZONE_COLORS[Math.max(0, selectedZoneIndex) % ZONE_COLORS.length];
+  /** Une fiche ouverte concentre l'écran sur l'ouvrage ou l'emplacement sélectionné. */
+  const inspectorActive = !!selectedObjet || !!selectedZone;
+
+  React.useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('atelier:inspector-visibility', { detail: { active: inspectorActive } }),
+    );
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent('atelier:inspector-visibility', { detail: { active: false } }),
+      );
+    };
+  }, [inspectorActive]);
 
   /* ── Actions ─────────────────────────────────────────────────────────── */
 
@@ -1020,6 +1033,7 @@ export const PaletteStudio: React.FC<Props> = ({
             fitAnimate={false}
             controls={{ zoom: true, style: true, geolocate: true, cadastre: true }}
             chromeMuted={transforming}
+            chromeHidden={inspectorActive}
             maxZoom={24}
             scrollWheelZoom
             height="100%"
@@ -1389,8 +1403,9 @@ export const PaletteStudio: React.FC<Props> = ({
           {/* Curseur temporel */}
           <div
             className={`pointer-events-none absolute inset-x-0 bottom-0 z-[500] flex justify-center p-3 transition-opacity duration-300 ${
-              transforming ? 'opacity-0' : ''
+              inspectorActive ? 'invisible opacity-0' : ''
             }`}
+            aria-hidden={inspectorActive}
           >
             <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/95 px-4 py-2 shadow-lg backdrop-blur">
               <Clock className="h-3.5 w-3.5 opacity-55" />

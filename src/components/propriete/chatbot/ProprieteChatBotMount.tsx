@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChatBot } from '@/components/chatbot/ChatBot';
 import { chatPageContext, contextSliceKey } from '@/hooks/useChatPageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -26,6 +26,16 @@ export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
   const { providers, providersTitle } = useProprieteChatProviders(proprieteId);
   const { objets } = useProprieteObjets(proprieteId);
   const focus = useProprieteChatFocus();
+  const [atelierInspectorActive, setAtelierInspectorActive] = useState(false);
+
+  useEffect(() => {
+    const onInspectorVisibility = (event: Event) => {
+      const detail = (event as CustomEvent<{ active?: boolean }>).detail;
+      setAtelierInspectorActive(detail?.active === true);
+    };
+    window.addEventListener('atelier:inspector-visibility', onInspectorVisibility);
+    return () => window.removeEventListener('atelier:inspector-visibility', onInspectorVisibility);
+  }, []);
 
   const ouvrageIds = useMemo(() => (objets ?? []).map((o) => o.id), [objets]);
   const ouvrageIdsKey = ouvrageIds.join(',');
@@ -110,7 +120,7 @@ export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
       edgeFunctionPath="propriete-chat"
       assistantNameOverride="IA de Jardin"
       roleBadge={proprieteNom ?? null}
-      hideFab={isMobile}
+      hideFab={isMobile || atelierInspectorActive}
       fabId={`ia-jardin-${proprieteId}`}
       fabLabel="IA de Jardin"
       focusBanner={<GardenFocusBanner proprieteId={proprieteId} activeProviders={autoProviders} />}

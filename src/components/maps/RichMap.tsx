@@ -66,6 +66,8 @@ export interface RichMapProps {
   onMarcheVisibilityChange?: (visible: boolean) => void;
   /** Estompe et neutralise les contrôles (fonds, zoom, géoloc) : mode édition focalisé. */
   chromeMuted?: boolean;
+  /** Masque et neutralise les contrôles pendant qu'une fiche occupe la carte. */
+  chromeHidden?: boolean;
 }
 
 /**
@@ -95,10 +97,13 @@ export const RichMap: React.FC<RichMapProps> = ({
   maxZoom = 19,
   onMarcheVisibilityChange,
   chromeMuted = false,
+  chromeHidden = false,
 }) => {
-  const mutedCls = chromeMuted
-    ? 'pointer-events-none opacity-20 transition-opacity duration-300'
-    : 'transition-opacity duration-300';
+  const chromeCls = chromeHidden
+    ? 'pointer-events-none invisible opacity-0 transition-[opacity,visibility] duration-200'
+    : chromeMuted
+      ? 'pointer-events-none opacity-20 transition-opacity duration-300'
+      : 'transition-opacity duration-200';
   const [mapStyle, setMapStyle] = useState<MapStyle>(initialStyle);
   const [markersVisible, setMarkersVisible] = useState<boolean>(
     marcheRoute?.renderMarkers !== false,
@@ -193,12 +198,12 @@ export const RichMap: React.FC<RichMapProps> = ({
 
         {/* Custom controls inside map context */}
         {controls.zoom && (
-          <div className={mutedCls}>
+          <div className={chromeCls} aria-hidden={chromeHidden}>
             <ZoomControls mapStyle={mapStyle} />
           </div>
         )}
         {controls.geolocate && (
-          <div className={mutedCls}>
+          <div className={chromeCls} aria-hidden={chromeHidden}>
             <GeolocateControl disableTracking />
           </div>
         )}
@@ -208,7 +213,7 @@ export const RichMap: React.FC<RichMapProps> = ({
       </SafeMapContainer>
 
       {controls.style && (
-        <div className={mutedCls}>
+        <div className={chromeCls} aria-hidden={chromeHidden}>
           <MapStyleToggle mapStyle={mapStyle} onChange={setMapStyle} />
         </div>
       )}
