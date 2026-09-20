@@ -107,7 +107,7 @@ serve(async (req) => {
           coordinates: { latitude: parseFloat(latitude), longitude: parseFloat(longitude) }
         }),
         { 
-          status: response.status, 
+          status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
