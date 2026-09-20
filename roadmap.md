@@ -8,3 +8,4 @@
 - [ ] Vérifier le rendu et les parcours
 - [x] Réorganiser Le Chantier en Visu chantier, Palette végétale et Bilan écologique
 - [x] Ajouter les vidéos au carnet avant / pendant / après
+- [ ] Accélérer Visu chantier avec une planche de contact progressive et des miniatures

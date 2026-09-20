@@ -40,6 +40,8 @@ export interface ObjetPhoto {
   created_at: string;
   /** URL signée résolue côté client (1 h). */
   url?: string;
+  /** Variante légère pour les planches et pastilles. */
+  thumb_url?: string;
 }
 
 const KEY = (id?: string) => ['propriete-objet-photos', id];
@@ -106,7 +108,8 @@ export function useObjetPhotos(proprieteId?: string) {
   const query = useQuery({
     queryKey: KEY(proprieteId),
     enabled: !!proprieteId,
-    staleTime: 30_000,
+    staleTime: 50 * 60_000,
+    gcTime: 60 * 60_000,
     queryFn: async (): Promise<ObjetPhoto[]> => {
       const { data, error } = await (supabase as any)
         .from('propriete_objet_photos')
@@ -124,7 +127,27 @@ export function useObjetPhotos(proprieteId?: string) {
       (signed ?? []).forEach((s: any) => {
         if (s?.path && s?.signedUrl) byPath.set(s.path, s.signedUrl);
       });
-      return rows.map((r) => ({ ...r, url: byPath.get(r.storage_path) }));
+      const imageRows = rows.filter(
+        (r) => r.media_type !== 'video' && !r.mime?.startsWith('video/'),
+      );
+      const { data: thumbs } = imageRows.length
+        ? await supabase.storage
+            .from(OUVRAGE_PHOTO_BUCKET)
+            .createSignedUrls(
+              imageRows.map((r) => r.storage_path),
+              3600,
+              { transform: { width: 480, height: 360, resize: 'cover', quality: 68 } },
+            )
+        : { data: [] };
+      const thumbByPath = new Map<string, string>();
+      (thumbs ?? []).forEach((s: any) => {
+        if (s?.path && s?.signedUrl) thumbByPath.set(s.path, s.signedUrl);
+      });
+      return rows.map((r) => ({
+        ...r,
+        url: byPath.get(r.storage_path),
+        thumb_url: thumbByPath.get(r.storage_path),
+      }));
     },
   });
 
