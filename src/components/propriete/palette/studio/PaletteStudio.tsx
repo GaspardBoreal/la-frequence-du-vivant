@@ -1358,9 +1358,31 @@ export const PaletteStudio: React.FC<Props> = ({
             </div>
           )}
 
+          {/* Onglet de rappel de la fiche, pendant le geste */}
+          {transforming && !inspectorPeek && (selectedObjet || selectedZone) && (
+            <button
+              onClick={() => setInspectorPeek(true)}
+              className="absolute right-0 top-1/2 z-[758] hidden -translate-y-1/2 items-center gap-1 rounded-l-xl border border-r-0 border-[#c8a24a]/50 bg-[hsl(var(--ds-cream))]/96 px-2 py-3 text-[11px] text-[hsl(var(--ds-forest-deep))] shadow-xl backdrop-blur transition hover:px-3 sm:inline-flex"
+              title="Revoir la fiche"
+            >
+              <span className="[writing-mode:vertical-rl] rotate-180 font-serif italic">
+                {selectedObjet?.nom ||
+                  (selectedObjet ? TOOL_BY_KEY[selectedObjet.outil_key]?.label : null) ||
+                  selectedZone?.nom ||
+                  'Fiche'}
+              </span>
+            </button>
+          )}
+
           {/* Inspecteur objet — colonne droite, centrée verticalement */}
           {selectedObjet && (
-            <div className={MAP_CHROME_SIDE_CENTER}>
+            <div
+              className={`${MAP_CHROME_SIDE_CENTER} transition-all duration-300 ${
+                transforming && !inspectorPeek
+                  ? 'pointer-events-none translate-y-full opacity-0 sm:translate-x-[115%] sm:translate-y-0'
+                  : ''
+              }`}
+            >
               <ObjectInspector
                 proprieteId={proprieteId}
                 onOpenScenarioLibrary={() => setLibraryOpen(true)}
