@@ -1,7 +1,7 @@
 # Roadmap
 
-## En cours
-- [ ] Newsletter : vérification de livraison déployée — l'utilisateur relance un test puis clique « Vérifier la livraison » pour connaître le sort réel du message (remis / rejeté / retardé). Vérifier aussi le dossier spam.
-
-## En attente (bloquants externes)
-- RESEND_WEBHOOK_SECRET (clé whsec_) à fournir pour activer le suivi ouvertures/clics automatique.
+- [ ] Créer la lecture sécurisée et anonymisée des jardins
+- [ ] Ajouter les sous-menus Créer et Carte des jardins
+- [ ] Afficher les indicateurs réels dans les infobulles
+- [ ] Ajouter le pied de page des Marches du Vivant
+- [ ] Vérifier le rendu et les parcours
