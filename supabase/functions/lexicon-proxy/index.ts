@@ -48,23 +48,49 @@ serve(async (req) => {
     const lexiconUrl = `https://lexicon.osfarm.org/tools/parcel-identifier.json?latitude=${latitude}&longitude=${longitude}`;
     console.log(`🌱 [LEXICON PROXY] URL LEXICON: ${lexiconUrl}`);
 
-    // Internal timeout to avoid hanging
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    // Internal timeout + retries to absorb LEXICON slowness
+    const attemptFetch = async (timeoutMs: number): Promise<Response> => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        return await fetch(lexiconUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'User-Agent': 'Supabase-Edge-Function/1.0',
+          },
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    };
 
-    let response: Response;
-    try {
-      response = await fetch(lexiconUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'User-Agent': 'Supabase-Edge-Function/1.0',
-        },
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeoutId);
+    let response: Response | null = null;
+    const timeouts = [12000, 15000, 20000];
+    let lastAbort: unknown = null;
+    for (const t of timeouts) {
+      try {
+        response = await attemptFetch(t);
+        break;
+      } catch (e) {
+        lastAbort = e;
+        console.warn(`⚠️ [LEXICON PROXY] Tentative échouée (${t} ms):`, e instanceof Error ? e.message : e);
+      }
+    }
+
+    if (!response) {
+      console.error('❌ [LEXICON PROXY] LEXICON injoignable après 3 tentatives', lastAbort);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          code: 'lexicon_timeout',
+          message: "Le service LEXICON n'a pas répondu à temps. Réessayez dans un instant.",
+          coordinates: { latitude: parseFloat(latitude), longitude: parseFloat(longitude) },
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log(`🌱 [LEXICON PROXY] Statut de la réponse: ${response.status}`);
