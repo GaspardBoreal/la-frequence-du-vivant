@@ -490,10 +490,43 @@ const CommunityProfilesAdmin: React.FC = () => {
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                               )}
+                               {isFounder && (
+                                 adminUserIds?.has(profile.user_id) ? (
+                                   profile.user_id !== currentUser?.id && (
+                                     <Button
+                                       size="sm"
+                                       variant="ghost"
+                                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                       title="Retirer l'accès administrateur"
+                                       onClick={() => {
+                                         setAdminTarget({ user_id: profile.user_id, prenom: profile.prenom, nom: profile.nom });
+                                         setAdminMode('revoke');
+                                         setAdminDialogOpen(true);
+                                       }}
+                                     >
+                                       <ShieldOff className="h-3.5 w-3.5" />
+                                     </Button>
+                                   )
+                                 ) : (
+                                   <Button
+                                     size="sm"
+                                     variant="ghost"
+                                     className="text-primary hover:text-primary hover:bg-primary/10"
+                                     title="Nommer administratrice · administrateur"
+                                     onClick={() => {
+                                       setAdminTarget({ user_id: profile.user_id, prenom: profile.prenom, nom: profile.nom });
+                                       setAdminMode('grant');
+                                       setAdminDialogOpen(true);
+                                     }}
+                                   >
+                                     <ShieldCheck className="h-3.5 w-3.5" />
+                                   </Button>
+                                 )
+                               )}
+                             </div>
+                           </TableCell>
+                         </TableRow>
                       );
                     })}
                     {filtered?.length === 0 && (
