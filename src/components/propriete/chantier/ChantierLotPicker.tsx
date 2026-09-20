@@ -182,10 +182,71 @@ export const ChantierLotPicker: React.FC<Props> = ({
               })}
               {objets.length === 0 && (
                 <li className={`text-[12.5px] italic ${soft}`}>
-                  Dessinez d'abord un ouvrage dans l'Atelier.
+                  Aucun ouvrage dessiné pour l'instant — créez-en un ci-dessous, ou prenez tout le
+                  jardin.
                 </li>
               )}
             </ul>
+
+            {/* Tout le jardin : aucun tracé nécessaire */}
+            <button
+              type="button"
+              onClick={() => {
+                setScope((s) => (s === 'jardin' ? 'ouvrages' : 'jardin'));
+                setSelected([]);
+              }}
+              className={`mb-4 flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-[13px] transition ${
+                scope === 'jardin'
+                  ? 'border-[hsl(var(--ds-gold))] bg-[hsl(var(--ds-gold))]/15 font-semibold'
+                  : 'border-dashed border-[hsl(var(--ds-line))] bg-white/40 hover:border-[hsl(var(--ds-gold))]/70'
+              }`}
+            >
+              <Trees className="h-4 w-4 text-[hsl(var(--ds-forest))]" />
+              <span className="min-w-0 flex-1">
+                Tout le jardin
+                <span className={`block text-[11px] font-normal ${soft}`}>
+                  Le chantier prend l'ensemble de la propriété, sans tracé.
+                </span>
+              </span>
+              {scope === 'jardin' && <Check className="h-4 w-4 text-[hsl(var(--ds-forest))]" />}
+            </button>
+
+            {/* Créer un ouvrage sans quitter la fenêtre */}
+            {canEdit && onDrawNew && (
+              <div className="mb-4 rounded-xl border border-[hsl(var(--ds-line))] bg-white/45 p-3">
+                <p
+                  className={`mb-2 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] ${soft}`}
+                >
+                  <PenLine className="h-3 w-3" /> Nouvel ouvrage
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {quickTools.map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => onDrawNew(t)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] px-3 py-1.5 text-[12px] transition hover:border-[hsl(var(--ds-gold))] hover:bg-white"
+                    >
+                      <span className="leading-none">{t.glyph}</span>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <p className={`mt-2 text-[11px] italic ${soft}`}>
+                  Le plan s'ouvre pour le tracé, puis le chantier revient avec l'ouvrage coché.
+                </p>
+              </div>
+            )}
+
+            {!canEdit && (
+              <p
+                className={`mb-4 rounded-xl border border-dashed border-[hsl(var(--ds-line))] bg-white/50 px-3.5 py-3 text-[12px] italic ${soft}`}
+              >
+                Vous consultez ce jardin en lecture seule : la création de chantier est réservée au
+                propriétaire et à l'équipe.
+              </p>
+            )}
+
 
             <label className="mb-3 block">
               <span
