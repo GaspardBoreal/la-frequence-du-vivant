@@ -1379,7 +1379,7 @@ export const PaletteStudio: React.FC<Props> = ({
             <div
               className={`${MAP_CHROME_SIDE_CENTER} transition-all duration-300 ${
                 transforming && !inspectorPeek
-                  ? 'pointer-events-none translate-y-full opacity-0 sm:translate-x-[115%] sm:translate-y-0'
+                  ? 'pointer-events-none opacity-0 sm:translate-x-[115%]'
                   : ''
               }`}
             >
