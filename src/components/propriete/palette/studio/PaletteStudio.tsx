@@ -697,7 +697,7 @@ export const PaletteStudio: React.FC<Props> = ({
         return;
       }
       if (!tool) return;
-      await upsertObjet({
+      const createdId = await upsertObjet({
         outil_key: tool.key,
         geometry,
         calque_id: activeCalqueId,
@@ -710,8 +710,25 @@ export const PaletteStudio: React.FC<Props> = ({
       });
       setPendingInspiration(null);
       if (tool.geom !== 'point') setTool(null);
+      // Retour au Chantier avec le nouvel ouvrage déjà coché
+      if (chantierDraw) {
+        setChantierDraw(null);
+        setTool(null);
+        if (typeof createdId === 'string') setChantierPreselect([createdId]);
+        setChantierOpen(true);
+      }
     },
-    [zoneDraw, tool, activeCalqueId, activeZoneId, pendingInspiration, objets.length, onCreateZone, upsertObjet],
+    [
+      zoneDraw,
+      tool,
+      activeCalqueId,
+      activeZoneId,
+      pendingInspiration,
+      objets.length,
+      onCreateZone,
+      upsertObjet,
+      chantierDraw,
+    ],
   );
 
   const patchObjet = React.useCallback(
