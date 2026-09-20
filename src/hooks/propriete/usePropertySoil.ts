@@ -225,7 +225,10 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
         throw error;
       }
       destructiveRef.current = false;
-      dirtyRef.current = false;
+      // Une saisie survenue pendant l'enregistrement reste « à enregistrer ».
+      if (revisionRef.current === revisionAtStart) dirtyRef.current = false;
+      // Cette écriture devient la version la plus récente connue.
+      freshestRef.current = Math.max(freshestRef.current, Date.now());
       setSavedAt(new Date().toISOString());
       if (completed) {
         setLocalRaw((s) => ({ ...s, completed_at: new Date().toISOString() }));
