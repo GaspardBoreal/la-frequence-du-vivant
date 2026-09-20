@@ -144,10 +144,15 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
   const destructiveRef = useRef(false);
   /** Empreinte de la dernière version serveur absorbée. */
   const serverStampRef = useRef<string | null>(null);
+  /** Horodatage (ms) de la version la plus récente connue : serveur appliqué ou écriture réussie. */
+  const freshestRef = useRef<number>(0);
+  /** Compteur de saisies : permet de savoir si l'utilisateur a modifié pendant un enregistrement. */
+  const revisionRef = useRef(0);
 
   /** Tout changement passant par ce setter est considéré comme une saisie utilisateur. */
   const setLocal: typeof setLocalRaw = useCallback((value) => {
     dirtyRef.current = true;
+    revisionRef.current += 1;
     setLocalRaw(value);
   }, []);
 
