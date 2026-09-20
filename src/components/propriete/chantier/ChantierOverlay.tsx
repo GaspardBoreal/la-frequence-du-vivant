@@ -164,7 +164,7 @@ export const ChantierOverlay: React.FC<Props> = ({
       ].forEach((s: any) => keep.set(s.item.id, s.item));
     }
     return Array.from(keep.values());
-  }, [soil.state.samples, geometries, rigour]);
+  }, [soil.state.samples, geometries, rigour, wholeGarden]);
 
   const lotSoil = React.useMemo(
     () =>
