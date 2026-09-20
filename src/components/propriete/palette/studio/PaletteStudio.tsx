@@ -596,8 +596,14 @@ export const PaletteStudio: React.FC<Props> = ({
       else if (inspirationOpen) setInspirationOpen(false);
       else if (selectedObjetId) setSelectedObjetId(null);
       else if (activeZoneId) onSelectZone(null);
-      else if (tool) setTool(null);
-      else if (zoneDraw) setZoneDraw(false);
+      else if (tool) {
+        setTool(null);
+        setRedrawObjetId(null);
+      }
+      else if (zoneDraw) {
+        setZoneDraw(false);
+        setZoneRedrawId(null);
+      }
       else onClose();
     };
     window.addEventListener('keydown', onKey);
@@ -1305,6 +1311,13 @@ export const PaletteStudio: React.FC<Props> = ({
                 : undefined) ||
               '#2f5d3a'
             }
+            onDelete={() => {
+              const o = objetTransform.objet;
+              if (!o) return;
+              objetTransform.cancel();
+              deleteObjet(o.id).catch(() => {});
+              setSelectedObjetId(null);
+            }}
           />
 
           <EmpriseRealPanel
@@ -1327,6 +1340,13 @@ export const PaletteStudio: React.FC<Props> = ({
                   ZONE_COLORS.length
               ]
             }
+            onDelete={() => {
+              const z = zoneTransform.zone;
+              if (!z) return;
+              zoneTransform.cancel();
+              onDeleteZone(z.id);
+              onSelectZone(null);
+            }}
           />
 
           {/* Bandeau de guidage */}
@@ -1467,6 +1487,13 @@ export const PaletteStudio: React.FC<Props> = ({
                     ordre: objets.length,
                   }).catch(() => {})
                 }
+                onRedraw={() => {
+                  if (objetTransform.objet?.id === selectedObjet.id) objetTransform.cancel();
+                  setSelectedObjetId(null);
+                  setRedrawObjetId(selectedObjet.id);
+                  setTool(TOOL_BY_KEY[selectedObjet.outil_key] ?? null);
+                  setDrawNonce((n) => n + 1);
+                }}
                 readOnly={readOnly}
                 photos={objetPhotos.byObjet.get(selectedObjet.id) ?? []}
                 photoUploading={objetPhotos.progress}
@@ -1500,8 +1527,10 @@ export const PaletteStudio: React.FC<Props> = ({
                   zoneTransform.start(selectedZone);
                 }}
                 onRedraw={() => {
-                  onSelectZone(selectedZone.id);
+                  onSelectZone(null);
+                  setZoneRedrawId(selectedZone.id);
                   setZoneDraw(true);
+                  setDrawNonce((n) => n + 1);
                 }}
                 onDelete={() => {
                   onDeleteZone(selectedZone.id);
