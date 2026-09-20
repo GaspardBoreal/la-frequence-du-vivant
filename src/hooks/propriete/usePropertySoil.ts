@@ -205,6 +205,7 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
       setSaveError(null);
 
       const allowDestructive = destructiveRef.current;
+      const revisionAtStart = revisionRef.current;
       const { error } = await supabase.rpc('upsert_propriete_soil' as any, {
         p_propriete_id: id,
         p_terrain_status: state.terrain_status ?? null,
