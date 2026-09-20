@@ -454,6 +454,9 @@ export const ChantierOverlay: React.FC<Props> = ({
                 if (activeId === id) setActiveId(null);
               }}
               onClose={onClose}
+              canEdit={canEdit}
+              onDrawNew={onDrawNew}
+              preselect={preselectObjetIds}
             />
           </div>
         ) : (
