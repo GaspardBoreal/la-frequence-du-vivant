@@ -8467,10 +8467,12 @@ export type Database = {
         Row: {
           caption: string | null
           created_at: string
+          duration_s: number | null
           height: number | null
           id: string
           lat: number | null
           lng: number | null
+          media_type: string
           mime: string | null
           objet_id: string
           order_index: number
@@ -8486,10 +8488,12 @@ export type Database = {
         Insert: {
           caption?: string | null
           created_at?: string
+          duration_s?: number | null
           height?: number | null
           id?: string
           lat?: number | null
           lng?: number | null
+          media_type?: string
           mime?: string | null
           objet_id: string
           order_index?: number
@@ -8505,10 +8509,12 @@ export type Database = {
         Update: {
           caption?: string | null
           created_at?: string
+          duration_s?: number | null
           height?: number | null
           id?: string
           lat?: number | null
           lng?: number | null
+          media_type?: string
           mime?: string | null
           objet_id?: string
           order_index?: number
