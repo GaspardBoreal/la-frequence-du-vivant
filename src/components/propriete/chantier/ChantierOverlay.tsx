@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { X, Printer, Hammer, Layers, CalendarDays, Sprout, FlaskConical, PenLine } from 'lucide-react';
+import { X, Printer, Hammer, Layers, CalendarDays, FlaskConical, PenLine, Images, Sprout, Activity } from 'lucide-react';
 import { toast } from 'sonner';
 
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
@@ -106,6 +106,7 @@ export const ChantierOverlay: React.FC<Props> = ({
   const [scenarioId, setScenarioId] = React.useState<string | null>(null);
   const [printFormat, setPrintFormat] = React.useState<'simple' | 'complet' | null>(null);
   const [printing, setPrinting] = React.useState(false);
+  const [section, setSection] = React.useState<'visu' | 'palette' | 'bilan'>('visu');
 
   const pool = usePropertySpeciesPool(proprieteId);
   const soil = usePropertySoil(proprieteId, { readOnly: true });
@@ -277,6 +278,8 @@ export const ChantierOverlay: React.FC<Props> = ({
     [objetPhotos, setPhase],
   );
 
+  const intakeObjet = lotObjets.find((o) => o.id === intakeObjetId);
+
 
 
 
@@ -372,6 +375,11 @@ export const ChantierOverlay: React.FC<Props> = ({
 
         {active && (
           <>
+            <span className="inline-flex items-baseline gap-1 rounded border border-[#c8a24a]/45 bg-[#c8a24a]/10 px-3 py-1 text-[#e7d3a1]">
+              <span className="text-[9px] uppercase tracking-[0.16em] opacity-70">ICG</span>
+              <strong className="text-lg tabular-nums">{after?.detail.icg ?? before.detail.icg}</strong>
+              <span className="text-[10px] opacity-55">/100</span>
+            </span>
             <button
               type="button"
               onClick={() => setActiveId(null)}
@@ -472,156 +480,20 @@ export const ChantierOverlay: React.FC<Props> = ({
           </div>
         ) : (
           <div className="mx-auto max-w-[1180px] space-y-4">
-            <IcgDeltaHero
-              before={before}
-              after={after}
-              delta={delta}
-              afterLabel={afterLabel}
-            />
+            <nav className="sticky top-0 z-20 grid grid-cols-3 gap-1 border-b border-white/10 bg-[hsl(var(--ds-forest-deep))]/95 py-2 backdrop-blur">
+              {([
+                ['visu', 'Visu chantier', Images],
+                ['palette', 'Palette végétale', Sprout],
+                ['bilan', 'Bilan écologique', Activity],
+              ] as const).map(([id, label, Icon]) => (
+                <button key={id} type="button" onClick={() => setSection(id)} aria-pressed={section === id}
+                  className={`flex min-h-11 items-center justify-center gap-2 border-b-2 px-2 text-[12px] font-semibold transition ${section === id ? 'border-[#c8a24a] text-[#e7d3a1]' : 'border-transparent opacity-55 hover:opacity-90'}`}>
+                  <Icon className="h-4 w-4" /><span>{label}</span>
+                </button>
+              ))}
+            </nav>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex gap-1">
-                {(['projete', 'constate'] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setAfterMode(m)}
-                    className={`rounded-full border px-3 py-1.5 text-[11.5px] transition ${
-                      afterMode === m
-                        ? 'border-[#c8a24a] bg-[#c8a24a]/15 text-[#e7d3a1]'
-                        : 'border-white/15 opacity-65 hover:opacity-100'
-                    }`}
-                  >
-                    {m === 'projete' ? 'Après projeté (scénario)' : 'Après constaté (re-relevé)'}
-                  </button>
-                ))}
-              </div>
-              {afterMode === 'projete' && (scenarios.data?.length ?? 0) > 0 && (
-                <select
-                  value={scenario?.id ?? ''}
-                  onChange={(e) => setScenarioId(e.target.value)}
-                  className="rounded-full border border-white/15 bg-transparent px-3 py-1.5 text-[11.5px] [&>option]:text-black"
-                >
-                  {(scenarios.data ?? []).map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nom}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {afterMode === 'projete' && plantings.length > 0 && (
-                <ProjectionGuide
-                  ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))}
-                  hasScenario
-                  scenarioId={scenario?.id ?? null}
-                  scenarioObjetId={scenario?.objet_id ?? null}
-                />
-              )}
-
-              {afterMode === 'constate' && !active.date_travaux && (
-                <span className="text-[11.5px] italic opacity-60">
-                  Fixez la date des travaux pour distinguer les relevés d’après.
-                </span>
-              )}
-            </div>
-
-            {afterMode === 'projete' && !plantings.length && (
-              <ProjectionGuide
-                ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))}
-                hasScenario={false}
-              />
-            )}
-
-
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
-                <p className="mb-2 text-[10px] uppercase tracking-[0.2em] opacity-55">
-                  Avant travaux · {beforePool.length} espèce{beforePool.length > 1 ? 's' : ''} ·{' '}
-                  {before.indicatorCount} bio-indicatrice{before.indicatorCount > 1 ? 's' : ''}
-                </p>
-                <IcgLadder reading={before} />
-              </section>
-              <section className="rounded-2xl border border-[#c8a24a]/30 bg-[#c8a24a]/[0.05] p-3">
-                <p className="mb-2 text-[10px] uppercase tracking-[0.2em] opacity-55">
-                  {afterLabel}
-                </p>
-                {after ? (
-                  <IcgLadder reading={after} delta={delta} />
-                ) : (
-                  <p className="px-2 py-6 text-center text-[12px] italic opacity-60">
-                    Rien à comparer pour l’instant.
-                  </p>
-                )}
-              </section>
-            </div>
-
-            <ChantierScales
-              before={before.detail}
-              after={after ? after.detail : null}
-              afterLabel={afterLabel}
-            />
-
-            <IcgPipeline
-              reading={before}
-              jury={beforeJury}
-              observationCount={beforeWaypoints.length}
-            />
-
-            <SpeciesJury
-              jury={beforeJury}
-              title="Le jury des espèces · avant travaux"
-            />
-
-            {afterJury && (
-              <SpeciesJury jury={afterJury} title={`Le jury des espèces · ${afterLabel}`} />
-            )}
-
-
-
-            <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
-              <p className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] opacity-55">
-                <FlaskConical className="h-3 w-3" /> Prélèvements du lot · {lotSamples.length}
-              </p>
-              {lotSamples.length === 0 ? (
-                <p className="text-[12px] italic opacity-60">
-                  Aucun prélèvement géolocalisé dans ce périmètre : la lecture du sol reste celle
-                  de la propriété.
-                </p>
-              ) : (
-                <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {lotSamples.map((s) => (
-                    <li key={s.id} className="rounded-xl border border-white/12 px-3 py-2">
-                      <p className="text-[12.5px] font-semibold">Prélèvement {s.label}</p>
-                      <p className="text-[11px] opacity-65">
-                        {[
-                          s.structure_result && `structure ${s.structure_result}`,
-                          s.texture_result && `texture ${s.texture_result}`,
-                          s.ph_value != null && `pH ${s.ph_value}`,
-                          s.worm_count != null && `${s.worm_count} vers`,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ') || 'tests à compléter'}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <CortegeTriage
-              entries={cortege}
-              labelFor={(e) => displayNameFor(e)}
-              saved={speciesPhases.statuses}
-              preview={previewIcg}
-              jury={beforeJury}
-              onCommit={(changes) => speciesPhases.commit(changes)}
-              onResetAll={() => void speciesPhases.resetAll()}
-            />
-
-
-
-            <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
+            {section === 'visu' && <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
               <ChantierPhotoIntake
                 ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))}
                 busy={!!objetPhotos.progress || filing}
@@ -632,11 +504,7 @@ export const ChantierOverlay: React.FC<Props> = ({
                 items={objetPhotos.uploads}
                 phase={intakePhase}
                 filing={filing}
-                ouvrageLabel={
-                  lotObjets.find((o) => o.id === intakeObjetId)
-                    ? labelOfObjet(lotObjets.find((o) => o.id === intakeObjetId)!)
-                    : undefined
-                }
+                ouvrageLabel={intakeObjet ? labelOfObjet(intakeObjet) : undefined}
                 onClose={objetPhotos.clearUploads}
               />
 
@@ -644,10 +512,42 @@ export const ChantierOverlay: React.FC<Props> = ({
                 photos={phased}
                 onPhase={(id, phase: MediaPhase) => {
                   void setPhase(id, phase);
-                  toast.success(`Photographie rangée en « ${phase} »`);
+                  toast.success(`Média rangé en « ${phase} »`);
                 }}
               />
-            </section>
+            </section>}
+
+            {section === 'palette' && <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                {(['projete', 'constate'] as const).map((m) => (
+                  <button key={m} type="button" onClick={() => setAfterMode(m)} className={`rounded-full border px-3 py-1.5 text-[11.5px] transition ${afterMode === m ? 'border-[#c8a24a] bg-[#c8a24a]/15 text-[#e7d3a1]' : 'border-white/15 opacity-65 hover:opacity-100'}`}>
+                    {m === 'projete' ? 'Après projeté' : 'Après constaté'}
+                  </button>
+                ))}
+                {afterMode === 'projete' && (scenarios.data?.length ?? 0) > 0 && <select value={scenario?.id ?? ''} onChange={(e) => setScenarioId(e.target.value)} className="rounded-full border border-white/15 bg-transparent px-3 py-1.5 text-[11.5px] [&>option]:text-black">
+                  {(scenarios.data ?? []).map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}
+                </select>}
+                {afterMode === 'constate' && !active.date_travaux && <span className="text-[11.5px] italic opacity-60">Fixez la date des travaux pour distinguer les relevés d’après.</span>}
+              </div>
+              {afterMode === 'projete' && <ProjectionGuide ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))} hasScenario={plantings.length > 0} scenarioId={scenario?.id ?? null} scenarioObjetId={scenario?.objet_id ?? null} />}
+              <CortegeTriage entries={cortege} labelFor={(e) => displayNameFor(e)} saved={speciesPhases.statuses} preview={previewIcg} jury={beforeJury} onCommit={(changes) => speciesPhases.commit(changes)} onResetAll={() => void speciesPhases.resetAll()} />
+            </div>}
+
+            {section === 'bilan' && <div className="space-y-4">
+              <IcgDeltaHero before={before} after={after} delta={delta} afterLabel={afterLabel} />
+              <div className="grid gap-4 lg:grid-cols-2">
+                <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3"><p className="mb-2 text-[10px] uppercase tracking-[0.2em] opacity-55">Avant travaux · {beforePool.length} espèce{beforePool.length > 1 ? 's' : ''} · {before.indicatorCount} bio-indicatrice{before.indicatorCount > 1 ? 's' : ''}</p><IcgLadder reading={before} /></section>
+                <section className="rounded-2xl border border-[#c8a24a]/30 bg-[#c8a24a]/[0.05] p-3"><p className="mb-2 text-[10px] uppercase tracking-[0.2em] opacity-55">{afterLabel}</p>{after ? <IcgLadder reading={after} delta={delta} /> : <p className="px-2 py-6 text-center text-[12px] italic opacity-60">Rien à comparer pour l’instant.</p>}</section>
+              </div>
+              <ChantierScales before={before.detail} after={after ? after.detail : null} afterLabel={afterLabel} />
+              <IcgPipeline reading={before} jury={beforeJury} observationCount={beforeWaypoints.length} />
+              <SpeciesJury jury={beforeJury} title="Le jury des espèces · avant travaux" />
+              {afterJury && <SpeciesJury jury={afterJury} title={`Le jury des espèces · ${afterLabel}`} />}
+              <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
+                <p className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] opacity-55"><FlaskConical className="h-3 w-3" /> Prélèvements du lot · {lotSamples.length}</p>
+                {lotSamples.length === 0 ? <p className="text-[12px] italic opacity-60">Aucun prélèvement géolocalisé dans ce périmètre : la lecture du sol reste celle de la propriété.</p> : <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{lotSamples.map((s) => <li key={s.id} className="rounded-xl border border-white/12 px-3 py-2"><p className="text-[12.5px] font-semibold">Prélèvement {s.label}</p><p className="text-[11px] opacity-65">{[s.structure_result && `structure ${s.structure_result}`, s.texture_result && `texture ${s.texture_result}`, s.ph_value != null && `pH ${s.ph_value}`, s.worm_count != null && `${s.worm_count} vers`].filter(Boolean).join(' · ') || 'tests à compléter'}</p></li>)}</ul>}
+              </section>
+            </div>}
           </div>
         )}
       </div>
