@@ -5,7 +5,7 @@
  */
 import type { SoilSample } from '@/hooks/propriete/usePropertySoil';
 
-export const MIN_SAMPLES = 3;
+export const MIN_SAMPLES = 2;
 export const MAX_SAMPLES = 10;
 
 /** A → J : un repère par prélèvement. */
