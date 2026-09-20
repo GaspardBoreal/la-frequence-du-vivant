@@ -81,13 +81,16 @@ const makeIcon = (letter: string, active: boolean, sample?: SoilSample, dimmed =
 const ViewController: React.FC<{ center: [number, number]; zoom?: number }> = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
-    if (!center) return;
-    // Une transition de zoom encore active au démontage d'un marqueur ou lors
-    // du passage plein écran peut rappeler Leaflet sur un pane déjà détruit.
-    map.stop();
-    map.setView(center, zoom ?? map.getZoom(), { animate: false });
+    // Ne jamais appeler stop() dans le nettoyage : React démonte les enfants
+    // après que Leaflet a déjà supprimé son mapPane, et stop() relit ce pane.
+    // Le contrôleur ne pilote la vue que tant que le conteneur est connecté.
+    let active = true;
+    map.whenReady(() => {
+      if (!active || !map.getContainer().isConnected) return;
+      map.setView(center, zoom ?? map.getZoom(), { animate: false });
+    });
     return () => {
-      map.stop();
+      active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center[0], center[1]]);
