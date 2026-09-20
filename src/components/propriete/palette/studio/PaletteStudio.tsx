@@ -274,6 +274,12 @@ export const PaletteStudio: React.FC<Props> = ({
   /** Dessin d'un ouvrage lancé depuis Le Chantier : on y revient une fois tracé. */
   const [chantierDraw, setChantierDraw] = React.useState<PaysageTool | null>(null);
   const [chantierPreselect, setChantierPreselect] = React.useState<string[]>([]);
+  /** « Redessiner » : le prochain tracé remplace la géométrie de cet ouvrage. */
+  const [redrawObjetId, setRedrawObjetId] = React.useState<string | null>(null);
+  /** Idem pour un emplacement (sinon « Redessiner » créait un doublon). */
+  const [zoneRedrawId, setZoneRedrawId] = React.useState<string | null>(null);
+  /** Remonte le DrawLayer pour vider un tracé en cours (« Recommencer »). */
+  const [drawNonce, setDrawNonce] = React.useState(0);
 
   const [panelOpen, setPanelOpen] = React.useState(true);
   const [activeCalqueId, setActiveCalqueId] = React.useState<string | null>(null);
@@ -590,8 +596,14 @@ export const PaletteStudio: React.FC<Props> = ({
       else if (inspirationOpen) setInspirationOpen(false);
       else if (selectedObjetId) setSelectedObjetId(null);
       else if (activeZoneId) onSelectZone(null);
-      else if (tool) setTool(null);
-      else if (zoneDraw) setZoneDraw(false);
+      else if (tool) {
+        setTool(null);
+        setRedrawObjetId(null);
+      }
+      else if (zoneDraw) {
+        setZoneDraw(false);
+        setZoneRedrawId(null);
+      }
       else onClose();
     };
     window.addEventListener('keydown', onKey);
@@ -700,11 +712,40 @@ export const PaletteStudio: React.FC<Props> = ({
   const handleDrawFinish = React.useCallback(
     async (geometry: any) => {
       if (zoneDraw) {
-        onCreateZone(geometry, Math.round(geometryAreaM2(geometry)));
+        if (zoneRedrawId) {
+          // Redessiner un emplacement : le nouveau contour remplace l'ancien
+          const z = zones.find((x) => x.id === zoneRedrawId);
+          if (z) onPatchZone(z, { geometry });
+          setZoneRedrawId(null);
+        } else {
+          onCreateZone(geometry, Math.round(geometryAreaM2(geometry)));
+        }
         setZoneDraw(false);
         return;
       }
       if (!tool) return;
+      if (redrawObjetId) {
+        // Redessiner un ouvrage : la nouvelle forme remplace l'ancienne,
+        // photos, nom et réglages conservés
+        const o = objets.find((x) => x.id === redrawObjetId);
+        if (o) {
+          await upsertObjet({
+            id: o.id,
+            outil_key: o.outil_key,
+            geometry,
+            calque_id: o.calque_id,
+            zone_id: o.zone_id,
+            nom: o.nom,
+            style: o.style,
+            meta: o.meta,
+            ordre: o.ordre,
+          }).catch(() => {});
+          setSelectedObjetId(o.id);
+        }
+        setRedrawObjetId(null);
+        setTool(null);
+        return;
+      }
       const createdId = await upsertObjet({
         outil_key: tool.key,
         geometry,
@@ -728,12 +769,16 @@ export const PaletteStudio: React.FC<Props> = ({
     },
     [
       zoneDraw,
+      zoneRedrawId,
+      zones,
+      redrawObjetId,
+      objets,
       tool,
       activeCalqueId,
       activeZoneId,
       pendingInspiration,
-      objets.length,
       onCreateZone,
+      onPatchZone,
       upsertObjet,
       chantierDraw,
     ],
@@ -1164,6 +1209,7 @@ export const PaletteStudio: React.FC<Props> = ({
 
             {!readOnly && (
               <DrawLayer
+                key={`${drawNonce}-${drawGeom ?? 'none'}-${redrawObjetId ?? ''}-${zoneRedrawId ?? ''}`}
                 geom={drawGeom as any}
                 color={drawColor}
                 freehand={zoneDraw}
@@ -1265,6 +1311,13 @@ export const PaletteStudio: React.FC<Props> = ({
                 : undefined) ||
               '#2f5d3a'
             }
+            onDelete={() => {
+              const o = objetTransform.objet;
+              if (!o) return;
+              objetTransform.cancel();
+              deleteObjet(o.id).catch(() => {});
+              setSelectedObjetId(null);
+            }}
           />
 
           <EmpriseRealPanel
@@ -1287,6 +1340,13 @@ export const PaletteStudio: React.FC<Props> = ({
                   ZONE_COLORS.length
               ]
             }
+            onDelete={() => {
+              const z = zoneTransform.zone;
+              if (!z) return;
+              zoneTransform.cancel();
+              onDeleteZone(z.id);
+              onSelectZone(null);
+            }}
           />
 
           {/* Bandeau de guidage */}
@@ -1294,17 +1354,29 @@ export const PaletteStudio: React.FC<Props> = ({
             <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] flex justify-center p-3">
               <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-[hsl(var(--ds-forest-deep))]/95 px-4 py-2 text-[11px] text-[hsl(var(--ds-cream))] shadow-lg backdrop-blur">
                 <span className="font-semibold tracking-wide">
-                  {zoneDraw
-                    ? 'Tracez le contour d’un doigt — relâchez pour fermer.'
-                    : tool?.geom === 'point'
-                      ? `${tool.glyph} ${tool.label} : cliquez pour poser.`
-                      : `${tool?.glyph} ${tool?.label} : cliquez les sommets, double-clic pour terminer.`}
+                  {zoneRedrawId || redrawObjetId
+                    ? 'Tracez la nouvelle forme — elle remplacera l’ancienne.'
+                    : zoneDraw
+                      ? 'Tracez le contour d’un doigt — relâchez pour fermer.'
+                      : tool?.geom === 'point'
+                        ? `${tool.glyph} ${tool.label} : cliquez pour poser.`
+                        : `${tool?.glyph} ${tool?.label} : cliquez les sommets, double-clic pour terminer.`}
                 </span>
+                {(drawGeom === 'polygon' || drawGeom === 'line' || zoneDraw) && (
+                  <button
+                    onClick={() => setDrawNonce((n) => n + 1)}
+                    className="rounded-full bg-white/15 px-2 py-0.5 hover:bg-white/25"
+                  >
+                    Recommencer
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setZoneDraw(false);
                     setTool(null);
                     setPendingInspiration(null);
+                    setRedrawObjetId(null);
+                    setZoneRedrawId(null);
                   }}
                   className="rounded-full bg-white/15 px-2 py-0.5 hover:bg-white/25"
                 >
@@ -1415,6 +1487,13 @@ export const PaletteStudio: React.FC<Props> = ({
                     ordre: objets.length,
                   }).catch(() => {})
                 }
+                onRedraw={() => {
+                  if (objetTransform.objet?.id === selectedObjet.id) objetTransform.cancel();
+                  setSelectedObjetId(null);
+                  setRedrawObjetId(selectedObjet.id);
+                  setTool(TOOL_BY_KEY[selectedObjet.outil_key] ?? null);
+                  setDrawNonce((n) => n + 1);
+                }}
                 readOnly={readOnly}
                 photos={objetPhotos.byObjet.get(selectedObjet.id) ?? []}
                 photoUploading={objetPhotos.progress}
@@ -1448,8 +1527,10 @@ export const PaletteStudio: React.FC<Props> = ({
                   zoneTransform.start(selectedZone);
                 }}
                 onRedraw={() => {
-                  onSelectZone(selectedZone.id);
+                  onSelectZone(null);
+                  setZoneRedrawId(selectedZone.id);
                   setZoneDraw(true);
+                  setDrawNonce((n) => n + 1);
                 }}
                 onDelete={() => {
                   onDeleteZone(selectedZone.id);
@@ -1578,6 +1659,13 @@ export const PaletteStudio: React.FC<Props> = ({
               <span>
                 Tracez votre {chantierDraw.label.toLowerCase()} — il rejoindra le chantier.
               </span>
+              <button
+                type="button"
+                onClick={() => setDrawNonce((n) => n + 1)}
+                className="rounded-full border border-white/20 px-3 py-1 text-[11.5px] transition hover:bg-white/10"
+              >
+                Recommencer
+              </button>
               <button
                 type="button"
                 onClick={() => {
