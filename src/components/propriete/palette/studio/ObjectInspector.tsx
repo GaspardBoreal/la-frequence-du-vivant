@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Copy, X, MapPin, Scaling } from 'lucide-react';
+import { Trash2, Copy, X, MapPin, Scaling, PencilLine } from 'lucide-react';
 import { TOOL_BY_KEY } from '@/lib/paysageTools';
 import { isChromaticTool, teintesOf, floraisonOf } from '@/lib/nuancierKb';
 import NuancierPicker from './NuancierPicker';
@@ -27,6 +27,8 @@ interface Props {
   onPatch: (patch: Partial<ProprieteObjet>) => void;
   onDelete: () => void;
   onDuplicate: () => void;
+  /** Redessine la forme : le nouveau tracé remplace la géométrie actuelle. */
+  onRedraw?: () => void;
   onClose: () => void;
   /** Active le mode Transformer (déplacer / redimensionner / pivoter). */
   onTransform?: () => void;
@@ -59,6 +61,7 @@ export const ObjectInspector: React.FC<Props> = ({
   onPatch,
   onDelete,
   onDuplicate,
+  onRedraw,
   onClose,
   onTransform,
   transformMeasure,
@@ -77,10 +80,12 @@ export const ObjectInspector: React.FC<Props> = ({
   const [note, setNote] = React.useState(objet.meta?.note || '');
   const transforming = transformMeasure != null;
   const { scenarios } = useOuvrageScenarios(proprieteId, objet.id);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
 
   React.useEffect(() => {
     setNom(objet.nom || '');
     setNote(objet.meta?.note || '');
+    setConfirmDelete(false);
   }, [objet.id]);
 
   if (!tool) return null;
@@ -334,19 +339,55 @@ export const ObjectInspector: React.FC<Props> = ({
       </div>
 
       {!readOnly && (
-        <div className="flex gap-1.5 border-t border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/96 px-3 py-2.5">
-          <button
-            onClick={onDuplicate}
-            className="inline-flex flex-1 items-center justify-center gap-1 rounded-full border border-[hsl(var(--ds-line))] py-1 text-[10px] hover:border-[hsl(var(--ds-forest))]/60"
-          >
-            <Copy className="h-3 w-3" /> Dupliquer
-          </button>
-          <button
-            onClick={onDelete}
-            className="inline-flex flex-1 items-center justify-center gap-1 rounded-full border border-red-500/30 py-1 text-[10px] text-red-600 hover:bg-red-500/10"
-          >
-            <Trash2 className="h-3 w-3" /> Supprimer
-          </button>
+        <div className="space-y-1.5 border-t border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/96 px-3 py-2.5">
+          <div className="flex gap-1.5">
+            <button
+              onClick={onDuplicate}
+              className="inline-flex flex-1 items-center justify-center gap-1 rounded-full border border-[hsl(var(--ds-line))] py-1 text-[10px] hover:border-[hsl(var(--ds-forest))]/60"
+            >
+              <Copy className="h-3 w-3" /> Dupliquer
+            </button>
+            {onRedraw && (
+              <button
+                onClick={onRedraw}
+                className="inline-flex flex-1 items-center justify-center gap-1 rounded-full border border-[hsl(var(--ds-line))] py-1 text-[10px] hover:border-[hsl(var(--ds-forest))]/60"
+              >
+                <PencilLine className="h-3 w-3" /> Redessiner
+              </button>
+            )}
+          </div>
+          {confirmDelete ? (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-2.5 py-2">
+              <p className="text-[10px] leading-snug text-red-700">
+                Supprimer « {nom || tool.label} » ? La forme et ses photos seront retirées du
+                plan. Les analyses de sol et chantiers restent.
+              </p>
+              <div className="mt-1.5 flex gap-1.5">
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="inline-flex flex-1 items-center justify-center rounded-full border border-[hsl(var(--ds-line))] py-1 text-[10px] hover:border-[hsl(var(--ds-forest))]/60"
+                >
+                  Garder
+                </button>
+                <button
+                  onClick={() => {
+                    setConfirmDelete(false);
+                    onDelete();
+                  }}
+                  className="inline-flex flex-1 items-center justify-center gap-1 rounded-full bg-red-600 py-1 text-[10px] font-medium text-white hover:bg-red-700"
+                >
+                  <Trash2 className="h-3 w-3" /> Supprimer
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="inline-flex w-full items-center justify-center gap-1 rounded-full border border-red-500/30 py-1 text-[10px] text-red-600 hover:bg-red-500/10"
+            >
+              <Trash2 className="h-3 w-3" /> Supprimer
+            </button>
+          )}
         </div>
       )}
 

@@ -39,11 +39,13 @@ export const ZoneInspector: React.FC<Props> = ({
 }) => {
   const [nom, setNom] = React.useState(zone.nom || '');
   const [note, setNote] = React.useState(zone.note || '');
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
   const transforming = transformArea != null;
 
   React.useEffect(() => {
     setNom(zone.nom || '');
     setNote(zone.note || '');
+    setConfirmDelete(false);
   }, [zone.id]);
 
   return (
@@ -175,12 +177,38 @@ export const ZoneInspector: React.FC<Props> = ({
               <PencilLine className="h-3 w-3" /> Redessiner
             </button>
           </div>
-          <button
-            onClick={onDelete}
-            className="inline-flex w-full items-center justify-center gap-1 rounded-full border border-red-500/30 py-1 text-[10px] text-red-600 hover:bg-red-500/10"
-          >
-            <Trash2 className="h-3 w-3" /> Supprimer l'emplacement
-          </button>
+          {confirmDelete ? (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-2.5 py-2">
+              <p className="text-[10px] leading-snug text-red-700">
+                Supprimer l'emplacement « {nom || zone.nom} » ? Son contour sera retiré du plan.
+                Les ouvrages qu'il contient restent.
+              </p>
+              <div className="mt-1.5 flex gap-1.5">
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="inline-flex flex-1 items-center justify-center rounded-full border border-[hsl(var(--ds-line))] py-1 text-[10px] hover:border-[hsl(var(--ds-forest))]/60"
+                >
+                  Garder
+                </button>
+                <button
+                  onClick={() => {
+                    setConfirmDelete(false);
+                    onDelete();
+                  }}
+                  className="inline-flex flex-1 items-center justify-center gap-1 rounded-full bg-red-600 py-1 text-[10px] font-medium text-white hover:bg-red-700"
+                >
+                  <Trash2 className="h-3 w-3" /> Supprimer
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="inline-flex w-full items-center justify-center gap-1 rounded-full border border-red-500/30 py-1 text-[10px] text-red-600 hover:bg-red-500/10"
+            >
+              <Trash2 className="h-3 w-3" /> Supprimer l'emplacement
+            </button>
+          )}
         </div>
       )}
     </div>
