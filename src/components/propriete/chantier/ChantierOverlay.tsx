@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { X, Printer, Hammer, Layers, CalendarDays, Sprout, FlaskConical } from 'lucide-react';
+import { X, Printer, Hammer, Layers, CalendarDays, Sprout, FlaskConical, PenLine } from 'lucide-react';
 import { toast } from 'sonner';
 
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
@@ -67,6 +67,8 @@ interface Props {
   onDrawNew?: (tool: PaysageTool) => void;
   /** Ouvrages à cocher d'emblée au retour d'un dessin. */
   preselectObjetIds?: string[];
+  /** Renommage d'un ouvrage depuis la fenêtre du chantier. */
+  onRenameObjet?: (id: string, nom: string) => void | Promise<void>;
 }
 
 const RIGOURS: ChantierRigour[] = ['strict', 'lisiere', 'voisinage'];
@@ -88,6 +90,7 @@ export const ChantierOverlay: React.FC<Props> = ({
   canEdit = true,
   onDrawNew,
   preselectObjetIds,
+  onRenameObjet,
 }) => {
   const queryClient = useQueryClient();
   const scenoState = useScenographeState();
@@ -369,10 +372,16 @@ export const ChantierOverlay: React.FC<Props> = ({
 
         {active && (
           <>
-            <span className="hidden items-center gap-1 rounded-full border border-white/15 px-2.5 py-1 text-[11px] sm:inline-flex">
+            <button
+              type="button"
+              onClick={() => setActiveId(null)}
+              title="Modifier le nom, la date ou les ouvrages de ce chantier"
+              className="hidden items-center gap-1 rounded-full border border-white/15 px-2.5 py-1 text-[11px] transition hover:border-[#c8a24a] hover:bg-white/5 sm:inline-flex"
+            >
               <Layers className="h-3 w-3 opacity-60" />
               {lotObjets.map(labelOfObjet).join(' · ') || 'tout le jardin'}
-            </span>
+              <PenLine className="ml-1 h-3 w-3 opacity-60" />
+            </button>
             <label className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 text-[11px]">
               <CalendarDays className="h-3 w-3 opacity-60" />
               <input
@@ -457,6 +466,8 @@ export const ChantierOverlay: React.FC<Props> = ({
               canEdit={canEdit}
               onDrawNew={onDrawNew}
               preselect={preselectObjetIds}
+              onRenameObjet={onRenameObjet}
+              onPatch={(id, values) => patch(id, values as any)}
             />
           </div>
         ) : (

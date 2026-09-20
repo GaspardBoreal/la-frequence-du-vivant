@@ -1654,6 +1654,21 @@ export const PaletteStudio: React.FC<Props> = ({
             objets={objets}
             canEdit={!!canCurate}
             preselectObjetIds={chantierPreselect}
+            onRenameObjet={async (id, nom) => {
+              const o = objets.find((x) => x.id === id);
+              if (!o) return;
+              await upsertObjet({
+                id: o.id,
+                outil_key: o.outil_key,
+                geometry: o.geometry,
+                calque_id: o.calque_id,
+                zone_id: o.zone_id,
+                nom: nom || null,
+                style: o.style,
+                meta: o.meta,
+                ordre: o.ordre,
+              }).catch(() => {});
+            }}
             onDrawNew={(t) => {
               setChantierOpen(false);
               setChantierDraw(t);
