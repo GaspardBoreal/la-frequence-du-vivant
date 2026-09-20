@@ -82,7 +82,11 @@ const ViewController: React.FC<{ center: [number, number]; zoom?: number }> = ({
   const map = useMap();
   useEffect(() => {
     if (!center) return;
-    map.setView(center, zoom ?? map.getZoom(), { animate: true });
+    // Une transition de zoom encore active au démontage d'un marqueur ou lors
+    // du passage plein écran peut rappeler Leaflet sur un pane déjà détruit.
+    map.stop();
+    map.setView(center, zoom ?? map.getZoom(), { animate: false });
+    return () => map.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center[0], center[1]]);
   return null;
@@ -267,7 +271,7 @@ export const SamplesMapBlock: React.FC<{
   onUpdate: (id: string, patch: Partial<SoilSample>) => void;
   /** Renvoie l'identifiant du prélèvement créé (null si maximum atteint). */
   onAdd: (patch?: Partial<SoilSample>) => string | null | void;
-  onRemove: (id: string) => void;
+  onRemove: (id: string) => void | Promise<void>;
   /** Réattribue la lettre du repère. */
   onRelabel?: (id: string, label: string) => void;
   /** Réinsère un prélèvement supprimé (annulation). */
@@ -382,19 +386,24 @@ export const SamplesMapBlock: React.FC<{
   const handleAddOnMap = (lat: number, lng: number) => handleAdd({ lat, lng });
 
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     const s = pendingDelete;
-    setPendingDelete(null);
     if (!s) return;
     const at = samples.findIndex((x) => x.id === s.id);
-    onRemove(s.id);
-    toast(`Prélèvement ${s.label} retiré`, {
-      description: s.location?.trim() || 'Sans nom',
-      duration: 10000,
-      action: onRestore
-        ? { label: 'Annuler', onClick: () => onRestore(s, at < 0 ? samples.length : at) }
-        : undefined,
-    });
+    try {
+      await onRemove(s.id);
+      setPendingDelete(null);
+      toast(`Prélèvement ${s.label} retiré`, {
+        description: s.location?.trim() || 'Sans nom',
+        duration: 10000,
+        action: onRestore
+          ? { label: 'Annuler', onClick: () => onRestore(s, at < 0 ? samples.length : at) }
+          : undefined,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "L’enregistrement a échoué.";
+      toast.error(`Le prélèvement ${s.label} n’a pas été retiré`, { description: message });
+    }
   };
 
 

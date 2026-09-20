@@ -11,7 +11,7 @@ export const SamplesBlock: React.FC<{
   samples: SoilSample[];
   onUpdate: (id: string, patch: Partial<SoilSample>) => void;
   onAdd: () => void;
-  onRemove: (id: string) => void;
+  onRemove: (id: string) => void | Promise<void>;
   index?: number;
 }> = ({ samples, onUpdate, onAdd, onRemove, index = 0 }) => {
   const [pending, setPending] = React.useState<SoilSample | null>(null);
@@ -72,8 +72,9 @@ export const SamplesBlock: React.FC<{
     <SampleDeleteDialog
       sample={pending}
       onCancel={() => setPending(null)}
-      onConfirm={() => {
-        if (pending) onRemove(pending.id);
+      onConfirm={async () => {
+        if (!pending) return;
+        await onRemove(pending.id);
         setPending(null);
       }}
     />

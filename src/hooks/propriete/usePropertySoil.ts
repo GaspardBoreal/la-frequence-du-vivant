@@ -132,6 +132,7 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
   const [local, setLocalRaw] = useState<PropertySoilState>(EMPTY);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const loadedIdRef = useRef<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Miroir synchrone du registre : permet de calculer id/lettre AVANT le setState. */
@@ -189,6 +190,7 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
       // le registre par défaut A·B·C ne doit jamais partir en base.
       if (!query.isSuccess || loadedIdRef.current !== proprieteId) return;
       setSaving(true);
+      setSaveError(null);
 
       const allowDestructive = destructiveRef.current;
       const { error } = await supabase.rpc('upsert_propriete_soil' as any, {
@@ -205,7 +207,10 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
         p_allow_destructive: allowDestructive,
       });
       setSaving(false);
-      if (error) throw error;
+      if (error) {
+        setSaveError(error.message);
+        throw error;
+      }
       destructiveRef.current = false;
       dirtyRef.current = false;
       setSavedAt(new Date().toISOString());
@@ -225,6 +230,7 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
     const targetId = proprieteId;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
+      if (!dirtyRef.current) return;
       persist(localRef.current, false, targetId).catch(() => {});
     }, 1500);
     return () => {
@@ -239,6 +245,7 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
     readOnly,
     loading: query.isLoading,
     saving,
+    saveError,
     savedAt,
     completedAt: local.completed_at ?? null,
     setField: <K extends keyof PropertySoilState>(k: K, v: PropertySoilState[K]) =>
@@ -287,10 +294,27 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
         ...s,
         samples: s.samples.map((sm) => (sm.id === id ? { ...sm, label } : sm)),
       })),
-    removeSample: (id: string) => {
-      // Suppression volontaire : on lève explicitement le garde-fou serveur.
+    removeSample: async (id: string) => {
+      const previous = localRef.current;
+      const next = { ...previous, samples: previous.samples.filter((sm) => sm.id !== id) };
+      if (next.samples.length === previous.samples.length) return;
+
+      // Suppression volontaire et immédiate : le garde-fou serveur est levé
+      // uniquement pour cette écriture. En cas d'échec, le registre affiché
+      // revient à sa version précédente au lieu de masquer l'erreur.
       destructiveRef.current = true;
-      setLocal((s) => ({ ...s, samples: s.samples.filter((sm) => sm.id !== id) }));
+      dirtyRef.current = true;
+      localRef.current = next;
+      setLocalRaw(next);
+      try {
+        await persist(next, false);
+      } catch (error) {
+        destructiveRef.current = false;
+        dirtyRef.current = false;
+        localRef.current = previous;
+        setLocalRaw(previous);
+        throw error;
+      }
     },
     /** Réinsère un prélèvement supprimé à sa position d'origine (annulation). */
     restoreSample: (sample: SoilSample, at: number) =>
