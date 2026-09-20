@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, ImagePlus, Loader2 } from 'lucide-react';
+import { Camera, Images, Loader2 } from 'lucide-react';
 import { PHASE_LABEL, type MediaPhase } from '@/lib/chantierIcg';
 
 const PHASES: MediaPhase[] = ['avant', 'pendant', 'apres'];
@@ -54,7 +54,7 @@ export const ChantierPhotoIntake: React.FC<{
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-[10px] uppercase tracking-[0.2em] opacity-55">
-          Verser des photographies
+          Ajouter des photos ou vidéos
         </span>
 
         {ouvrages.length > 1 && (
@@ -106,24 +106,24 @@ export const ChantierPhotoIntake: React.FC<{
             {busy ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
-              <ImagePlus className="h-3 w-3" />
+              <Images className="h-3 w-3" />
             )}
             {busy && progress
               ? `${progress.done}/${progress.total}`
-              : 'Choisir des images'}
+              : 'Choisir des médias'}
           </button>
         </div>
       </div>
 
       <p className="mt-1.5 text-[11px] italic opacity-55">
-        Glissez-déposez ici, ou choisissez : les images rejoignent le carnet de l'ouvrage et
-        sont rangées en « {PHASE_LABEL[phase]} ». La date EXIF reste la référence du récit.
+        Glissez-déposez ici, ou choisissez : photos et vidéos rejoignent le carnet en « {PHASE_LABEL[phase]} ».
+        Vidéo courte : 50 Mo maximum.
       </p>
 
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/mp4,video/quicktime,video/webm,video/x-m4v"
         multiple
         hidden
         onChange={(e) => {
