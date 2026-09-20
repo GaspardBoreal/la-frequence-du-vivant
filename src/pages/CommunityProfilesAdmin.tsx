@@ -30,6 +30,8 @@ import RecherchesPanel from '@/components/admin/community/RecherchesPanel';
 import UsageDashboard from '@/components/admin/community/usage/UsageDashboard';
 import ParcoursTab from '@/components/admin/community/parcours/ParcoursTab';
 import DeleteMarcheurDialog, { type DeletableMarcheur } from '@/components/admin/community/DeleteMarcheurDialog';
+import GrantAdminDialog, { FOUNDER_EMAIL, type AdminTarget } from '@/components/admin/community/GrantAdminDialog';
+import { ShieldOff } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdminProfileEmails } from '@/hooks/useAdminProfileEmails';
 import { Trash2 } from 'lucide-react';
@@ -52,9 +54,13 @@ const CommunityProfilesAdmin: React.FC = () => {
   const [editing, setEditing] = useState<EditableProfile | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [reconciling, setReconciling] = useState(false);
-  const { isAdmin: isCurrentUserAdmin } = useAuthContext();
+  const { isAdmin: isCurrentUserAdmin, user: currentUser } = useAuthContext();
   const [deleting, setDeleting] = useState<DeletableMarcheur | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [adminTarget, setAdminTarget] = useState<AdminTarget | null>(null);
+  const [adminMode, setAdminMode] = useState<'grant' | 'revoke'>('grant');
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const isFounder = (currentUser?.email || '').toLowerCase() === FOUNDER_EMAIL;
 
   const openEditor = (p: EditableProfile) => { setEditing(p); setEditOpen(true); };
 
