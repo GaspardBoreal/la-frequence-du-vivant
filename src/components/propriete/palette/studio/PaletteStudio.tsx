@@ -918,6 +918,7 @@ export const PaletteStudio: React.FC<Props> = ({
               onClick={() => {
                 setTool(null);
                 setZoneDraw(true);
+                setDrawDraft({ pointCount: 0, canUndo: false, canFinish: false, lengthM: null, angleDeg: null });
                 setDrawNonce((n) => n + 1);
               }}
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] transition-all ${
@@ -1394,6 +1395,7 @@ export const PaletteStudio: React.FC<Props> = ({
                     value={zoneDrawMode}
                     onChange={(mode) => {
                       setZoneDrawMode(mode);
+                      setDrawDraft({ pointCount: 0, canUndo: false, canFinish: false, lengthM: null, angleDeg: null });
                       setDrawNonce((n) => n + 1);
                     }}
                   />
