@@ -966,6 +966,7 @@ export const PaletteStudio: React.FC<Props> = ({
             fitPadding={[60, 60]}
             fitAnimate={false}
             controls={{ zoom: true, style: true, geolocate: true, cadastre: true }}
+            chromeMuted={transforming}
             maxZoom={24}
             scrollWheelZoom
             height="100%"
