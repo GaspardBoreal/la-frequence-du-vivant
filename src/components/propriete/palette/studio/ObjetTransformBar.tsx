@@ -7,6 +7,7 @@ import {
   RotateCw,
   Scaling,
   Spline,
+  Trash2,
   Undo2,
   X,
 } from 'lucide-react';
@@ -20,12 +21,15 @@ import { TOOL_BY_KEY } from '@/lib/paysageTools';
  * secondaires (Coter, Lisser, aide-mémoire des gestes) se déplient sous « ⋯ »,
  * pour que la barre ne se replie jamais sur deux lignes.
  */
-export const ObjetTransformBar: React.FC<{ api: ObjetTransformApi; color: string }> = ({
-  api,
-  color,
-}) => {
+export const ObjetTransformBar: React.FC<{
+  api: ObjetTransformApi;
+  color: string;
+  /** Suppression de la forme depuis le Mode Atelier (confirmée dans le rang « ⋯ »). */
+  onDelete?: () => void;
+}> = ({ api, color, onDelete }) => {
   const [more, setMore] = React.useState(false);
   const [hint, setHint] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
   const objetId = api.objet?.id ?? null;
 
   React.useEffect(() => {
@@ -51,6 +55,7 @@ export const ObjetTransformBar: React.FC<{ api: ObjetTransformApi; color: string
   React.useEffect(() => {
     if (!objetId) return;
     setMore(false);
+    setConfirmDelete(false);
     setHint(true);
     const t = window.setTimeout(() => setHint(false), 3200);
     return () => window.clearTimeout(t);
@@ -120,6 +125,34 @@ export const ObjetTransformBar: React.FC<{ api: ObjetTransformApi; color: string
             >
               Comment faire
             </button>
+            {onDelete &&
+              (confirmDelete ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/5 px-2 py-1">
+                  <span className="text-[10.5px] text-red-700">Supprimer la forme ?</span>
+                  <button
+                    onClick={() => {
+                      setConfirmDelete(false);
+                      onDelete();
+                    }}
+                    className="rounded-full bg-red-600 px-2 py-0.5 text-[10.5px] font-medium text-white hover:bg-red-700"
+                  >
+                    Oui, supprimer
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="rounded-full border border-[hsl(var(--ds-line))] px-2 py-0.5 text-[10.5px] text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/60"
+                  >
+                    Garder
+                  </button>
+                </span>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="inline-flex items-center gap-1 rounded-full border border-red-500/30 px-2.5 py-1 text-[11px] text-red-600 hover:bg-red-500/10"
+                >
+                  <Trash2 className="h-3 w-3" /> Supprimer cette forme
+                </button>
+              ))}
             <span className="text-[10.5px] text-[hsl(var(--ds-forest-deep))]/60">
               Échap = abandonner · Entrée = valider · ⌘Z = annuler le geste
             </span>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Move, MoreHorizontal, Scaling, Spline, Undo2, X } from 'lucide-react';
+import { Check, Move, MoreHorizontal, Scaling, Spline, Trash2, Undo2, X } from 'lucide-react';
 import { fmtArea } from './studio/geoMetrics';
 import type { ZoneTransformApi } from '@/hooks/propriete/useZoneTransform';
 
@@ -8,12 +8,15 @@ import type { ZoneTransformApi } from '@/hooks/propriete/useZoneTransform';
  * emplacement : identité, surface vivante, trois actions. Lissage et
  * aide-mémoire se déplient sous « ⋯ ».
  */
-export const ZoneTransformBar: React.FC<{ api: ZoneTransformApi; color: string }> = ({
-  api,
-  color,
-}) => {
+export const ZoneTransformBar: React.FC<{
+  api: ZoneTransformApi;
+  color: string;
+  /** Suppression de l'emplacement depuis le Mode Atelier (confirmée dans le rang « ⋯ »). */
+  onDelete?: () => void;
+}> = ({ api, color, onDelete }) => {
   const [more, setMore] = React.useState(false);
   const [hint, setHint] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
   const zoneId = api.zone?.id ?? null;
 
   React.useEffect(() => {
@@ -38,6 +41,7 @@ export const ZoneTransformBar: React.FC<{ api: ZoneTransformApi; color: string }
   React.useEffect(() => {
     if (!zoneId) return;
     setMore(false);
+    setConfirmDelete(false);
     setHint(true);
     const t = window.setTimeout(() => setHint(false), 3200);
     return () => window.clearTimeout(t);
@@ -78,6 +82,34 @@ export const ZoneTransformBar: React.FC<{ api: ZoneTransformApi; color: string }
             >
               Comment faire
             </button>
+            {onDelete &&
+              (confirmDelete ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/5 px-2 py-1">
+                  <span className="text-[10.5px] text-red-700">Supprimer l'emplacement ?</span>
+                  <button
+                    onClick={() => {
+                      setConfirmDelete(false);
+                      onDelete();
+                    }}
+                    className="rounded-full bg-red-600 px-2 py-0.5 text-[10.5px] font-medium text-white hover:bg-red-700"
+                  >
+                    Oui, supprimer
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="rounded-full border border-[hsl(var(--ds-line))] px-2 py-0.5 text-[10.5px] text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/60"
+                  >
+                    Garder
+                  </button>
+                </span>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="inline-flex items-center gap-1 rounded-full border border-red-500/30 px-2.5 py-1 text-[11px] text-red-600 hover:bg-red-500/10"
+                >
+                  <Trash2 className="h-3 w-3" /> Supprimer cet emplacement
+                </button>
+              ))}
             <span className="text-[10.5px] text-[hsl(var(--ds-forest-deep))]/60">
               Échap = abandonner · Entrée = valider · ⌘Z = annuler le geste
             </span>
