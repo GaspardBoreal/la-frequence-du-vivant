@@ -117,26 +117,21 @@ export const DrawLayer = React.forwardRef<DrawLayerHandle, DrawLayerProps>(funct
   const snapOrthogonal = React.useCallback(
     (list: Array<[number, number]>, candidate: [number, number]) => {
       if (list.length < 2) return candidate;
-      const origin = map.latLngToContainerPoint(list[0] as any);
-      const first = map.latLngToContainerPoint(list[1] as any);
+      const previous = map.latLngToContainerPoint(list[list.length - 2] as any);
       const last = map.latLngToContainerPoint(list[list.length - 1] as any);
       const target = map.latLngToContainerPoint(candidate as any);
-      const dx = first.x - origin.x;
-      const dy = first.y - origin.y;
+      const dx = last.x - previous.x;
+      const dy = last.y - previous.y;
       const norm = Math.hypot(dx, dy);
       if (norm < 2) return candidate;
-      const ux = dx / norm;
-      const uy = dy / norm;
-      const vx = -uy;
-      const vy = ux;
+      const vx = -dy / norm;
+      const vy = dx / norm;
       const tx = target.x - last.x;
       const ty = target.y - last.y;
-      const alongU = tx * ux + ty * uy;
       const alongV = tx * vx + ty * vy;
-      const useU = Math.abs(alongU) >= Math.abs(alongV);
       const snapped = {
-        x: last.x + (useU ? ux * alongU : vx * alongV),
-        y: last.y + (useU ? uy * alongU : vy * alongV),
+        x: last.x + vx * alongV,
+        y: last.y + vy * alongV,
       };
       const ll = map.containerPointToLatLng(snapped as any);
       return [ll.lat, ll.lng] as [number, number];
