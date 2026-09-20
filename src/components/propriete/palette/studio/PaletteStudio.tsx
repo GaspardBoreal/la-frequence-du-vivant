@@ -1310,7 +1310,11 @@ export const PaletteStudio: React.FC<Props> = ({
           )}
 
           {/* Curseur temporel */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[500] flex justify-center p-3">
+          <div
+            className={`pointer-events-none absolute inset-x-0 bottom-0 z-[500] flex justify-center p-3 transition-opacity duration-300 ${
+              transforming ? 'opacity-0' : ''
+            }`}
+          >
             <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/95 px-4 py-2 shadow-lg backdrop-blur">
               <Clock className="h-3.5 w-3.5 opacity-55" />
               {TIME_STEPS.map((s, i) => (
