@@ -40,11 +40,29 @@ export interface ObjetPhoto {
   created_at: string;
   /** URL signée résolue côté client (1 h). */
   url?: string;
+  /** Variante légère pour les planches et pastilles. */
+  thumb_url?: string;
 }
 
 const KEY = (id?: string) => ['propriete-objet-photos', id];
 
 const extOf = (name: string) => (name.split('.').pop() || 'jpg').toLowerCase();
+
+/** Dérive la variante Image Transform d'une URL Storage signée privée. */
+const thumbUrlOf = (signedUrl?: string) => {
+  if (!signedUrl) return undefined;
+  try {
+    const url = new URL(signedUrl);
+    url.pathname = url.pathname.replace('/storage/v1/object/sign/', '/storage/v1/render/image/sign/');
+    url.searchParams.set('width', '480');
+    url.searchParams.set('height', '360');
+    url.searchParams.set('resize', 'cover');
+    url.searchParams.set('quality', '68');
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+};
 
 export type UploadItemStatus = 'pending' | 'reading' | 'uploading' | 'saving' | 'done' | 'error';
 
@@ -106,7 +124,8 @@ export function useObjetPhotos(proprieteId?: string) {
   const query = useQuery({
     queryKey: KEY(proprieteId),
     enabled: !!proprieteId,
-    staleTime: 30_000,
+    staleTime: 50 * 60_000,
+    gcTime: 60 * 60_000,
     queryFn: async (): Promise<ObjetPhoto[]> => {
       const { data, error } = await (supabase as any)
         .from('propriete_objet_photos')
@@ -124,7 +143,14 @@ export function useObjetPhotos(proprieteId?: string) {
       (signed ?? []).forEach((s: any) => {
         if (s?.path && s?.signedUrl) byPath.set(s.path, s.signedUrl);
       });
-      return rows.map((r) => ({ ...r, url: byPath.get(r.storage_path) }));
+      return rows.map((r) => ({
+        ...r,
+        url: byPath.get(r.storage_path),
+        thumb_url:
+          r.media_type === 'video' || r.mime?.startsWith('video/')
+            ? undefined
+            : thumbUrlOf(byPath.get(r.storage_path)),
+      }));
     },
   });
 
