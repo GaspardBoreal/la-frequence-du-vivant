@@ -212,6 +212,10 @@ export const ChantierRapportLayout: React.FC<Props> = ({
   juryNames,
   options,
 }) => {
+  const printablePhotos = photos.filter(
+    (p) => p.media_type !== 'video' && !p.mime?.startsWith('video/'),
+  );
+  const videoCount = photos.length - printablePhotos.length;
   const nameOf = (v: SpeciesVerdict) =>
     juryNames?.[v.scientificName] || v.commonName || v.plantName;
   const complet = options.format === 'complet';
@@ -415,11 +419,14 @@ export const ChantierRapportLayout: React.FC<Props> = ({
 
       {photos.length > 0 && (
         <Page foot={foot}>
-          <Title eyebrow="Preuves photographiques" sub={`${photos.length} vue${photos.length > 1 ? 's' : ''}`}>
+          <Title
+            eyebrow="Preuves visuelles"
+            sub={`${printablePhotos.length} photographie${printablePhotos.length > 1 ? 's' : ''}${videoCount ? ` · ${videoCount} vidéo${videoCount > 1 ? 's' : ''} conservée${videoCount > 1 ? 's' : ''} dans le carnet numérique` : ''}`}
+          >
             Avant, pendant, après
           </Title>
           <div className="grid grid-cols-2 gap-3">
-            {(complet ? photos : photos.slice(0, 6)).map((p) => (
+            {(complet ? printablePhotos : printablePhotos.slice(0, 6)).map((p) => (
               <figure key={p.id} className="break-inside-avoid">
                 {p.url && (
                   <img
