@@ -6,5 +6,5 @@
 - [x] Afficher les indicateurs réels dans les infobulles
 - [x] Ajouter le pied de page des Marches du Vivant
 - [ ] Vérifier le rendu et les parcours
-- [ ] Réorganiser Le Chantier en Visu chantier, Palette végétale et Bilan écologique
-- [ ] Ajouter les vidéos au carnet avant / pendant / après
+- [x] Réorganiser Le Chantier en Visu chantier, Palette végétale et Bilan écologique
+- [x] Ajouter les vidéos au carnet avant / pendant / après

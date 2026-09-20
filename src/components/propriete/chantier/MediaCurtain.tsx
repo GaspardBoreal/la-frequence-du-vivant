@@ -1,5 +1,5 @@
 import React from 'react';
-import { Images, SplitSquareHorizontal } from 'lucide-react';
+import { Images, Play, SplitSquareHorizontal } from 'lucide-react';
 import type { ObjetPhoto } from '@/hooks/propriete/useObjetPhotos';
 import { PHASE_LABEL, phaseFromDate, type MediaPhase } from '@/lib/chantierIcg';
 
@@ -33,12 +33,23 @@ const Tile: React.FC<{
   <figure className="group relative overflow-hidden rounded-xl border border-current/15">
     <button type="button" onClick={onZoom} className="block w-full">
       {photo.url ? (
-        <img
-          src={photo.url}
-          alt={photo.caption || 'Photographie du chantier'}
-          loading="lazy"
-          className="aspect-[4/3] w-full object-cover"
-        />
+        photo.media_type === 'video' || photo.mime?.startsWith('video/') ? (
+          <span className="relative block">
+            <video src={photo.url} preload="metadata" muted className="aspect-[4/3] w-full object-cover" />
+            <span className="absolute inset-0 grid place-items-center bg-black/15">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-black/55 text-white">
+                <Play className="h-4 w-4 fill-current" />
+              </span>
+            </span>
+          </span>
+        ) : (
+          <img
+            src={photo.url}
+            alt={photo.caption || 'Photographie du chantier'}
+            loading="lazy"
+            className="aspect-[4/3] w-full object-cover"
+          />
+        )
       ) : (
         <span className="flex aspect-[4/3] w-full items-center justify-center text-[11px] opacity-40">
           image indisponible
@@ -83,10 +94,11 @@ export const MediaCurtain: React.FC<{
 }> = ({ photos, readOnly, onPhase }) => {
   const [mode, setMode] = React.useState<'mosaique' | 'rideau'>('mosaique');
   const [cursor, setCursor] = React.useState(50);
-  const [zoom, setZoom] = React.useState<string | null>(null);
+  const [zoom, setZoom] = React.useState<PhasedPhoto | null>(null);
 
-  const avant = photos.filter((p) => p.phase === 'avant');
-  const apres = photos.filter((p) => p.phase === 'apres');
+  const stills = photos.filter((p) => p.media_type !== 'video' && !p.mime?.startsWith('video/'));
+  const avant = stills.filter((p) => p.phase === 'avant');
+  const apres = stills.filter((p) => p.phase === 'apres');
   const [aIdx, setAIdx] = React.useState(0);
   const [bIdx, setBIdx] = React.useState(0);
 
@@ -98,7 +110,7 @@ export const MediaCurtain: React.FC<{
     <section>
       <div className="mb-2 flex items-center gap-2">
         <p className="text-[10px] uppercase tracking-[0.2em] opacity-55">
-          Images du chantier · {photos.length}
+          Médias du chantier · {photos.length}
         </p>
         <div className="ml-auto flex gap-1">
           {(['mosaique', 'rideau'] as const).map((m) => (
@@ -124,7 +136,7 @@ export const MediaCurtain: React.FC<{
 
       {photos.length === 0 && (
         <p className="rounded-xl border border-dashed border-current/20 px-3 py-6 text-center text-[12px] italic opacity-55">
-          Aucune photographie au carnet des ouvrages de ce chantier.
+          Aucun média au carnet des ouvrages de ce chantier.
         </p>
       )}
 
@@ -142,7 +154,7 @@ export const MediaCurtain: React.FC<{
                     photo={p}
                     readOnly={readOnly}
                     onPhase={(phase) => onPhase(p.id, phase)}
-                    onZoom={() => setZoom(p.url || null)}
+                    onZoom={() => setZoom(p.url ? p : null)}
                   />
                 ))}
               </div>
@@ -209,7 +221,11 @@ export const MediaCurtain: React.FC<{
           className="fixed inset-0 z-[3600] flex items-center justify-center bg-black/85 p-6"
           onClick={() => setZoom(null)}
         >
-          <img src={zoom} alt="" className="max-h-full max-w-full rounded-lg object-contain" />
+          {zoom.media_type === 'video' || zoom.mime?.startsWith('video/') ? (
+            <video src={zoom.url} controls autoPlay className="max-h-full max-w-full rounded-lg object-contain" />
+          ) : (
+            <img src={zoom.url} alt="" className="max-h-full max-w-full rounded-lg object-contain" />
+          )}
         </div>
       )}
     </section>

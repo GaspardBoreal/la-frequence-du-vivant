@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Loader2, AlertTriangle, Sparkles, X } from 'lucide-react';
+import { Check, Loader2, AlertTriangle, Sparkles, X, Video, Image as ImageIcon } from 'lucide-react';
 import type { UploadItem } from '@/hooks/propriete/useObjetPhotos';
 import { PHASE_LABEL, type MediaPhase } from '@/lib/chantierIcg';
 
@@ -9,6 +9,7 @@ const STATUS_LABEL: Record<UploadItem['status'], string> = {
   pending: 'En attente',
   reading: 'Lecture EXIF…',
   uploading: 'Envoi…',
+  saving: 'Rangement…',
   done: 'Versée',
   error: 'Échec',
 };
@@ -31,7 +32,12 @@ export const ChantierUploadCurtain: React.FC<{
   const done = items.filter((i) => i.status === 'done' || i.status === 'error').length;
   const errors = items.filter((i) => i.status === 'error').length;
   const finished = total > 0 && done === total && !filing;
-  const pct = total ? Math.round((done / total) * 100) : 0;
+  const totalBytes = items.reduce((sum, item) => sum + item.sizeBytes, 0);
+  const sentBytes = items.reduce(
+    (sum, item) => sum + (item.status === 'done' ? item.sizeBytes : item.sentBytes),
+    0,
+  );
+  const pct = totalBytes ? Math.min(100, Math.round((sentBytes / totalBytes) * 100)) : 0;
 
   // Fermeture douce quand tout est versé sans incident
   React.useEffect(() => {
@@ -88,7 +94,7 @@ export const ChantierUploadCurtain: React.FC<{
                 <Sparkles className="h-3 w-3" /> Versement au chantier
               </div>
               <p className="mt-0.5 truncate text-[12.5px]">
-                {done}/{total} image{total > 1 ? 's' : ''} · {PHASE_LABEL[phase]}
+                {done}/{total} média{total > 1 ? 's' : ''} · {PHASE_LABEL[phase]}
                 {ouvrageLabel ? ` · ${ouvrageLabel}` : ''}
               </p>
               <p className="mt-0.5 text-[11px] italic opacity-55">
@@ -96,8 +102,8 @@ export const ChantierUploadCurtain: React.FC<{
                   ? 'Rangement dans la phase…'
                   : finished
                     ? errors
-                      ? `${errors} image(s) n'ont pas pu être versées.`
-                      : 'Toutes les images ont rejoint le carnet.'
+                      ? `${errors} média(s) n'ont pas pu être versés.`
+                      : 'Tous les médias ont rejoint le carnet.'
                     : 'Lecture EXIF, envoi puis rangement — ne fermez pas l’onglet.'}
               </p>
             </div>
@@ -126,6 +132,7 @@ export const ChantierUploadCurtain: React.FC<{
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-[#c8a24a]" />
                   )}
                 </span>
+                {it.isVideo ? <Video className="h-3 w-3 opacity-55" /> : <ImageIcon className="h-3 w-3 opacity-55" />}
                 <span className="min-w-0 flex-1 truncate opacity-85">{it.name}</span>
                 <span className="shrink-0 text-[10px] opacity-45">{fmtSize(it.sizeBytes)}</span>
                 <span
