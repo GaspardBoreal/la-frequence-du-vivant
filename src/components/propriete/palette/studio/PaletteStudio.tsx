@@ -118,6 +118,7 @@ import { MAP_CHROME_SIDE_CENTER } from '@/components/maps/mapChrome';
 import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 import { openGardenAi, useProprieteChatFocus } from '@/components/propriete/chatbot/proprieteChatFocus';
 import { Circle as LeafletCircle, Polygon as LeafletPolygon } from 'react-leaflet';
+import { Button } from '@/components/ui/button';
 
 
 type PanelTab = 'calques' | 'outils' | 'vivant' | 'bilan';
