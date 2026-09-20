@@ -1,5 +1,5 @@
 import React from 'react';
-import { Circle, CircleMarker, Polygon, Polyline, useMap, useMapEvents } from 'react-leaflet';
+import { CircleMarker, Polygon, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import type { ToolGeom } from '@/lib/paysageTools';
 
 export type ZoneDrawMode = 'freehand' | 'polygon' | 'rectangle' | 'orthogonal' | 'hexagon';
@@ -143,9 +143,27 @@ export const DrawLayer = React.forwardRef<DrawLayerHandle, DrawLayerProps>(funct
     (list: Array<[number, number]>) => {
       if (zoneMode === 'rectangle') return rectangleRing(list);
       if (zoneMode === 'hexagon') return hexagonRing(list);
+      if (zoneMode === 'orthogonal' && list.length >= 3) {
+        const previous = map.latLngToContainerPoint(list[list.length - 2] as any);
+        const last = map.latLngToContainerPoint(list[list.length - 1] as any);
+        const first = map.latLngToContainerPoint(list[0] as any);
+        const dx = last.x - previous.x;
+        const dy = last.y - previous.y;
+        const norm = Math.hypot(dx, dy);
+        if (norm >= 2) {
+          const vx = -dy / norm;
+          const vy = dx / norm;
+          const closing = (first.x - last.x) * vx + (first.y - last.y) * vy;
+          const cornerPoint = { x: last.x + vx * closing, y: last.y + vy * closing };
+          if (Math.hypot(cornerPoint.x - first.x, cornerPoint.y - first.y) >= 2) {
+            const corner = map.containerPointToLatLng(cornerPoint as any);
+            return [...list, [corner.lat, corner.lng] as [number, number]];
+          }
+        }
+      }
       return list;
     },
-    [hexagonRing, rectangleRing, zoneMode],
+    [hexagonRing, map, rectangleRing, zoneMode],
   );
 
   /* Mode freehand : pointer events sur le conteneur */
