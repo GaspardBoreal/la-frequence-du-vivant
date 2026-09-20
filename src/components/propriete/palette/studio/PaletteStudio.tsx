@@ -1334,17 +1334,29 @@ export const PaletteStudio: React.FC<Props> = ({
             <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] flex justify-center p-3">
               <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-[hsl(var(--ds-forest-deep))]/95 px-4 py-2 text-[11px] text-[hsl(var(--ds-cream))] shadow-lg backdrop-blur">
                 <span className="font-semibold tracking-wide">
-                  {zoneDraw
-                    ? 'Tracez le contour d’un doigt — relâchez pour fermer.'
-                    : tool?.geom === 'point'
-                      ? `${tool.glyph} ${tool.label} : cliquez pour poser.`
-                      : `${tool?.glyph} ${tool?.label} : cliquez les sommets, double-clic pour terminer.`}
+                  {zoneRedrawId || redrawObjetId
+                    ? 'Tracez la nouvelle forme — elle remplacera l’ancienne.'
+                    : zoneDraw
+                      ? 'Tracez le contour d’un doigt — relâchez pour fermer.'
+                      : tool?.geom === 'point'
+                        ? `${tool.glyph} ${tool.label} : cliquez pour poser.`
+                        : `${tool?.glyph} ${tool?.label} : cliquez les sommets, double-clic pour terminer.`}
                 </span>
+                {(drawGeom === 'polygon' || drawGeom === 'line' || zoneDraw) && (
+                  <button
+                    onClick={() => setDrawNonce((n) => n + 1)}
+                    className="rounded-full bg-white/15 px-2 py-0.5 hover:bg-white/25"
+                  >
+                    Recommencer
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setZoneDraw(false);
                     setTool(null);
                     setPendingInspiration(null);
+                    setRedrawObjetId(null);
+                    setZoneRedrawId(null);
                   }}
                   className="rounded-full bg-white/15 px-2 py-0.5 hover:bg-white/25"
                 >
@@ -1618,6 +1630,13 @@ export const PaletteStudio: React.FC<Props> = ({
               <span>
                 Tracez votre {chantierDraw.label.toLowerCase()} — il rejoindra le chantier.
               </span>
+              <button
+                type="button"
+                onClick={() => setDrawNonce((n) => n + 1)}
+                className="rounded-full border border-white/20 px-3 py-1 text-[11.5px] transition hover:bg-white/10"
+              >
+                Recommencer
+              </button>
               <button
                 type="button"
                 onClick={() => {
