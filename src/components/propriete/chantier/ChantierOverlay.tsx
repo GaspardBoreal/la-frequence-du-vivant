@@ -372,10 +372,16 @@ export const ChantierOverlay: React.FC<Props> = ({
 
         {active && (
           <>
-            <span className="hidden items-center gap-1 rounded-full border border-white/15 px-2.5 py-1 text-[11px] sm:inline-flex">
+            <button
+              type="button"
+              onClick={() => setActiveId(null)}
+              title="Modifier le nom, la date ou les ouvrages de ce chantier"
+              className="hidden items-center gap-1 rounded-full border border-white/15 px-2.5 py-1 text-[11px] transition hover:border-[#c8a24a] hover:bg-white/5 sm:inline-flex"
+            >
               <Layers className="h-3 w-3 opacity-60" />
               {lotObjets.map(labelOfObjet).join(' · ') || 'tout le jardin'}
-            </span>
+              <PenLine className="ml-1 h-3 w-3 opacity-60" />
+            </button>
             <label className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 text-[11px]">
               <CalendarDays className="h-3 w-3 opacity-60" />
               <input
