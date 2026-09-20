@@ -67,6 +67,8 @@ interface Props {
   onDrawNew?: (tool: PaysageTool) => void;
   /** Ouvrages à cocher d'emblée au retour d'un dessin. */
   preselectObjetIds?: string[];
+  /** Renommage d'un ouvrage depuis la fenêtre du chantier. */
+  onRenameObjet?: (id: string, nom: string) => void | Promise<void>;
 }
 
 const RIGOURS: ChantierRigour[] = ['strict', 'lisiere', 'voisinage'];
