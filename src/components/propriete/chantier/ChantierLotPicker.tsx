@@ -277,20 +277,22 @@ export const ChantierLotPicker: React.FC<Props> = ({
 
             <button
               type="button"
-              disabled={selected.length === 0}
+              disabled={!canSubmit}
               onClick={() =>
                 onCreate({
                   nom: nom.trim() || defaultName,
-                  objet_ids: selected,
+                  objet_ids: scope === 'jardin' ? [] : selected,
                   date_travaux: date || null,
                 })
               }
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[hsl(var(--ds-forest-deep))] px-4 py-2.5 text-[13px] font-semibold text-[hsl(var(--ds-cream))] shadow-[0_6px_18px_-8px_rgba(0,0,0,0.6)] transition hover:bg-[hsl(var(--ds-forest))] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
             >
               <Plus className="h-4 w-4" />
-              {selected.length > 1
-                ? `Ouvrir le chantier · ${selected.length} ouvrages`
-                : 'Ouvrir le chantier'}
+              {scope === 'jardin'
+                ? 'Ouvrir le chantier · tout le jardin'
+                : selected.length > 1
+                  ? `Ouvrir le chantier · ${selected.length} ouvrages`
+                  : 'Ouvrir le chantier'}
             </button>
           </section>
         </div>
