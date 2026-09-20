@@ -144,10 +144,15 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
   const destructiveRef = useRef(false);
   /** Empreinte de la dernière version serveur absorbée. */
   const serverStampRef = useRef<string | null>(null);
+  /** Horodatage (ms) de la version la plus récente connue : serveur appliqué ou écriture réussie. */
+  const freshestRef = useRef<number>(0);
+  /** Compteur de saisies : permet de savoir si l'utilisateur a modifié pendant un enregistrement. */
+  const revisionRef = useRef(0);
 
   /** Tout changement passant par ce setter est considéré comme une saisie utilisateur. */
   const setLocal: typeof setLocalRaw = useCallback((value) => {
     dirtyRef.current = true;
+    revisionRef.current += 1;
     setLocalRaw(value);
   }, []);
 
@@ -160,6 +165,7 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
       dirtyRef.current = false;
       destructiveRef.current = false;
       serverStampRef.current = null;
+      freshestRef.current = 0;
       setLocalRaw(EMPTY);
       setSavedAt(null);
       loadedIdRef.current = null;
@@ -171,10 +177,16 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
   useEffect(() => {
     if (!proprieteId || !query.data) return;
     const stamp = query.data.updated_at ?? 'init';
+    const stampMs = query.data.updated_at ? Date.parse(query.data.updated_at) : 0;
     if (loadedIdRef.current === proprieteId) {
       if (dirtyRef.current) return;
       if (serverStampRef.current === stamp) return;
+      // Lecture en retard : une réponse plus ancienne que la version la plus
+      // récente connue (serveur appliqué ou écriture réussie) ne doit jamais
+      // ressusciter une valeur effacée.
+      if (Number.isFinite(stampMs) && stampMs > 0 && stampMs < freshestRef.current) return;
     }
+    if (Number.isFinite(stampMs) && stampMs > freshestRef.current) freshestRef.current = stampMs;
     serverStampRef.current = stamp;
     setLocalRaw(query.data);
     setSavedAt(query.data.updated_at ?? null);
@@ -193,6 +205,7 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
       setSaveError(null);
 
       const allowDestructive = destructiveRef.current;
+      const revisionAtStart = revisionRef.current;
       const { error } = await supabase.rpc('upsert_propriete_soil' as any, {
         p_propriete_id: id,
         p_terrain_status: state.terrain_status ?? null,
@@ -212,7 +225,11 @@ export function usePropertySoil(proprieteId?: string, options?: UsePropertySoilO
         throw error;
       }
       destructiveRef.current = false;
-      dirtyRef.current = false;
+      // Une saisie survenue pendant l'enregistrement reste « à enregistrer ».
+      if (revisionRef.current === revisionAtStart) dirtyRef.current = false;
+      // Cette écriture devient la version la plus récente connue.
+      // Tolérance de 3 s : absorbe l'écart d'horloge entre navigateur et serveur.
+      freshestRef.current = Math.max(freshestRef.current, Date.now() - 3000);
       setSavedAt(new Date().toISOString());
       if (completed) {
         setLocalRaw((s) => ({ ...s, completed_at: new Date().toISOString() }));

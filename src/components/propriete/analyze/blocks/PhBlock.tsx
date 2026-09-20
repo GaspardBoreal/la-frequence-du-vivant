@@ -13,7 +13,7 @@ const STEPS = ['Humidifier', 'Mesurer', 'Lire', 'Noter'];
 
 export const PhBlock: React.FC<{
   value?: number | null;
-  onChange: (v: number) => void;
+  onChange: (v: number | null) => void;
   samples?: SoilSample[];
   onUpdateSample?: (id: string, patch: Partial<SoilSample>) => void;
   /** Pastille médias par prélèvement (preuves de terrain). */
@@ -35,10 +35,10 @@ export const PhBlock: React.FC<{
   }, [samples]);
 
   // Le pH global du diagnostic est dérivé de la moyenne des prélèvements.
+  // Plus aucune mesure ⇒ la valeur d'ensemble redevient « non mesuré ».
   useEffect(() => {
-    if (agg.average == null) return;
-    const rounded = Math.round(agg.average * 10) / 10;
-    if (value !== rounded) onChange(rounded);
+    const rounded = agg.average == null ? null : Math.round(agg.average * 10) / 10;
+    if ((value ?? null) !== rounded) onChange(rounded);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agg.average]);
 
