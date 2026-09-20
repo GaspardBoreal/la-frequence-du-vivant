@@ -11658,6 +11658,7 @@ export type Database = {
         Args: { _att: Json; _sci: string }
         Returns: string
       }
+      grant_admin_access: { Args: { _user_id: string }; Returns: Json }
       has_any_crm_role: { Args: { _user_id: string }; Returns: boolean }
       has_community_chat_access: {
         Args: { _user_id: string }
@@ -11743,6 +11744,7 @@ export type Database = {
         Returns: boolean
       }
       is_exploration_curator: { Args: { _user_id: string }; Returns: boolean }
+      is_founder_admin: { Args: { _user_id: string }; Returns: boolean }
       is_gps_curator: { Args: { _user_id: string }; Returns: boolean }
       is_invited_reader: {
         Args: { _event_id: string; _user_id: string }
@@ -12105,6 +12107,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      revoke_admin_access: { Args: { _user_id: string }; Returns: Json }
       roadmap_week_is_public: { Args: { _week_id: string }; Returns: boolean }
       round_coord: { Args: { _v: number }; Returns: number }
       rouvrir_entretien: {

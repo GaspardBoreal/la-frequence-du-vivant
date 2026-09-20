@@ -30,6 +30,8 @@ import RecherchesPanel from '@/components/admin/community/RecherchesPanel';
 import UsageDashboard from '@/components/admin/community/usage/UsageDashboard';
 import ParcoursTab from '@/components/admin/community/parcours/ParcoursTab';
 import DeleteMarcheurDialog, { type DeletableMarcheur } from '@/components/admin/community/DeleteMarcheurDialog';
+import GrantAdminDialog, { FOUNDER_EMAIL, type AdminTarget } from '@/components/admin/community/GrantAdminDialog';
+import { ShieldOff } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdminProfileEmails } from '@/hooks/useAdminProfileEmails';
 import { Trash2 } from 'lucide-react';
@@ -52,9 +54,13 @@ const CommunityProfilesAdmin: React.FC = () => {
   const [editing, setEditing] = useState<EditableProfile | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [reconciling, setReconciling] = useState(false);
-  const { isAdmin: isCurrentUserAdmin } = useAuthContext();
+  const { isAdmin: isCurrentUserAdmin, user: currentUser } = useAuthContext();
   const [deleting, setDeleting] = useState<DeletableMarcheur | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [adminTarget, setAdminTarget] = useState<AdminTarget | null>(null);
+  const [adminMode, setAdminMode] = useState<'grant' | 'revoke'>('grant');
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const isFounder = (currentUser?.email || '').toLowerCase() === FOUNDER_EMAIL;
 
   const openEditor = (p: EditableProfile) => { setEditing(p); setEditOpen(true); };
 
@@ -484,10 +490,43 @@ const CommunityProfilesAdmin: React.FC = () => {
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                               )}
+                               {isFounder && (
+                                 adminUserIds?.has(profile.user_id) ? (
+                                   profile.user_id !== currentUser?.id && (
+                                     <Button
+                                       size="sm"
+                                       variant="ghost"
+                                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                       title="Retirer l'accès administrateur"
+                                       onClick={() => {
+                                         setAdminTarget({ user_id: profile.user_id, prenom: profile.prenom, nom: profile.nom });
+                                         setAdminMode('revoke');
+                                         setAdminDialogOpen(true);
+                                       }}
+                                     >
+                                       <ShieldOff className="h-3.5 w-3.5" />
+                                     </Button>
+                                   )
+                                 ) : (
+                                   <Button
+                                     size="sm"
+                                     variant="ghost"
+                                     className="text-primary hover:text-primary hover:bg-primary/10"
+                                     title="Nommer administratrice · administrateur"
+                                     onClick={() => {
+                                       setAdminTarget({ user_id: profile.user_id, prenom: profile.prenom, nom: profile.nom });
+                                       setAdminMode('grant');
+                                       setAdminDialogOpen(true);
+                                     }}
+                                   >
+                                     <ShieldCheck className="h-3.5 w-3.5" />
+                                   </Button>
+                                 )
+                               )}
+                             </div>
+                           </TableCell>
+                         </TableRow>
                       );
                     })}
                     {filtered?.length === 0 && (
@@ -732,6 +771,16 @@ const CommunityProfilesAdmin: React.FC = () => {
 
       <MarcheurEditSheet profile={editing} open={editOpen} onOpenChange={setEditOpen} />
       <DeleteMarcheurDialog marcheur={deleting} open={deleteOpen} onOpenChange={setDeleteOpen} />
+      <GrantAdminDialog
+        open={adminDialogOpen}
+        onOpenChange={setAdminDialogOpen}
+        target={adminTarget}
+        mode={adminMode}
+        onDone={() => {
+          queryClient.invalidateQueries({ queryKey: ['community-admins-set'] });
+          queryClient.invalidateQueries({ queryKey: ['community-profiles-admin'] });
+        }}
+      />
     </div>
   );
 };
