@@ -276,11 +276,13 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
               <ExternalLink className="w-3 h-3" /> Voir sur iNaturalist
             </a>
           )}
-          {photoItems.length > 1 && (
-            <span className="ml-auto opacity-60">
-              {index + 1} / {photoItems.length}
-            </span>
+          {currentFrame?.kind === 'reference' && currentFrame.attribution && (
+            <span className="opacity-60">© {currentFrame.attribution}</span>
           )}
+          <span className="ml-auto opacity-60">
+            {frames.length > 1 ? `cliché ${frameIdx + 1}/${frames.length} · ` : ''}
+            {index + 1} / {photoItems.length}
+          </span>
         </div>
       </div>
       )}
