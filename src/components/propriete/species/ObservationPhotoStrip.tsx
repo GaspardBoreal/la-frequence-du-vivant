@@ -124,7 +124,13 @@ export const ObservationPhotoStrip: React.FC<Props> = ({
       <button
         type="button"
         onClick={openCurrent}
-        title={isWalker ? 'Agrandir la photo marcheur' : 'Voir la fiche iNaturalist'}
+        title={
+          onZoomWalker
+            ? 'Voir en grand : photo du marcheur, puis référence iNaturalist'
+            : isWalker
+              ? 'Agrandir la photo marcheur'
+              : 'Voir la fiche iNaturalist'
+        }
         style={{
           display: 'block',
           position: 'relative',
@@ -132,7 +138,7 @@ export const ObservationPhotoStrip: React.FC<Props> = ({
           padding: 0,
           border: 'none',
           background: 'none',
-          cursor: isWalker ? 'zoom-in' : 'pointer',
+          cursor: onZoomWalker || isWalker ? 'zoom-in' : 'pointer',
         }}
       >
         <img
