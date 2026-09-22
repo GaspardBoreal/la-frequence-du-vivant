@@ -6,6 +6,7 @@ import {
   Crosshair,
   Download,
   Leaf,
+  Maximize2,
   Sparkles,
   X,
 } from 'lucide-react';
@@ -33,6 +34,8 @@ interface Props {
   onHoverSpecies: (key: string | null) => void;
   /** Clic sur une observation : recentrage + ouverture de sa fiche. */
   onFocusObservation: (w: PropertyWaypoint) => void;
+  /** Clic sur une vignette : visionneuse plein écran (marcheur puis iNaturalist). */
+  onZoomObservation?: (w: PropertyWaypoint) => void;
   /** Nom de la propriété, pour l'en-tête des exports. */
   proprieteName?: string | null;
 }
@@ -69,8 +72,28 @@ const SpeciesRow: React.FC<{
   onToggle: () => void;
   onHover: (k: string | null) => void;
   onFocus: (w: PropertyWaypoint) => void;
-}> = ({ entry, label, expanded, onToggle, onHover, onFocus }) => {
+  onZoom?: (w: PropertyWaypoint) => void;
+}> = ({ entry, label, expanded, onToggle, onHover, onFocus, onZoom }) => {
   const meta = TYPE_META[entry.type];
+  /** Première observation illustrée : celle qu'on peut ouvrir en grand. */
+  const shot = React.useMemo(
+    () => entry.observations.find((o) => !!o.photoUrl) || null,
+    [entry.observations],
+  );
+  const thumb = (
+    <span
+      className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]"
+      style={{ boxShadow: entry.bio ? `0 0 0 1.5px ${meta.color}55` : undefined }}
+    >
+      {entry.photoUrl ? (
+        <img src={entry.photoUrl} alt={label} loading="lazy" className="h-full w-full object-cover" />
+      ) : (
+        <span className="flex h-full w-full items-center justify-center text-[13px] opacity-55">
+          {meta.glyph}
+        </span>
+      )}
+    </span>
+  );
   return (
     <li
       onMouseEnter={() => onHover(entry.key)}
@@ -78,29 +101,24 @@ const SpeciesRow: React.FC<{
       className="group border-b border-[hsl(var(--ds-line))]/60 last:border-0"
     >
       <div className="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-[hsl(var(--ds-forest))]/6">
+        {onZoom && shot ? (
+          <button
+            type="button"
+            title="Voir en grand : photo du marcheur, puis référence iNaturalist"
+            onClick={() => onZoom(shot)}
+            className="shrink-0 cursor-zoom-in rounded-md transition-transform hover:scale-105"
+          >
+            {thumb}
+          </button>
+        ) : (
+          thumb
+        )}
         <button
           type="button"
           onClick={onToggle}
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
           aria-expanded={expanded}
         >
-          <span
-            className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]"
-            style={{ boxShadow: entry.bio ? `0 0 0 1.5px ${meta.color}55` : undefined }}
-          >
-            {entry.photoUrl ? (
-              <img
-                src={entry.photoUrl}
-                alt={label}
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center text-[13px] opacity-55">
-                {meta.glyph}
-              </span>
-            )}
-          </span>
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5">
               <span className="truncate text-[12px] font-medium text-[hsl(var(--ds-forest-deep))]">
@@ -134,11 +152,11 @@ const SpeciesRow: React.FC<{
       {expanded && (
         <ul className="space-y-0.5 border-t border-dashed border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/60 px-3 py-1.5">
           {entry.observations.map((w) => (
-            <li key={w.id}>
+            <li key={w.id} className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => onFocus(w)}
-                className="flex w-full items-center gap-2 rounded px-1 py-1 text-left text-[10.5px] transition-colors hover:bg-[hsl(var(--ds-forest))]/10"
+                className="flex min-w-0 flex-1 items-center gap-2 rounded px-1 py-1 text-left text-[10.5px] transition-colors hover:bg-[hsl(var(--ds-forest))]/10"
               >
                 <span
                   className="h-1.5 w-1.5 shrink-0 rounded-full"
@@ -152,6 +170,16 @@ const SpeciesRow: React.FC<{
                   {w.source === 'marcheur' ? 'terrain' : 'iNat'}
                 </span>
               </button>
+              {onZoom && w.photoUrl && (
+                <button
+                  type="button"
+                  title="Voir la photo en grand"
+                  onClick={() => onZoom(w)}
+                  className="shrink-0 rounded p-1 opacity-45 transition-opacity hover:opacity-100"
+                >
+                  <Maximize2 className="h-3 w-3" />
+                </button>
+              )}
             </li>
           ))}
         </ul>
@@ -180,6 +208,7 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
   tagLabels,
   onHoverSpecies,
   onFocusObservation,
+  onZoomObservation,
   proprieteName,
 }) => {
   const { entries: allEntries } = useVivantSpeciesRoster(
@@ -421,6 +450,7 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
                 onToggle={() => setExpanded((k) => (k === e.key ? null : e.key))}
                 onHover={onHoverSpecies}
                 onFocus={onFocusObservation}
+                onZoom={onZoomObservation}
               />
             ))}
           </ul>

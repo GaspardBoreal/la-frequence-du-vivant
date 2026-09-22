@@ -102,10 +102,17 @@ export const ObservationPhotoStrip: React.FC<Props> = ({
   const current = photos[idx];
   const isWalker = current.registre === 'marcheur';
 
+  /**
+   * Un seul geste : la visionneuse plein écran s'ouvre sans quitter l'atelier,
+   * avec la photo du marcheur puis la référence iNaturalist côte à côte.
+   */
   const openCurrent = () => {
+    if (onZoomWalker) {
+      onZoomWalker();
+      return;
+    }
     if (isWalker) {
-      if (onZoomWalker) onZoomWalker();
-      else window.open(current.url, '_blank', 'noopener');
+      window.open(current.url, '_blank', 'noopener');
       return;
     }
     const q = encodeURIComponent(scientificName || displayName);
@@ -117,7 +124,13 @@ export const ObservationPhotoStrip: React.FC<Props> = ({
       <button
         type="button"
         onClick={openCurrent}
-        title={isWalker ? 'Agrandir la photo marcheur' : 'Voir la fiche iNaturalist'}
+        title={
+          onZoomWalker
+            ? 'Voir en grand : photo du marcheur, puis référence iNaturalist'
+            : isWalker
+              ? 'Agrandir la photo marcheur'
+              : 'Voir la fiche iNaturalist'
+        }
         style={{
           display: 'block',
           position: 'relative',
@@ -125,7 +138,7 @@ export const ObservationPhotoStrip: React.FC<Props> = ({
           padding: 0,
           border: 'none',
           background: 'none',
-          cursor: isWalker ? 'zoom-in' : 'pointer',
+          cursor: onZoomWalker || isWalker ? 'zoom-in' : 'pointer',
         }}
       >
         <img
