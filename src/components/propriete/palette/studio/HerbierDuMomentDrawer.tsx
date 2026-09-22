@@ -6,6 +6,7 @@ import {
   Crosshair,
   Download,
   Leaf,
+  Maximize2,
   Sparkles,
   X,
 } from 'lucide-react';
