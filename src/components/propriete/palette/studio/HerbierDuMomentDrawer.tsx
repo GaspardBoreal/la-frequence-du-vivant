@@ -169,11 +169,34 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
   onFocusObservation,
   proprieteName,
 }) => {
-  const { entries, speciesCount, observationCount } = useVivantSpeciesRoster(
+  const { entries: allEntries } = useVivantSpeciesRoster(
     waypoints,
     fieldPhotoFor,
   );
   const [expanded, setExpanded] = React.useState<string | null>(null);
+  const [group, setGroup] = React.useState<HerbierGroup>('flore');
+
+  /** Répartition Flore / Faune / Autres (champignons inclus dans « Autres »). */
+  const byGroup = React.useMemo(() => {
+    const m: Record<HerbierGroup, VivantRosterEntry[]> = { flore: [], faune: [], autres: [] };
+    for (const e of allEntries) m[groupOfType(e.type)].push(e);
+    return m;
+  }, [allEntries]);
+
+  const entries = byGroup[group];
+  const speciesCount = entries.length;
+  const observationCount = React.useMemo(
+    () => entries.reduce((n, e) => n + e.observations.length, 0),
+    [entries],
+  );
+
+  // Si le sous-menu par défaut est vide, on ouvre sur celui qui porte du vivant.
+  React.useEffect(() => {
+    if (!open) return;
+    if (byGroup[group].length > 0) return;
+    const fallback = GROUPS.find((g) => byGroup[g.id].length > 0);
+    if (fallback) setGroup(fallback.id);
+  }, [open, group, byGroup]);
 
   const chips = React.useMemo(
     () => describeVivantFilters(filter, { scopeLabel, periodLabel, tagLabels }),
