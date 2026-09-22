@@ -450,6 +450,7 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
                 onToggle={() => setExpanded((k) => (k === e.key ? null : e.key))}
                 onHover={onHoverSpecies}
                 onFocus={onFocusObservation}
+                onZoom={onZoomObservation}
               />
             ))}
           </ul>
