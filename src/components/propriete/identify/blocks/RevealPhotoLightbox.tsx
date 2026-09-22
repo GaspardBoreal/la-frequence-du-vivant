@@ -218,12 +218,13 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
         }`}
       >
         <img
-          src={src || (current.photoUrl as string)}
+          src={src || currentFrame?.url || (current.photoUrl as string)}
           alt={displayNameFor(current)}
           draggable={false}
           style={{ transform: zoom.transform, willChange: 'transform' }}
           className="w-full h-full object-contain select-none transition-transform duration-75"
         />
+
 
         <ZoomBar
           scale={zoom.scale}
