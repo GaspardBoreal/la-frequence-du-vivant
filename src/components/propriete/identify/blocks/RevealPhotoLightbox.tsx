@@ -154,7 +154,32 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
         <X className="w-5 h-5" />
       </button>
 
-      {photoItems.length > 1 && (
+      {/* Pastille de registre : on sait toujours quel cliché on regarde. */}
+      {currentFrame && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full bg-white/12 px-1 py-1 text-white"
+        >
+          {frames.map((f, i) => (
+            <button
+              key={f.url}
+              type="button"
+              onClick={() => setFrame(i)}
+              className={`rounded-full px-3 py-1 text-[11px] transition ${
+                i === frameIdx ? 'bg-white text-black font-medium' : 'hover:bg-white/20'
+              }`}
+            >
+              {f.kind === 'reference'
+                ? '🌐 Référence iNaturalist'
+                : f.kind === 'walker'
+                  ? '📷 Photo du marcheur'
+                  : '🌐 Photo de l’observation'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {(photoItems.length > 1 || frames.length > 1) && (
         <>
           <button
             type="button"
