@@ -622,7 +622,8 @@ export const PaletteStudio: React.FC<Props> = ({
         setZoneDraw(false);
         setZoneRedrawId(null);
       }
-      else onClose();
+      // Sinon : ne rien faire. La fermeture de l'Atelier passe uniquement
+      // par le bouton « Fermer l'atelier ».
     };
     window.addEventListener('keydown', onKey);
     return () => {
