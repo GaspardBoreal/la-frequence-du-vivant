@@ -43,6 +43,19 @@ const fmtDate = (d: string | null | undefined) => {
   return Number.isNaN(dt.getTime()) ? 'date inconnue' : format(dt, 'd MMM yyyy', { locale: fr });
 };
 
+/** Sous-menus de l'herbier : la Flore d'abord, puis la Faune, puis le reste. */
+type HerbierGroup = 'flore' | 'faune' | 'autres';
+
+const GROUPS: { id: HerbierGroup; label: string; glyph: string; color: string }[] = [
+  { id: 'flore', label: 'Flore', glyph: '🌿', color: '#5c8a3c' },
+  { id: 'faune', label: 'Faune', glyph: '🦋', color: '#b06a2c' },
+  { id: 'autres', label: 'Autres', glyph: '🍄', color: '#8a5a7a' },
+];
+
+/** Champignons et règnes indéterminés se rangent dans « Autres ». */
+const groupOfType = (t: VivantRosterEntry['type']): HerbierGroup =>
+  t === 'flore' ? 'flore' : t === 'faune' ? 'faune' : 'autres';
+
 const chipTone: Record<VivantChip['tone'], string> = {
   scope: 'border-[hsl(var(--ds-forest))]/45 bg-[hsl(var(--ds-forest))]/12',
   period: 'border-[#c9a227]/50 bg-[#c9a227]/12',
