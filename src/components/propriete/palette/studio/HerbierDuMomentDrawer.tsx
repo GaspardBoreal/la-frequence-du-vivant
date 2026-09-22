@@ -43,6 +43,19 @@ const fmtDate = (d: string | null | undefined) => {
   return Number.isNaN(dt.getTime()) ? 'date inconnue' : format(dt, 'd MMM yyyy', { locale: fr });
 };
 
+/** Sous-menus de l'herbier : la Flore d'abord, puis la Faune, puis le reste. */
+type HerbierGroup = 'flore' | 'faune' | 'autres';
+
+const GROUPS: { id: HerbierGroup; label: string; glyph: string; color: string }[] = [
+  { id: 'flore', label: 'Flore', glyph: '🌿', color: '#5c8a3c' },
+  { id: 'faune', label: 'Faune', glyph: '🦋', color: '#b06a2c' },
+  { id: 'autres', label: 'Autres', glyph: '🍄', color: '#8a5a7a' },
+];
+
+/** Champignons et règnes indéterminés se rangent dans « Autres ». */
+const groupOfType = (t: VivantRosterEntry['type']): HerbierGroup =>
+  t === 'flore' ? 'flore' : t === 'faune' ? 'faune' : 'autres';
+
 const chipTone: Record<VivantChip['tone'], string> = {
   scope: 'border-[hsl(var(--ds-forest))]/45 bg-[hsl(var(--ds-forest))]/12',
   period: 'border-[#c9a227]/50 bg-[#c9a227]/12',
@@ -169,11 +182,34 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
   onFocusObservation,
   proprieteName,
 }) => {
-  const { entries, speciesCount, observationCount } = useVivantSpeciesRoster(
+  const { entries: allEntries } = useVivantSpeciesRoster(
     waypoints,
     fieldPhotoFor,
   );
   const [expanded, setExpanded] = React.useState<string | null>(null);
+  const [group, setGroup] = React.useState<HerbierGroup>('flore');
+
+  /** Répartition Flore / Faune / Autres (champignons inclus dans « Autres »). */
+  const byGroup = React.useMemo(() => {
+    const m: Record<HerbierGroup, VivantRosterEntry[]> = { flore: [], faune: [], autres: [] };
+    for (const e of allEntries) m[groupOfType(e.type)].push(e);
+    return m;
+  }, [allEntries]);
+
+  const entries = byGroup[group];
+  const speciesCount = entries.length;
+  const observationCount = React.useMemo(
+    () => entries.reduce((n, e) => n + e.observations.length, 0),
+    [entries],
+  );
+
+  // Si le sous-menu par défaut est vide, on ouvre sur celui qui porte du vivant.
+  React.useEffect(() => {
+    if (!open) return;
+    if (byGroup[group].length > 0) return;
+    const fallback = GROUPS.find((g) => byGroup[g.id].length > 0);
+    if (fallback) setGroup(fallback.id);
+  }, [open, group, byGroup]);
 
   const chips = React.useMemo(
     () => describeVivantFilters(filter, { scopeLabel, periodLabel, tagLabels }),
@@ -307,13 +343,64 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
         )}
       </header>
 
+      {/* Sous-menus : Flore · Faune · Autres */}
+      <nav
+        role="tablist"
+        aria-label="Règnes de l’herbier"
+        className="flex shrink-0 gap-1 border-b border-[hsl(var(--ds-line))] px-2 py-1.5"
+      >
+        {GROUPS.map((g) => {
+          const n = byGroup[g.id].length;
+          const active = group === g.id;
+          return (
+            <button
+              key={g.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => {
+                setGroup(g.id);
+                setExpanded(null);
+              }}
+              className={`flex flex-1 items-center justify-center gap-1 rounded-full border px-2 py-1 text-[10px] transition-all ${
+                active
+                  ? 'border-transparent text-[hsl(var(--ds-cream))]'
+                  : 'border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+              } ${n === 0 && !active ? 'opacity-45' : ''}`}
+              style={active ? { background: g.color } : undefined}
+            >
+              <span aria-hidden>{g.glyph}</span>
+              {g.label}
+              <span
+                className={`rounded-full px-1 text-[9px] ${
+                  active ? 'bg-black/15' : 'bg-[hsl(var(--ds-forest))]/12'
+                }`}
+              >
+                {n}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+
+
       <div className="min-h-0 flex-1 overflow-y-auto">
         {entries.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <p className="text-[11px] italic leading-relaxed opacity-65">
-              Aucune observation ne passe ces filtres.
-              <br />
-              Le lieu n’est pas vide : c’est la fenêtre qui est étroite.
+              {allEntries.length > 0 ? (
+                <>
+                  Rien dans « {GROUPS.find((g) => g.id === group)?.label} » pour l’instant.
+                  <br />
+                  Le vivant relevé ici se range dans un autre onglet.
+                </>
+              ) : (
+                <>
+                  Aucune observation ne passe ces filtres.
+                  <br />
+                  Le lieu n’est pas vide : c’est la fenêtre qui est étroite.
+                </>
+              )}
             </p>
             <button
               type="button"
