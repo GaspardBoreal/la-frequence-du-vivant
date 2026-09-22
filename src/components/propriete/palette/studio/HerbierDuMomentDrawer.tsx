@@ -69,8 +69,28 @@ const SpeciesRow: React.FC<{
   onToggle: () => void;
   onHover: (k: string | null) => void;
   onFocus: (w: PropertyWaypoint) => void;
-}> = ({ entry, label, expanded, onToggle, onHover, onFocus }) => {
+  onZoom?: (w: PropertyWaypoint) => void;
+}> = ({ entry, label, expanded, onToggle, onHover, onFocus, onZoom }) => {
   const meta = TYPE_META[entry.type];
+  /** Première observation illustrée : celle qu'on peut ouvrir en grand. */
+  const shot = React.useMemo(
+    () => entry.observations.find((o) => !!o.photoUrl) || null,
+    [entry.observations],
+  );
+  const thumb = (
+    <span
+      className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]"
+      style={{ boxShadow: entry.bio ? `0 0 0 1.5px ${meta.color}55` : undefined }}
+    >
+      {entry.photoUrl ? (
+        <img src={entry.photoUrl} alt={label} loading="lazy" className="h-full w-full object-cover" />
+      ) : (
+        <span className="flex h-full w-full items-center justify-center text-[13px] opacity-55">
+          {meta.glyph}
+        </span>
+      )}
+    </span>
+  );
   return (
     <li
       onMouseEnter={() => onHover(entry.key)}
@@ -78,29 +98,24 @@ const SpeciesRow: React.FC<{
       className="group border-b border-[hsl(var(--ds-line))]/60 last:border-0"
     >
       <div className="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-[hsl(var(--ds-forest))]/6">
+        {onZoom && shot ? (
+          <button
+            type="button"
+            title="Voir en grand : photo du marcheur, puis référence iNaturalist"
+            onClick={() => onZoom(shot)}
+            className="shrink-0 cursor-zoom-in rounded-md transition-transform hover:scale-105"
+          >
+            {thumb}
+          </button>
+        ) : (
+          thumb
+        )}
         <button
           type="button"
           onClick={onToggle}
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
           aria-expanded={expanded}
         >
-          <span
-            className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]"
-            style={{ boxShadow: entry.bio ? `0 0 0 1.5px ${meta.color}55` : undefined }}
-          >
-            {entry.photoUrl ? (
-              <img
-                src={entry.photoUrl}
-                alt={label}
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center text-[13px] opacity-55">
-                {meta.glyph}
-              </span>
-            )}
-          </span>
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5">
               <span className="truncate text-[12px] font-medium text-[hsl(var(--ds-forest-deep))]">
