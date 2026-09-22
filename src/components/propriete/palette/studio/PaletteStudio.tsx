@@ -1699,6 +1699,7 @@ export const PaletteStudio: React.FC<Props> = ({
             setFocusObsId(null);
             window.setTimeout(() => setFocusObsId(w.id), 20);
           }}
+          onZoomObservation={(w: PropertyWaypoint) => setLightboxId(w.id)}
         />
 
         {/* Contrôle GPS : mêmes gestes de curation que la Carte des révélations */}
