@@ -7,6 +7,15 @@ import { GEOFENCE_LABELS } from '@/lib/geofence';
 import { useImageZoomPan } from '@/hooks/useImageZoomPan';
 import { hiResPhotoUrl } from '@/utils/photoUtils';
 import ZoomBar from './ZoomBar';
+import { useSpeciesThumb } from '@/hooks/useSpeciesThumb';
+
+/** Un cliché affiché en grand : terrain du marcheur, observation, ou référence. */
+interface PhotoFrame {
+  url: string;
+  kind: 'walker' | 'observation' | 'reference';
+  attribution?: string | null;
+}
+
 
 
 interface Props {
