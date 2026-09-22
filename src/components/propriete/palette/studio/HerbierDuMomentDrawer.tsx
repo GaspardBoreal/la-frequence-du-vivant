@@ -388,9 +388,19 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
         {entries.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <p className="text-[11px] italic leading-relaxed opacity-65">
-              Aucune observation ne passe ces filtres.
-              <br />
-              Le lieu n’est pas vide : c’est la fenêtre qui est étroite.
+              {allEntries.length > 0 ? (
+                <>
+                  Rien dans « {GROUPS.find((g) => g.id === group)?.label} » pour l’instant.
+                  <br />
+                  Le vivant relevé ici se range dans un autre onglet.
+                </>
+              ) : (
+                <>
+                  Aucune observation ne passe ces filtres.
+                  <br />
+                  Le lieu n’est pas vide : c’est la fenêtre qui est étroite.
+                </>
+              )}
             </p>
             <button
               type="button"
