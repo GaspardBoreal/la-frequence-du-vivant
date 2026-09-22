@@ -208,6 +208,7 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
   tagLabels,
   onHoverSpecies,
   onFocusObservation,
+  onZoomObservation,
   proprieteName,
 }) => {
   const { entries: allEntries } = useVivantSpeciesRoster(
