@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ChatBot } from '@/components/chatbot/ChatBot';
 import { chatPageContext, contextSliceKey } from '@/hooks/useChatPageContext';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useProprieteChatProviders } from '@/hooks/propriete/useProprieteChatProviders';
 import { useProprieteObjets } from '@/hooks/propriete/usePropertyObjets';
 import GardenFocusBanner from './GardenFocusBanner';
@@ -22,20 +21,9 @@ interface Props {
  * main pour les désactiver).
  */
 export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
-  const isMobile = useIsMobile();
   const { providers, providersTitle } = useProprieteChatProviders(proprieteId);
   const { objets } = useProprieteObjets(proprieteId);
   const focus = useProprieteChatFocus();
-  const [atelierInspectorActive, setAtelierInspectorActive] = useState(false);
-
-  useEffect(() => {
-    const onInspectorVisibility = (event: Event) => {
-      const detail = (event as CustomEvent<{ active?: boolean }>).detail;
-      setAtelierInspectorActive(detail?.active === true);
-    };
-    window.addEventListener('atelier:inspector-visibility', onInspectorVisibility);
-    return () => window.removeEventListener('atelier:inspector-visibility', onInspectorVisibility);
-  }, []);
 
   const ouvrageIds = useMemo(() => (objets ?? []).map((o) => o.id), [objets]);
   const ouvrageIdsKey = ouvrageIds.join(',');
