@@ -149,11 +149,11 @@ const SpeciesRow: React.FC<{
       {expanded && (
         <ul className="space-y-0.5 border-t border-dashed border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/60 px-3 py-1.5">
           {entry.observations.map((w) => (
-            <li key={w.id}>
+            <li key={w.id} className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => onFocus(w)}
-                className="flex w-full items-center gap-2 rounded px-1 py-1 text-left text-[10.5px] transition-colors hover:bg-[hsl(var(--ds-forest))]/10"
+                className="flex min-w-0 flex-1 items-center gap-2 rounded px-1 py-1 text-left text-[10.5px] transition-colors hover:bg-[hsl(var(--ds-forest))]/10"
               >
                 <span
                   className="h-1.5 w-1.5 shrink-0 rounded-full"
@@ -167,6 +167,16 @@ const SpeciesRow: React.FC<{
                   {w.source === 'marcheur' ? 'terrain' : 'iNat'}
                 </span>
               </button>
+              {onZoom && w.photoUrl && (
+                <button
+                  type="button"
+                  title="Voir la photo en grand"
+                  onClick={() => onZoom(w)}
+                  className="shrink-0 rounded p-1 opacity-45 transition-opacity hover:opacity-100"
+                >
+                  <Maximize2 className="h-3 w-3" />
+                </button>
+              )}
             </li>
           ))}
         </ul>
