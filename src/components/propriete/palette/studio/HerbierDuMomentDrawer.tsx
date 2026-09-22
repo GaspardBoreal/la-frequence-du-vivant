@@ -343,6 +343,47 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
         )}
       </header>
 
+      {/* Sous-menus : Flore · Faune · Autres */}
+      <nav
+        role="tablist"
+        aria-label="Règnes de l’herbier"
+        className="flex shrink-0 gap-1 border-b border-[hsl(var(--ds-line))] px-2 py-1.5"
+      >
+        {GROUPS.map((g) => {
+          const n = byGroup[g.id].length;
+          const active = group === g.id;
+          return (
+            <button
+              key={g.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => {
+                setGroup(g.id);
+                setExpanded(null);
+              }}
+              className={`flex flex-1 items-center justify-center gap-1 rounded-full border px-2 py-1 text-[10px] transition-all ${
+                active
+                  ? 'border-transparent text-[hsl(var(--ds-cream))]'
+                  : 'border-[hsl(var(--ds-line))] hover:border-[hsl(var(--ds-forest))]/50'
+              } ${n === 0 && !active ? 'opacity-45' : ''}`}
+              style={active ? { background: g.color } : undefined}
+            >
+              <span aria-hidden>{g.glyph}</span>
+              {g.label}
+              <span
+                className={`rounded-full px-1 text-[9px] ${
+                  active ? 'bg-black/15' : 'bg-[hsl(var(--ds-forest))]/12'
+                }`}
+              >
+                {n}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+
+
       <div className="min-h-0 flex-1 overflow-y-auto">
         {entries.length === 0 ? (
           <div className="px-4 py-8 text-center">
