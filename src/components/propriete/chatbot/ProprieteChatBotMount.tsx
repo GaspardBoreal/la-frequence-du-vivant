@@ -120,7 +120,7 @@ export function ProprieteChatBotMount({ proprieteId, proprieteNom }: Props) {
       edgeFunctionPath="propriete-chat"
       assistantNameOverride="IA de Jardin"
       roleBadge={proprieteNom ?? null}
-      hideFab={isMobile || atelierInspectorActive}
+      hideFab
       fabId={`ia-jardin-${proprieteId}`}
       fabLabel="IA de Jardin"
       focusBanner={<GardenFocusBanner proprieteId={proprieteId} activeProviders={autoProviders} />}
