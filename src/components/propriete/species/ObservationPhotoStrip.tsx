@@ -102,10 +102,17 @@ export const ObservationPhotoStrip: React.FC<Props> = ({
   const current = photos[idx];
   const isWalker = current.registre === 'marcheur';
 
+  /**
+   * Un seul geste : la visionneuse plein écran s'ouvre sans quitter l'atelier,
+   * avec la photo du marcheur puis la référence iNaturalist côte à côte.
+   */
   const openCurrent = () => {
+    if (onZoomWalker) {
+      onZoomWalker();
+      return;
+    }
     if (isWalker) {
-      if (onZoomWalker) onZoomWalker();
-      else window.open(current.url, '_blank', 'noopener');
+      window.open(current.url, '_blank', 'noopener');
       return;
     }
     const q = encodeURIComponent(scientificName || displayName);
