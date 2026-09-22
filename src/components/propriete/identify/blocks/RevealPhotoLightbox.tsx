@@ -32,20 +32,53 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
   const index = photoItems.findIndex((w) => w.id === currentId);
   const current = index >= 0 ? photoItems[index] : null;
 
+  /**
+   * Deux clichés par observation, dans l'ordre qui aide à juger l'emplacement :
+   *   1. la photo prise sur le terrain par le marcheur,
+   *   2. la photo de référence de l'espèce (iNaturalist).
+   */
+  const { data: thumb } = useSpeciesThumb(current?.scientificName || undefined);
+  const frames = useMemo<PhotoFrame[]>(() => {
+    if (!current) return [];
+    const out: PhotoFrame[] = [
+      {
+        url: current.photoUrl as string,
+        kind: current.source === 'marcheur' ? 'walker' : 'observation',
+      },
+    ];
+    const ref = thumb?.photo_url;
+    if (ref && ref !== current.photoUrl) {
+      out.push({ url: ref, kind: 'reference', attribution: thumb?.photo_attribution || null });
+    }
+    return out;
+  }, [current, thumb]);
+
+  const [frame, setFrame] = useState(0);
+  useEffect(() => setFrame(0), [currentId]);
+  const frameIdx = Math.min(frame, Math.max(frames.length - 1, 0));
+  const currentFrame = frames[frameIdx] || null;
+
+  /** Précédent / Suivant : on parcourt d'abord les clichés, puis les observations. */
   const go = useCallback(
     (delta: number) => {
       if (!photoItems.length || index < 0) return;
-      const next = (index + delta + photoItems.length) % photoItems.length;
-      onChange(photoItems[next].id);
+      const next = frameIdx + delta;
+      if (next >= 0 && next < frames.length) {
+        setFrame(next);
+        return;
+      }
+      const nextObs = (index + delta + photoItems.length) % photoItems.length;
+      setFrame(0);
+      onChange(photoItems[nextObs].id);
     },
-    [photoItems, index, onChange],
+    [photoItems, index, onChange, frameIdx, frames.length],
   );
 
-  const zoom = useImageZoomPan(currentId);
+  const zoom = useImageZoomPan(`${currentId}#${frameIdx}`);
   const [expanded, setExpanded] = useState(false);
 
   // Montée en résolution de la photo courante (iNaturalist square/medium → large)
-  const baseUrl = (current?.photoUrl as string | undefined) || null;
+  const baseUrl = currentFrame?.url || null;
   const [src, setSrc] = useState<string | null>(baseUrl);
   const [loadingHiRes, setLoadingHiRes] = useState(false);
 
