@@ -34,6 +34,8 @@ interface Props {
   onHoverSpecies: (key: string | null) => void;
   /** Clic sur une observation : recentrage + ouverture de sa fiche. */
   onFocusObservation: (w: PropertyWaypoint) => void;
+  /** Clic sur une vignette : visionneuse plein écran (marcheur puis iNaturalist). */
+  onZoomObservation?: (w: PropertyWaypoint) => void;
   /** Nom de la propriété, pour l'en-tête des exports. */
   proprieteName?: string | null;
 }
