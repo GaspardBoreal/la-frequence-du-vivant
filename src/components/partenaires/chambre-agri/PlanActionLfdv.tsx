@@ -136,7 +136,7 @@ export const PlanActionLfdv: React.FC<{
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-left [&_p]:text-left">
       <Button onClick={() => generer()} disabled={status === 'loading'} className="print:hidden">
         {status === 'loading' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
         {status === 'done' ? 'Régénérer le plan d’action LFDV' : 'Générer le plan d’action LFDV'}
