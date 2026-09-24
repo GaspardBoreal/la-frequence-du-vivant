@@ -1,5 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { DEMO_CSS } from '@/components/partenaires/chambre-agri/DemoFrame';
+import { RegularNightDemo } from '@/components/partenaires/chambre-agri/RegularNightDemo';
+import { SoilSpongeDemo } from '@/components/partenaires/chambre-agri/SoilSpongeDemo';
+import { PollinatorWindowDemo } from '@/components/partenaires/chambre-agri/PollinatorWindowDemo';
 import { Printer, Radio, Leaf, Grape, Footprints, Database, Sparkles, CheckCircle2, ChartNoAxesCombined } from 'lucide-react';
 
 type Vertical = { id: string; titre: string; icon: React.ElementType; resume: string; fonctions: string[] };
@@ -139,6 +143,17 @@ export default function PartenaireChambreAgriPdl() {
               </div>
               <p className="text-sm text-muted-foreground mt-1">{OBSERVATOIRE_USAGE.resume}</p>
             </div>
+          </div>
+        </section>
+
+        <section>
+          <style>{DEMO_CSS}</style>
+          <h2 className="font-serif text-2xl mb-1">Voir la plateforme à l’œuvre</h2>
+          <p className="text-muted-foreground mb-5">Trois chantiers, trois démonstrations vivantes.</p>
+          <div className="space-y-6">
+            <RegularNightDemo />
+            <SoilSpongeDemo />
+            <PollinatorWindowDemo />
           </div>
         </section>
 
