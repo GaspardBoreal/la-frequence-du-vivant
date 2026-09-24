@@ -24,6 +24,7 @@ export const SoilSpongeDemo: React.FC = () => {
   const { ref, shown } = useRevealOnScroll<HTMLDivElement>();
   const [p, setP] = React.useState(0);
   const [phase, setPhase] = React.useState<Phase>('rain');
+  const [dryFade, setDryFade] = React.useState(0);
   const [run, setRun] = React.useState(0);
 
   React.useEffect(() => {
@@ -50,6 +51,26 @@ export const SoilSpongeDemo: React.FC = () => {
     };
   }, [shown, run]);
 
+  React.useEffect(() => {
+    if (phase !== 'later') {
+      setDryFade(0);
+      return;
+    }
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setDryFade(1);
+      return;
+    }
+    let raf = 0;
+    const startedAt = performance.now();
+    const tick = (time: number) => {
+      const next = Math.min(1, (time - startedAt) / 1800);
+      setDryFade(ease(next));
+      if (next < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [phase]);
+
   const replay = () => {
     setPhase('rain');
     setP(0);
@@ -73,12 +94,13 @@ export const SoilSpongeDemo: React.FC = () => {
     const runoff = (couvert ? 2 : 30) * rainProgress;
     const frontDepth = couvert ? 60 * rainProgress : 20 * rainProgress;
     const frontHeight = (frontDepth / 60) * 190;
+    const wetOpacity = couvert ? 0.18 : 0.18 * (1 - dryFade);
 
     return (
     <g>
       <text x={x + 160} y="44" textAnchor="middle" className="fill-foreground" fontSize="14" fontFamily="serif">{label}</text>
       <rect x={x} y="92" width="320" height="190" fill="hsl(var(--accent))" opacity=".25" />
-      <rect x={x} y="92" width="320" height={frontHeight} fill="hsl(var(--primary))" opacity=".18" />
+      <rect x={x} y="92" width="320" height={frontHeight} fill="hsl(var(--primary))" opacity={wetOpacity} />
 
       {!couvert && (
         <g role="img" aria-label="Croûte de battance">
@@ -121,7 +143,8 @@ export const SoilSpongeDemo: React.FC = () => {
 
       {DEPTHS.map((d, i) => {
         const y = 92 + (d / 60) * 174;
-        const w = 112 * (values[i] / 25);
+        const w = 112 * (values[i] / 40);
+        const fieldCapacityX = x + 154 + 112 * (28 / 40);
         return (
           <g key={d}>
             <line x1={x + 18} y1={y} x2={x + 146} y2={y} stroke="hsl(var(--foreground))" strokeWidth="1" opacity=".3" />
@@ -129,6 +152,10 @@ export const SoilSpongeDemo: React.FC = () => {
             <text x={x + 30} y={y - 5} fontSize="10" className="fill-muted-foreground">−{d} cm</text>
             <rect x={x + 154} y={y - 6} width="112" height="12" rx="6" fill="hsl(var(--muted))" />
             <rect x={x + 154} y={y - 6} width={w} height="12" rx="6" fill="hsl(var(--primary))" />
+            <g role="img" aria-label="Capacité au champ à 28 %">
+              <title>Capacité au champ : au-delà, l'eau draine ou stagne</title>
+              <line x1={fieldCapacityX} y1={y - 8} x2={fieldCapacityX} y2={y + 8} stroke="hsl(var(--foreground))" strokeWidth="1" opacity=".72" />
+            </g>
             <text x={x + 308} y={y + 4} fontSize="11" textAnchor="end" className="fill-foreground">{Math.round(values[i])} %</text>
           </g>
         );
