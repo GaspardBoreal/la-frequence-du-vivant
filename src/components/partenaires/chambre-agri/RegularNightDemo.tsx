@@ -45,6 +45,13 @@ const Detecteur: React.FC<{ x: number; y: number; micDir: 1 | -1 | 0; label: str
 export const RegularNightDemo: React.FC = () => {
   const { ref, shown } = useRevealOnScroll<HTMLDivElement>();
   const [temp, setTemp] = React.useState(16);
+  const [ficheOpen, setFicheOpen] = React.useState(false);
+
+  /** Un clic n'importe où sur la carte ouvre la fiche, sauf sur les contrôles interactifs. */
+  const onCarteClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('input, button, a, label, [role="slider"], [data-no-fiche]')) return;
+    setFicheOpen(true);
+  };
 
   const contactsHaie = Math.round(600 / (1 + Math.exp(-(temp - 15) / 2.5)));
   const contactsChamp = Math.round(contactsHaie * 0.12);
