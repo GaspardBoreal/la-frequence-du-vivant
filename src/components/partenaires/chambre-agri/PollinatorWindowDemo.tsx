@@ -150,12 +150,18 @@ const InvasivePlant: React.FC<(typeof INVASIVES)[number]> = ({ x, y, width, heig
 export const PollinatorWindowDemo: React.FC = () => {
   const { ref, shown } = useRevealOnScroll<HTMLDivElement>();
   const [h, setH] = React.useState(11);
+  const [autoPlay, setAutoPlay] = React.useState(true);
 
   React.useEffect(() => {
-    if (!shown || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    if (!shown || !autoPlay || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const id = setInterval(() => setH((x) => (x >= 20 ? 5 : x + 1)), 900);
     return () => clearInterval(id);
-  }, [shown]);
+  }, [shown, autoPlay]);
+
+  const selectHour = (hour: number) => {
+    setAutoPlay(false);
+    setH(hour);
+  };
 
   const weather = WEATHER.find((item) => item.hour === h) ?? WEATHER[6];
   const status = windowState(h, weather.temperature, weather.wind);
@@ -197,11 +203,11 @@ export const PollinatorWindowDemo: React.FC = () => {
             const selected = item.hour === h;
             return <g
               key={item.hour}
-              onClick={() => setH(item.hour)}
+              onClick={() => selectHour(item.hour)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  setH(item.hour);
+                  selectHour(item.hour);
                 }
               }}
               className="cursor-pointer"
