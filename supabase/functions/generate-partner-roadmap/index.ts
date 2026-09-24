@@ -406,8 +406,8 @@ Deno.serve(async (req) => {
             console.error('[generate-partner-roadmap] tentative', attempt + 1, lastErr);
           }
         }
-        send({ type: 'fallback' });
         await archive(input, c, null, 'fallback', startedAt, lastErr);
+        send({ type: 'fallback' });
       } catch (e) {
         console.error('[generate-partner-roadmap]', e);
         send({ type: 'fallback' });
