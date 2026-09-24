@@ -68,7 +68,7 @@ const VERTICALS: Vertical[] = [
 const OBSERVATOIRE_USAGE = {
   titre: 'Observatoire des pratiques et des usages',
   icon: ChartNoAxesCombined,
-  resume: 'Analyse agrégée et segmentable pour révéler les besoins de publics très précis : territoire, type et surface de propriété, pratiques du sol et de l’eau, choix végétaux, usages de l’Assistant ...',
+  resume: 'Analyse segmentable pour révéler les besoins de publics très précis : territoire, type et surface de propriété, pratiques du sol et de l’eau, choix végétaux, usages IA ...',
 };
 
 const OBJECTIFS = [
