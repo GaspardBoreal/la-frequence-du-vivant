@@ -36,7 +36,14 @@ const CrmIa: React.FC = () => {
   });
 
   const rows = React.useMemo(() => {
-    const all = data ?? [];
+    // Une ligne par visite : la plus récente (triée desc) contient tout le fil « Pour affiner ».
+    const seen = new Set<string>();
+    const all = (data ?? []).filter((s) => {
+      if (!s.session_key) return true;
+      if (seen.has(s.session_key)) return false;
+      seen.add(s.session_key);
+      return true;
+    });
     const q = search.trim().toLowerCase();
     if (!q) return all;
     return all.filter((s) =>
