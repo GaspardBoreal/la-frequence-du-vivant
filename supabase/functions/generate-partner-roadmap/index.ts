@@ -397,8 +397,8 @@ Deno.serve(async (req) => {
             const issue = checkPlan(plan, input, c);
             if (issue) throw new Error(issue);
             const finalPlan = enforce(plan, c);
-            send({ type: 'result', plan: finalPlan, calc: { mois: c.mois, trimestres: c.trimestres.map((t) => t.periode) } });
             await archive(input, c, finalPlan, 'done', startedAt);
+            send({ type: 'result', plan: finalPlan, calc: { mois: c.mois, trimestres: c.trimestres.map((t) => t.periode) } });
             ctrl.close();
             return;
           } catch (e) {
