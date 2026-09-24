@@ -44,19 +44,19 @@ const windowState = (hour: number, temperature: number, wind: number, rain = fal
 
 const INVASIVES = [
   {
-    x: 128, y: 146, width: 82, height: 72,
+    x: 128, y: 146, width: 184, height: 72,
     label: 'Renouée du Japon · fauches répétées',
     tooltip: 'Très visitée par les abeilles en fin d’été, mais elle étouffe la flore locale et appauvrit la diversité des fleurs.',
     kind: 'renouee',
   },
   {
-    x: 466, y: 158, width: 72, height: 60,
-    label: 'Ambroisie · détruite avant floraison',
-    tooltip: 'Pollinisée par le vent, son pollen est très allergisant. Sa destruction avant floraison est obligatoire.',
+    x: 455, y: 158, width: 174, height: 60,
+    label: 'Ambroisie · arrachage urgent',
+    tooltip: 'Pollinisée par le vent, son pollen est très allergisant. Elle doit être détruite avant de fleurir : c’est une obligation réglementaire.',
     kind: 'ambroisie',
   },
   {
-    x: 580, y: 132, width: 86, height: 84,
+    x: 620, y: 132, width: 132, height: 84,
     label: 'Baccharis · arrachage',
     tooltip: 'Arbuste invasif des marais et fossés littoraux, il remplace la végétation d’origine.',
     kind: 'baccharis',
@@ -64,16 +64,15 @@ const INVASIVES = [
 ] as const;
 
 const FLOWERS = [
-  { x: 42, y: 184 }, { x: 76, y: 164 }, { x: 228, y: 178 }, { x: 274, y: 151 },
-  { x: 318, y: 181 }, { x: 366, y: 158 }, { x: 407, y: 184 }, { x: 532, y: 180 },
-  { x: 652, y: 174 },
+  { x: 28, y: 184 }, { x: 238, y: 178 }, { x: 284, y: 151 },
+  { x: 326, y: 181 }, { x: 566, y: 180 }, { x: 692, y: 174 },
 ];
 
 const FLIGHT_PATHS = [
-  'M 34 152 C 82 116, 146 128, 226 151 S 350 126, 424 158',
-  'M 72 178 C 136 142, 204 174, 278 132 S 388 158, 518 166',
-  'M 212 160 C 274 116, 334 146, 398 126 S 512 158, 650 146',
-  'M 650 168 C 582 130, 536 162, 442 142 S 304 166, 226 144',
+  'M 18 166 C 52 132, 92 112, 128 118 S 194 156, 232 166 S 294 132, 334 154',
+  'M 24 184 C 74 160, 94 138, 128 130 S 188 142, 238 174 S 292 154, 334 170',
+  'M 562 172 C 580 146, 604 118, 628 122 S 670 148, 696 166',
+  'M 696 180 C 672 154, 650 138, 620 142 S 582 170, 562 184',
 ];
 
 const Flower: React.FC<{ x: number; y: number }> = ({ x, y }) => (
@@ -102,16 +101,18 @@ const Pollinator: React.FC<{ kind: PollinatorKind; index: number }> = ({ kind, i
         <path d="M-2-3v6M2-3v6" stroke="hsl(var(--foreground))" strokeWidth="1.2" />
       </g>}
       {kind === 'bourdon' && <g transform="scale(1.25)">
-        <ellipse cx="-3" cy="-3" rx="4.5" ry="3" fill="hsl(var(--background))" stroke="hsl(var(--foreground))" opacity=".72" />
-        <ellipse cx="3" cy="-3" rx="4.5" ry="3" fill="hsl(var(--background))" stroke="hsl(var(--foreground))" opacity=".72" />
-        <ellipse rx="6.5" ry="4.5" fill="hsl(var(--foreground))" />
-        <path d="M-2-4v8M2-4v8" stroke="hsl(var(--warning))" strokeWidth="2" />
+        <ellipse cx="-4" cy="-4" rx="5" ry="3.2" fill="hsl(var(--background))" stroke="hsl(var(--foreground))" opacity=".72" />
+        <ellipse cx="3" cy="-4" rx="5" ry="3.2" fill="hsl(var(--background))" stroke="hsl(var(--foreground))" opacity=".72" />
+        <ellipse rx="8" ry="5.8" fill="hsl(var(--foreground))" />
+        <path d="M-3-5v10M2-5v10" stroke="hsl(var(--warning))" strokeWidth="2.2" />
+        <path d="M5-4 Q10 0 5 4" fill="hsl(var(--background))" stroke="hsl(var(--foreground))" strokeWidth="1" />
       </g>}
       {kind === 'syrphe' && <g>
-        <ellipse cx="-3" cy="-3" rx="5" ry="2" fill="hsl(var(--background))" stroke="hsl(var(--foreground))" opacity=".75" />
-        <ellipse cx="3" cy="-3" rx="5" ry="2" fill="hsl(var(--background))" stroke="hsl(var(--foreground))" opacity=".75" />
-        <path d="M-6 0 Q0-4 7 0 Q0 5-6 0" fill="hsl(var(--warning))" stroke="hsl(var(--foreground))" />
-        <path d="M-1-3v6M3-2v4" stroke="hsl(var(--foreground))" strokeWidth="1" />
+        <ellipse cx="-1" cy="-3" rx="5.5" ry="1.8" fill="hsl(var(--background))" stroke="hsl(var(--foreground))" opacity=".78" />
+        <ellipse cx="3" cy="-3" rx="5.5" ry="1.8" fill="hsl(var(--background))" stroke="hsl(var(--foreground))" opacity=".78" />
+        <ellipse cx="0" cy="0" rx="7.5" ry="3" fill="hsl(var(--warning))" stroke="hsl(var(--foreground))" />
+        <path d="M-4-3v6M-1-3v6M2-3v6M5-2v4" stroke="hsl(var(--foreground))" strokeWidth="1.4" />
+        <circle cx="-7" cy="0" r="2.4" fill="hsl(var(--foreground))" />
       </g>}
       {kind === 'papillon' && <g>
         <path d="M0 0 C-4-10-13-9-10 0 C-13 8-4 9 0 2 C4 9 13 8 10 0 C13-9 4-10 0 0Z" fill="hsl(var(--warning))" stroke="hsl(var(--foreground))" />
@@ -121,20 +122,33 @@ const Pollinator: React.FC<{ kind: PollinatorKind; index: number }> = ({ kind, i
   );
 };
 
-const InvasivePlant: React.FC<(typeof INVASIVES)[number]> = ({ x, y, width, height, label, tooltip, kind }) => (
-  <g>
+const InvasivePlant: React.FC<(typeof INVASIVES)[number]> = ({ x, y, width, height, label, tooltip, kind }) => {
+  const labelWidth = Math.min(width - 8, Math.max(76, label.length * 4.6 + 16));
+  return <g>
     <title>{tooltip}</title>
     <rect x={x - width / 2} y={y - height / 2} width={width} height={height} rx="16" fill="none" stroke="hsl(var(--warning))" strokeWidth="2" strokeDasharray="5 4" />
-    <path d={`M${x} ${y + 25} Q${x - 5} ${y} ${x} ${y - 24}`} fill="none" stroke="hsl(var(--primary))" strokeWidth={kind === 'baccharis' ? 5 : 3} />
-    {kind === 'renouee' && <g fill="hsl(var(--primary))" opacity=".7">
-      <ellipse cx={x - 13} cy={y + 7} rx="13" ry="6" transform={`rotate(-24 ${x - 13} ${y + 7})`} />
-      <ellipse cx={x + 14} cy={y - 7} rx="13" ry="6" transform={`rotate(24 ${x + 14} ${y - 7})`} />
-      <circle cx={x} cy={y - 26} r="5" fill="hsl(var(--background))" stroke="hsl(var(--warning))" />
+    {kind === 'renouee' && <g>
+      {[-18, 0, 18].map((dx, stemIndex) => <g key={dx}>
+        <path d={`M${x + dx} ${y + 28} L${x + dx + (stemIndex - 1) * 3} ${y - 22}`} stroke="hsl(var(--destructive))" strokeWidth="3" opacity=".62" />
+        {[-2, 12].map((dy) => <path key={dy} d={`M${x + dx - 4} ${y + dy}h8`} stroke="hsl(var(--warning))" strokeWidth="1.5" opacity=".7" />)}
+        <path d={`M${x + dx} ${y + 8} C${x + dx - 17} ${y - 5},${x + dx - 20} ${y + 12},${x + dx} ${y + 15} C${x + dx + 20} ${y + 12},${x + dx + 17} ${y - 5},${x + dx} ${y + 8}Z`} fill="hsl(var(--primary))" opacity=".78" />
+        <g fill="hsl(var(--background))" stroke="hsl(var(--foreground))" strokeWidth=".5">
+          <circle cx={x + dx - 7} cy={y - 18} r="2.3" /><circle cx={x + dx} cy={y - 23} r="2.3" /><circle cx={x + dx + 7} cy={y - 18} r="2.3" />
+        </g>
+      </g>)}
     </g>}
-    {kind === 'ambroisie' && <g fill="none" stroke="hsl(var(--primary))" strokeWidth="2" opacity=".8">
-      <path d={`M${x} ${y + 18}l-15-13m15 2 14-14m-14 2-10-14m10 6 9-13`} />
+    {kind === 'ambroisie' && <g fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5" opacity=".65">
+      <path d={`M${x} ${y + 24}V${y - 22} M${x} ${y + 10}l-15-13 M${x} ${y + 4}l15-15 M${x} ${y - 7}l-11-12 M${x} ${y - 12}l10-11`} />
+      {[-15, 15, -11, 10].map((dx, index) => {
+        const cy = y + (index < 2 ? -3 : -17);
+        return <path key={`${dx}-${index}`} d={`M${x + dx} ${cy}l-5-5m5 5-6 0m6 0-3 6m3-6 5-4m-5 4 6 2`} />;
+      })}
+      <g fill="hsl(var(--primary))" stroke="none" opacity=".72">
+        <circle cx={x - 4} cy={y - 26} r="2" /><circle cx={x} cy={y - 29} r="2" /><circle cx={x + 4} cy={y - 26} r="2" />
+      </g>
     </g>}
     {kind === 'baccharis' && <g fill="hsl(var(--primary))" opacity=".68">
+      <path d={`M${x} ${y + 25} Q${x - 5} ${y} ${x} ${y - 24}`} fill="none" stroke="hsl(var(--primary))" strokeWidth="5" />
       <circle cx={x - 16} cy={y} r="16" /><circle cx={x + 15} cy={y - 4} r="18" /><circle cx={x} cy={y - 18} r="17" />
       <circle cx={x - 10} cy={y - 25} r="3" fill="hsl(var(--warning))" /><circle cx={x + 13} cy={y - 25} r="3" fill="hsl(var(--warning))" />
     </g>}
@@ -142,10 +156,10 @@ const InvasivePlant: React.FC<(typeof INVASIVES)[number]> = ({ x, y, width, heig
       <path d="M0 12 7 0l7 12Z" fill="hsl(var(--warning))" />
       <text x="7" y="10" textAnchor="middle" fontSize="9" className="fill-warning-foreground" fontWeight="700">!</text>
     </g>
-    <rect x={x - width / 2 - 8} y={y - height / 2 - 24} width={width + 16} height="18" rx="4" fill="hsl(var(--card))" opacity=".94" />
+    <rect x={x - labelWidth / 2} y={y - height / 2 - 24} width={labelWidth} height="18" rx="4" fill="hsl(var(--card))" opacity=".94" />
     <text x={x} y={y - height / 2 - 12} textAnchor="middle" fontSize="8.5" className="fill-foreground">{label}</text>
   </g>
-);
+};
 
 export const PollinatorWindowDemo: React.FC = () => {
   const { ref, shown } = useRevealOnScroll<HTMLDivElement>();
@@ -224,6 +238,11 @@ export const PollinatorWindowDemo: React.FC = () => {
             </g>;
           })}
           <text x="20" y="258" fontSize="9" className="fill-muted-foreground">Fin août · lever 7 h · coucher 20 h 45</text>
+          <g transform="translate(286 254)" fontSize="8.5" className="fill-muted-foreground">
+            <circle cx="0" cy="1" r="4" fill="hsl(var(--primary))" /><text x="8" y="4">fenêtre ouverte</text>
+            <circle cx="105" cy="1" r="4" fill="hsl(var(--primary))" opacity=".35" /><text x="113" y="4">activité faible</text>
+            <circle cx="198" cy="1" r="4" fill="hsl(var(--muted))" /><text x="206" y="4">fenêtre fermée</text>
+          </g>
         </svg>
       </DemoFrame>
     </div>

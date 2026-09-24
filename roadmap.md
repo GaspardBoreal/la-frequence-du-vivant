@@ -12,3 +12,4 @@
 - [x] Clarifier le contraste haie / plein champ dans l’animation nocturne REGULAR
 - [x] Recalibrer la pluie, l’infiltration et le séchage dans l’animation Le sol éponge
 - [x] Recaler la météo, l’activité et les invasives dans l’animation La fenêtre de butinage
+- [x] Affiner les trajectoires, silhouettes et repères de La fenêtre de butinage
