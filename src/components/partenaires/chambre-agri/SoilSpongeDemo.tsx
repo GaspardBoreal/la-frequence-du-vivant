@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { CloudRain, Clock3 } from 'lucide-react';
 import { useRevealOnScroll } from '@/hooks/useRevealOnScroll';
 import { DemoFrame, Legende } from './DemoFrame';
+import { SoilSpongeFiche } from './SoilSpongeFiche';
 
 const DEPTHS = [15, 30, 60];
 const INITIAL = [12, 14, 16];
@@ -26,6 +27,13 @@ export const SoilSpongeDemo: React.FC = () => {
   const [phase, setPhase] = React.useState<Phase>('rain');
   const [dryFade, setDryFade] = React.useState(0);
   const [run, setRun] = React.useState(0);
+  const [ficheOpen, setFicheOpen] = React.useState(false);
+
+  /** Un clic n'importe où sur la carte ouvre la fiche, sauf sur les contrôles interactifs (Faire pleuvoir, etc.). */
+  const onCarteClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('input, button, a, label, [role="slider"], [data-no-fiche]')) return;
+    setFicheOpen(true);
+  };
 
   React.useEffect(() => {
     if (!shown) return;
@@ -172,6 +180,7 @@ export const SoilSpongeDemo: React.FC = () => {
 
   return (
     <div ref={ref} className={shown ? 'cad-on' : ''}>
+      <div onClick={onCarteClick} className="cursor-pointer">
       <DemoFrame
         kicker="Agriculture de conservation"
         titre="Le sol éponge"
@@ -182,6 +191,13 @@ export const SoilSpongeDemo: React.FC = () => {
             <Button size="sm" variant="ghost" className="cad-hide-print" onClick={() => setPhase('later')}><Clock3 className="w-4 h-4 mr-2" />3 jours plus tard</Button>
           )}
           <span className="text-muted-foreground">Humidité du sol (% du volume) mesurée par les sondes BRAD à 15, 30 et 60 cm</span><Legende />
+          <button
+            type="button"
+            onClick={() => setFicheOpen(true)}
+            className="text-sm text-primary underline underline-offset-4 decoration-primary/50 hover:decoration-primary focus:outline-none focus:ring-2 focus:ring-ring rounded-sm"
+          >
+            En savoir plus
+          </button>
         </div>}
       >
         <svg viewBox="0 0 720 340" className="w-full h-auto block" role="img" aria-label="Comparaison de l'infiltration entre sol nu et sol couvert">
@@ -204,6 +220,8 @@ export const SoilSpongeDemo: React.FC = () => {
           )}
         </svg>
       </DemoFrame>
+      </div>
+      <SoilSpongeFiche open={ficheOpen} onOpenChange={setFicheOpen} />
     </div>
   );
 };
