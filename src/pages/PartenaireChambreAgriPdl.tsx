@@ -141,7 +141,6 @@ export default function PartenaireChambreAgriPdl() {
     return { modules, semaines, avecIot };
   }, [objectifs, livrables, sites]);
 
-  const pret = objectifs.length > 0;
   React.useEffect(() => { document.title = 'LFDV × Chambre d’agriculture Pays de la Loire'; }, []);
 
   return (
@@ -209,10 +208,10 @@ export default function PartenaireChambreAgriPdl() {
 
         <section className="break-before-page">
           <h2 className="font-serif text-2xl mb-1">Décrivez votre projet</h2>
-          <p className="text-sm text-muted-foreground mb-5 print:hidden">Quelques questions : la réponse se construit en temps réel.</p>
+          <p className="text-sm text-muted-foreground mb-5 print:hidden">Quelques questions, puis l’IA LFDV rédige un plan d’action daté et dimensionné.</p>
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-4 print:hidden">
-              <input className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Structure / entreprise" value={nom} onChange={(e) => setNom(e.target.value)} />
+              <input ref={nomRef} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Structure / entreprise" value={nom} onChange={(e) => setNom(e.target.value)} />
               <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" rows={3} placeholder="Votre projet en deux phrases" value={projet} onChange={(e) => setProjet(e.target.value)} />
               <div>
                 <p className="text-sm font-medium mb-2">Objectifs</p>
