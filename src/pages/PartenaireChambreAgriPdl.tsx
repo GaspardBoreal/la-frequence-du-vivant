@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Printer, Radio, Leaf, Grape, Footprints, Database, Sparkles, CheckCircle2 } from 'lucide-react';
 
@@ -100,14 +99,10 @@ export default function PartenaireChambreAgriPdl() {
   }, [objectifs, livrables, sites]);
 
   const pret = objectifs.length > 0;
+  React.useEffect(() => { document.title = 'LFDV × Chambre d’agriculture Pays de la Loire'; }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Helmet>
-        <title>LFDV × Chambre d’agriculture Pays de la Loire — Fonctionnalités</title>
-        <meta name="description" content="Fonctionnalités de la plateforme La Fréquence du Vivant et simulateur de projet pour la Chambre d’agriculture des Pays de la Loire." />
-        <meta name="robots" content="noindex" />
-      </Helmet>
 
       <header className="border-b border-border">
         <div className="max-w-5xl mx-auto px-6 py-10">
