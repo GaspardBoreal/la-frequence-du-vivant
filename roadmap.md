@@ -11,3 +11,4 @@
 - [x] Accélérer Visu chantier avec une planche de contact progressive et des miniatures
 - [x] Clarifier le contraste haie / plein champ dans l’animation nocturne REGULAR
 - [x] Recalibrer la pluie, l’infiltration et le séchage dans l’animation Le sol éponge
+- [x] Recaler la météo, l’activité et les invasives dans l’animation La fenêtre de butinage

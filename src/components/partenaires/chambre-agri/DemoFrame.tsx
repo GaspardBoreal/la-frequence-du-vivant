@@ -21,6 +21,7 @@ export const DEMO_CSS = `
 @keyframes cad-prey{0%,40%{opacity:1}55%,100%{opacity:0}}
 @keyframes cad-rain{0%{transform:translateY(-20px);opacity:0}20%{opacity:.9}100%{transform:translateY(90px);opacity:0}}
 @keyframes cad-bee{0%{offset-distance:0%}100%{offset-distance:100%}}
+@keyframes cad-pollinator-flight{0%{offset-distance:0%;transform:scale(1)}18%{offset-distance:23%;transform:scale(1)}22%{offset-distance:23%;transform:scale(.86)}27%{offset-distance:23%;transform:scale(1)}49%{offset-distance:52%;transform:scale(1)}53%{offset-distance:52%;transform:scale(.86)}58%{offset-distance:52%;transform:scale(1)}78%{offset-distance:78%;transform:scale(1)}82%{offset-distance:78%;transform:scale(.86)}87%{offset-distance:78%;transform:scale(1)}100%{offset-distance:100%;transform:scale(1)}}
 @keyframes cad-alert{0%,100%{opacity:.35}50%{opacity:.95}}
 @keyframes cad-flap{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.4)}}
 @keyframes cad-catch{0%,38%{opacity:1;transform:translate(0,0)}48%,62%{opacity:0;transform:translate(0,0)}63%{opacity:0;transform:translate(var(--cad-dx,20px),var(--cad-dy,-6px))}76%,100%{opacity:1;transform:translate(var(--cad-dx,20px),var(--cad-dy,-6px))}}
