@@ -396,7 +396,9 @@ Deno.serve(async (req) => {
             const plan = PlanSchema.parse(JSON.parse(raw));
             const issue = checkPlan(plan, input, c);
             if (issue) throw new Error(issue);
-            send({ type: 'result', plan: enforce(plan, c), calc: { mois: c.mois, trimestres: c.trimestres.map((t) => t.periode) } });
+            const finalPlan = enforce(plan, c);
+            send({ type: 'result', plan: finalPlan, calc: { mois: c.mois, trimestres: c.trimestres.map((t) => t.periode) } });
+            await archive(input, c, finalPlan, 'done', startedAt);
             ctrl.close();
             return;
           } catch (e) {
@@ -405,9 +407,11 @@ Deno.serve(async (req) => {
           }
         }
         send({ type: 'fallback' });
+        await archive(input, c, null, 'fallback', startedAt, lastErr);
       } catch (e) {
         console.error('[generate-partner-roadmap]', e);
         send({ type: 'fallback' });
+        if (calc) await archive(input, calc, null, 'fallback', startedAt, e instanceof Error ? e.message : String(e));
       }
       ctrl.close();
     },
