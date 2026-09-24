@@ -163,7 +163,7 @@ export const RegularNightDemo: React.FC = () => {
                   offsetPath: `path('${BAT_PATHS[i] ?? BAT_PATHS[0]}')`,
                   offsetRotate: '0deg',
                   transformOrigin: '0px 0px',
-                  animation: `cad-bat-turn ${speed}s ${-i * (speed / Math.max(1, nbBats))}s ease-in-out infinite`,
+                  animation: `cad-bat-turn ${speed}s ${-(i + 0.5) * (speed / Math.max(1, nbBats))}s ease-in-out infinite`,
                 } as React.CSSProperties
               }
             >
