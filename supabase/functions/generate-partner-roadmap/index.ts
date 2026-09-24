@@ -300,6 +300,7 @@ async function archive(
   try {
     const url = Deno.env.get('SUPABASE_URL');
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    console.log('[generate-partner-roadmap] archivage', { url: !!url, key: !!key, status });
     if (!url || !key) return;
     const admin = createClient(url, key, { auth: { persistSession: false } });
     const row = {
