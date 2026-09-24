@@ -31,27 +31,27 @@ export const RegularNightDemo: React.FC = () => {
           </div>
         }
       >
-        <svg viewBox="0 0 700 240" className="w-full h-auto block bg-foreground/90" role="img" aria-label="Chauves-souris chassant le long d'une haie la nuit">
-          <circle cx="600" cy="50" r="22" fill="hsl(var(--background))" opacity=".9" />
-          {[...Array(24)].map((_, i) => <circle key={i} cx={(i * 97) % 700} cy={(i * 53) % 110} r="1" fill="hsl(var(--background))" opacity=".5" />)}
+        <svg viewBox="0 0 700 240" className="w-full h-auto block bg-primary/10" role="img" aria-label="Chauves-souris chassant le long d'une haie la nuit">
+          <circle cx="600" cy="50" r="22" fill="hsl(var(--foreground))" opacity=".9" />
+          {[...Array(24)].map((_, i) => <circle key={i} cx={(i * 97) % 700} cy={(i * 53) % 110} r="1" fill="hsl(var(--foreground))" opacity=".5" />)}
           {/* haie */}
           {[...Array(14)].map((_, i) => <circle key={i} cx={20 + i * 50} cy={190 - (i % 3) * 6} r={26 + (i % 2) * 6} fill="hsl(var(--primary))" opacity=".55" />)}
           <rect x="0" y="200" width="700" height="40" fill="hsl(var(--primary))" opacity=".35" />
-          <path d={PATH} fill="none" stroke="hsl(var(--background))" strokeDasharray="3 6" opacity=".25" />
+          <path d={PATH} fill="none" stroke="hsl(var(--foreground))" strokeDasharray="3 6" opacity=".25" />
           {/* ravageurs */}
           {[80, 200, 300, 420, 520, 640].map((x, i) => (
             <circle key={x} className="cad-anim" cx={x} cy={100 + (i % 2) * 22} r="3" fill="hsl(var(--accent))"
               style={{ animation: `cad-prey ${speed}s ${i * 0.8}s infinite` }} />
           ))}
           {/* détecteur */}
-          <rect x="344" y="170" width="12" height="20" rx="2" fill="hsl(var(--background))" />
+          <rect x="344" y="170" width="12" height="20" rx="2" fill="hsl(var(--foreground))" />
           {[0, 1, 2].map((i) => (
-            <circle key={i} className="cad-anim" cx="350" cy="168" r="2" fill="none" stroke="hsl(var(--background))"
+            <circle key={i} className="cad-anim" cx="350" cy="168" r="2" fill="none" stroke="hsl(var(--foreground))"
               style={{ animation: `cad-ring 2.4s ${i * 0.8}s infinite` }} />
           ))}
           {[...Array(nbBats)].map((_, i) => (
             <g key={i} className="cad-anim" style={{ offsetPath: `path('${PATH}')`, animation: `cad-bat ${speed}s ${-i * (speed / nbBats)}s linear infinite`, offsetDistance: `${i * 25 + 30}%` } as React.CSSProperties}>
-              <path className="cad-anim" d="M -10 0 Q -5 -6 0 0 Q 5 -6 10 0 Q 5 -2 0 2 Q -5 -2 -10 0 Z" fill="hsl(var(--background))"
+              <path className="cad-anim" d="M -10 0 Q -5 -6 0 0 Q 5 -6 10 0 Q 5 -2 0 2 Q -5 -2 -10 0 Z" fill="hsl(var(--foreground))"
                 style={{ transformOrigin: 'center', animation: 'cad-flap .35s infinite' }} />
             </g>
           ))}

@@ -37,12 +37,12 @@ export const SoilSpongeDemo: React.FC = () => {
         const w = 110 * (vals[i] / 40) * p;
         return (
           <g key={d}>
-            <line x1={x + 20} y1={y} x2={x + 150} y2={y} stroke="hsl(var(--foreground))" strokeWidth="1" opacity=".3" />
+            <line x1={x + 20} y1={y} x2={x + 140} y2={y} stroke="hsl(var(--foreground))" strokeWidth="1" opacity=".3" />
             <circle cx={x + 20} cy={y} r="4" fill="hsl(var(--foreground))" />
             <text x={x + 30} y={y - 5} fontSize="10" className="fill-muted-foreground">−{d} cm</text>
-            <rect x={x + 160} y={y - 6} width="110" height="12" rx="6" fill="hsl(var(--muted))" />
-            <rect x={x + 160} y={y - 6} width={w} height="12" rx="6" fill="hsl(var(--primary))" />
-            <text x={x + 280} y={y + 4} fontSize="10" textAnchor="end" className="fill-background">{Math.round(vals[i] * p)} %</text>
+            <rect x={x + 150} y={y - 6} width="110" height="12" rx="6" fill="hsl(var(--muted))" />
+            <rect x={x + 150} y={y - 6} width={w} height="12" rx="6" fill="hsl(var(--primary))" />
+            <text x={x + 294} y={y + 4} fontSize="11" textAnchor="end" className="fill-foreground">{Math.round(vals[i] * p)} %</text>
           </g>
         );
       })}
