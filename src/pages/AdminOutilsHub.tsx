@@ -84,6 +84,13 @@ const OUTILS = [
   },
 
   {
+    titre: 'Simulations & plans IA partenaires',
+    description: 'Tous les projets décrits dans les simulateurs partenaires, les plans générés, le fil des questions-réponses, et l\'export pour analyse dans une autre IA.',
+    icon: Sparkles,
+    to: '/admin/crm/ia',
+    active: true,
+  },
+  {
 
     titre: 'Zones',
     description: 'Cartographie des zones de marches.',
