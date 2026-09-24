@@ -3,6 +3,7 @@
 // un seul appel IA (+1 tentative), sortie JSON validée par zod, repli statique sinon.
 // Réponse en NDJSON : une ligne par étape réellement franchie, puis le résultat.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { z } from 'npm:zod@^3.25.76';
 
 const SYSTEM_PROMPT = `Tu es l'IA de La Fréquence du Vivant (LFDV), plateforme d'observation et d'accompagnement de la biodiversité dans les exploitations, vignobles, jardins et territoires. Tu rédiges un plan d'action pour une structure qui vient de décrire son projet. Ton lecteur est un décideur professionnel (directeur de chambre d'agriculture, élu, responsable de coopérative). Il juge en 30 secondes si tu as compris son projet et si ton plan est réaliste.
@@ -141,6 +142,9 @@ const InputSchema = z.object({
   productions: z.array(z.string().max(120)).max(10).default([]),
   demarrage: z.string().max(7).default(''),
   precisions: z.array(z.object({ question: z.string().max(500), reponse: z.string().max(1000) })).max(6).default([]),
+  sourcePage: z.string().max(300).default(''),
+  partnerSlug: z.string().max(120).default(''),
+  sessionKey: z.string().max(80).default(''),
 });
 
 function calculs(input: z.infer<typeof InputSchema>) {
@@ -283,6 +287,77 @@ async function callModel(messages: { role: string; content: string }[]) {
   return cleaned;
 }
 
+// Archivage de la simulation (question + réponse) pour l'administration.
+// Jamais bloquant : une erreur d'écriture ne doit pas casser la génération.
+async function archive(
+  input: z.infer<typeof InputSchema>,
+  c: Calc,
+  plan: unknown | null,
+  status: 'done' | 'fallback',
+  startedAt: number,
+  errorMessage?: string,
+) {
+  try {
+    const url = Deno.env.get('SUPABASE_URL');
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!url || !key) {
+      console.error('[generate-partner-roadmap] archivage impossible : SUPABASE_URL/SERVICE_ROLE_KEY absents');
+      return;
+    }
+    const admin = createClient(url, key, { auth: { persistSession: false } });
+    const row = {
+      source_page: input.sourcePage,
+      partner_slug: input.partnerSlug,
+      nom: input.nom || null,
+      type_structure: input.typeStructure || null,
+      territoire: input.territoire || null,
+      productions: input.productions.join(', ') || null,
+      demarrage: input.demarrage || null,
+      projet: input.projet || null,
+      objectifs: input.objectifs.join(' | ') || null,
+      livrables: input.livrables.join(' | ') || null,
+      difficulte: input.difficulte || null,
+      modules: input.objectifs,
+      form_payload: {
+        nom: input.nom,
+        typeStructure: input.typeStructure,
+        territoire: input.territoire,
+        productions: input.productions,
+        demarrage: input.demarrage,
+        projet: input.projet,
+        objectifs: input.objectifs,
+        livrables: input.livrables,
+        sites: input.sites,
+        difficulte: input.difficulte,
+      },
+      dimensionnement: {
+        sites: c.sites,
+        sentinelles: c.sentinelles,
+        reseau: c.reseau,
+        jours: c.jours,
+        formations: c.formations,
+        marches: c.marches,
+        materiel: c.materiel,
+        dateDebutLabel: c.dateDebutLabel,
+        dateFinLabel: c.dateFinLabel,
+        trimestres: c.trimestres.map((t) => t.periode),
+      },
+      plan: plan ?? null,
+      precisions: input.precisions,
+      iterations: input.precisions.length + 1,
+      ai_model: Deno.env.get('AI_MODEL') || 'google/gemini-2.5-flash',
+      duration_ms: Date.now() - startedAt,
+      status,
+      error_message: errorMessage ? errorMessage.slice(0, 800) : null,
+      session_key: input.sessionKey || null,
+    };
+    const { error } = await admin.from('partner_ai_simulations').insert(row);
+    if (error) console.error('[generate-partner-roadmap] archivage', error.message);
+  } catch (e) {
+    console.error('[generate-partner-roadmap] archivage', e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: corsHeaders });
@@ -301,9 +376,12 @@ Deno.serve(async (req) => {
   const stream = new ReadableStream({
     async start(ctrl) {
       const send = (o: unknown) => ctrl.enqueue(enc.encode(JSON.stringify(o) + '\n'));
+      const startedAt = Date.now();
+      let calc: Calc | null = null;
       try {
         send({ type: 'step', step: 'lecture' });
         const c = calculs(input);
+        calc = c;
         send({ type: 'step', step: 'dimensionnement', calc: { sentinelles: c.sentinelles, reseau: c.reseau, jours: c.jours } });
         const user = userMessage(input, c);
         send({ type: 'step', step: 'calendrier', calc: { trimestres: c.trimestres.map((t) => t.periode) } });
@@ -321,7 +399,9 @@ Deno.serve(async (req) => {
             const plan = PlanSchema.parse(JSON.parse(raw));
             const issue = checkPlan(plan, input, c);
             if (issue) throw new Error(issue);
-            send({ type: 'result', plan: enforce(plan, c), calc: { mois: c.mois, trimestres: c.trimestres.map((t) => t.periode) } });
+            const finalPlan = enforce(plan, c);
+            await archive(input, c, finalPlan, 'done', startedAt);
+            send({ type: 'result', plan: finalPlan, calc: { mois: c.mois, trimestres: c.trimestres.map((t) => t.periode) } });
             ctrl.close();
             return;
           } catch (e) {
@@ -329,10 +409,12 @@ Deno.serve(async (req) => {
             console.error('[generate-partner-roadmap] tentative', attempt + 1, lastErr);
           }
         }
+        await archive(input, c, null, 'fallback', startedAt, lastErr);
         send({ type: 'fallback' });
       } catch (e) {
         console.error('[generate-partner-roadmap]', e);
         send({ type: 'fallback' });
+        if (calc) await archive(input, calc, null, 'fallback', startedAt, e instanceof Error ? e.message : String(e));
       }
       ctrl.close();
     },

@@ -7323,6 +7323,90 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_ai_simulations: {
+        Row: {
+          ai_model: string | null
+          created_at: string
+          demarrage: string | null
+          difficulte: string | null
+          dimensionnement: Json
+          duration_ms: number | null
+          error_message: string | null
+          form_payload: Json
+          id: string
+          iterations: number
+          livrables: string | null
+          modules: Json
+          nom: string | null
+          objectifs: string | null
+          partner_slug: string
+          plan: Json | null
+          precisions: Json
+          productions: string | null
+          projet: string | null
+          session_key: string | null
+          source_page: string
+          status: string
+          territoire: string | null
+          type_structure: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_model?: string | null
+          created_at?: string
+          demarrage?: string | null
+          difficulte?: string | null
+          dimensionnement?: Json
+          duration_ms?: number | null
+          error_message?: string | null
+          form_payload?: Json
+          id?: string
+          iterations?: number
+          livrables?: string | null
+          modules?: Json
+          nom?: string | null
+          objectifs?: string | null
+          partner_slug?: string
+          plan?: Json | null
+          precisions?: Json
+          productions?: string | null
+          projet?: string | null
+          session_key?: string | null
+          source_page?: string
+          status?: string
+          territoire?: string | null
+          type_structure?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_model?: string | null
+          created_at?: string
+          demarrage?: string | null
+          difficulte?: string | null
+          dimensionnement?: Json
+          duration_ms?: number | null
+          error_message?: string | null
+          form_payload?: Json
+          id?: string
+          iterations?: number
+          livrables?: string | null
+          modules?: Json
+          nom?: string | null
+          objectifs?: string | null
+          partner_slug?: string
+          plan?: Json | null
+          precisions?: Json
+          productions?: string | null
+          projet?: string | null
+          session_key?: string | null
+          source_page?: string
+          status?: string
+          territoire?: string | null
+          type_structure?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       partner_roadmap_task_status: {
         Row: {
           created_at: string

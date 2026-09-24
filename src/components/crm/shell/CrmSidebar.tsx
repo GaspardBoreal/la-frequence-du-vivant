@@ -42,7 +42,7 @@ const ITEMS: NavItem[] = [
   { to: '/admin/crm/missions', label: 'Missions', icon: ListChecks, badge: 'Nouveau' },
   { to: '/admin/crm/marches', label: 'Marches', icon: CalendarRange },
   { to: '/admin/crm/equipe', label: 'Équipe', icon: Users },
-  { to: '/admin/crm/ia', label: 'IA', icon: Sparkles, badge: 'Bientôt' },
+  { to: '/admin/crm/ia', label: 'IA', icon: Sparkles, badge: 'Nouveau' },
 ];
 
 export const CrmSidebar: React.FC = () => {
