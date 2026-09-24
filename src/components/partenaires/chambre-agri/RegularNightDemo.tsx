@@ -2,9 +2,13 @@ import React from 'react';
 import { useRevealOnScroll, useCountUp } from '@/hooks/useRevealOnScroll';
 import { DemoFrame, Legende } from './DemoFrame';
 
-/** Vol rasant le long de la cime de la haie, avec petites boucles de chasse. */
-const PATH =
-  'M 40 158 C 90 148, 110 166, 160 155 C 205 145, 215 166, 255 154 C 305 144, 325 165, 372 156 C 420 147, 440 166, 490 154 C 540 145, 562 165, 615 157';
+/** Vol rasant le long de la cime de la haie ; une trajectoire s'aventure brièvement au champ. */
+const BAT_PATHS = [
+  'M -28 144 C 45 132, 92 158, 150 145 C 218 130, 285 160, 430 143',
+  'M -24 164 C 52 150, 105 171, 175 156 C 246 141, 318 169, 438 151',
+  'M -30 126 C 55 116, 118 142, 192 130 C 268 118, 330 143, 426 128',
+  'M -26 150 C 62 137, 142 160, 220 146 C 312 130, 386 154, 492 136',
+];
 
 /** Silhouette de chauve-souris : corps, oreilles, membranes alaires à doigts. */
 const Bat: React.FC<{ scale?: number }> = ({ scale = 1 }) => (
@@ -25,15 +29,15 @@ const Bat: React.FC<{ scale?: number }> = ({ scale = 1 }) => (
 );
 
 /** Boîtier enregistreur passif sur piquet, micro orienté. */
-const Detecteur: React.FC<{ x: number; y: number; micDir: 1 | -1; label: string }> = ({ x, y, micDir, label }) => (
+const Detecteur: React.FC<{ x: number; y: number; micDir: 1 | -1 | 0; label: string }> = ({ x, y, micDir, label }) => (
   <g transform={`translate(${x} ${y})`}>
     <title>{label}</title>
     <line x1="0" y1="0" x2="0" y2="26" stroke="hsl(var(--foreground))" strokeWidth="1.6" opacity=".8" />
     <rect x="-5" y="-11" width="10" height="13" rx="2" fill="hsl(var(--foreground))" opacity=".9" />
     <rect x="-2.4" y="-8.6" width="4.8" height="2" rx="1" fill="hsl(var(--background))" opacity=".8" />
     {/* micro orienté */}
-    <line x1={micDir * 5} y1="-6" x2={micDir * 12} y2="-9" stroke="hsl(var(--foreground))" strokeWidth="1.6" />
-    <circle cx={micDir * 13} cy="-9.5" r="2.2" fill="hsl(var(--foreground))" />
+    <line x1={micDir * 5} y1="-6" x2={micDir * 12} y2={micDir === 0 ? -19 : -9} stroke="hsl(var(--foreground))" strokeWidth="1.6" />
+    <circle cx={micDir * 13} cy={micDir === 0 ? -21 : -9.5} r="2.2" fill="hsl(var(--foreground))" />
   </g>
 );
 
@@ -55,7 +59,7 @@ export const RegularNightDemo: React.FC = () => {
   const activite = Math.max(0.05, Math.min(1, individus / 17));
   const speed = 13 - activite * 6;
   const preyCycle = 9 - activite * 5;
-  const nbPrey = 8 + Math.round(activite * 4);
+  const nbPrey = 7 + Math.round(activite * 4);
 
   return (
     <div ref={ref} className={shown ? 'cad-on' : ''}>
@@ -99,23 +103,28 @@ export const RegularNightDemo: React.FC = () => {
         }
       >
         <svg viewBox="0 0 700 240" className="w-full h-auto block bg-primary/10" role="img" aria-label="Chauves-souris chassant le long d'une haie la nuit">
-          {/* ciel décoratif */}
+          {/* ciel nocturne, volontairement sans points décoratifs confondus avec les proies */}
           <circle cx="600" cy="42" r="20" fill="hsl(var(--foreground))" opacity=".45" />
-          {[...Array(24)].map((_, i) => (
-            <circle key={i} cx={(i * 97) % 700} cy={(i * 37) % 80} r="1" fill="hsl(var(--foreground))" opacity=".4" />
-          ))}
 
           {/* sol */}
           <rect x="0" y="200" width="700" height="40" fill="hsl(var(--primary))" opacity=".35" />
 
-          {/* haie */}
-          {[...Array(13)].map((_, i) => (
-            <circle key={i} cx={20 + i * 48} cy={190 - (i % 3) * 6} r={26 + (i % 2) * 6} fill="hsl(var(--primary))" opacity=".55" />
+          {/* haie : 60 % gauches */}
+          {[...Array(9)].map((_, i) => (
+            <circle key={i} cx={18 + i * 48} cy={190 - (i % 3) * 6} r={26 + (i % 2) * 6} fill="hsl(var(--primary))" opacity=".55" />
           ))}
 
-          {/* bande de proies au-dessus et devant la haie */}
+          {/* plein champ témoin : culture basse, sans arbuste */}
+          {[...Array(8)].map((_, i) => (
+            <g key={i} transform={`translate(${438 + i * 34} 200)`} stroke="hsl(var(--primary))" strokeWidth="1.4" opacity=".55">
+              <path d="M 0 0 Q -4 -8 -8 -10 M 0 0 Q 4 -7 8 -9" fill="none" />
+            </g>
+          ))}
+          <path d="M 420 200 L 700 200" stroke="hsl(var(--border))" strokeWidth="1" opacity=".8" />
+
+          {/* proies strictement concentrées au-dessus de la haie */}
           {[...Array(nbPrey)].map((_, i) => {
-            const x = 50 + i * (560 / nbPrey) + (i % 3) * 7;
+            const x = 36 + i * (350 / Math.max(1, nbPrey - 1)) + (i % 3) * 3;
             const y = 146 + (i % 4) * 5;
             return (
               <circle
@@ -133,6 +142,16 @@ export const RegularNightDemo: React.FC = () => {
               />
             );
           })}
+          {activite > 0.55 && (
+            <circle
+              className="cad-anim"
+              cx="510"
+              cy="164"
+              r="2.6"
+              fill="hsl(var(--accent))"
+              style={{ ['--cad-dx' as string]: '-18px', ['--cad-dy' as string]: '-4px', animation: `cad-catch ${preyCycle}s 1.2s infinite` }}
+            />
+          )}
 
           {/* chauves-souris : vol rasant, allers-retours */}
           {[...Array(nbBats)].map((_, i) => (
@@ -141,9 +160,10 @@ export const RegularNightDemo: React.FC = () => {
               className="cad-anim"
               style={
                 {
-                  offsetPath: `path('${PATH}')`,
+                  offsetPath: `path('${BAT_PATHS[i] ?? BAT_PATHS[0]}')`,
                   offsetRotate: '0deg',
-                  animation: `cad-bat ${speed}s ${-i * (speed / Math.max(1, nbBats))}s ease-in-out infinite alternate`,
+                  transformOrigin: '0px 0px',
+                  animation: `cad-bat-turn ${speed}s ${-(i + 0.5) * (speed / Math.max(1, nbBats))}s ease-in-out infinite`,
                 } as React.CSSProperties
               }
             >
@@ -164,12 +184,12 @@ export const RegularNightDemo: React.FC = () => {
           ))}
 
           {/* détecteur en lisière de haie */}
-          <Detecteur x={318} y={178} micDir={-1} label="Détecteur d’ultrasons — enregistreur passif, il écoute les cris des chauves-souris" />
+          <Detecteur x={365} y={178} micDir={-1} label="Détecteur d’ultrasons — enregistreur passif, il écoute les cris des chauves-souris" />
           {/* détecteur témoin en plein champ */}
-          <Detecteur x={636} y={196} micDir={-1} label="Détecteur plein champ (témoin)" />
+          <Detecteur x={548} y={194} micDir={0} label="Détecteur plein champ (témoin)" />
 
-          {/* station météo WEENAT au premier plan */}
-          <g transform="translate(120 214)">
+          {/* station météo WEENAT au premier plan, hors de la haie */}
+          <g transform="translate(648 220)">
             <title>Station météo WEENAT — température, vent, pluie</title>
             <line x1="0" y1="0" x2="0" y2="-52" stroke="hsl(var(--foreground))" strokeWidth="2" opacity=".85" />
             <g className="cad-anim" style={{ transformOrigin: '0px -52px', animation: 'cad-spin 2.4s linear infinite' }}>
