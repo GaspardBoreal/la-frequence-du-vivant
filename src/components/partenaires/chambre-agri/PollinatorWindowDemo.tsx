@@ -200,6 +200,7 @@ export const PollinatorWindowDemo: React.FC = () => {
 
   return (
     <div ref={ref} className={shown ? 'cad-on' : ''}>
+      <div onClick={onCarteClick} className="cursor-pointer">
       <DemoFrame
         kicker="Pollinisateurs et invasives"
         titre="La fenêtre de butinage"
@@ -208,6 +209,13 @@ export const PollinatorWindowDemo: React.FC = () => {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <span><span className="font-serif text-2xl text-primary">{h} h</span> <span className="text-muted-foreground">· {weather.temperature} °C · vent {weather.wind} km/h · {footerStatus}</span></span>
             <Legende />
+            <button
+              type="button"
+              onClick={() => setFicheOpen(true)}
+              className="text-sm text-primary underline underline-offset-4 decoration-primary/50 hover:decoration-primary focus:outline-none focus:ring-2 focus:ring-ring rounded-sm"
+            >
+              En savoir plus
+            </button>
           </div>
           <p className="text-xs text-muted-foreground">Toute intervention (fauche, broyage) est à programmer hors de la fenêtre de butinage.</p>
         </div>}
