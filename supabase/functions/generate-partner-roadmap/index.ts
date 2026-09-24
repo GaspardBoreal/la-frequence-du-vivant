@@ -3,6 +3,7 @@
 // un seul appel IA (+1 tentative), sortie JSON validée par zod, repli statique sinon.
 // Réponse en NDJSON : une ligne par étape réellement franchie, puis le résultat.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { z } from 'npm:zod@^3.25.76';
 
 const SYSTEM_PROMPT = `Tu es l'IA de La Fréquence du Vivant (LFDV), plateforme d'observation et d'accompagnement de la biodiversité dans les exploitations, vignobles, jardins et territoires. Tu rédiges un plan d'action pour une structure qui vient de décrire son projet. Ton lecteur est un décideur professionnel (directeur de chambre d'agriculture, élu, responsable de coopérative). Il juge en 30 secondes si tu as compris son projet et si ton plan est réaliste.
@@ -141,6 +142,9 @@ const InputSchema = z.object({
   productions: z.array(z.string().max(120)).max(10).default([]),
   demarrage: z.string().max(7).default(''),
   precisions: z.array(z.object({ question: z.string().max(500), reponse: z.string().max(1000) })).max(6).default([]),
+  sourcePage: z.string().max(300).default(''),
+  partnerSlug: z.string().max(120).default(''),
+  sessionKey: z.string().max(80).default(''),
 });
 
 function calculs(input: z.infer<typeof InputSchema>) {
