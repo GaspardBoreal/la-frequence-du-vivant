@@ -1,6 +1,7 @@
 import React from 'react';
 import { useRevealOnScroll } from '@/hooks/useRevealOnScroll';
 import { DemoFrame, Legende } from './DemoFrame';
+import { PollinatorWindowFiche } from './PollinatorWindowFiche';
 
 type WindowState = 'fermee' | 'faible' | 'ouverte';
 type PollinatorKind = 'abeille' | 'bourdon' | 'syrphe' | 'papillon';
@@ -124,7 +125,7 @@ const Pollinator: React.FC<{ kind: PollinatorKind; index: number }> = ({ kind, i
 
 const InvasivePlant: React.FC<(typeof INVASIVES)[number]> = ({ x, y, width, height, label, tooltip, kind }) => {
   const labelWidth = Math.min(width - 8, Math.max(76, label.length * 4.6 + 16));
-  return <g>
+  return <g data-no-fiche>
     <title>{tooltip}</title>
     <rect x={x - width / 2} y={y - height / 2} width={width} height={height} rx="16" fill="none" stroke="hsl(var(--warning))" strokeWidth="2" strokeDasharray="5 4" />
     {kind === 'renouee' && <g>
@@ -165,6 +166,13 @@ export const PollinatorWindowDemo: React.FC = () => {
   const { ref, shown } = useRevealOnScroll<HTMLDivElement>();
   const [h, setH] = React.useState(11);
   const [autoPlay, setAutoPlay] = React.useState(true);
+  const [ficheOpen, setFicheOpen] = React.useState(false);
+
+  /** Un clic n'importe où sur la carte ouvre la fiche, sauf sur les contrôles interactifs (boutons horaires, plantes, tooltips). */
+  const onCarteClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('input, button, a, label, [role="button"], [role="slider"], [data-no-fiche]')) return;
+    setFicheOpen(true);
+  };
 
   React.useEffect(() => {
     if (!shown || !autoPlay || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
@@ -192,6 +200,7 @@ export const PollinatorWindowDemo: React.FC = () => {
 
   return (
     <div ref={ref} className={shown ? 'cad-on' : ''}>
+      <div onClick={onCarteClick} className="cursor-pointer">
       <DemoFrame
         kicker="Pollinisateurs et invasives"
         titre="La fenêtre de butinage"
@@ -200,6 +209,13 @@ export const PollinatorWindowDemo: React.FC = () => {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <span><span className="font-serif text-2xl text-primary">{h} h</span> <span className="text-muted-foreground">· {weather.temperature} °C · vent {weather.wind} km/h · {footerStatus}</span></span>
             <Legende />
+            <button
+              type="button"
+              onClick={() => setFicheOpen(true)}
+              className="text-sm text-primary underline underline-offset-4 decoration-primary/50 hover:decoration-primary focus:outline-none focus:ring-2 focus:ring-ring rounded-sm"
+            >
+              En savoir plus
+            </button>
           </div>
           <p className="text-xs text-muted-foreground">Toute intervention (fauche, broyage) est à programmer hors de la fenêtre de butinage.</p>
         </div>}
@@ -245,6 +261,8 @@ export const PollinatorWindowDemo: React.FC = () => {
           </g>
         </svg>
       </DemoFrame>
+      </div>
+      <PollinatorWindowFiche open={ficheOpen} onOpenChange={setFicheOpen} />
     </div>
   );
 };
