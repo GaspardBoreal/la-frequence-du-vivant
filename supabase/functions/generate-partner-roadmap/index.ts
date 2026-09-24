@@ -287,6 +287,74 @@ async function callModel(messages: { role: string; content: string }[]) {
   return cleaned;
 }
 
+// Archivage de la simulation (question + réponse) pour l'administration.
+// Jamais bloquant : une erreur d'écriture ne doit pas casser la génération.
+async function archive(
+  input: z.infer<typeof InputSchema>,
+  c: Calc,
+  plan: unknown | null,
+  status: 'done' | 'fallback',
+  startedAt: number,
+  errorMessage?: string,
+) {
+  try {
+    const url = Deno.env.get('SUPABASE_URL');
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!url || !key) return;
+    const admin = createClient(url, key, { auth: { persistSession: false } });
+    const row = {
+      source_page: input.sourcePage,
+      partner_slug: input.partnerSlug,
+      nom: input.nom || null,
+      type_structure: input.typeStructure || null,
+      territoire: input.territoire || null,
+      productions: input.productions.join(', ') || null,
+      demarrage: input.demarrage || null,
+      projet: input.projet || null,
+      objectifs: input.objectifs.join(' | ') || null,
+      livrables: input.livrables.join(' | ') || null,
+      difficulte: input.difficulte || null,
+      modules: input.objectifs,
+      form_payload: {
+        nom: input.nom,
+        typeStructure: input.typeStructure,
+        territoire: input.territoire,
+        productions: input.productions,
+        demarrage: input.demarrage,
+        projet: input.projet,
+        objectifs: input.objectifs,
+        livrables: input.livrables,
+        sites: input.sites,
+        difficulte: input.difficulte,
+      },
+      dimensionnement: {
+        sites: c.sites,
+        sentinelles: c.sentinelles,
+        reseau: c.reseau,
+        jours: c.jours,
+        formations: c.formations,
+        marches: c.marches,
+        materiel: c.materiel,
+        dateDebutLabel: c.dateDebutLabel,
+        dateFinLabel: c.dateFinLabel,
+        trimestres: c.trimestres.map((t) => t.periode),
+      },
+      plan: plan ?? null,
+      precisions: input.precisions,
+      iterations: input.precisions.length + 1,
+      ai_model: Deno.env.get('AI_MODEL') || 'google/gemini-2.5-flash',
+      duration_ms: Date.now() - startedAt,
+      status,
+      error_message: errorMessage ? errorMessage.slice(0, 800) : null,
+      session_key: input.sessionKey || null,
+    };
+    const { error } = await admin.from('partner_ai_simulations').insert(row);
+    if (error) console.error('[generate-partner-roadmap] archivage', error.message);
+  } catch (e) {
+    console.error('[generate-partner-roadmap] archivage', e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: corsHeaders });
