@@ -22,6 +22,9 @@ export const DEMO_CSS = `
 @keyframes cad-bee{0%{offset-distance:0%}100%{offset-distance:100%}}
 @keyframes cad-alert{0%,100%{opacity:.35}50%{opacity:.95}}
 @keyframes cad-flap{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.4)}}
+@keyframes cad-catch{0%,38%{opacity:1;transform:translate(0,0)}48%,62%{opacity:0;transform:translate(0,0)}63%{opacity:0;transform:translate(var(--cad-dx,20px),var(--cad-dy,-6px))}76%,100%{opacity:1;transform:translate(var(--cad-dx,20px),var(--cad-dy,-6px))}}
+@keyframes cad-echo{0%{opacity:.85;transform:scale(.35)}100%{opacity:0;transform:scale(1.5)}}
+@keyframes cad-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.cad-anim{animation:none!important}}
 @media print{.cad-anim{animation:none!important}.cad-hide-print{display:none!important}}
 `;
