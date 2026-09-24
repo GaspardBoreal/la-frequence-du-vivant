@@ -1,6 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
-import { X } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 /**
  * Fiche explicative « La haie qui chasse la nuit ».
