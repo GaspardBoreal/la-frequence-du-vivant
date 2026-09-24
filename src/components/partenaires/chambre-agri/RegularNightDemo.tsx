@@ -1,6 +1,7 @@
 import React from 'react';
 import { useRevealOnScroll, useCountUp } from '@/hooks/useRevealOnScroll';
 import { DemoFrame, Legende } from './DemoFrame';
+import { RegularNightFiche } from './RegularNightFiche';
 
 /** Vol rasant le long de la cime de la haie ; une trajectoire s'aventure brièvement au champ. */
 const BAT_PATHS = [
