@@ -148,7 +148,7 @@ export default function PartenaireChambreAgriPdl() {
 
         <section>
           <style>{DEMO_CSS}</style>
-          <h2 className="font-serif text-2xl mb-1">Voir la plateforme à l’œuvre</h2>
+          <h2 className="font-serif text-2xl mb-1">Animation que l’on produire pour vous</h2>
           <p className="text-muted-foreground mb-5">Trois chantiers, trois démonstrations vivantes.</p>
           <div className="space-y-6">
             <RegularNightDemo />
