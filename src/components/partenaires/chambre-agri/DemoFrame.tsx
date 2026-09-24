@@ -16,6 +16,7 @@ export const DEMO_CSS = `
 .cad-anim{animation-play-state:paused}
 .cad-on .cad-anim{animation-play-state:running}
 @keyframes cad-bat{0%{offset-distance:0%}100%{offset-distance:100%}}
+@keyframes cad-bat-turn{0%{offset-distance:0%;transform:scaleX(1)}48%{offset-distance:100%;transform:scaleX(1)}50%{offset-distance:100%;transform:scaleX(-1)}98%{offset-distance:0%;transform:scaleX(-1)}100%{offset-distance:0%;transform:scaleX(1)}}
 @keyframes cad-ring{0%{r:2;opacity:.8}100%{r:34;opacity:0}}
 @keyframes cad-prey{0%,40%{opacity:1}55%,100%{opacity:0}}
 @keyframes cad-rain{0%{transform:translateY(-20px);opacity:0}20%{opacity:.9}100%{transform:translateY(90px);opacity:0}}
