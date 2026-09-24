@@ -210,7 +210,7 @@ export default function PartenaireChambreAgriPdl() {
           <h2 className="font-serif text-2xl mb-1">Décrivez votre projet</h2>
           <p className="text-sm text-muted-foreground mb-5 print:hidden">Quelques questions, puis l’IA LFDV rédige un plan d’action daté et dimensionné.</p>
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="space-y-4 print:hidden">
+            <div className="md:col-span-2 grid md:grid-cols-2 gap-x-8 gap-y-4 items-start print:hidden">
               <input ref={nomRef} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Structure / entreprise" value={nom} onChange={(e) => setNom(e.target.value)} />
               <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" rows={3} placeholder="Votre projet en deux phrases" value={projet} onChange={(e) => setProjet(e.target.value)} />
               <div>
@@ -235,8 +235,7 @@ export default function PartenaireChambreAgriPdl() {
                 <input type="range" min={1} max={100} value={sites} onChange={(e) => setSites(+e.target.value)} className="w-full mt-2" />
               </label>
               <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" rows={2} placeholder="Principale difficulté à relever" value={difficulte} onChange={(e) => setDifficulte(e.target.value)} />
-              <div className="border-t border-border pt-4 space-y-4">
-                <p className="text-xs text-muted-foreground">Facultatif : précisez pour un plan plus juste.</p>
+              <div className="md:col-span-2 grid md:grid-cols-2 gap-x-8 gap-y-4 border-t border-border pt-4"><p className="md:col-span-2 text-xs text-muted-foreground -mb-2">Facultatif : précisez pour un plan plus juste.</p>
                 <select ref={typeRef} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={typeStructure} onChange={(e) => setTypeStructure(e.target.value)} aria-label="Type de structure">
                   <option value="">Type de structure</option>
                   {TYPES_STRUCTURE.map((t) => <option key={t} value={t}>{t}</option>)}
