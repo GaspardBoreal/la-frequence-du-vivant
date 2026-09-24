@@ -1,6 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
-import { X } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 /**
  * Fiche explicative « La haie qui chasse la nuit ».
@@ -13,11 +12,6 @@ export const RegularNightFiche: React.FC<{ open: boolean; onOpenChange: (open: b
       className="left-0 top-0 h-[100dvh] max-h-full w-full translate-x-0 translate-y-0 overflow-y-auto rounded-none border-border bg-card p-0 text-card-foreground sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[85vh] sm:max-w-[640px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
       aria-describedby={undefined}
     >
-      <DialogClose className="absolute right-4 top-4 z-10 rounded-sm p-1 text-muted-foreground opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-card">
-        <X className="h-5 w-5" />
-        <span className="sr-only">Fermer</span>
-      </DialogClose>
-
       <div className="p-6 pb-2 pr-14">
         <p className="text-[11px] uppercase tracking-[0.2em] text-primary">Chantier Régulier</p>
         <h2 className="font-serif text-2xl mt-1">La haie qui chasse la nuit</h2>
