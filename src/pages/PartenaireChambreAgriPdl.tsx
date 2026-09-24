@@ -257,7 +257,7 @@ export default function PartenaireChambreAgriPdl() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-primary/40 bg-card p-5 md:col-span-1 print:col-span-2">
+            <div className="rounded-lg border border-primary/40 bg-card p-5 md:col-span-2 print:col-span-2">
               <div className="flex items-center gap-2 font-medium mb-4"><Sparkles className="w-4 h-4 text-primary" />Plan d’action LFDV{nom && ` pour ${nom}`}</div>
               <PlanActionLfdv
                 input={{ nom, projet, objectifs: objectifs.map((o) => OBJECTIFS.find((x) => x.id === o)?.label ?? o), livrables, sites, difficulte, typeStructure, territoire, productions, demarrage }}
