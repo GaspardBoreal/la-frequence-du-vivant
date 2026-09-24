@@ -86,6 +86,10 @@ export const PlanActionLfdv: React.FC<{
   const [question, setQuestion] = useState<string | null>(null);
   const [reponse, setReponse] = useState('');
   const [fiche, setFiche] = useState<string | null>(null);
+  // Clé stable pour regrouper les itérations « Pour affiner » d'une même visite.
+  const sessionKey = React.useRef(
+    (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : String(Date.now())),
+  ).current;
 
   const generer = async (extra = precisions) => {
     setStatus('loading');
@@ -98,7 +102,13 @@ export const PlanActionLfdv: React.FC<{
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ ...input, precisions: extra }),
+        body: JSON.stringify({
+          ...input,
+          precisions: extra,
+          sourcePage: typeof window !== 'undefined' ? window.location.pathname : '',
+          partnerSlug: typeof window !== 'undefined' ? window.location.pathname.split('/').filter(Boolean).pop() ?? '' : '',
+          sessionKey,
+        }),
       });
       if (!resp.ok || !resp.body) throw new Error(String(resp.status));
       const reader = resp.body.getReader();
