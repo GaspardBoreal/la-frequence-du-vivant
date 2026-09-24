@@ -8,7 +8,7 @@ const PATH =
 
 /** Silhouette de chauve-souris : corps, oreilles, membranes alaires à doigts. */
 const Bat: React.FC<{ scale?: number }> = ({ scale = 1 }) => (
-  <g transform={`scale(${scale})`} fill="hsl(var(--background))">
+  <g transform={`scale(${scale})`} fill="hsl(var(--foreground))">
     {/* oreilles */}
     <path d="M -2.6 -6.4 L -3.8 -10.5 L -0.9 -7.6 Z" />
     <path d="M 2.6 -6.4 L 3.8 -10.5 L 0.9 -7.6 Z" />
@@ -154,7 +154,7 @@ export const RegularNightDemo: React.FC = () => {
                   className="cad-anim"
                   d="M 26 -6 Q 33 0 26 6"
                   fill="none"
-                  stroke="hsl(var(--background))"
+                  stroke="hsl(var(--foreground))"
                   strokeWidth="1.2"
                   style={{ transformOrigin: '26px 0px', animation: `cad-echo 1.4s ${k * 0.45}s infinite` }}
                 />
