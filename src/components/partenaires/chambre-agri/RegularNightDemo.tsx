@@ -221,6 +221,8 @@ export const RegularNightDemo: React.FC = () => {
           </g>
         </svg>
       </DemoFrame>
+      </div>
+      <RegularNightFiche open={ficheOpen} onOpenChange={setFicheOpen} />
     </div>
   );
 };
