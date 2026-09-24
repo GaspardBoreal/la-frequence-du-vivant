@@ -1,6 +1,7 @@
 import React from 'react';
 import { useRevealOnScroll, useCountUp } from '@/hooks/useRevealOnScroll';
 import { DemoFrame, Legende } from './DemoFrame';
+import { RegularNightFiche } from './RegularNightFiche';
 
 /** Vol rasant le long de la cime de la haie ; une trajectoire s'aventure brièvement au champ. */
 const BAT_PATHS = [
@@ -44,6 +45,13 @@ const Detecteur: React.FC<{ x: number; y: number; micDir: 1 | -1 | 0; label: str
 export const RegularNightDemo: React.FC = () => {
   const { ref, shown } = useRevealOnScroll<HTMLDivElement>();
   const [temp, setTemp] = React.useState(16);
+  const [ficheOpen, setFicheOpen] = React.useState(false);
+
+  /** Un clic n'importe où sur la carte ouvre la fiche, sauf sur les contrôles interactifs. */
+  const onCarteClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('input, button, a, label, [role="slider"], [data-no-fiche]')) return;
+    setFicheOpen(true);
+  };
 
   const contactsHaie = Math.round(600 / (1 + Math.exp(-(temp - 15) / 2.5)));
   const contactsChamp = Math.round(contactsHaie * 0.12);
@@ -63,6 +71,7 @@ export const RegularNightDemo: React.FC = () => {
 
   return (
     <div ref={ref} className={shown ? 'cad-on' : ''}>
+      <div onClick={onCarteClick} className="cursor-pointer">
       <DemoFrame
         kicker="Chantier Régulier"
         titre="La haie qui chasse la nuit"
@@ -99,6 +108,13 @@ export const RegularNightDemo: React.FC = () => {
               />
             </label>
             <Legende />
+            <button
+              type="button"
+              onClick={() => setFicheOpen(true)}
+              className="text-sm text-primary underline underline-offset-4 decoration-primary/50 hover:decoration-primary focus:outline-none focus:ring-2 focus:ring-ring rounded-sm"
+            >
+              En savoir plus
+            </button>
           </div>
         }
       >
@@ -205,6 +221,8 @@ export const RegularNightDemo: React.FC = () => {
           </g>
         </svg>
       </DemoFrame>
+      </div>
+      <RegularNightFiche open={ficheOpen} onOpenChange={setFicheOpen} />
     </div>
   );
 };
