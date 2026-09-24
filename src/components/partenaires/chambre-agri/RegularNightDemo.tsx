@@ -71,6 +71,7 @@ export const RegularNightDemo: React.FC = () => {
 
   return (
     <div ref={ref} className={shown ? 'cad-on' : ''}>
+      <div onClick={onCarteClick} className="cursor-pointer">
       <DemoFrame
         kicker="Chantier Régulier"
         titre="La haie qui chasse la nuit"
