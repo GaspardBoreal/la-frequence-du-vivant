@@ -261,6 +261,8 @@ export const PollinatorWindowDemo: React.FC = () => {
           </g>
         </svg>
       </DemoFrame>
+      </div>
+      <PollinatorWindowFiche open={ficheOpen} onOpenChange={setFicheOpen} />
     </div>
   );
 };
