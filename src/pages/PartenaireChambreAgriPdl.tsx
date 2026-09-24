@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Printer, Radio, Leaf, Grape, Footprints, Database, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Printer, Radio, Leaf, Grape, Footprints, Database, Sparkles, CheckCircle2, ChartNoAxesCombined } from 'lucide-react';
 
 type Vertical = { id: string; titre: string; icon: React.ElementType; resume: string; fonctions: string[] };
 
@@ -65,6 +65,12 @@ const VERTICALS: Vertical[] = [
   },
 ];
 
+const OBSERVATOIRE_USAGE = {
+  titre: 'Observatoire des pratiques et des usages',
+  icon: ChartNoAxesCombined,
+  resume: 'Analyse agrégée et segmentable des profils, parcours, questions et outils mobilisés pour révéler les besoins de publics très précis : territoire, type et surface de propriété, pratiques du sol et de l’eau, choix végétaux, usages de l’Assistant et mécanismes d’engagement.',
+};
+
 const OBJECTIFS = [
   { id: 'pollinisateurs', label: 'Favoriser les pollinisateurs / auxiliaires', modules: ['marches', 'jardin', 'data'] },
   { id: 'sol', label: 'Santé des sols et gestion de l’eau', modules: ['iot', 'jardin'] },
@@ -126,6 +132,13 @@ export default function PartenaireChambreAgriPdl() {
                 <p className="text-sm text-muted-foreground mt-1">{v.resume}</p>
               </div>
             ))}
+            <div className="rounded-lg border border-border bg-card p-4 break-inside-avoid">
+              <div className="flex items-center gap-2 font-medium">
+                <OBSERVATOIRE_USAGE.icon className="w-4 h-4 text-primary" />
+                {OBSERVATOIRE_USAGE.titre}
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">{OBSERVATOIRE_USAGE.resume}</p>
+            </div>
           </div>
         </section>
 
