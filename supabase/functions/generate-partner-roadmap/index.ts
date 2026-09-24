@@ -373,9 +373,12 @@ Deno.serve(async (req) => {
   const stream = new ReadableStream({
     async start(ctrl) {
       const send = (o: unknown) => ctrl.enqueue(enc.encode(JSON.stringify(o) + '\n'));
+      const startedAt = Date.now();
+      let calc: Calc | null = null;
       try {
         send({ type: 'step', step: 'lecture' });
         const c = calculs(input);
+        calc = c;
         send({ type: 'step', step: 'dimensionnement', calc: { sentinelles: c.sentinelles, reseau: c.reseau, jours: c.jours } });
         const user = userMessage(input, c);
         send({ type: 'step', step: 'calendrier', calc: { trimestres: c.trimestres.map((t) => t.periode) } });
