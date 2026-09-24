@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 export interface DemoFicheSection {
   titre: string;
@@ -27,7 +27,9 @@ export const DemoFiche: React.FC<{
     >
       <div className="p-6 pb-2 pr-14">
         <p className="text-[11px] uppercase tracking-[0.2em] text-primary">{kicker}</p>
-        <h2 className="font-serif text-2xl mt-1">{titre}</h2>
+        <DialogTitle asChild>
+          <h2 className="font-serif text-2xl mt-1">{titre}</h2>
+        </DialogTitle>
         <p className="text-sm text-muted-foreground mt-2">{sousTitre}</p>
       </div>
 
