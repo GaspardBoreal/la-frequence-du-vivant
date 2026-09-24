@@ -296,13 +296,13 @@ async function archive(
   status: 'done' | 'fallback',
   startedAt: number,
   errorMessage?: string,
-) {
+): Promise<boolean> {
   try {
     const url = Deno.env.get('SUPABASE_URL');
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     if (!url || !key) {
       console.error('[generate-partner-roadmap] archivage impossible : SUPABASE_URL/SERVICE_ROLE_KEY absents');
-      return;
+      return false;
     }
     const admin = createClient(url, key, { auth: { persistSession: false } });
     const row = {
@@ -352,9 +352,12 @@ async function archive(
       session_key: input.sessionKey || null,
     };
     const { error } = await admin.from('partner_ai_simulations').insert(row);
-    if (error) console.error('[generate-partner-roadmap] archivage', error.message);
+    if (error) { console.error('[generate-partner-roadmap] archivage', error.message); return false; }
+    console.log('[generate-partner-roadmap] archivage OK', input.sessionKey);
+    return true;
   } catch (e) {
     console.error('[generate-partner-roadmap] archivage', e);
+    return false;
   }
 }
 
@@ -400,8 +403,8 @@ Deno.serve(async (req) => {
             const issue = checkPlan(plan, input, c);
             if (issue) throw new Error(issue);
             const finalPlan = enforce(plan, c);
-            await archive(input, c, finalPlan, 'done', startedAt);
-            send({ type: 'result', plan: finalPlan, calc: { mois: c.mois, trimestres: c.trimestres.map((t) => t.periode) } });
+            const archived = await archive(input, c, finalPlan, 'done', startedAt);
+            send({ type: 'result', archived, plan: finalPlan, calc: { mois: c.mois, trimestres: c.trimestres.map((t) => t.periode) } });
             ctrl.close();
             return;
           } catch (e) {
