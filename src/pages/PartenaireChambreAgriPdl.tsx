@@ -147,17 +147,6 @@ export default function PartenaireChambreAgriPdl() {
         </section>
 
         <section>
-          <style>{DEMO_CSS}</style>
-          <h2 className="font-serif text-2xl mb-1">Animation que l’on produire pour vous</h2>
-          <p className="text-muted-foreground mb-5">Trois chantiers, trois démonstrations vivantes.</p>
-          <div className="space-y-6">
-            <RegularNightDemo />
-            <SoilSpongeDemo />
-            <PollinatorWindowDemo />
-          </div>
-        </section>
-
-        <section>
           <h2 className="font-serif text-2xl mb-4">En détail, par vertical</h2>
           <div className="space-y-6">
             {VERTICALS.map((v) => (
@@ -172,6 +161,18 @@ export default function PartenaireChambreAgriPdl() {
             ))}
           </div>
         </section>
+
+        <section>
+          <style>{DEMO_CSS}</style>
+          <h2 className="font-serif text-2xl mb-1">Animation que l’on produire pour vous</h2>
+          <p className="text-muted-foreground mb-5">Trois chantiers, trois démonstrations vivantes.</p>
+          <div className="space-y-6">
+            <RegularNightDemo />
+            <SoilSpongeDemo />
+            <PollinatorWindowDemo />
+          </div>
+        </section>
+
 
         <section className="break-before-page">
           <h2 className="font-serif text-2xl mb-1">Décrivez votre projet</h2>
