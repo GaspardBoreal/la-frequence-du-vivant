@@ -15,3 +15,4 @@
 - [x] Affiner les trajectoires, silhouettes et repères de La fenêtre de butinage
 
 - [x] Plan d’action IA LFDV (edge generate-partner-roadmap, calculs déterministes, frise 12 mois, repli statique) — cas CAPDL validé
+- [x] Archiver chaque simulation IA partenaire (projet, plan, questions-réponses) et l'exporter depuis Admin > CRM > IA
