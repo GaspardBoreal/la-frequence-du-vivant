@@ -107,6 +107,13 @@ export const RegularNightDemo: React.FC = () => {
               />
             </label>
             <Legende />
+            <button
+              type="button"
+              onClick={() => setFicheOpen(true)}
+              className="text-sm text-primary underline underline-offset-4 decoration-primary/50 hover:decoration-primary focus:outline-none focus:ring-2 focus:ring-ring rounded-sm"
+            >
+              En savoir plus
+            </button>
           </div>
         }
       >
