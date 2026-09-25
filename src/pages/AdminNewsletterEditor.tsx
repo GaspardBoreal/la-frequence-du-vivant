@@ -306,7 +306,12 @@ const AdminNewsletterEditor: React.FC = () => {
             toast.error("Enregistrement impossible : le test n'a pas été envoyé.");
             return;
           }
-          const res = await send.mutateAsync({ campaignId: draft.id, test: true, testEmails: emails });
+          let res;
+          try {
+            res = await send.mutateAsync({ campaignId: draft.id, test: true, testEmails: emails });
+          } catch {
+            return; // message déjà affiché par le hook
+          }
           setTestResult(res);
           setLastTestEmails(emails);
           if (res.sent > 0) {
@@ -342,8 +347,10 @@ const AdminNewsletterEditor: React.FC = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction
+              disabled={send.isPending || dejaEnvoyee}
               onClick={async (e) => {
                 e.preventDefault();
+                if (send.isPending || dejaEnvoyee) return;
                 if (!(await save())) {
                   toast.error("Enregistrement impossible : la lettre n'a pas été envoyée.");
                   return;
@@ -351,9 +358,15 @@ const AdminNewsletterEditor: React.FC = () => {
                 try {
                   const res = await send.mutateAsync({ campaignId: draft.id });
                   toast.success(`Lettre envoyée à ${res.sent} destinataire${res.sent > 1 ? 's' : ''}`);
+                  // L'état local ne se resynchronise pas seul : on le marque envoyé
+                  // pour désactiver « Envoyer » et éviter un second envoi refusé.
+                  setDraft((d) => (d ? { ...d, statut: 'envoyee' } : d));
                   setSendOpen(false);
-                } catch {
-                  /* message déjà affiché */
+                } catch (err) {
+                  if (/déjà été envoyée/i.test(String((err as Error)?.message))) {
+                    setDraft((d) => (d ? { ...d, statut: 'envoyee' } : d));
+                    setSendOpen(false);
+                  }
                 }
               }}
             >
