@@ -150,7 +150,8 @@ export function useNewsletterMutations() {
           blocks: c.blocks,
           presentation: c.presentation ?? 'journal',
           tracking_enabled: c.tracking_enabled ?? true,
-          audience: c.audience,
+          // Hors liste de diffusion : la copie repart d'une sélection vide.
+          audience: { mode: 'selection', profileIds: [] },
           created_by: auth.user?.id ?? null,
         })
         .select()
@@ -160,7 +161,7 @@ export function useNewsletterMutations() {
     },
     onSuccess: () => {
       invalidate();
-      toast.success('Campagne dupliquée');
+      toast.success('Lettre dupliquée (destinataires à choisir)');
     },
     onError: (e) => toast.error(humanError(e)),
   });

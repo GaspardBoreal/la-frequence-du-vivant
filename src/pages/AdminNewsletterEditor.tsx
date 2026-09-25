@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, BarChart3, Eye, Loader2, Mail, RefreshCw, Save, Send, TestTube2, Users } from 'lucide-react';
+import { ArrowLeft, BarChart3, Copy, Eye, Loader2, Mail, RefreshCw, Save, Send, TestTube2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -57,7 +57,8 @@ const DEFAULT_FROM_EMAIL = 'lettre@mail.la-frequence-du-vivant.com';
 const AdminNewsletterEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { data: campaign, isLoading } = useNewsletterCampaign(id);
-  const { update } = useNewsletterMutations();
+  const { update, duplicate } = useNewsletterMutations();
+  const navigate = useNavigate();
   const send = useSendNewsletter();
 
   const [draft, setDraft] = React.useState<NewsletterCampaign | null>(null);
@@ -67,7 +68,7 @@ const AdminNewsletterEditor: React.FC = () => {
   const [lastTestEmails, setLastTestEmails] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    if (campaign && !draft) setDraft(campaign);
+    if (campaign && (!draft || draft.id !== campaign.id)) setDraft(campaign);
   }, [campaign, draft]);
 
   const audienceQuery = useNewsletterAudience(
@@ -134,6 +135,21 @@ const AdminNewsletterEditor: React.FC = () => {
             <Button variant="outline" onClick={save} disabled={update.isPending}>
               {update.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
               Enregistrer
+            </Button>
+            <Button
+              variant="outline"
+              disabled={duplicate.isPending}
+              onClick={async () => {
+                if (!dejaEnvoyee && !(await save())) return;
+                duplicate.mutate(draft, {
+                  onSuccess: (n) => {
+                    setDraft(null);
+                    navigate(`/admin/outils/newsletter/${n.id}`);
+                  },
+                });
+              }}
+            >
+              <Copy className="h-4 w-4 mr-2" /> Dupliquer
             </Button>
             <Button variant="outline" onClick={() => setTestOpen(true)}>
               <TestTube2 className="mr-1.5 h-4 w-4" /> Tester
