@@ -68,7 +68,7 @@ const AdminNewsletterEditor: React.FC = () => {
   const [lastTestEmails, setLastTestEmails] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    if (campaign && !draft) setDraft(campaign);
+    if (campaign && (!draft || draft.id !== campaign.id)) setDraft(campaign);
   }, [campaign, draft]);
 
   const audienceQuery = useNewsletterAudience(
