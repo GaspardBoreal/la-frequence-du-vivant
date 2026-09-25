@@ -111,7 +111,7 @@ const AdminNewsletter: React.FC = () => {
                         <p className="truncate text-xs text-muted-foreground">{c.objet || 'Objet à écrire'}</p>
                       </Link>
                       <div className="flex shrink-0">
-                        <Button size="icon" variant="ghost" className="h-9 w-9" aria-label="Dupliquer" onClick={() => duplicate.mutate(c)}>
+                        <Button size="icon" variant="ghost" className="h-9 w-9" aria-label="Dupliquer" disabled={duplicate.isPending} onClick={() => duplicate.mutate(c, { onSuccess: (n) => navigate(`/admin/outils/newsletter/${n.id}`) })}>
                           <Copy className="h-4 w-4" />
                         </Button>
                         <Button size="icon" variant="ghost" className="h-9 w-9 text-destructive" aria-label="Supprimer" onClick={() => setToDelete(c)}>
