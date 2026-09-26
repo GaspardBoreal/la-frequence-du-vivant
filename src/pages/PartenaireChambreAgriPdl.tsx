@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import SEOHead from '@/components/SEOHead';
 import { DEMO_CSS } from '@/components/partenaires/chambre-agri/DemoFrame';
 import { RegularNightDemo } from '@/components/partenaires/chambre-agri/RegularNightDemo';
 import { SoilSpongeDemo } from '@/components/partenaires/chambre-agri/SoilSpongeDemo';
