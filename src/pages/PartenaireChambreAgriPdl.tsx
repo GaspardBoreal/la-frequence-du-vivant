@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import SEOHead from '@/components/SEOHead';
 import { DEMO_CSS } from '@/components/partenaires/chambre-agri/DemoFrame';
 import { RegularNightDemo } from '@/components/partenaires/chambre-agri/RegularNightDemo';
 import { SoilSpongeDemo } from '@/components/partenaires/chambre-agri/SoilSpongeDemo';
@@ -141,14 +142,17 @@ export default function PartenaireChambreAgriPdl() {
     return { modules, semaines, avecIot };
   }, [objectifs, livrables, sites]);
 
-  React.useEffect(() => { document.title = 'LFDV × Chambre d’agriculture Pays de la Loire'; }, []);
-
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SEOHead
+        title="La Fréquence du Vivant × Chambre d'agriculture Pays de la Loire — Dossier partenaire"
+        description="Plateforme en production reliant observation du vivant, mesure physique des sols et du climat (sondes BRAD, stations WEENAT) et patrimoine de données consolidé, au service de projets agricoles et territoriaux : Marches du Vivant, Fréquence Jardin, Fréquence Vignoble, IoT, bioacoustique."
+        canonicalUrl="https://la-frequence-du-vivant.com/partenaires/chambre-agriculture-pays-de-la-loire"
+      />
 
       <header className="border-b border-border">
         <div className="max-w-5xl mx-auto px-6 py-10">
-          <p className="text-xs uppercase tracking-widest text-primary">Dossier partenaire · Confidentiel</p>
+          <p className="text-xs uppercase tracking-widest text-primary">Dossier partenaire</p>
           <h1 className="font-serif text-3xl md:text-4xl mt-2">La Fréquence du Vivant × Chambre d’agriculture Pays de la Loire</h1>
           <p className="mt-3 text-muted-foreground max-w-3xl">
             Une plateforme en production qui relie l’observation du vivant, la mesure physique des sols et du climat,
