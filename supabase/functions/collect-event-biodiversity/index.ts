@@ -46,23 +46,30 @@ Deno.serve(async (req) => {
     const explorationDefaultRadiusM: number | null =
       (explorationRow as any)?.default_radius_m ?? null;
 
-    let explorationMarchesQuery = serviceClient
-      .from('exploration_marches')
-      .select('marche_id, ordre, marches (id, nom_marche, ville, latitude, longitude, radius_m)')
-      .eq('exploration_id', explorationId)
-      .in('publication_status', ['published', 'published_public'])
-      .order('ordre');
+    const buildQuery = (publishedOnly: boolean) => {
+      let q = serviceClient
+        .from('exploration_marches')
+        .select('marche_id, ordre, marches (id, nom_marche, ville, latitude, longitude, radius_m)')
+        .eq('exploration_id', explorationId)
+        .order('ordre');
+      if (publishedOnly) q = q.in('publication_status', ['published', 'published_public']);
+      if (Array.isArray(requestedMarcheIds) && requestedMarcheIds.length > 0) {
+        q = q.in('marche_id', requestedMarcheIds);
+      }
+      return q;
+    };
 
-    if (Array.isArray(requestedMarcheIds) && requestedMarcheIds.length > 0) {
-      explorationMarchesQuery = explorationMarchesQuery.in('marche_id', requestedMarcheIds);
+    let { data: explorationMarches } = await buildQuery(true);
+    // Repli : exploration encore en brouillon → collecter sur toutes ses marches.
+    if (!explorationMarches?.length) {
+      ({ data: explorationMarches } = await buildQuery(false));
     }
 
-    const { data: explorationMarches } = await explorationMarchesQuery;
-
     if (!explorationMarches?.length) {
-      return new Response(JSON.stringify({ error: 'No marches found for this exploration' }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return new Response(JSON.stringify({
+        success: false, marchesProcessed: 0, totalSpecies: 0, errors: 0,
+        message: 'Aucune marche rattachée à cette exploration',
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const marcheIds = explorationMarches.map((em: any) => em.marche_id);
