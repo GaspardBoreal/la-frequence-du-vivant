@@ -198,8 +198,8 @@ export const CortegeVivantOrbit: React.FC<Props> = ({
                 <stop offset="0%" stopColor="#c8a24a" stopOpacity="0.35" />
                 <stop offset="100%" stopColor="#c8a24a" stopOpacity="0" />
               </radialGradient>
-              <clipPath id="cv-dot">
-                <circle cx="0" cy="0" r="1" />
+              <clipPath id="cv-dot" clipPathUnits="objectBoundingBox">
+                <circle cx="0.5" cy="0.5" r="0.5" />
               </clipPath>
             </defs>
             <AnimatePresence>
@@ -251,8 +251,6 @@ export const CortegeVivantOrbit: React.FC<Props> = ({
                         height={size * 2}
                         preserveAspectRatio="xMidYMid slice"
                         clipPath="url(#cv-dot)"
-                        transform={`scale(1)`}
-                        style={{ clipPath: `circle(${size}px at ${size}px ${size}px)` }}
                       />
                     ) : (
                       <circle r={size} fill="rgba(0,0,0,0.45)" />
