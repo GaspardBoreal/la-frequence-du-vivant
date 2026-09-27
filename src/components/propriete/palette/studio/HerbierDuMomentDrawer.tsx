@@ -396,6 +396,38 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
         )}
       </header>
 
+      {/* Recherche par nom d'espèce (contient, insensible aux accents) */}
+      <div className="shrink-0 border-b border-[hsl(var(--ds-line))] px-2 py-1.5">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 opacity-45" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rechercher une espèce…"
+            aria-label="Rechercher une espèce par son nom"
+            className="w-full rounded-full border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/70 py-1 pl-7 pr-6 text-[11px] placeholder:italic placeholder:opacity-50 focus:border-[hsl(var(--ds-forest))]/50 focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ds-forest))]/30"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              aria-label="Effacer la recherche"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 opacity-55 transition-opacity hover:opacity-100"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+        {query.trim() && (
+          <p className="mt-1 px-1 text-[9.5px] italic opacity-55">
+            {searched.length === 0
+              ? 'Aucune correspondance dans l’herbier.'
+              : `${searched.length} espèce${searched.length > 1 ? 's' : ''} sur ${allEntries.length}`}
+          </p>
+        )}
+      </div>
+
       {/* Sous-menus : Flore · Faune · Autres */}
       <nav
         role="tablist"
