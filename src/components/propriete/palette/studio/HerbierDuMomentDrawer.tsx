@@ -47,6 +47,14 @@ const fmtDate = (d: string | null | undefined) => {
   return Number.isNaN(dt.getTime()) ? 'date inconnue' : format(dt, 'd MMM yyyy', { locale: fr });
 };
 
+/** Recherche insensible à la casse et aux accents (même normalisation que le roster). */
+const norm = (s: string | null | undefined) =>
+  (s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
 /** Sous-menus de l'herbier : la Flore d'abord, puis la Faune, puis le reste. */
 type HerbierGroup = 'flore' | 'faune' | 'autres';
 
