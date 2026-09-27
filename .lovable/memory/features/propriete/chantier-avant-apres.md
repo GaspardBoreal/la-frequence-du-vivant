@@ -15,3 +15,5 @@ Le Chantier compare l'état d'un lot d'ouvrages avant et après travaux.
 - **Entrée** : bouton « Le Chantier » dans la barre de l'Atelier du jardin nourricier.
 - **Tri du cortège** : table `propriete_chantier_species_phases` (statut par espèce : conservée / retirée / nouvelle / écartée). Le statut manuel prime sur la date des travaux ; pools avant/après dérivés par `poolsFromStatuses`, brouillon avec aperçu du delta ICG avant validation (`CortegeTriage`).
 - **Table de projection** : `ProjectionGuide` (3 marches + bouton `openScenographe`) remplace la phrase « posez des espèces » ; liseré `PremiersPas` dans le Scénographe tant qu'aucun sujet n'est posé.
+- **Emplacements** : `propriete_chantiers.zone_ids` rattache des emplacements (facultatif) ; périmètre = ouvrages ∪ emplacements. `radius_m` (null = dans le tracé ; presets 5/10/25/50/100/250/500/1000 m) mesuré depuis le bord, remplace strict/lisière/voisinage.
+- **Cortège vivant** : onglet mobile-first (orbites par distance au bord, curseur temporel avant/après, filtres Flore/Faune/Autres, bascule liste, tiroir espèce) — `CortegeVivantOrbit`.

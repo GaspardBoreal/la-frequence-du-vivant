@@ -3,12 +3,15 @@ import { Check, Hammer, Plus, Trash2, CalendarDays, PenLine, Trees, X } from 'lu
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import { TOOL_BY_KEY, type PaysageTool } from '@/lib/paysageTools';
 import type { ProprieteChantier } from '@/hooks/propriete/useProprieteChantiers';
+import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 
 interface Props {
   objets: ProprieteObjet[];
+  /** Emplacements tracés dans l'Atelier, rattachables au chantier. */
+  zones?: ProprieteZone[];
   chantiers: ProprieteChantier[];
   onOpen: (chantier: ProprieteChantier) => void;
-  onCreate: (input: { nom: string; objet_ids: string[]; date_travaux: string | null }) => void;
+  onCreate: (input: { nom: string; objet_ids: string[]; zone_ids: string[]; date_travaux: string | null }) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
   /** Droit d'écriture sur le jardin (propriétaire, prestataire, équipe). */
@@ -22,7 +25,7 @@ interface Props {
   /** Modification d'un chantier enregistré (nom, date, lot). */
   onPatch?: (
     id: string,
-    values: { nom?: string; date_travaux?: string | null; objet_ids?: string[] },
+    values: { nom?: string; date_travaux?: string | null; objet_ids?: string[]; zone_ids?: string[] },
   ) => void | Promise<void>;
 }
 
@@ -45,6 +48,7 @@ const fmtDate = (d?: string | null) =>
  */
 export const ChantierLotPicker: React.FC<Props> = ({
   objets,
+  zones = [],
   chantiers,
   onOpen,
   onCreate,
@@ -57,6 +61,8 @@ export const ChantierLotPicker: React.FC<Props> = ({
   onPatch,
 }) => {
   const [selected, setSelected] = React.useState<string[]>(preselect ?? []);
+  const [selectedZones, setSelectedZones] = React.useState<string[]>([]);
+  const [editZones, setEditZones] = React.useState<string[]>([]);
   const [scope, setScope] = React.useState<'ouvrages' | 'jardin'>('ouvrages');
   const [nom, setNom] = React.useState('');
   const [date, setDate] = React.useState('');
@@ -115,11 +121,43 @@ export const ChantierLotPicker: React.FC<Props> = ({
   const defaultName =
     scope === 'jardin'
       ? 'Chantier · tout le jardin'
-      : selected.length === 1
+      : selected.length === 0 && selectedZones.length > 0
+        ? `Chantier · ${zones.filter((z) => selectedZones.includes(z.id)).map((z) => z.nom).join(' + ')}`
+        : selected.length === 1
         ? labelOf(objets.find((o) => o.id === selected[0])!)
         : `Chantier de ${selected.length} ouvrages`;
 
-  const canSubmit = canEdit && (scope === 'jardin' || selected.length > 0);
+  const canSubmit = canEdit && (scope === 'jardin' || selected.length > 0 || selectedZones.length > 0);
+  const toggleZone = (id: string) => {
+    setScope('ouvrages');
+    setSelectedZones((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  };
+  const zoneLetter = (z: ProprieteZone) => {
+    const i = zones.findIndex((x) => x.id === z.id);
+    return String.fromCharCode(65 + Math.max(0, i));
+  };
+  const zoneChip = (z: ProprieteZone, on: boolean, onClick: () => void) => (
+    <button
+      key={z.id}
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-[12.5px] transition ${
+        on
+          ? 'border-[hsl(var(--ds-gold))] bg-[hsl(var(--ds-gold))]/15 font-semibold'
+          : 'border-[hsl(var(--ds-line))] bg-white/50 hover:border-[hsl(var(--ds-gold))]/70'
+      }`}
+    >
+      <span
+        className="grid h-6 w-6 place-items-center rounded-full text-[11px] font-bold text-[hsl(var(--ds-cream))]"
+        style={{ background: z.couleur || 'hsl(var(--ds-forest))' }}
+      >
+        {zoneLetter(z)}
+      </span>
+      <span className="max-w-[16ch] truncate">{z.nom}</span>
+      {on && <Check className="h-3.5 w-3.5 text-[hsl(var(--ds-forest))]" />}
+    </button>
+  );
   /** Lot composé mais non validé : on prévient avant de tout perdre. */
   const dirty = canSubmit && !editingId;
 
@@ -128,6 +166,7 @@ export const ChantierLotPicker: React.FC<Props> = ({
     setEditNom(c.nom);
     setEditDate(c.date_travaux ?? '');
     setEditLot(c.objet_ids);
+    setEditZones(c.zone_ids ?? []);
   };
 
   const commitEdit = async () => {
@@ -136,6 +175,7 @@ export const ChantierLotPicker: React.FC<Props> = ({
       nom: editNom.trim() || 'Chantier',
       date_travaux: editDate || null,
       objet_ids: editLot,
+      zone_ids: editZones,
     });
     setEditingId(null);
   };
@@ -236,9 +276,12 @@ export const ChantierLotPicker: React.FC<Props> = ({
                       })}
                       <button
                         type="button"
-                        onClick={() => setEditLot([])}
+                        onClick={() => {
+                          setEditLot([]);
+                          setEditZones([]);
+                        }}
                         className={`rounded-full border px-2.5 py-1 text-[11.5px] transition ${
-                          editLot.length === 0
+                          editLot.length === 0 && editZones.length === 0
                             ? 'border-[hsl(var(--ds-gold))] bg-[hsl(var(--ds-gold))]/15 font-semibold'
                             : 'border-dashed border-[hsl(var(--ds-line))] bg-white/50'
                         }`}
@@ -246,6 +289,22 @@ export const ChantierLotPicker: React.FC<Props> = ({
                         🌳 Tout le jardin
                       </button>
                     </div>
+                    {zones.length > 0 && (
+                      <>
+                        <p className={`mb-1.5 text-[10.5px] uppercase tracking-[0.14em] ${soft}`}>
+                          Emplacements rattachés
+                        </p>
+                        <div className="mb-2 flex flex-wrap gap-1.5">
+                          {zones.map((z) =>
+                            zoneChip(z, editZones.includes(z.id), () =>
+                              setEditZones((l) =>
+                                l.includes(z.id) ? l.filter((x) => x !== z.id) : [...l, z.id],
+                              ),
+                            ),
+                          )}
+                        </div>
+                      </>
+                    )}
                     <div className="flex gap-2">
                       <button
                         type="button"
@@ -275,9 +334,18 @@ export const ChantierLotPicker: React.FC<Props> = ({
                     >
                       <span className="block truncate text-[13.5px] font-semibold">{c.nom}</span>
                       <span className={`mt-0.5 block text-[11px] ${soft}`}>
-                        {c.objet_ids.length === 0
+                        {c.objet_ids.length === 0 && !(c.zone_ids ?? []).length
                           ? 'tout le jardin'
-                          : `${c.objet_ids.length} ouvrage${c.objet_ids.length > 1 ? 's' : ''}`}{' '}
+                          : [
+                              c.objet_ids.length
+                                ? `${c.objet_ids.length} ouvrage${c.objet_ids.length > 1 ? 's' : ''}`
+                                : null,
+                              (c.zone_ids ?? []).length
+                                ? `${c.zone_ids.length} emplacement${c.zone_ids.length > 1 ? 's' : ''}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' + ')}{' '}
                         · {fmtDate(c.date_travaux)}
                       </span>
                     </button>
@@ -408,12 +476,27 @@ export const ChantierLotPicker: React.FC<Props> = ({
                 )}
               </ul>
 
+              {zones.length > 0 && (
+                <div className="mb-4">
+                  <p className={`mb-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] ${soft}`}>
+                    Emplacements (facultatif)
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {zones.map((z) => zoneChip(z, selectedZones.includes(z.id), () => toggleZone(z.id)))}
+                  </div>
+                  <p className={`mt-1.5 text-[11px] italic ${soft}`}>
+                    Un emplacement coché élargit le périmètre du chantier à son tracé.
+                  </p>
+                </div>
+              )}
+
               {/* Tout le jardin : aucun tracé nécessaire */}
               <button
                 type="button"
                 onClick={() => {
                   setScope((s) => (s === 'jardin' ? 'ouvrages' : 'jardin'));
                   setSelected([]);
+                  setSelectedZones([]);
                 }}
                 className={`mb-4 flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-[13px] transition ${
                   scope === 'jardin'
@@ -504,9 +587,16 @@ export const ChantierLotPicker: React.FC<Props> = ({
                 Périmètre :{' '}
                 {scope === 'jardin'
                   ? 'tout le jardin'
-                  : selected.length === 0
-                    ? 'aucun ouvrage coché'
-                    : `${selected.length} ouvrage${selected.length > 1 ? 's' : ''}`}
+                  : selected.length === 0 && selectedZones.length === 0
+                    ? 'aucun ouvrage ni emplacement coché'
+                    : [
+                        selected.length ? `${selected.length} ouvrage${selected.length > 1 ? 's' : ''}` : null,
+                        selectedZones.length
+                          ? `${selectedZones.length} emplacement${selectedZones.length > 1 ? 's' : ''}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' + ')}
               </p>
               <button
                 type="button"
@@ -515,6 +605,7 @@ export const ChantierLotPicker: React.FC<Props> = ({
                   onCreate({
                     nom: nom.trim() || defaultName,
                     objet_ids: scope === 'jardin' ? [] : selected,
+                    zone_ids: scope === 'jardin' ? [] : selectedZones,
                     date_travaux: date || null,
                   })
                 }

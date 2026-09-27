@@ -1,13 +1,14 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { X, Printer, Hammer, Layers, CalendarDays, FlaskConical, PenLine, Images, Sprout, Activity } from 'lucide-react';
+import { X, Printer, Hammer, Layers, CalendarDays, FlaskConical, PenLine, Images, Sprout, Activity, Orbit } from 'lucide-react';
 import { toast } from 'sonner';
 
 import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import { usePropertySpeciesPool } from '@/hooks/propriete/usePropertySpeciesPool';
 import { usePropertySoil } from '@/hooks/propriete/usePropertySoil';
 import { useObjetPhotos } from '@/hooks/propriete/useObjetPhotos';
+import { useProprieteZones } from '@/hooks/propriete/usePropertyZones';
 import {
   useProprieteChantiers,
   useChantierMediaPhases,
@@ -20,10 +21,11 @@ import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames
 import { useScenographeState } from '@/components/propriete/scenographe/scenographeStore';
 
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
-import { classifyObservations } from '@/lib/ouvrageScope';
 import { TOOL_BY_KEY, type PaysageTool } from '@/lib/paysageTools';
 import {
-  RIGOUR_LABEL,
+  CHANTIER_RADIUS_PRESETS,
+  radiusLabel,
+  scopeByRadius,
   cortegeEntries,
   icgDelta,
   isAfterWorks,
@@ -31,15 +33,14 @@ import {
   poolFromWaypoints,
   poolsFromStatuses,
   readIcg,
-  scopeWaypoints,
   speciesIcgJury,
   speciesKey,
-  type ChantierRigour,
   type MediaPhase,
   type SpeciesStatus,
 } from '@/lib/chantierIcg';
 
 import ChantierLotPicker from './ChantierLotPicker';
+import CortegeVivantOrbit, { type OrbitSpecies } from './CortegeVivantOrbit';
 import CortegeTriage from './CortegeTriage';
 import ProjectionGuide from './ProjectionGuide';
 import IcgLadder, { IcgDeltaHero } from './IcgLadder';
@@ -71,7 +72,6 @@ interface Props {
   onRenameObjet?: (id: string, nom: string) => void | Promise<void>;
 }
 
-const RIGOURS: ChantierRigour[] = ['strict', 'lisiere', 'voisinage'];
 
 const labelOfObjet = (o: ProprieteObjet) =>
   o.nom?.trim() || TOOL_BY_KEY[o.outil_key]?.label || 'Ouvrage';
@@ -101,18 +101,28 @@ export const ChantierOverlay: React.FC<Props> = ({
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const active = chantiers.find((c) => c.id === activeId) ?? null;
 
-  const [rigour, setRigour] = React.useState<ChantierRigour>('lisiere');
+  /** Rayon d'écoute depuis le bord des tracés, mémorisé par chantier. */
+  const radiusM = active?.radius_m ?? 0;
+  const setRadius = (r: number) => {
+    if (active) void patch(active.id, { radius_m: r > 0 ? r : null } as any);
+  };
   const [afterMode, setAfterMode] = React.useState<'projete' | 'constate'>('projete');
   const [scenarioId, setScenarioId] = React.useState<string | null>(null);
   const [printFormat, setPrintFormat] = React.useState<'simple' | 'complet' | null>(null);
   const [printing, setPrinting] = React.useState(false);
-  const [section, setSection] = React.useState<'visu' | 'palette' | 'bilan'>('visu');
+  const [section, setSection] = React.useState<'visu' | 'cortege' | 'palette' | 'bilan'>('visu');
 
   const pool = usePropertySpeciesPool(proprieteId);
   const soil = usePropertySoil(proprieteId, { readOnly: true });
   const objetPhotos = useObjetPhotos(proprieteId);
   const { overrides, setPhase } = useChantierMediaPhases(active?.id);
   const lotObjetIds = active?.objet_ids ?? [];
+  const { zones } = useProprieteZones(proprieteId) as any;
+  const allZones: any[] = zones ?? [];
+  const lotZones = React.useMemo(
+    () => allZones.filter((z) => (active?.zone_ids ?? []).includes(z.id)),
+    [allZones, active?.zone_ids],
+  );
   const scenarios = useChantierScenarios(proprieteId, lotObjetIds);
 
   const lotObjets = React.useMemo(
@@ -120,20 +130,21 @@ export const ChantierOverlay: React.FC<Props> = ({
     [objets, lotObjetIds],
   );
   const geometries = React.useMemo(
-    () => lotObjets.map((o) => o.geometry).filter(Boolean),
-    [lotObjets],
+    () => [...lotObjets.map((o) => o.geometry), ...lotZones.map((z) => z.geometry)].filter(Boolean),
+    [lotObjets, lotZones],
   );
 
   /* ---------- A. Les espèces réellement dans le lot ---------- */
   /** Lot sans ouvrage = chantier « tout le jardin » : on garde l'ensemble du vivant. */
   const wholeGarden = geometries.length === 0;
-  const scoped = React.useMemo(
+  const scopedWithDistance = React.useMemo(
     () =>
       wholeGarden
-        ? (pool.waypoints ?? [])
-        : scopeWaypoints(geometries, pool.waypoints ?? [], rigour),
-    [wholeGarden, geometries, pool.waypoints, rigour],
+        ? (pool.waypoints ?? []).map((item) => ({ item, distanceM: 0 }))
+        : scopeByRadius(geometries, pool.waypoints ?? [], radiusM),
+    [wholeGarden, geometries, pool.waypoints, radiusM],
   );
+  const scoped = React.useMemo(() => scopedWithDistance.map((s) => s.item), [scopedWithDistance]);
   const beforeWaypoints = React.useMemo(
     () => scoped.filter((w) => !isAfterWorks(w.observationDate, active?.date_travaux)),
     [scoped, active?.date_travaux],
@@ -162,22 +173,12 @@ export const ChantierOverlay: React.FC<Props> = ({
     );
     if (!samples.length) return [];
     if (wholeGarden) return samples;
-    const keep = new Map<string, (typeof samples)[number]>();
-    for (const g of geometries) {
-      const res = classifyObservations(
-        g,
-        samples.map((s) => ({ ...s, lat: s.lat as number, lng: s.lng as number })),
-        rigour === 'voisinage' ? 15 : 0,
-        rigour === 'strict' ? 0 : 3,
-      );
-      [
-        ...res.dedans,
-        ...(rigour === 'strict' ? [] : res.lisiere),
-        ...(rigour === 'voisinage' ? res.voisinage : []),
-      ].forEach((s: any) => keep.set(s.item.id, s.item));
-    }
-    return Array.from(keep.values());
-  }, [soil.state.samples, geometries, rigour, wholeGarden]);
+    return scopeByRadius(
+      geometries,
+      samples.map((s: any) => ({ ...s, id: String(s.id), lat: s.lat as number, lng: s.lng as number })),
+      radiusM,
+    ).map((s) => s.item);
+  }, [soil.state.samples, geometries, radiusM, wholeGarden]);
 
   const lotSoil = React.useMemo(
     () =>
@@ -310,10 +311,40 @@ export const ChantierOverlay: React.FC<Props> = ({
         commonName: v.commonName,
       })),
       ...beforeJury.unmatched,
+      ...scoped.map((w) => ({ scientificName: w.scientificName, commonName: w.commonName })),
     ],
-    [inPlaceRaw, cortege, beforeJury],
+    [inPlaceRaw, cortege, beforeJury, scoped],
   );
   const { displayNameFor } = useWaypointFrenchNames(nameInput);
+  const orbitSpecies = React.useMemo<OrbitSpecies[]>(() => {
+    const by = new Map<string, OrbitSpecies>();
+    for (const { item: w, distanceM } of scopedWithDistance) {
+      const key = speciesKey(w.scientificName);
+      if (!key) continue;
+      const prev = by.get(key);
+      if (prev) {
+        prev.obs += 1;
+        prev.distanceM = Math.min(prev.distanceM, distanceM);
+        if (!prev.photoUrl && w.photoUrl) prev.photoUrl = w.photoUrl;
+        if (w.observationDate && (!prev.firstSeen || w.observationDate < prev.firstSeen)) prev.firstSeen = w.observationDate;
+        if (w.observationDate && (!prev.lastSeen || w.observationDate > prev.lastSeen)) prev.lastSeen = w.observationDate;
+        continue;
+      }
+      by.set(key, {
+        key,
+        scientificName: w.scientificName,
+        name: displayNameFor(w),
+        kingdom: w.kingdom,
+        photoUrl: w.photoUrl,
+        distanceM,
+        obs: 1,
+        firstSeen: w.observationDate,
+        lastSeen: w.observationDate,
+      });
+    }
+    return Array.from(by.values());
+  }, [scopedWithDistance, displayNameFor]);
+
   const inPlaceEntries = React.useMemo<RapportSpecies[]>(
     () => inPlaceRaw.map((s) => ({ ...s, commonName: displayNameFor(s) })),
     [inPlaceRaw, displayNameFor],
@@ -387,7 +418,7 @@ export const ChantierOverlay: React.FC<Props> = ({
               className="hidden items-center gap-1 rounded-full border border-white/15 px-2.5 py-1 text-[11px] transition hover:border-[#c8a24a] hover:bg-white/5 sm:inline-flex"
             >
               <Layers className="h-3 w-3 opacity-60" />
-              {lotObjets.map(labelOfObjet).join(' · ') || 'tout le jardin'}
+              {[...lotObjets.map(labelOfObjet), ...lotZones.map((z) => z.nom)].join(' · ') || 'tout le jardin'}
               <PenLine className="ml-1 h-3 w-3 opacity-60" />
             </button>
             <label className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 text-[11px]">
@@ -399,22 +430,22 @@ export const ChantierOverlay: React.FC<Props> = ({
                 className="bg-transparent text-[11px] outline-none [color-scheme:dark]"
               />
             </label>
-            <div className="flex gap-1">
-              {RIGOURS.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRigour(r)}
-                  className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
-                    rigour === r
-                      ? 'border-[#c8a24a] bg-[#c8a24a]/15 text-[#e7d3a1]'
-                      : 'border-white/15 opacity-65 hover:opacity-100'
-                  }`}
-                >
-                  {RIGOUR_LABEL[r]}
-                </button>
-              ))}
-            </div>
+            <label className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 text-[11px]">
+              <span className="opacity-60">Rayon</span>
+              <select
+                value={radiusM}
+                onChange={(e) => setRadius(Number(e.target.value))}
+                disabled={wholeGarden}
+                className="bg-transparent text-[11px] outline-none [color-scheme:dark]"
+                aria-label="Rayon d'écoute depuis le bord des tracés"
+              >
+                {CHANTIER_RADIUS_PRESETS.map((r) => (
+                  <option key={r} value={r}>
+                    {radiusLabel(r)}
+                  </option>
+                ))}
+              </select>
+            </label>
           </>
         )}
 
@@ -460,6 +491,7 @@ export const ChantierOverlay: React.FC<Props> = ({
           <div className="mx-auto max-w-[860px]">
             <ChantierLotPicker
               objets={objets}
+              zones={allZones}
               chantiers={chantiers}
               onOpen={(c: ProprieteChantier) => setActiveId(c.id)}
               onCreate={async (input) => {
@@ -480,15 +512,16 @@ export const ChantierOverlay: React.FC<Props> = ({
           </div>
         ) : (
           <div className="mx-auto max-w-[1180px] space-y-4">
-            <nav className="sticky top-0 z-20 grid grid-cols-3 gap-1 border-b border-white/10 bg-[hsl(var(--ds-forest-deep))]/95 py-2 backdrop-blur">
+            <nav className="sticky top-0 z-20 grid grid-cols-4 gap-1 border-b border-white/10 bg-[hsl(var(--ds-forest-deep))]/95 py-2 backdrop-blur">
               {([
                 ['visu', 'Visu chantier', Images],
+                ['cortege', 'Cortège vivant', Orbit],
                 ['palette', 'Palette végétale', Sprout],
                 ['bilan', 'Bilan écologique', Activity],
               ] as const).map(([id, label, Icon]) => (
                 <button key={id} type="button" onClick={() => setSection(id)} aria-pressed={section === id}
                   className={`flex min-h-11 items-center justify-center gap-2 border-b-2 px-2 text-[12px] font-semibold transition ${section === id ? 'border-[#c8a24a] text-[#e7d3a1]' : 'border-transparent opacity-55 hover:opacity-90'}`}>
-                  <Icon className="h-4 w-4" /><span>{label}</span>
+                  <Icon className="h-4 w-4 shrink-0" /><span className="hidden sm:inline">{label}</span><span className="sm:hidden text-[10.5px] leading-tight">{label.split(' ')[0]}</span>
                 </button>
               ))}
             </nav>
@@ -516,6 +549,23 @@ export const ChantierOverlay: React.FC<Props> = ({
                 }}
               />
             </section>}
+
+            {section === 'cortege' && (
+              <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
+                <CortegeVivantOrbit
+                  species={orbitSpecies}
+                  radiusM={radiusM}
+                  onRadius={setRadius}
+                  workDate={workDate}
+                  centerLabel={
+                    [...lotZones.map((z: any) => z.nom), ...lotObjets.map(labelOfObjet)].join(' · ') ||
+                    'Tout le jardin'
+                  }
+                  hasTrace={!wholeGarden}
+                  onAttachZone={canEdit ? () => setActiveId(null) : undefined}
+                />
+              </section>
+            )}
 
             {section === 'palette' && <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -573,7 +623,7 @@ export const ChantierOverlay: React.FC<Props> = ({
             chantierNom={active.nom}
             ouvrages={lotObjets.map(labelOfObjet)}
             dateTravaux={active.date_travaux}
-            rigourLabel={RIGOUR_LABEL[rigour]}
+            rigourLabel={`Tracés + rayon · ${radiusLabel(radiusM)}`}
             soilSentence={
               [
                 lotSoil.structure && `structure ${lotSoil.structure}`,

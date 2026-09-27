@@ -7811,8 +7811,10 @@ export type Database = {
           notes: string | null
           objet_ids: string[]
           propriete_id: string
+          radius_m: number | null
           statut: string
           updated_at: string
+          zone_ids: string[]
         }
         Insert: {
           created_at?: string
@@ -7823,8 +7825,10 @@ export type Database = {
           notes?: string | null
           objet_ids?: string[]
           propriete_id: string
+          radius_m?: number | null
           statut?: string
           updated_at?: string
+          zone_ids?: string[]
         }
         Update: {
           created_at?: string
@@ -7835,8 +7839,10 @@ export type Database = {
           notes?: string | null
           objet_ids?: string[]
           propriete_id?: string
+          radius_m?: number | null
           statut?: string
           updated_at?: string
+          zone_ids?: string[]
         }
         Relationships: [
           {
