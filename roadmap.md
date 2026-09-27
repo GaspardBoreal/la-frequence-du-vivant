@@ -17,3 +17,4 @@
 - [x] Plan d’action IA LFDV (edge generate-partner-roadmap, calculs déterministes, frise 12 mois, repli statique) — cas CAPDL validé
 - [x] Archiver chaque simulation IA partenaire (projet, plan, questions-réponses) et l'exporter depuis Admin > CRM > IA
 - [x] Montrer les photos datées de chaque espèce dans l’Herbier du moment et les parcourir sans mélanger les espèces
+- [x] Aligner le Cortège vivant sur un emplacement ou ouvrage choisi, en conservant le bilan du chantier entier

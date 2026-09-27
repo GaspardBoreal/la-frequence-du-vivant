@@ -129,9 +129,29 @@ export const ChantierOverlay: React.FC<Props> = ({
     () => objets.filter((o) => lotObjetIds.includes(o.id)),
     [objets, lotObjetIds],
   );
+  /** Choix de lecture du Cortège uniquement : le bilan reste celui du lot entier. */
+  const [cortegeSelection, setCortegeSelection] = React.useState<{ chantierId: string; scopeId: string } | null>(null);
+  const cortegeScopes = React.useMemo(
+    () => [
+      ...lotZones.filter((z) => z.geometry).map((z) => ({ id: `zone:${z.id}`, label: `Emplacement · ${z.nom}`, centerLabel: z.nom, geometry: z.geometry })),
+      ...lotObjets.filter((o) => o.geometry).map((o) => ({ id: `objet:${o.id}`, label: `Ouvrage · ${labelOfObjet(o)}`, centerLabel: labelOfObjet(o), geometry: o.geometry })),
+    ],
+    [lotZones, lotObjets],
+  );
+  const defaultCortegeScope = lotZones.length === 1 ? `zone:${lotZones[0].id}` : 'all';
+  const requestedScope = cortegeSelection && active && cortegeSelection.chantierId === active.id
+    ? cortegeSelection.scopeId
+    : defaultCortegeScope;
+  const cortegeScopeId = requestedScope === 'all' || cortegeScopes.some((s) => s.id === requestedScope) ? requestedScope : defaultCortegeScope;
+  const selectedCortegeScope = cortegeScopes.find((s) => s.id === cortegeScopeId);
   const geometries = React.useMemo(
     () => [...lotObjets.map((o) => o.geometry), ...lotZones.map((z) => z.geometry)].filter(Boolean),
     [lotObjets, lotZones],
+  );
+  /** Même exclusion éditoriale que les pastilles de l'Atelier. */
+  const mapWaypoints = React.useMemo(
+    () => (pool.waypoints ?? []).filter((w) => w.overrideStatus !== 'excluded'),
+    [pool.waypoints],
   );
 
   /* ---------- A. Les espèces réellement dans le lot ---------- */
@@ -316,9 +336,15 @@ export const ChantierOverlay: React.FC<Props> = ({
     [inPlaceRaw, cortege, beforeJury, scoped],
   );
   const { displayNameFor } = useWaypointFrenchNames(nameInput);
+  const orbitWaypoints = React.useMemo(
+    () => selectedCortegeScope
+      ? scopeByRadius([selectedCortegeScope.geometry], mapWaypoints, radiusM)
+      : scopedWithDistance.filter(({ item }) => item.overrideStatus !== 'excluded'),
+    [selectedCortegeScope, mapWaypoints, radiusM, scopedWithDistance],
+  );
   const orbitSpecies = React.useMemo<OrbitSpecies[]>(() => {
     const by = new Map<string, OrbitSpecies>();
-    for (const { item: w, distanceM } of scopedWithDistance) {
+    for (const { item: w, distanceM } of orbitWaypoints) {
       const key = speciesKey(w.scientificName);
       if (!key) continue;
       const prev = by.get(key);
@@ -343,7 +369,7 @@ export const ChantierOverlay: React.FC<Props> = ({
       });
     }
     return Array.from(by.values());
-  }, [scopedWithDistance, displayNameFor]);
+  }, [orbitWaypoints, displayNameFor]);
 
   const inPlaceEntries = React.useMemo<RapportSpecies[]>(
     () => inPlaceRaw.map((s) => ({ ...s, commonName: displayNameFor(s) })),
@@ -556,15 +582,29 @@ export const ChantierOverlay: React.FC<Props> = ({
 
             {section === 'cortege' && (
               <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
+                {!wholeGarden && <div className="mb-3 flex flex-col gap-1.5 sm:flex-row sm:items-center">
+                  <label htmlFor="chantier-cortege-scope" className="shrink-0 text-[11px] font-semibold opacity-75">Périmètre observé</label>
+                  <select
+                    id="chantier-cortege-scope"
+                    value={cortegeScopeId}
+                    onChange={(e) => {
+                      if (active) setCortegeSelection({ chantierId: active.id, scopeId: e.target.value });
+                    }}
+                    className="min-h-11 w-full min-w-0 rounded-md border border-white/20 bg-[hsl(var(--ds-forest-deep))] px-3 text-[12px] text-white [color-scheme:dark] sm:max-w-sm"
+                    aria-label="Périmètre observé dans le Cortège vivant"
+                  >
+                    <option value="all">Tout le chantier · {cortegeScopes.length} tracé{cortegeScopes.length > 1 ? 's' : ''}</option>
+                    {cortegeScopes.map((scope) => <option key={scope.id} value={scope.id}>{scope.label}</option>)}
+                  </select>
+                </div>}
                 <CortegeVivantOrbit
+                  key={`${active.id}:${cortegeScopeId}`}
                   species={orbitSpecies}
+                  observationCount={orbitWaypoints.length}
                   radiusM={radiusM}
                   onRadius={setRadius}
                   workDate={workDate}
-                  centerLabel={
-                    [...lotZones.map((z: any) => z.nom), ...lotObjets.map(labelOfObjet)].join(' · ') ||
-                    'Tout le jardin'
-                  }
+                  centerLabel={selectedCortegeScope?.centerLabel ?? (wholeGarden ? 'Tout le jardin' : 'Tout le chantier')}
                   hasTrace={!wholeGarden}
                   onAttachZone={canEdit ? () => setActiveId(null) : undefined}
                 />
