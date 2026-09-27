@@ -18,6 +18,7 @@ export interface OrbitSpecies {
 
 interface Props {
   species: OrbitSpecies[];
+  observationCount: number;
   radiusM: number;
   onRadius: (r: number) => void;
   workDate: string | null;
@@ -57,6 +58,7 @@ const MAX_NODES = 150;
  */
 export const CortegeVivantOrbit: React.FC<Props> = ({
   species,
+  observationCount,
   radiusM,
   onRadius,
   workDate,
@@ -141,6 +143,9 @@ export const CortegeVivantOrbit: React.FC<Props> = ({
 
   return (
     <section className="space-y-3">
+      <p className="text-[11px] tabular-nums opacity-70">
+        {species.length} espèce{species.length > 1 ? 's' : ''} · {observationCount} observation{observationCount > 1 ? 's' : ''} dans ce périmètre
+      </p>
       {/* Rayon d'écoute : puces défilantes, pouce-friendly */}
       <div className="-mx-1 flex snap-x gap-1.5 overflow-x-auto px-1 pb-1">
         {CHANTIER_RADIUS_PRESETS.map((r) => (
