@@ -20,6 +20,7 @@ const CoupeDeSol: React.FC = () => {
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start 70%', 'end 60%'] });
   const depth = useTransform(scrollYProgress, [0, 1], [0, MAX + 2]);
   const probeY = useTransform(depth, (d) => y(Math.min(d, MAX)));
+  const probeOffset = useTransform(probeY, (v) => v - TOP);
   const [d, setD] = useState(0);
   useMotionValueEvent(depth, 'change', (v) => setD(v));
   const cur = reduce ? MAX + 2 : d;
@@ -86,7 +87,7 @@ const CoupeDeSol: React.FC = () => {
               </g>
             ))}
             {/* Sonde */}
-            <motion.g style={{ y: reduce ? y(MAX) - TOP : useTransform(probeY, (v) => v - TOP) }}>
+            <motion.g style={{ y: reduce ? y(MAX) - TOP : probeOffset }}>
               <line x1="0" x2="210" y1={TOP} y2={TOP} stroke="hsl(var(--ds-gold))" strokeWidth="2" strokeDasharray="4 3" />
               <circle cx="205" cy={TOP} r="5" fill="hsl(var(--ds-gold))" />
             </motion.g>

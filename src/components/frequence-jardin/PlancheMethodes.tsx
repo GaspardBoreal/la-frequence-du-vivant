@@ -109,8 +109,8 @@ const Carte: React.FC<{ m: MethodeTerrain; num: number; flipped: boolean; onFlip
             <span className="font-serif italic">{fam.question}</span> — <strong>{fam.sens}</strong>
           </p>
           <div className="mt-auto flex items-center justify-between gap-3 pt-3 text-[13px]">
-            <FjSourceLink href={m.source.url}>
-              <span tabIndex={-1}>Source</span>
+            <FjSourceLink href={m.source.url} tabIndex={flipped ? 0 : -1}>
+              Source
             </FjSourceLink>
             <button
               type="button"

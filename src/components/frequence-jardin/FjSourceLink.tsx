@@ -12,12 +12,14 @@ export const FjSourceLink: React.FC<{
   children: React.ReactNode;
   className?: string;
   onClick?: (e: React.MouseEvent) => void;
-}> = ({ href, children, className, onClick }) => (
+  tabIndex?: number;
+}> = ({ href, children, className, onClick, tabIndex }) => (
   <a
     href={href}
     target="_blank"
     rel="noopener noreferrer"
     onClick={onClick}
+    tabIndex={tabIndex}
     className={
       className ??
       'inline-flex items-center gap-1 text-[hsl(var(--ds-forest))] underline underline-offset-4 hover:text-[hsl(var(--ds-forest-deep))]'
