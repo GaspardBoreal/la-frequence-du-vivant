@@ -274,11 +274,6 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
     [filter, scopeLabel, periodLabel, tagLabels],
   );
 
-  const labelOf = React.useCallback(
-    (e: VivantRosterEntry) => frenchName(e.scientificName, e.commonName),
-    [frenchName],
-  );
-
   React.useEffect(() => {
     if (!open) onHoverSpecies(null);
   }, [open, onHoverSpecies]);
