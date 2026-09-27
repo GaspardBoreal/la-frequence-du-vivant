@@ -365,7 +365,7 @@ export const SYNTHESE_AXES = [
 
 export const METHODES_DOC = {
   title: 'Méthodes d’analyse de sol',
-  baseline: 'Le protocole de terrain de Fréquence Jardin — douze gestes dans l'application, douze en guide de terrain, un carnet.',
+  baseline: 'Le protocole de terrain de Fréquence Jardin — douze gestes dans l’application, douze en guide de terrain, un carnet.',
   url: 'https://la-frequence-du-vivant.com/etude-de-sol',
   cadre: {
     sert: [
