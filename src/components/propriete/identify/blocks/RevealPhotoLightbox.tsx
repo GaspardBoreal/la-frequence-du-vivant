@@ -24,6 +24,8 @@ interface Props {
   onChange: (id: string) => void;
   onClose: () => void;
   displayNameFor: (w: { scientificName?: string | null; commonName?: string | null }) => string;
+  /** Navigation centrée sur les photos datées d'une seule espèce dans l'herbier. */
+  herbierMode?: boolean;
 }
 
 /**
@@ -36,6 +38,7 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
   onChange,
   onClose,
   displayNameFor,
+  herbierMode = false,
 }) => {
   const photoItems = useMemo(() => items.filter((w) => !!w.photoUrl), [items]);
   const index = photoItems.findIndex((w) => w.id === currentId);
@@ -72,7 +75,7 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
     (delta: number) => {
       if (!photoItems.length || index < 0) return;
       const next = frameIdx + delta;
-      if (next >= 0 && next < frames.length) {
+      if (!herbierMode && next >= 0 && next < frames.length) {
         setFrame(next);
         return;
       }
@@ -80,7 +83,7 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
       setFrame(0);
       onChange(photoItems[nextObs].id);
     },
-    [photoItems, index, onChange, frameIdx, frames.length],
+    [photoItems, index, onChange, frameIdx, frames.length, herbierMode],
   );
 
   const zoom = useImageZoomPan(`${currentId}#${frameIdx}`);
@@ -280,8 +283,9 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
             <span className="opacity-60">© {currentFrame.attribution}</span>
           )}
           <span className="ml-auto opacity-60">
-            {frames.length > 1 ? `cliché ${frameIdx + 1}/${frames.length} · ` : ''}
-            {index + 1} / {photoItems.length}
+            {herbierMode
+              ? `${currentFrame?.kind === 'reference' ? 'Référence · ' : ''}photo ${index + 1}/${photoItems.length}`
+              : `${frames.length > 1 ? `cliché ${frameIdx + 1}/${frames.length} · ` : ''}${index + 1} / ${photoItems.length}`}
           </span>
         </div>
       </div>

@@ -236,6 +236,11 @@ export const PaletteStudio: React.FC<Props> = ({
   });
 
   const [lightboxId, setLightboxId] = React.useState<string | null>(null);
+  const [herbierPhotoIds, setHerbierPhotoIds] = React.useState<string[] | null>(null);
+  const closeLightbox = React.useCallback(() => {
+    setLightboxId(null);
+    setHerbierPhotoIds(null);
+  }, []);
   const [gpsConsole, setGpsConsole] = React.useState(false);
   const [gpsFocusId, setGpsFocusId] = React.useState<string | null>(null);
 
@@ -599,7 +604,7 @@ export const PaletteStudio: React.FC<Props> = ({
       if (tag === 'INPUT' || tag === 'TEXTAREA' || el?.isContentEditable) return;
       // Une surface ouverte au-dessus (Scénographe, immersion…) consomme Échap.
       if (fullscreenSurfaces.get() > 1) return;
-      if (lightboxId) setLightboxId(null);
+      if (lightboxId) closeLightbox();
       else if (galleryObjetId) setGalleryObjetId(null);
       else if (chantierOpen) setChantierOpen(false);
       else if (gpsConsole) {
@@ -633,12 +638,13 @@ export const PaletteStudio: React.FC<Props> = ({
   }, [
     open, lightboxId, galleryObjetId, chantierOpen, gpsConsole, herbierOpen,
     libraryOpen, inspirationOpen, selectedObjetId, activeZoneId, tool, zoneDraw,
-    onSelectZone, onClose,
+    onSelectZone, onClose, closeLightbox,
   ]);
 
   React.useEffect(() => {
     if (open) return;
     setLightboxId(null);
+    setHerbierPhotoIds(null);
     setGalleryObjetId(null);
     setChantierOpen(false);
     setGpsConsole(false);
@@ -1177,7 +1183,7 @@ export const PaletteStudio: React.FC<Props> = ({
                 canCurate={!!canCurate}
                 walkerPhotosFor={walkerPhotosFor}
 
-                onZoomPhoto={setLightboxId}
+                onZoomPhoto={(id) => { setHerbierPhotoIds(null); setLightboxId(id); }}
                 onStartInlineMove={(w) => inlineGps.start(w)}
                 onOpenGps={(w) => {
                   setGpsFocusId(w.id);
@@ -1659,11 +1665,12 @@ export const PaletteStudio: React.FC<Props> = ({
         {lightboxId && (
           <div className="fixed inset-0 z-[2100]">
             <RevealPhotoLightbox
-              items={visibleWaypoints}
+              items={herbierPhotoIds ? herbierPhotoIds.map((id) => visibleWaypoints.find((w) => w.id === id)).filter((w): w is GpsCandidate => !!w) : visibleWaypoints}
               currentId={lightboxId}
               onChange={setLightboxId}
-              onClose={() => setLightboxId(null)}
+              onClose={closeLightbox}
               displayNameFor={displayNameFor}
+              herbierMode={!!herbierPhotoIds}
             />
           </div>
         )}
@@ -1699,7 +1706,10 @@ export const PaletteStudio: React.FC<Props> = ({
             setFocusObsId(null);
             window.setTimeout(() => setFocusObsId(w.id), 20);
           }}
-          onZoomObservation={(w: PropertyWaypoint) => setLightboxId(w.id)}
+          onZoomObservation={(w: PropertyWaypoint, observations: PropertyWaypoint[]) => {
+            setHerbierPhotoIds(observations.map((o) => o.id));
+            setLightboxId(w.id);
+          }}
         />
 
         {/* Contrôle GPS : mêmes gestes de curation que la Carte des révélations */}
