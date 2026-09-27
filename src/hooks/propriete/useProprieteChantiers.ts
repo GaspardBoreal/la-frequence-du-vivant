@@ -48,6 +48,8 @@ export function useProprieteChantiers(proprieteId?: string) {
       return ((data ?? []) as any[]).map((r) => ({
         ...r,
         objet_ids: Array.isArray(r.objet_ids) ? r.objet_ids : [],
+        zone_ids: Array.isArray(r.zone_ids) ? r.zone_ids : [],
+        radius_m: r.radius_m ?? null,
       })) as ProprieteChantier[];
     },
   });
@@ -58,7 +60,7 @@ export function useProprieteChantiers(proprieteId?: string) {
   );
 
   const create = useCallback(
-    async (input: { nom: string; objet_ids: string[]; date_travaux?: string | null }) => {
+    async (input: { nom: string; objet_ids: string[]; zone_ids?: string[]; date_travaux?: string | null }) => {
       if (!proprieteId) return null;
       const { data: auth } = await supabase.auth.getUser();
       const { data, error } = await (supabase as any)
@@ -67,6 +69,7 @@ export function useProprieteChantiers(proprieteId?: string) {
           propriete_id: proprieteId,
           nom: input.nom,
           objet_ids: input.objet_ids,
+          zone_ids: input.zone_ids ?? [],
           date_travaux: input.date_travaux ?? null,
           created_by: auth?.user?.id ?? null,
         })
