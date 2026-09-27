@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   BookOpen,
+  Camera,
   ChevronDown,
   Copy,
   Crosshair,
@@ -14,6 +15,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import type { PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
 import { TYPE_META, type VivantFilterState } from './LivingLayer';
 import { describeVivantFilters, resetVivantFilter, type VivantChip } from './vivantFilterChips';
@@ -35,8 +37,8 @@ interface Props {
   onHoverSpecies: (key: string | null) => void;
   /** Clic sur une observation : recentrage + ouverture de sa fiche. */
   onFocusObservation: (w: PropertyWaypoint) => void;
-  /** Clic sur une vignette : visionneuse plein écran (marcheur puis iNaturalist). */
-  onZoomObservation?: (w: PropertyWaypoint) => void;
+  /** Clic sur une vignette : visionneuse limitée aux relevés photographiés de cette espèce. */
+  onZoomObservation?: (w: PropertyWaypoint, observations: PropertyWaypoint[]) => void;
   /** Nom de la propriété, pour l'en-tête des exports. */
   proprieteName?: string | null;
 }
@@ -81,21 +83,18 @@ const SpeciesRow: React.FC<{
   onToggle: () => void;
   onHover: (k: string | null) => void;
   onFocus: (w: PropertyWaypoint) => void;
-  onZoom?: (w: PropertyWaypoint) => void;
+  onZoom?: (w: PropertyWaypoint, observations: PropertyWaypoint[]) => void;
 }> = ({ entry, label, expanded, onToggle, onHover, onFocus, onZoom }) => {
   const meta = TYPE_META[entry.type];
-  /** Première observation illustrée : celle qu'on peut ouvrir en grand. */
-  const shot = React.useMemo(
-    () => entry.observations.find((o) => !!o.photoUrl) || null,
-    [entry.observations],
-  );
+  const photographed = React.useMemo(() => entry.observations.filter((o) => !!o.photoUrl), [entry.observations]);
+  const shot = photographed[0];
   const thumb = (
     <span
       className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]"
       style={{ boxShadow: entry.bio ? `0 0 0 1.5px ${meta.color}55` : undefined }}
     >
-      {entry.photoUrl ? (
-        <img src={entry.photoUrl} alt={label} loading="lazy" className="h-full w-full object-cover" />
+      {(shot?.photoUrl || entry.photoUrl) ? (
+        <img src={shot?.photoUrl || entry.photoUrl || ''} alt={label} loading="lazy" className="h-full w-full object-cover" />
       ) : (
         <span className="flex h-full w-full items-center justify-center text-[13px] opacity-55">
           {meta.glyph}
@@ -111,14 +110,16 @@ const SpeciesRow: React.FC<{
     >
       <div className="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-[hsl(var(--ds-forest))]/6">
         {onZoom && shot ? (
-          <button
+          <Button
             type="button"
-            title="Voir en grand : photo du marcheur, puis référence iNaturalist"
-            onClick={() => onZoom(shot)}
-            className="shrink-0 cursor-zoom-in rounded-md transition-transform hover:scale-105"
+            variant="ghost"
+            size="icon"
+            title={`Voir les ${photographed.length} photo${photographed.length > 1 ? 's' : ''} d’observation`}
+            onClick={() => onZoom(shot, photographed)}
+            className="h-9 w-9 shrink-0 cursor-zoom-in p-0 transition-transform hover:scale-105"
           >
             {thumb}
-          </button>
+          </Button>
         ) : (
           thumb
         )}
@@ -141,9 +142,12 @@ const SpeciesRow: React.FC<{
               {entry.scientificName}
             </span>
           </span>
-          <span className="shrink-0 rounded-full bg-[hsl(var(--ds-forest))]/12 px-1.5 py-[1px] text-[9.5px] text-[hsl(var(--ds-forest-deep))]">
-            {entry.observations.length}
-          </span>
+          <span className="shrink-0 text-[9.5px] opacity-65" title="Nombre d’observations">{entry.observations.length} obs.</span>
+          {photographed.length > 0 && (
+            <span className="flex shrink-0 items-center gap-0.5 text-[9.5px] text-[hsl(var(--ds-forest))]" title="Photos de ces observations">
+              <Camera className="h-3 w-3" /> {photographed.length}
+            </span>
+          )}
           <ChevronDown
             className={`h-3 w-3 shrink-0 opacity-45 transition-transform ${expanded ? 'rotate-180' : ''}`}
           />
@@ -159,39 +163,36 @@ const SpeciesRow: React.FC<{
       </div>
 
       {expanded && (
-        <ul className="space-y-0.5 border-t border-dashed border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/60 px-3 py-1.5">
-          {entry.observations.map((w) => (
-            <li key={w.id} className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => onFocus(w)}
-                className="flex min-w-0 flex-1 items-center gap-2 rounded px-1 py-1 text-left text-[10.5px] transition-colors hover:bg-[hsl(var(--ds-forest))]/10"
-              >
-                <span
-                  className="h-1.5 w-1.5 shrink-0 rounded-full"
-                  style={{ background: meta.color }}
-                />
-                <span className="shrink-0 opacity-75">{fmtDate(w.observationDate)}</span>
-                <span className="min-w-0 flex-1 truncate opacity-60">
-                  {w.observerName || (w.source === 'marcheur' ? 'Marcheur' : 'iNaturalist')}
+        <div className="border-t border-dashed border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/60 px-3 py-2">
+          <p className="mb-2 font-serif text-[12px] italic text-[hsl(var(--ds-forest-deep))]">Au fil des observations</p>
+          <ul className="flex max-w-full gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]" aria-label={`Observations de ${label}, de la plus récente à la plus ancienne`}>
+            {entry.observations.map((w) => (
+              <li key={w.id} className="w-[108px] shrink-0">
+                {w.photoUrl && onZoom ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => onZoom(w, photographed)}
+                    title={`Voir la photo du ${fmtDate(w.observationDate)} en grand`}
+                    className="group/shot relative h-[78px] w-full overflow-hidden rounded-md border border-[hsl(var(--ds-line))] p-0"
+                  >
+                    <img src={w.photoUrl} alt={`${label} · ${fmtDate(w.observationDate)}`} loading="lazy" className="h-full w-full object-cover transition-transform group-hover/shot:scale-105" />
+                    <Maximize2 className="absolute bottom-1 right-1 h-4 w-4 rounded-sm bg-[hsl(var(--ds-cream))]/90 p-0.5" />
+                  </Button>
+                ) : (
+                  <div className="flex h-[78px] items-center justify-center rounded-md border border-dashed border-[hsl(var(--ds-line))] text-[10px] italic opacity-60">Sans photo</div>
+                )}
+                <span className="mt-1 block text-[10px] font-medium">{fmtDate(w.observationDate)}</span>
+                <span className="block truncate text-[9px] opacity-60" title={w.observerName || undefined}>
+                  {w.source === 'marcheur' ? 'Terrain' : 'iNaturalist'}{w.observerName ? ` · ${w.observerName}` : ''}
                 </span>
-                <span className="shrink-0 text-[9px] uppercase tracking-wide opacity-45">
-                  {w.source === 'marcheur' ? 'terrain' : 'iNat'}
-                </span>
-              </button>
-              {onZoom && w.photoUrl && (
-                <button
-                  type="button"
-                  title="Voir la photo en grand"
-                  onClick={() => onZoom(w)}
-                  className="shrink-0 rounded p-1 opacity-45 transition-opacity hover:opacity-100"
-                >
-                  <Maximize2 className="h-3 w-3" />
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
+                <Button type="button" size="sm" variant="ghost" onClick={() => onFocus(w)} title="Situer cette observation sur le plan" className="mt-1 h-6 gap-1 px-0 text-[9px] text-[hsl(var(--ds-forest))]">
+                  <Crosshair className="h-3 w-3" /> Situer
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </li>
   );
