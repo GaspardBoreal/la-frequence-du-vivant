@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import React from 'react';
 import {
   BookOpen,
@@ -229,6 +231,27 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
   const [group, setGroup] = React.useState<HerbierGroup>('flore');
   const [query, setQuery] = React.useState('');
 
+  // Anciens noms français (ex. « Argus brun ») : toujours trouvables par la recherche.
+  const sciKey = React.useMemo(
+    () => allEntries.map((e) => e.scientificName).sort(),
+    [allEntries],
+  );
+  const { data: altNames } = useQuery({
+    queryKey: ['species-alt-names-fr', sciKey],
+    enabled: open && sciKey.length > 0,
+    staleTime: 1000 * 60 * 60,
+    queryFn: async () => {
+      const m = new Map<string, string[]>();
+      const { data } = await supabase
+        .from('species_translations')
+        .select('scientific_name, alternative_names_fr')
+        .in('scientific_name', sciKey)
+        .not('alternative_names_fr', 'is', null);
+      (data || []).forEach((r: any) => m.set(r.scientific_name, r.alternative_names_fr || []));
+      return m;
+    },
+  });
+
   const labelOf = React.useCallback(
     (e: VivantRosterEntry) => frenchName(e.scientificName, e.commonName),
     [frenchName],
@@ -244,9 +267,12 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
     const q = norm(query);
     if (!q) return allEntries;
     return allEntries.filter(
-      (e) => norm(labelOf(e)).includes(q) || norm(e.scientificName).includes(q),
+      (e) =>
+        norm(labelOf(e)).includes(q) ||
+        norm(e.scientificName).includes(q) ||
+        (altNames?.get(e.scientificName) || []).some((a) => norm(a).includes(q)),
     );
-  }, [allEntries, query, labelOf]);
+  }, [allEntries, query, labelOf, altNames]);
 
   /** Répartition Flore / Faune / Autres (champignons inclus dans « Autres »). */
   const byGroup = React.useMemo(() => {
