@@ -25,7 +25,7 @@ export const METHOD_CATEGORIES: MethodCategory[] = [
   { id: 'prelevements', label: 'Prélèvements', accent: '198 40% 38%' },
   { id: 'structure', label: 'Structure', accent: '24 52% 42%' },
   { id: 'texture', label: 'Texture', accent: '38 68% 42%' },
-  { id: 'acidite', label: 'Acidité', accent: '286 38% 46%' },
+  { id: 'acidite', label: 'Acidité et calcaire', accent: '286 38% 46%' },
   { id: 'vie', label: 'Vie du sol', accent: '142 46% 32%' },
   { id: 'synthese', label: 'Synthèse', accent: '138 40% 24%' },
 ];
@@ -53,6 +53,8 @@ export interface PublicMethod {
   /** Ce que la méthode produit concrètement dans le carnet. */
   deliverable: string;
   optional?: boolean;
+  /** Référence scientifique du protocole. */
+  source?: string;
 }
 
 export const PUBLIC_METHODS: PublicMethod[] = [
@@ -211,7 +213,7 @@ export const PUBLIC_METHODS: PublicMethod[] = [
   },
   {
     id: 'vinaigre',
-    category: 'vie',
+    category: 'acidite',
     name: 'Test du vinaigre',
     summary:
       'Quelques gouttes sur une motte sèche : l’effervescence révèle la présence de calcaire actif.',
@@ -230,14 +232,15 @@ export const PUBLIC_METHODS: PublicMethod[] = [
     name: 'Test du sachet de thé',
     optional: true,
     summary:
-      'Un sachet enterré six à huit semaines : la vitesse de dégradation mesure l’activité biologique.',
-    material: 'Un sachet de thé (ou un carré de coton), un piquet de repérage.',
+      'Un thé vert et un rooibos enterrés 90 jours : la vitesse de décomposition mesure l’activité biologique (Tea Bag Index).',
+    material: 'Un sachet de thé vert, un sachet de rooibos, un piquet de repérage.',
     steps: [
-      'Enterrer un sachet de thé (ou un carré de coton) à 8 cm de profondeur, repéré par un piquet.',
-      'Laisser en place 6 à 8 semaines, en notant la date sur votre carnet.',
-      'Déterrer et comparer : plus la dégradation est avancée, plus l’activité biologique est intense.',
+      'Enterrer à 8 cm un sachet de thé vert et un sachet de rooibos, étiquettes visibles, repérés par un piquet',
+      'Laisser en place 90 jours en notant la date',
+      'Déterrer, sécher, peser et comparer la perte de masse des deux thés',
     ],
-    benchmarks: ['Profondeur 8 cm', 'Durée 6 à 8 semaines'],
+    benchmarks: ['Profondeur 8 cm', 'Durée 90 jours', 'Un thé vert + un rooibos'],
+    source: 'Tea Bag Index — Keuskamp et al. 2013',
     deliverable: 'Indice d’activité biologique',
   },
   {
@@ -362,7 +365,7 @@ export const SYNTHESE_AXES = [
 
 export const METHODES_DOC = {
   title: 'Méthodes d’analyse de sol',
-  baseline: 'Le protocole de terrain de Fréquence Jardin — douze gestes, un carnet.',
+  baseline: 'Le protocole de terrain de Fréquence Jardin — douze gestes dans l'application, douze en guide de terrain, un carnet.',
   url: 'https://la-frequence-du-vivant.com/etude-de-sol',
   cadre: {
     sert: [

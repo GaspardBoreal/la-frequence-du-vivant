@@ -1,3 +1,4 @@
+import { METHODES_24 } from './methodes24';
 /**
  * Contenu de référence des pages publiques « Fréquence Jardin ».
  *
@@ -122,6 +123,21 @@ export const FJ_PARCOURS =
 
 export const FJ_MODULES = fiche.sections.find((s) => s.id === 'modules')?.items ?? [];
 
+const INDISP = METHODES_24.filter((m) => m.palier === 'indispensable').sort(
+  (a, b) => a.rangNourricier - b.rangNourricier,
+);
+const lower = (n: string) => n.charAt(0).toLowerCase() + n.slice(1);
+/** Réponse générée depuis METHODES_24 : les huit indispensables, par rang nourricier. */
+export const FJ_PREMIERS_GESTES = `Par les huit indispensables : ${INDISP.slice(0, -1)
+  .map((m) => lower(m.nom))
+  .join(', ')}, puis la ${lower(INDISP[INDISP.length - 1].nom)} qui fonde la palette végétale.`;
+
+export const FJ_HERO_SOUS_TITRE =
+  'Vingt-quatre gestes, sept questions, un carnet. Votre jardin commence sous vos pieds.';
+
+export const FJ_META_DESCRIPTION =
+  "Fréquence Jardin lit le sol d'un jardin avec 24 méthodes de terrain sourcées, interprète la flore spontanée et propose une palette végétale adaptée. Application française éditée par La Fréquence du Vivant.";
+
 export interface FjQa {
   q: string;
   a: string;
@@ -143,7 +159,11 @@ export const FJ_FAQ: FjQa[] = [
   },
   {
     q: 'Faut-il une analyse de laboratoire ?',
-    a: "Non. Le diagnostic repose sur douze méthodes de terrain sans laboratoire — bêche, test du boudin, sédimentation, pH en bandelette ou pHmètre, bêche vivante, vinaigre, sachet de thé. Ce ne sont pas des dosages normés mais des classes de terrain, assumées comme telles avec leur incertitude.",
+    a: "Non. Le diagnostic s'appuie sur 24 méthodes de terrain réparties en sept questions : ce que raconte le lieu, de quoi est faite la terre, si elle boit, si les racines passent, qui y vit, si la récolte sera saine et nourrie, et quand semer. Douze sont intégrées à l'application, douze sont décrites en guide de terrain. Ce ne sont pas des dosages normés mais des classes de terrain, sourcées une à une et assumées avec leur incertitude. En cas de doute sur une pollution, une analyse de laboratoire reste la bonne décision.",
+  },
+  {
+    q: 'Par quoi commencer pour un potager ?',
+    a: FJ_PREMIERS_GESTES,
   },
   {
     q: 'Comment la flore spontanée est-elle interprétée ?',
@@ -170,7 +190,7 @@ export const FJ_FAQ: FjQa[] = [
 /** Repères chiffrés — tous vérifiables dans le produit ou la fiche technique. */
 export const FJ_REPERES = [
   { value: '5', label: 'temps du parcours', hint: 'Observer, analyser, identifier, synthétiser, planter' },
-  { value: '12', label: 'méthodes de sol', hint: 'Gestes de terrain, sans laboratoire' },
+  { value: '24', label: 'méthodes de terrain', hint: '12 dans l’application, 12 en guide de terrain' },
   { value: '10', label: 'prélèvements par lieu', hint: 'Géolocalisés, photographiés, historisés' },
   { value: '4', label: 'curseurs de lecture', hint: 'Eau, texture, nutrition, pH' },
 ];
