@@ -31,6 +31,7 @@ La Fréquence du Vivant relie poésie contemporaine, bioacoustique et science ci
 
 Fréquence Jardin est une application web française éditée par l'association La Fréquence du Vivant. Elle lit le sol d'un lieu par des méthodes de terrain sans laboratoire, interprète la flore spontanée (plantes bio-indicatrices), mesure l'accord entre les deux (Indice de Concordance Globale) et propose une palette végétale adaptée au sol, au climat local et à sa dérive. Publics : particuliers (jardin, balcon, terrasse), domaines, collectivités et entreprises, paysagistes et professionnels du vivant.
 
+- 24 méthodes de terrain sourcées (12 dans l'application, 12 en guide de terrain), classées par complexité, par intérêt pour un jardin nourricier et par question du jardinier.
 - [Fréquence Jardin — page pilier](/frequence-jardin): définition, parcours en cinq temps (observer, analyser le sol, identifier la flore, synthétiser, palette végétale), modules (atelier du jardin, tour de jardin, clinique du vivant, capteurs et sondes, herbier du moment, IA de jardin), publics, questions fréquentes.
 - [Diagnostiquer son jardin — guide complet](/frequence-jardin/diagnostiquer-son-jardin): protocole pas à pas, douze méthodes de terrain, signes de vie du sol, quatre curseurs de synthèse.
 - [Plantes bio-indicatrices](/frequence-jardin/plantes-bio-indicatrices): table des plantes indicatrices (ortie, pissenlit, joncs, petite oseille, prunellier…) avec leurs indices d'eau, de texture, de nutrition et de pH, notés de −3 à +3.

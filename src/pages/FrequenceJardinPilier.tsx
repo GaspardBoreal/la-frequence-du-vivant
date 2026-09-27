@@ -11,7 +11,14 @@ import {
   FJ_PARCOURS,
   FJ_MODULES,
   FJ_FAQ,
-  FJ_REPERES, FJ_SIGNUP_URL } from '@/content/frequenceJardin/pilier';
+  FJ_REPERES, FJ_SIGNUP_URL, FJ_HERO_SOUS_TITRE, FJ_META_DESCRIPTION } from '@/content/frequenceJardin/pilier';
+import { METHODES_24 } from '@/content/frequenceJardin/methodes24';
+import PlancheMethodes from '@/components/frequence-jardin/PlancheMethodes';
+import CoupeDeSol from '@/components/frequence-jardin/CoupeDeSol';
+import PercolationLab, { LigneEcoute } from '@/components/frequence-jardin/PercolationLab';
+import PremierTest from '@/components/frequence-jardin/PremierTest';
+import CompteurGerme from '@/components/frequence-jardin/CompteurGerme';
+import { absUrl } from '@/components/frequence-jardin/FjSourceLink';
 import { FJ_GUIDES } from '@/content/frequenceJardin/guides';
 import { FJ_PLANTS } from '@/content/frequenceJardin/plantes';
 
@@ -55,17 +62,33 @@ const FrequenceJardinPilier: React.FC = () => {
     isPartOf: { '@type': 'WebSite', name: 'La Fréquence du Vivant', url: `${SITE}/` },
   };
 
+  const methodesLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: '24 méthodes de terrain pour lire un sol vivant',
+    numberOfItems: METHODES_24.length,
+    itemListElement: [...METHODES_24]
+      .sort((a, b) => a.ordreComplexite - b.ordreComplexite)
+      .map((m) => ({
+        '@type': 'ListItem',
+        position: m.ordreComplexite,
+        name: m.nom,
+        description: m.geste,
+        url: absUrl(m.source.url),
+      })),
+  };
+
   return (
     <div className="min-h-screen bg-[hsl(var(--ds-cream))] font-sans">
       <FjHead
         title="Fréquence Jardin — diagnostiquer le vivant d’un lieu"
-        description="Fréquence Jardin lit le sol d’un jardin, interprète la flore spontanée et propose une palette végétale adaptée. Application française éditée par La Fréquence du Vivant."
+        description={FJ_META_DESCRIPTION}
         path={PATH}
         breadcrumb={[
           { name: 'Accueil', path: '/' },
           { name: 'Fréquence Jardin', path: PATH },
         ]}
-        jsonLd={softwareLd}
+        jsonLd={[softwareLd, methodesLd]}
       />
 
       <FjBreadcrumb items={[{ name: 'Accueil', path: '/' }, { name: 'Fréquence Jardin' }]} />
@@ -83,6 +106,9 @@ const FrequenceJardinPilier: React.FC = () => {
         </p>
         <p className="mt-6 max-w-3xl text-[16px] leading-relaxed text-[hsl(var(--ds-ink))] md:text-[18px]">
           {FJ_DEFINITION}
+        </p>
+        <p className="mt-4 font-serif text-[17px] italic text-[hsl(var(--ds-earth))] md:text-[19px]">
+          {FJ_HERO_SOUS_TITRE}
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
@@ -108,8 +134,12 @@ const FrequenceJardinPilier: React.FC = () => {
               key={r.label}
               className="rounded-2xl border border-[hsl(var(--ds-line))] bg-white/60 p-4"
             >
-              <dt className="font-serif text-[30px] leading-none text-[hsl(var(--ds-forest))]">
-                {r.value}
+              <dt>
+                {r.value === '24' ? (
+                  <CompteurGerme to={24} />
+                ) : (
+                  <span className="font-serif text-[30px] leading-none text-[hsl(var(--ds-forest))]">{r.value}</span>
+                )}
               </dt>
               <dd className="mt-2 text-[13px] font-medium text-[hsl(var(--ds-ink))]">{r.label}</dd>
               <dd className="mt-1 text-[12px] leading-snug text-[hsl(var(--ds-ink-soft))]">{r.hint}</dd>
@@ -142,6 +172,11 @@ const FrequenceJardinPilier: React.FC = () => {
                   <p className="mt-3 text-[14px] leading-relaxed text-[hsl(var(--ds-cream))]/80">
                     {step.desc}
                   </p>
+                  {i === 1 && (
+                    <a href="#lire-le-sol" className="mt-3 inline-block text-[14px] text-[hsl(var(--ds-gold))] underline underline-offset-4">
+                      Voir les 24 gestes ↓
+                    </a>
+                  )}
                 </li>
               );
             })}
@@ -157,6 +192,39 @@ const FrequenceJardinPilier: React.FC = () => {
             .
           </p>
         </FjSection>
+
+        {/* Étape 2 — Lire le sol */}
+        <section id="lire-le-sol" className="bg-[hsl(var(--ds-cream))] py-16 md:py-20">
+          <div className="mx-auto max-w-6xl px-5">
+            <p className="mb-3 text-[11px] uppercase tracking-[0.22em] text-[hsl(var(--ds-earth))]">
+              Étape 2 · J’analyse le sol
+            </p>
+            <h2 className="font-serif text-[26px] leading-tight text-[hsl(var(--ds-forest-deep))] md:text-[34px]">
+              24 gestes pour écouter un sol, sans laboratoire
+            </h2>
+            <p className="mt-4 max-w-3xl text-[15px] leading-relaxed text-[hsl(var(--ds-ink-soft))] md:text-[17px]">
+              Douze gestes font déjà partie de l’application ; douze autres, venus de la recherche et de la science
+              participative, complètent la lecture. Chacun répond à une question que se pose tout jardinier.
+            </p>
+            <div className="mt-10">
+              <CoupeDeSol />
+            </div>
+            <div className="mt-12">
+              <PlancheMethodes />
+            </div>
+            <LigneEcoute />
+            <h3 className="font-serif text-[22px] text-[hsl(var(--ds-forest-deep))] md:text-[26px]">
+              Percolation : un test, deux lectures
+            </h3>
+            <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-[hsl(var(--ds-ink-soft))]">
+              La même mesure ne dit pas la même chose à une tomate et à un ciste. C’est pour cela qu’on lit le sol avant
+              de choisir ses plantes.
+            </p>
+            <div className="mt-8">
+              <PercolationLab />
+            </div>
+          </div>
+        </section>
 
         {/* Publics */}
         <FjSection
@@ -327,6 +395,8 @@ const FrequenceJardinPilier: React.FC = () => {
             ))}
           </div>
         </FjSection>
+
+        <PremierTest />
 
         {/* Contact */}
         <section className="bg-[hsl(var(--ds-forest-deep))] py-16 text-[hsl(var(--ds-cream))]">
