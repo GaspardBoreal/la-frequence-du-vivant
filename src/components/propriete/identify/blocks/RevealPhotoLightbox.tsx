@@ -182,7 +182,7 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
         </div>
       )}
 
-      {(photoItems.length > 1 || frames.length > 1) && (
+      {(photoItems.length > 1 || (!herbierMode && frames.length > 1)) && (
         <>
           <button
             type="button"
@@ -284,7 +284,7 @@ export const RevealPhotoLightbox: React.FC<Props> = ({
           )}
           <span className="ml-auto opacity-60">
             {herbierMode
-              ? `${currentFrame?.kind === 'reference' ? 'Référence · ' : ''}photo ${index + 1}/${photoItems.length}`
+              ? `${currentFrame?.kind === 'reference' ? 'Référence · ' : ''}photo d’observation ${index + 1}/${photoItems.length}`
               : `${frames.length > 1 ? `cliché ${frameIdx + 1}/${frames.length} · ` : ''}${index + 1} / ${photoItems.length}`}
           </span>
         </div>
