@@ -7,6 +7,7 @@ import {
   Download,
   Leaf,
   Maximize2,
+  Search,
   Sparkles,
   X,
 } from 'lucide-react';
@@ -45,6 +46,14 @@ const fmtDate = (d: string | null | undefined) => {
   const dt = new Date(d);
   return Number.isNaN(dt.getTime()) ? 'date inconnue' : format(dt, 'd MMM yyyy', { locale: fr });
 };
+
+/** Recherche insensible à la casse et aux accents (même normalisation que le roster). */
+const norm = (s: string | null | undefined) =>
+  (s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 
 /** Sous-menus de l'herbier : la Flore d'abord, puis la Faune, puis le reste. */
 type HerbierGroup = 'flore' | 'faune' | 'autres';
@@ -217,13 +226,33 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
   );
   const [expanded, setExpanded] = React.useState<string | null>(null);
   const [group, setGroup] = React.useState<HerbierGroup>('flore');
+  const [query, setQuery] = React.useState('');
+
+  const labelOf = React.useCallback(
+    (e: VivantRosterEntry) => frenchName(e.scientificName, e.commonName),
+    [frenchName],
+  );
+
+  // La recherche disparaît avec le tiroir : à la réouverture, l'herbier est complet.
+  React.useEffect(() => {
+    if (!open) setQuery('');
+  }, [open]);
+
+  /** Espèces dont le nom français ou le nom scientifique contient la recherche. */
+  const searched = React.useMemo(() => {
+    const q = norm(query);
+    if (!q) return allEntries;
+    return allEntries.filter(
+      (e) => norm(labelOf(e)).includes(q) || norm(e.scientificName).includes(q),
+    );
+  }, [allEntries, query, labelOf]);
 
   /** Répartition Flore / Faune / Autres (champignons inclus dans « Autres »). */
   const byGroup = React.useMemo(() => {
     const m: Record<HerbierGroup, VivantRosterEntry[]> = { flore: [], faune: [], autres: [] };
-    for (const e of allEntries) m[groupOfType(e.type)].push(e);
+    for (const e of searched) m[groupOfType(e.type)].push(e);
     return m;
-  }, [allEntries]);
+  }, [searched]);
 
   const entries = byGroup[group];
   const speciesCount = entries.length;
@@ -243,11 +272,6 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
   const chips = React.useMemo(
     () => describeVivantFilters(filter, { scopeLabel, periodLabel, tagLabels }),
     [filter, scopeLabel, periodLabel, tagLabels],
-  );
-
-  const labelOf = React.useCallback(
-    (e: VivantRosterEntry) => frenchName(e.scientificName, e.commonName),
-    [frenchName],
   );
 
   React.useEffect(() => {
@@ -372,6 +396,38 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
         )}
       </header>
 
+      {/* Recherche par nom d'espèce (contient, insensible aux accents) */}
+      <div className="shrink-0 border-b border-[hsl(var(--ds-line))] px-2 py-1.5">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 opacity-45" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rechercher une espèce…"
+            aria-label="Rechercher une espèce par son nom"
+            className="w-full rounded-full border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/70 py-1 pl-7 pr-6 text-[11px] placeholder:italic placeholder:opacity-50 focus:border-[hsl(var(--ds-forest))]/50 focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ds-forest))]/30"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              aria-label="Effacer la recherche"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 opacity-55 transition-opacity hover:opacity-100"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+        {query.trim() && (
+          <p className="mt-1 px-1 text-[9.5px] italic opacity-55">
+            {searched.length === 0
+              ? 'Aucune correspondance dans l’herbier.'
+              : `${searched.length} espèce${searched.length > 1 ? 's' : ''} sur ${allEntries.length}`}
+          </p>
+        )}
+      </div>
+
       {/* Sous-menus : Flore · Faune · Autres */}
       <nav
         role="tablist"
@@ -417,11 +473,21 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
         {entries.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <p className="text-[11px] italic leading-relaxed opacity-65">
-              {allEntries.length > 0 ? (
+              {query.trim() && searched.length === 0 ? (
                 <>
-                  Rien dans « {GROUPS.find((g) => g.id === group)?.label} » pour l’instant.
+                  Aucune espèce ne contient « {query.trim()} ».
                   <br />
-                  Le vivant relevé ici se range dans un autre onglet.
+                  Essayez un autre nom, français ou scientifique.
+                </>
+              ) : allEntries.length > 0 ? (
+                <>
+                  {query.trim()
+                    ? 'Aucun résultat dans cet onglet.'
+                    : `Rien dans « ${GROUPS.find((g) => g.id === group)?.label} » pour l’instant.`}
+                  <br />
+                  {query.trim()
+                    ? 'L’espèce recherchée se range peut-être dans un autre.'
+                    : 'Le vivant relevé ici se range dans un autre onglet.'}
                 </>
               ) : (
                 <>
@@ -431,13 +497,23 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
                 </>
               )}
             </p>
-            <button
-              type="button"
-              onClick={() => onFilterChange(resetVivantFilter())}
-              className="mt-3 rounded-full border border-[hsl(var(--ds-forest))]/40 bg-[hsl(var(--ds-forest))]/10 px-3 py-1 text-[10px] transition-colors hover:bg-[hsl(var(--ds-forest))]/20"
-            >
-              Réinitialiser les filtres
-            </button>
+            {query.trim() ? (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="mt-3 rounded-full border border-[hsl(var(--ds-forest))]/40 bg-[hsl(var(--ds-forest))]/10 px-3 py-1 text-[10px] transition-colors hover:bg-[hsl(var(--ds-forest))]/20"
+              >
+                Effacer la recherche
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onFilterChange(resetVivantFilter())}
+                className="mt-3 rounded-full border border-[hsl(var(--ds-forest))]/40 bg-[hsl(var(--ds-forest))]/10 px-3 py-1 text-[10px] transition-colors hover:bg-[hsl(var(--ds-forest))]/20"
+              >
+                Réinitialiser les filtres
+              </button>
+            )}
           </div>
         ) : (
           <ul>
