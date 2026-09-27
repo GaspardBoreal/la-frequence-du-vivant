@@ -440,7 +440,11 @@ export const ChantierOverlay: React.FC<Props> = ({
                 aria-label="Rayon d'écoute depuis le bord des tracés"
               >
                 {CHANTIER_RADIUS_PRESETS.map((r) => (
-                  <option key={r} value={r}>
+                  <option
+                    key={r}
+                    value={r}
+                    style={{ backgroundColor: '#12241c', color: '#f2ead8' }}
+                  >
                     {radiusLabel(r)}
                   </option>
                 ))}
