@@ -10,6 +10,10 @@ export interface ProprieteChantier {
   propriete_id: string;
   nom: string;
   objet_ids: string[];
+  /** Emplacements rattachés au chantier. */
+  zone_ids: string[];
+  /** Rayon d'écoute depuis le bord (null = dans le tracé). */
+  radius_m: number | null;
   date_travaux: string | null;
   statut: 'projet' | 'en_cours' | 'realise';
   notes: string | null;

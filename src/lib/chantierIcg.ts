@@ -33,6 +33,41 @@ export const RIGOUR_LABEL: Record<ChantierRigour, string> = {
 
 const NEIGHBOUR_M = 15;
 
+/** Rayons d'écoute proposés, mesurés depuis le bord du tracé (0 = dans le tracé). */
+export const CHANTIER_RADIUS_PRESETS = [0, 5, 10, 25, 50, 100, 250, 500, 1000] as const;
+
+export const radiusLabel = (r: number) =>
+  r <= 0 ? 'Dans le tracé' : r >= 1000 ? `${r / 1000} km` : `${r} m`;
+
+export interface RadiusScoped<T> {
+  item: T;
+  /** Distance au bord du tracé le plus proche (0 = dedans). */
+  distanceM: number;
+}
+
+/**
+ * Observations dans les tracés (ouvrages ∪ emplacements) élargies d'un rayon
+ * mesuré depuis le bord. Jamais un disque autour du centroïde.
+ */
+export function scopeByRadius<T extends { id: string; lat: number; lng: number }>(
+  geometries: any[],
+  items: T[],
+  radiusM: number,
+): RadiusScoped<T>[] {
+  const best = new Map<string, RadiusScoped<T>>();
+  for (const geometry of geometries) {
+    if (!geometry) continue;
+    const res = classifyObservations(geometry, items, Math.max(0, radiusM), 0);
+    const keep = radiusM > 0 ? [...res.dedans, ...res.voisinage] : res.dedans;
+    for (const s of keep) {
+      const prev = best.get(s.item.id);
+      if (!prev || s.distanceM < prev.distanceM)
+        best.set(s.item.id, { item: s.item, distanceM: s.distanceM });
+    }
+  }
+  return Array.from(best.values());
+}
+
 /** Observations retenues pour un lot d'ouvrages, dédupliquées par identifiant. */
 export function scopeWaypoints(
   geometries: any[],
