@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import RealignSpeciesNamesCard from '@/components/admin/RealignSpeciesNamesCard';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route, Search, Mail, BookOpen } from 'lucide-react';
@@ -143,6 +144,7 @@ const AdminOutilsHub: React.FC = () => {
             </Card>
           ))}
         </div>
+        <RealignSpeciesNamesCard />
       </div>
     </div>
   );
