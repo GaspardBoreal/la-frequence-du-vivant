@@ -146,6 +146,11 @@ export const ChantierOverlay: React.FC<Props> = ({
     () => [...lotObjets.map((o) => o.geometry), ...lotZones.map((z) => z.geometry)].filter(Boolean),
     [lotObjets, lotZones],
   );
+  /** Même exclusion éditoriale que les pastilles de l'Atelier. */
+  const mapWaypoints = React.useMemo(
+    () => (pool.waypoints ?? []).filter((w) => w.overrideStatus !== 'excluded'),
+    [pool.waypoints],
+  );
 
   /* ---------- A. Les espèces réellement dans le lot ---------- */
   /** Lot sans ouvrage = chantier « tout le jardin » : on garde l'ensemble du vivant. */
@@ -331,9 +336,9 @@ export const ChantierOverlay: React.FC<Props> = ({
   const { displayNameFor } = useWaypointFrenchNames(nameInput);
   const orbitWaypoints = React.useMemo(
     () => selectedCortegeScope
-      ? scopeByRadius([selectedCortegeScope.geometry], pool.waypoints ?? [], radiusM)
-      : scopedWithDistance,
-    [selectedCortegeScope, pool.waypoints, radiusM, scopedWithDistance],
+      ? scopeByRadius([selectedCortegeScope.geometry], mapWaypoints, radiusM)
+      : scopedWithDistance.filter(({ item }) => item.overrideStatus !== 'excluded'),
+    [selectedCortegeScope, mapWaypoints, radiusM, scopedWithDistance],
   );
   const orbitSpecies = React.useMemo<OrbitSpecies[]>(() => {
     const by = new Map<string, OrbitSpecies>();
