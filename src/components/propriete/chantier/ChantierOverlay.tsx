@@ -21,7 +21,6 @@ import { useWaypointFrenchNames } from '@/hooks/propriete/useWaypointFrenchNames
 import { useScenographeState } from '@/components/propriete/scenographe/scenographeStore';
 
 import { soilLiteFromState } from '@/lib/soilLiteFromState';
-import { classifyObservations } from '@/lib/ouvrageScope';
 import { TOOL_BY_KEY, type PaysageTool } from '@/lib/paysageTools';
 import {
   CHANTIER_RADIUS_PRESETS,
@@ -312,8 +311,9 @@ export const ChantierOverlay: React.FC<Props> = ({
         commonName: v.commonName,
       })),
       ...beforeJury.unmatched,
+      ...scoped.map((w) => ({ scientificName: w.scientificName, commonName: w.commonName })),
     ],
-    [inPlaceRaw, cortege, beforeJury],
+    [inPlaceRaw, cortege, beforeJury, scoped],
   );
   const { displayNameFor } = useWaypointFrenchNames(nameInput);
   const orbitSpecies = React.useMemo<OrbitSpecies[]>(() => {
