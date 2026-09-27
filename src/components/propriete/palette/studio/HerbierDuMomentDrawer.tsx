@@ -7,6 +7,7 @@ import {
   Download,
   Leaf,
   Maximize2,
+  Search,
   Sparkles,
   X,
 } from 'lucide-react';
