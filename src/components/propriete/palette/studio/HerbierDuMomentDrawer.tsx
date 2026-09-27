@@ -473,11 +473,21 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
         {entries.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <p className="text-[11px] italic leading-relaxed opacity-65">
-              {allEntries.length > 0 ? (
+              {query.trim() && searched.length === 0 ? (
                 <>
-                  Rien dans « {GROUPS.find((g) => g.id === group)?.label} » pour l’instant.
+                  Aucune espèce ne contient « {query.trim()} ».
                   <br />
-                  Le vivant relevé ici se range dans un autre onglet.
+                  Essayez un autre nom, français ou scientifique.
+                </>
+              ) : allEntries.length > 0 ? (
+                <>
+                  {query.trim()
+                    ? 'Aucun résultat dans cet onglet.'
+                    : `Rien dans « ${GROUPS.find((g) => g.id === group)?.label} » pour l’instant.`}
+                  <br />
+                  {query.trim()
+                    ? 'L’espèce recherchée se range peut-être dans un autre.'
+                    : 'Le vivant relevé ici se range dans un autre onglet.'}
                 </>
               ) : (
                 <>
@@ -487,13 +497,23 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
                 </>
               )}
             </p>
-            <button
-              type="button"
-              onClick={() => onFilterChange(resetVivantFilter())}
-              className="mt-3 rounded-full border border-[hsl(var(--ds-forest))]/40 bg-[hsl(var(--ds-forest))]/10 px-3 py-1 text-[10px] transition-colors hover:bg-[hsl(var(--ds-forest))]/20"
-            >
-              Réinitialiser les filtres
-            </button>
+            {query.trim() ? (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="mt-3 rounded-full border border-[hsl(var(--ds-forest))]/40 bg-[hsl(var(--ds-forest))]/10 px-3 py-1 text-[10px] transition-colors hover:bg-[hsl(var(--ds-forest))]/20"
+              >
+                Effacer la recherche
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onFilterChange(resetVivantFilter())}
+                className="mt-3 rounded-full border border-[hsl(var(--ds-forest))]/40 bg-[hsl(var(--ds-forest))]/10 px-3 py-1 text-[10px] transition-colors hover:bg-[hsl(var(--ds-forest))]/20"
+              >
+                Réinitialiser les filtres
+              </button>
+            )}
           </div>
         ) : (
           <ul>
