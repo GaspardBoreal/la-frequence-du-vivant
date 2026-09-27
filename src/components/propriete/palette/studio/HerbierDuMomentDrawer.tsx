@@ -226,13 +226,33 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
   );
   const [expanded, setExpanded] = React.useState<string | null>(null);
   const [group, setGroup] = React.useState<HerbierGroup>('flore');
+  const [query, setQuery] = React.useState('');
+
+  const labelOf = React.useCallback(
+    (e: VivantRosterEntry) => frenchName(e.scientificName, e.commonName),
+    [frenchName],
+  );
+
+  // La recherche disparaît avec le tiroir : à la réouverture, l'herbier est complet.
+  React.useEffect(() => {
+    if (!open) setQuery('');
+  }, [open]);
+
+  /** Espèces dont le nom français ou le nom scientifique contient la recherche. */
+  const searched = React.useMemo(() => {
+    const q = norm(query);
+    if (!q) return allEntries;
+    return allEntries.filter(
+      (e) => norm(labelOf(e)).includes(q) || norm(e.scientificName).includes(q),
+    );
+  }, [allEntries, query, labelOf]);
 
   /** Répartition Flore / Faune / Autres (champignons inclus dans « Autres »). */
   const byGroup = React.useMemo(() => {
     const m: Record<HerbierGroup, VivantRosterEntry[]> = { flore: [], faune: [], autres: [] };
-    for (const e of allEntries) m[groupOfType(e.type)].push(e);
+    for (const e of searched) m[groupOfType(e.type)].push(e);
     return m;
-  }, [allEntries]);
+  }, [searched]);
 
   const entries = byGroup[group];
   const speciesCount = entries.length;
