@@ -139,7 +139,9 @@ export const ChantierOverlay: React.FC<Props> = ({
     [lotZones, lotObjets],
   );
   const defaultCortegeScope = lotZones.length === 1 ? `zone:${lotZones[0].id}` : 'all';
-  const requestedScope = cortegeSelection?.chantierId === active?.id ? cortegeSelection.scopeId : defaultCortegeScope;
+  const requestedScope = cortegeSelection && active && cortegeSelection.chantierId === active.id
+    ? cortegeSelection.scopeId
+    : defaultCortegeScope;
   const cortegeScopeId = requestedScope === 'all' || cortegeScopes.some((s) => s.id === requestedScope) ? requestedScope : defaultCortegeScope;
   const selectedCortegeScope = cortegeScopes.find((s) => s.id === cortegeScopeId);
   const geometries = React.useMemo(
