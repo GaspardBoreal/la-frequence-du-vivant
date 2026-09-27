@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { fetchInatFr } from "../_shared/inat-fr-name.ts";
 import { validateAuth, forbiddenResponse, corsHeaders } from "../_shared/auth-helper.ts";
 
 interface SingleTranslationRequest {
@@ -188,7 +189,7 @@ async function handleBatch(body: BatchTranslationRequest): Promise<Response> {
   // 4. Persist new translations (DB trigger guarantees `manual` rows are never overwritten)
   const toInsert: any[] = [];
   Object.entries(inpnResults).forEach(([sci, fr]) => {
-    toInsert.push({ scientific_name: sci, common_name_fr: fr, source: 'inpn', confidence_level: 'high' });
+    toInsert.push({ scientific_name: sci, common_name_fr: fr, source: inatResults[sci] ? 'inaturalist' : 'inpn', confidence_level: 'high' });
   });
   Object.entries(wikiResults).forEach(([sci, fr]) => {
     if (!inpnResults[sci]) {
