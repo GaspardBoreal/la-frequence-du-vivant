@@ -149,14 +149,24 @@ async function handleBatch(body: BatchTranslationRequest): Promise<Response> {
   const missing = items.filter(i => !cached.has(i.scientificName.trim()));
   console.log(`[translate-species batch] ${cached.size} cached, ${missing.length} to resolve`);
 
+  // 0. iNaturalist FR (aligné TAXREF) — source prioritaire
+  const inatResults: Record<string, string> = {};
+  await Promise.all(
+    missing.map(async it => {
+      const fr = await fetchInatFr(it.scientificName.trim());
+      if (fr) inatResults[it.scientificName.trim()] = fr;
+    })
+  );
+
   // 1. Try INPN (fast & accurate, but currently offline due to MNHN cyberattack)
   const inpnResults: Record<string, string> = {};
   await Promise.all(
-    missing.slice(0, 10).map(async it => {
+    missing.filter(i => !inatResults[i.scientificName.trim()]).slice(0, 10).map(async it => {
       const fr = await fetchInpn(it.scientificName.trim());
       if (fr) inpnResults[it.scientificName.trim()] = fr;
     })
   );
+  Object.assign(inpnResults, inatResults);
 
   // 2. Wikipedia FR fallback (most reliable source while INPN is down)
   const wikiResults: Record<string, string> = {};
