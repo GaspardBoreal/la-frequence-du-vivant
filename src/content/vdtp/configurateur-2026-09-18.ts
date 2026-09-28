@@ -1,4 +1,5 @@
 /**
+ * VERSION FIGÉE — présentation officielle du 18 septembre 2026. Ne plus modifier ce fichier.
  * Catalogue des briques de La Fréquence du Vivant proposées à Ver de Terre Production
  * dans le cadre du projet « Jardin nourricier ».
  *
@@ -23,10 +24,12 @@ export interface ConfigOption {
   /** Brique socle : la décocher décroche les briques qui en dépendent. */
   core?: boolean;
   requires?: string[];
+  /** Date d'ajout au catalogue (ISO) — absent pour les briques du 18.09.2026. */
+  addedOn?: string;
 }
 
 export interface ConfigGrid {
-  id: 'technique' | 'usage' | 'patrimoine';
+  id: 'technique' | 'usage' | 'patrimoine' | 'nouveautes';
   number: string;
   label: string;
   tagline: string;
@@ -424,4 +427,21 @@ export const PRESTATION = {
   days: 36,
   amount: 36000,
   label: 'Prestation de développement « Usine Tech + Jardin nourricier »',
+};
+
+/** Catalogue complet, tel que présenté officiellement le 18 septembre 2026. Ne plus modifier. */
+export interface VdtpCatalog {
+  options: ConfigOption[];
+  grids: ConfigGrid[];
+  presets: ConfigPreset[];
+  byId: Map<string, ConfigOption>;
+  totalWeight: number;
+}
+
+export const CATALOG_2026_09_18: VdtpCatalog = {
+  options: CONFIG_OPTIONS,
+  grids: CONFIG_GRIDS,
+  presets: CONFIG_PRESETS,
+  byId: OPTION_BY_ID,
+  totalWeight: TOTAL_WEIGHT,
 };
