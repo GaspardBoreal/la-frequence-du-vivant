@@ -74,8 +74,8 @@ export const JOURNAL_ENTRIES: JournalEntry[] = [
     description:
       'Le patrimoine logiciel lu de trois façons, à la carte : chaque brique cochée recalcule le montant en direct, avec récapitulatif imprimable et lien de sélection partageable.',
     theme: 'piloter',
-    lien: '/partenaires/vdtp/configurateur',
-    lienLabel: 'Ouvrir le configurateur',
+    lien: '/partenaires/vdtp/configurateur-18-09-2026',
+    lienLabel: 'Ouvrir la version officielle du 18.09.2026',
     statut: 'livre',
   },
   {
@@ -100,6 +100,16 @@ export const JOURNAL_ENTRIES: JournalEntry[] = [
     description:
       'La frise que vous lisez : chaque livraison y sera ajoutée, datée et reliée à sa démo. Une seule source de contenu, mise à jour à chaque livraison.',
     theme: 'raconter',
+    statut: 'livre',
+  },
+  {
+    date: '2026-09-28',
+    titre: 'Configurateur enrichi et synthèse mensuelle',
+    description:
+      'La version officielle du 18 septembre 2026 est figée et datée ; un configurateur enrichi valorise en plus les briques livrées depuis, sans changer le prix du périmètre initial. Une synthèse graphique mensuelle résume les nouveautés.',
+    theme: 'piloter',
+    lien: '/partenaires/vdtp/configurateur',
+    lienLabel: 'Ouvrir le configurateur enrichi',
     statut: 'livre',
   },
 ];
