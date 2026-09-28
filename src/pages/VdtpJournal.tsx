@@ -14,6 +14,8 @@ import {
   type JournalTheme,
 } from '@/content/vdtp/journal';
 import { PARTNER_AUDIT_PASSWORD } from '@/lib/partnerAudits';
+import { VdtpNav, VdtpSeeAlso } from '@/components/partners/vdtp/VdtpNav';
+import VdtpMonthlyChart from '@/components/partners/vdtp/VdtpMonthlyChart';
 
 const STORAGE_KEY = 'vdtp-configurateur-unlocked';
 
@@ -38,11 +40,14 @@ const VdtpJournal: React.FC = () => {
   const [pwd, setPwd] = React.useState('');
   const [pwdError, setPwdError] = React.useState(false);
   const [theme, setTheme] = React.useState<JournalTheme | 'all'>('all');
+  const [month, setMonth] = React.useState<string | null>(null);
 
   const entries = React.useMemo(() => {
-    const sorted = [...JOURNAL_ENTRIES].sort((a, b) => b.date.localeCompare(a.date));
+    const sorted = [...JOURNAL_ENTRIES]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .filter((e) => !month || e.date.startsWith(month));
     return theme === 'all' ? sorted : sorted.filter((e) => e.theme === theme);
-  }, [theme]);
+  }, [theme, month]);
 
   if (!unlocked) {
     return (
@@ -104,6 +109,8 @@ const VdtpJournal: React.FC = () => {
         <title>Journal des briques — VDTP × La Fréquence du Vivant</title>
       </Helmet>
 
+      <VdtpNav active="journal" />
+
       {/* En-tête : même ton que la page de négociation */}
       <header className="border-b border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-forest-deep))] px-5 py-10 text-[hsl(var(--ds-cream))] sm:px-8 sm:py-14">
         <div className="mx-auto w-full max-w-3xl">
@@ -126,7 +133,7 @@ const VdtpJournal: React.FC = () => {
             </Button>
             <Button asChild className="bg-[hsl(var(--ds-gold))] text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-gold))]/90">
               <Link to="/partenaires/vdtp/configurateur">
-                Ouvrir le configurateur <ArrowRight className="ml-1.5 h-4 w-4" />
+                Configurateur enrichi <ArrowRight className="ml-1.5 h-4 w-4" />
               </Link>
             </Button>
           </div>
@@ -134,8 +141,10 @@ const VdtpJournal: React.FC = () => {
       </header>
 
       <main className="mx-auto w-full max-w-3xl px-5 py-8 sm:px-8 sm:py-12">
+        <VdtpMonthlyChart month={month} onMonth={setMonth} />
+
         {/* Filtres par thème */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
           <button
             type="button"
             onClick={() => setTheme('all')}
@@ -167,6 +176,16 @@ const VdtpJournal: React.FC = () => {
             );
           })}
         </div>
+
+        {month && (
+          <button
+            type="button"
+            onClick={() => setMonth(null)}
+            className="mt-3 text-xs text-[hsl(var(--ds-forest))] underline underline-offset-4"
+          >
+            Mois filtré — afficher tous les mois
+          </button>
+        )}
 
         {/* Frise chronologique */}
         <div className="relative mt-8 border-l-2 border-[hsl(var(--ds-line))] pl-6 sm:pl-8">
@@ -228,6 +247,9 @@ const VdtpJournal: React.FC = () => {
           </p>
         </div>
       </main>
+
+      <VdtpSeeAlso active="journal" />
+      <div className="h-10" />
 
       <div className="bg-background">
         <Footer variant="marches" />
