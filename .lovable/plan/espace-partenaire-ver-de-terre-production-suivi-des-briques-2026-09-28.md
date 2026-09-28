@@ -34,7 +34,7 @@
 - Aucun changement de base de données. Aucune modification des animations, du configurateur ou de la page de négociation existante (hors l'ajout du bouton de lien).
 - Vérification : compilation `tsgo`, rendu mobile 375 px, présence dans le sitemap.
 
-## Suite possible (hors périmètre, à valider)
+## Suites possibles validées
 
 - Protéger le journal par le même code que le configurateur si vous préférez le garder confidentiel.
 - Décliner le même « Journal des briques » pour la Chambre d'agriculture Pays de la Loire.
