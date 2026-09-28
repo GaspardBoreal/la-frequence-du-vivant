@@ -436,6 +436,8 @@ export interface VdtpCatalog {
   presets: ConfigPreset[];
   byId: Map<string, ConfigOption>;
   totalWeight: number;
+  /** Poids de référence du 18.09.2026 : garantit qu'une même sélection garde le même prix. */
+  refWeight: number;
 }
 
 export const CATALOG_2026_09_18: VdtpCatalog = {
@@ -444,4 +446,5 @@ export const CATALOG_2026_09_18: VdtpCatalog = {
   presets: CONFIG_PRESETS,
   byId: OPTION_BY_ID,
   totalWeight: TOTAL_WEIGHT,
+  refWeight: TOTAL_WEIGHT,
 };
