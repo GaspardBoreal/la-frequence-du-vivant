@@ -647,6 +647,9 @@ const ClosingSection: React.FC = () => (
         <Button size="lg" variant="outline" asChild>
           <a href="/marches-du-vivant">Explorer la plateforme</a>
         </Button>
+        <Button size="lg" variant="outline" asChild>
+          <a href="/partenaires/vdtp/journal">Voir les briques livrées</a>
+        </Button>
       </div>
 
       <div className="mt-16 text-xs text-muted-foreground font-mono">
