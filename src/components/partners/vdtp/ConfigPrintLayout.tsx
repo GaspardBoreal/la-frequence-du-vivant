@@ -1,14 +1,17 @@
 import React from 'react';
-import { CONFIG_GRIDS, OPTION_BY_ID, PRESTATION } from '@/content/vdtp/configurateur';
+import { PRESTATION } from '@/content/vdtp/configurateur';
+import { CATALOG_2026_09_18, type VdtpCatalog } from '@/content/vdtp/configurateur-2026-09-18';
 import { formatEuro, splitPayment } from '@/lib/vdtp/pricing';
 
 interface Props {
+  catalog?: VdtpCatalog;
   selected: string[];
   price: number;
 }
 
 /** Mise en page A4, visible uniquement à l'impression. */
-const ConfigPrintLayout: React.FC<Props> = ({ selected, price }) => {
+const ConfigPrintLayout: React.FC<Props> = ({
+  catalog = CATALOG_2026_09_18, selected, price }) => {
   const set = new Set(selected);
   const { upfront, conditional } = splitPayment(price);
 
@@ -33,7 +36,7 @@ const ConfigPrintLayout: React.FC<Props> = ({ selected, price }) => {
         des briques retenues / poids total du catalogue). Toutes les briques retenues = 50 000 €.
       </p>
 
-      {CONFIG_GRIDS.map((grid) => {
+      {catalog.grids.map((grid) => {
         const rows = grid.optionIds.filter((id) => set.has(id));
         if (rows.length === 0) return null;
         return (
@@ -43,7 +46,7 @@ const ConfigPrintLayout: React.FC<Props> = ({ selected, price }) => {
             </h2>
             <ul className="mt-1 list-disc pl-5 text-sm">
               {rows.map((id) => {
-                const o = OPTION_BY_ID.get(id)!;
+                const o = catalog.byId.get(id)!;
                 return (
                   <li key={id}>
                     <span className="font-semibold">{o.label}</span> — {o.gain}

@@ -8,10 +8,12 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { CONFIG_GRIDS, OPTION_BY_ID, PRESTATION } from '@/content/vdtp/configurateur';
+import { PRESTATION } from '@/content/vdtp/configurateur';
+import { CATALOG_2026_09_18, type VdtpCatalog } from '@/content/vdtp/configurateur-2026-09-18';
 import { formatEuro, splitPayment } from '@/lib/vdtp/pricing';
 
 interface Props {
+  catalog?: VdtpCatalog;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   selected: string[];
@@ -21,6 +23,7 @@ interface Props {
 }
 
 const RecapSheet: React.FC<Props> = ({
+  catalog = CATALOG_2026_09_18,
   open,
   onOpenChange,
   selected,
@@ -59,7 +62,7 @@ const RecapSheet: React.FC<Props> = ({
             </p>
           </div>
 
-          {CONFIG_GRIDS.map((grid) => {
+          {catalog.grids.map((grid) => {
             const rows = grid.optionIds.filter((id) => set.has(id));
             if (rows.length === 0) return null;
             return (
@@ -69,7 +72,7 @@ const RecapSheet: React.FC<Props> = ({
                 </p>
                 <ul className="mt-2 space-y-1.5">
                   {rows.map((id) => {
-                    const o = OPTION_BY_ID.get(id)!;
+                    const o = catalog.byId.get(id)!;
                     return (
                       <li
                         key={id}

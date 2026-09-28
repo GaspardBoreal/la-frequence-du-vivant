@@ -1,16 +1,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { PRESTATION } from '@/content/vdtp/configurateur';
+import { CATALOG_2026_09_18, type VdtpCatalog } from '@/content/vdtp/configurateur-2026-09-18';
 import { coverage, formatEuro, splitPayment } from '@/lib/vdtp/pricing';
 
 interface Props {
+  catalog?: VdtpCatalog;
   price: number;
   selected: string[];
   totalOptions: number;
 }
 
-const PriceHeader: React.FC<Props> = ({ price, selected, totalOptions }) => {
-  const cov = coverage(selected);
+const PriceHeader: React.FC<Props> = ({
+  catalog = CATALOG_2026_09_18, price, selected, totalOptions }) => {
+  const cov = coverage(selected, catalog);
   const { upfront, conditional } = splitPayment(price);
 
   return (
