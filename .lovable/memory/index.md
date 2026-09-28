@@ -8,3 +8,4 @@
 - [Parcours Sauniers](mem://features/marches-du-vivant/sauniers-parcours-une-marche-par-point) — Chaque point de /sauniers = 1 marche numérotée dans l'expérience + ancrage waypoint pour les idées d'animation
 - [Parcours d'usage marcheur](mem://features/admin/parcours-usage-marcheur) — Onglet « Parcours » /admin/community : RPC get_marcheur_parcours, journal des échanges Assistant, traces jardin
 - [Base de connaissance FJ](mem://features/connaissance/base-connaissance-frequence-jardin) — /admin/outils/connaissance : tables kb_*, fiches sourcées obligatoires, import idempotent des savoirs du code
+- [Journal des briques VDTP](mem://features/partenaires/vdtp-journal-briques) — /partenaires/vdtp/journal : frise des briques livrées depuis /offre-VDT-MDV (9 juil. 2026), contenu dans src/content/vdtp/journal.ts, même mot de passe que le configurateur

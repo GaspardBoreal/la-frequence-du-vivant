@@ -1,7 +1,7 @@
 import React from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Lock, Printer, ListChecks } from 'lucide-react';
+import { Lock, Printer, ListChecks, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -295,6 +295,11 @@ toutes les briques     →  50 000 €`}
               className="flex-1 min-w-[180px]"
             >
               <Printer className="mr-1.5 h-4 w-4" /> Imprimer / PDF
+            </Button>
+            <Button variant="outline" asChild className="flex-1 min-w-[180px]">
+              <Link to="/partenaires/vdtp/journal">
+                <BookOpen className="mr-1.5 h-4 w-4" /> Voir les briques livrées
+              </Link>
             </Button>
           </div>
         </main>

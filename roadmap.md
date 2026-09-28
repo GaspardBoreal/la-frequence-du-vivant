@@ -18,3 +18,4 @@
 - [x] Archiver chaque simulation IA partenaire (projet, plan, questions-réponses) et l'exporter depuis Admin > CRM > IA
 - [x] Montrer les photos datées de chaque espèce dans l’Herbier du moment et les parcourir sans mélanger les espèces
 - [x] Aligner le Cortège vivant sur un emplacement ou ouvrage choisi, en conservant le bilan du chantier entier
+- [x] Journal des briques Ver de Terre Production (/partenaires/vdtp/journal, frise datée depuis la proposition du 9 juillet 2026)
