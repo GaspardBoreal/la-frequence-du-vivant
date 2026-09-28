@@ -9,3 +9,6 @@ type: feature
 - Contenu unique dans `src/content/vdtp/journal.ts` : ajouter une brique = une entrée `JournalEntry` (date ISO, titre, description, theme, lien facultatif, statut). Ne jamais toucher la page pour ajouter une brique.
 - Protection : même mot de passe que le configurateur (`PARTNER_AUDIT_PASSWORD`, sessionStorage `vdtp-configurateur-unlocked` partagé) → page noindex, volontairement absente du sitemap et de llms.txt.
 - Liens croisés : bouton « Voir les briques livrées » sur `/offre-VDT-MDV` (ClosingSection) et dans le configurateur.
+- Configurateur officiel figé : `/partenaires/vdtp/configurateur-18-09-2026`, catalogue `src/content/vdtp/configurateur-2026-09-18.ts` — NE JAMAIS MODIFIER.
+- Configurateur enrichi : `/partenaires/vdtp/configurateur`, nouvelles briques dans `NEW_OPTIONS` (`src/content/vdtp/configurateur.ts`, champ `addedOn`, toujours en fin de liste). Prix d'une sélection du 18.09 inchangé ; les nouveautés s'ajoutent au-delà de 50 k€.
+- Barre `VdtpNav` identique + « Voir aussi » sur les 3 pages (journal, 18.09, enrichi) ; la sélection `?s=` suit d'un configurateur à l'autre. Synthèse mensuelle en tête du journal.
