@@ -252,7 +252,7 @@ export default function AdminNoteDonnees() {
                             ? 'bg-muted-foreground/30'
                             : 'bg-primary/45';
                         return (
-                          <div key={r.nom + r.rank} className={`grid grid-cols-[1.25rem_8.5rem_1fr_9.5rem] sm:grid-cols-[1.5rem_11rem_1fr_11rem] items-center gap-2 text-sm ${collapsedHidden ? 'hidden print:grid' : ''}`}>
+                          <div key={r.nom + r.rank} className={`grid grid-cols-[1.25rem_8.5rem_1fr_9.5rem] sm:grid-cols-[1.5rem_11rem_1fr_11rem] items-center gap-2 text-sm ${collapsedHidden ? 'hidden' : ''}`}>
                             <span className="text-muted-foreground tabular-nums text-right">{r.rank}</span>
                             <span className={`truncate ${r.role === 'gaspard' || r.role === 'association' ? 'font-semibold' : ''}`}>{r.nom}</span>
                             <div className="h-5 rounded bg-muted overflow-hidden">
