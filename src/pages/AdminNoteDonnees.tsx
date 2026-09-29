@@ -1,110 +1,95 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import {
+  ArrowLeft,
+  BookOpenCheck,
+  ChevronDown,
+  ChevronUp,
+  CircleAlert,
+  Clock,
+  Database,
+  Printer,
+  Scale,
+  Users,
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Printer, Database, Scale, ShieldCheck, Users, ArrowLeft, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 
-interface Famille {
-  famille: string;
+type CategoryKey = 'works' | 'observations' | 'activity' | 'snapshots' | 'personal' | 'iot';
+
+interface DataCategory {
+  key: CategoryKey;
+  label: string;
   total: number;
-  attribue: number;
+  gaspard: number;
+  association: number;
+  others: number;
+  unattributed: number;
+  third_party: number;
 }
 
 interface DataAssetStats {
-  familles: Famille[];
-  total_general: number;
-  total_attribue: number;
-  ratio_pct: number;
+  categories: DataCategory[];
   computed_at: string;
   top_marcheurs?: { nom: string; total: number; role: string }[];
   top_base?: number;
+  snapshot_attributions?: number;
+  snapshot_third_party_attributions?: number;
+  snapshots_with_third_party?: number;
 }
 
-const LABELS: Record<string, string> = {
-  mesures_capteurs_iot: 'Mesures capteurs IoT',
-  observations_marcheurs: 'Observations marcheurs',
-  dont_observations_gaspard: '— dont signées G. Boréal',
-  dont_observations_association: '— dont signées Les marches du Vivant',
-  medias_marcheurs: 'Médias marcheurs',
-  dont_medias_gaspard: '— dont signés G. Boréal',
-  dont_medias_association: '— dont signés Les marches du Vivant',
-  snapshots_biodiversite: 'Snapshots biodiversité',
-  dont_snapshots_attr_total: '— observations iNaturalist attribuées dans les snapshots',
-  dont_snapshots_gaspard: '— dont signées G. Boréal (@gaspardboreal)',
-  dont_snapshots_association: '— dont signées Les marches du Vivant (@les-marches-du-vivant)',
-  photos_marches: 'Photos de marches',
-  dont_photos_association: '— dont Les marches du Vivant (contenu éditorial MdV, auteur non enregistré)',
-  marches: 'Marches',
-  evenements: 'Événements',
-  dont_evenements_crees_gaspard: '— dont créés par G. Boréal',
-  participations: 'Participations',
-  dont_participations_gaspard: '— dont G. Boréal',
-  waypoints_exploration: "Points d'étape (waypoints)",
-  audios_marches: 'Audios de marches',
-  dont_audios_association: '— dont Les marches du Vivant (contenu éditorial MdV, auteur non enregistré)',
-  textes_marcheurs: 'Textes de marcheurs',
-  profils_communaute_exclus: 'Profils communauté (exclus — RGPD)',
-  proprietes: 'Propriétés documentées',
+const fmt = (value: number) => value.toLocaleString('fr-FR');
+const pct = (value: number, total: number) =>
+  total > 0 ? `${((value / total) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %` : '0 %';
+
+const categoryReading = (category: DataCategory) => {
+  switch (category.key) {
+    case 'works':
+      return `Auteur identifié : G. Boréal ${fmt(category.gaspard)} ; compte association ${fmt(category.association)} ; autres auteurs ${fmt(category.others)}. Auteur non enregistré : ${fmt(category.unattributed)}.`;
+    case 'observations':
+      return `Compte G. Boréal ${fmt(category.gaspard)} ; compte association ${fmt(category.association)} ; autres contributeurs ${fmt(category.others)}. Données factuelles, sans présomption de droit d’auteur.`;
+    case 'activity':
+      return 'Activité structurée dans le cadre des Marches du Vivant ; les participations peuvent contenir des données personnelles.';
+    case 'snapshots':
+      return 'Agrégats construits à partir de sources ouvertes ; exclus de toute revendication de propriété sur les observations sources.';
+    case 'personal':
+      return 'Données de tiers ou données personnelles ; hors actif appropriable.';
+    case 'iot':
+      return 'Mesures techniques ; elles documentent la base mais ne constituent pas des œuvres.';
+  }
 };
-
-const ORDER = [
-  'mesures_capteurs_iot',
-  'observations_marcheurs',
-  'dont_observations_gaspard',
-  'dont_observations_association',
-  'medias_marcheurs',
-  'dont_medias_gaspard',
-  'dont_medias_association',
-  'snapshots_biodiversite',
-  'dont_snapshots_attr_total',
-  'dont_snapshots_gaspard',
-  'dont_snapshots_association',
-  'photos_marches',
-  'dont_photos_association',
-  'marches',
-  'evenements',
-  'dont_evenements_crees_gaspard',
-  'participations',
-  'dont_participations_gaspard',
-  'waypoints_exploration',
-  'audios_marches',
-  'dont_audios_association',
-  'textes_marcheurs',
-  'proprietes',
-  'profils_communaute_exclus',
-];
-
-const fmt = (n: number) => n.toLocaleString('fr-FR');
 
 export default function AdminNoteDonnees() {
   const [showAllTop, setShowAllTop] = useState(false);
   const [exportMode, setExportMode] = useState<'simple' | 'complete'>('simple');
   const [printedAt, setPrintedAt] = useState<Date>(new Date());
 
-  const handleExport = () => {
-    setPrintedAt(new Date());
-    setTimeout(() => window.print(), 100);
-  };
   const { data, isLoading, error } = useQuery({
-    queryKey: ['data-asset-stats'],
+    queryKey: ['data-asset-stats-v2'],
     queryFn: async (): Promise<DataAssetStats> => {
-      const { data, error } = await supabase.rpc('get_data_asset_stats');
-      if (error) throw error;
-      return data as unknown as DataAssetStats;
+      const { data: stats, error: statsError } = await supabase.rpc('get_data_asset_stats');
+      if (statsError) throw statsError;
+      return stats as unknown as DataAssetStats;
     },
     staleTime: 5 * 60 * 1000,
   });
 
-  const familles = (data?.familles ?? [])
-    .filter((f) => exportMode === 'complete' || f.famille !== 'mesures_capteurs_iot')
-    .slice()
-    .sort((a, b) => ORDER.indexOf(a.famille) - ORDER.indexOf(b.famille));
-  const famillesPrincipales = familles.filter((f) => !f.famille.startsWith('dont_'));
-  const totalGeneral = famillesPrincipales.reduce((sum, f) => sum + f.total, 0);
-  const totalAttribue = famillesPrincipales.reduce((sum, f) => sum + f.attribue, 0);
-  const ratioPct = totalGeneral > 0 ? Math.round(Math.min(totalAttribue, totalGeneral) / totalGeneral * 10000) / 100 : 0;
+  const handleExport = () => {
+    setPrintedAt(new Date());
+    setTimeout(() => window.print(), 100);
+  };
 
+  const visibleCategories = (data?.categories ?? []).filter(
+    (category) => exportMode === 'complete' || category.key !== 'iot',
+  );
+  const works = visibleCategories.find((category) => category.key === 'works');
+  const identifiedWorks = works
+    ? works.gaspard + works.association + works.others
+    : 0;
+  const structuredData = visibleCategories
+    .filter((category) => category.key !== 'works' && category.key !== 'personal')
+    .reduce((sum, category) => sum + category.total, 0);
   const computedAt = data?.computed_at
     ? new Date(data.computed_at).toLocaleDateString('fr-FR', {
         day: 'numeric',
@@ -115,31 +100,29 @@ export default function AdminNoteDonnees() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-3xl mx-auto px-4 py-10 print:py-4 print:max-w-none">
+      <div className="mx-auto max-w-4xl px-4 py-10 print:max-w-none print:py-4">
         <Link
           to="/admin/outils"
-          className="print:hidden inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 -ml-1"
+          className="mb-6 -ml-1 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground print:hidden"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="h-4 w-4" />
           Retour aux outils admin
         </Link>
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5 print:mb-4">
+
+        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between print:mb-4">
           <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
+            <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">
               Association La Fréquence du Vivant — dossier statutaire
             </p>
-            <h1 className="text-3xl font-serif font-semibold">
-              Note de valorisation des données
-            </h1>
-            <p className="text-sm text-muted-foreground mt-2">
-              Réponse à la remarque : « les données des Marches du Vivant, seul actif
-              dont votre propriété personnelle reste discutable ».
+            <h1 className="font-serif text-3xl font-semibold">Note de valorisation des données</h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              Réponse à la remarque : « les données des Marches du Vivant, seul actif dont votre propriété personnelle reste discutable ».
             </p>
             <p className="mt-2 text-sm font-medium text-primary">
-              Version {exportMode === 'simple' ? 'Simple — hors mesures capteurs IoT' : 'Complète — toutes les données, mesures IoT comprises'}
+              Version {exportMode === 'simple' ? 'Simple — hors mesures capteurs IoT' : 'Complète — toutes les catégories, mesures IoT comprises'}
             </p>
             <p className="mt-3 inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-semibold print:mt-2 print:px-2.5 print:py-1 print:text-base">
-              <Clock className="w-4 h-4 text-primary print:w-5 print:h-5" />
+              <Clock className="h-4 w-4 text-primary print:h-5 print:w-5" />
               Édition du{' '}
               {printedAt.toLocaleDateString('fr-FR', {
                 weekday: 'long',
@@ -151,8 +134,9 @@ export default function AdminNoteDonnees() {
               à {printedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}
             </p>
           </div>
-          <div className="print:hidden flex flex-col gap-2 shrink-0">
-            <div role="group" aria-label="Version de la note" className="inline-flex rounded-md border border-border p-0.5 bg-muted/50">
+
+          <div className="flex shrink-0 flex-col gap-2 print:hidden">
+            <div role="group" aria-label="Version de la note" className="inline-flex rounded-md border border-border bg-muted/50 p-0.5">
               <Button type="button" size="sm" variant={exportMode === 'simple' ? 'default' : 'ghost'} aria-pressed={exportMode === 'simple'} onClick={() => setExportMode('simple')} className="flex-1">
                 Simple
               </Button>
@@ -161,160 +145,128 @@ export default function AdminNoteDonnees() {
               </Button>
             </div>
             <Button type="button" onClick={handleExport}>
-              <Printer className="w-4 h-4" />
+              <Printer className="h-4 w-4" />
               Exporter en PDF
             </Button>
           </div>
         </div>
 
-        {isLoading && (
-          <p className="text-muted-foreground text-sm">Mesure en cours…</p>
-        )}
-        {error && (
-          <p className="text-destructive text-sm">
-            Accès refusé ou erreur de mesure. Cette note est réservée aux administrateurs.
-          </p>
-        )}
+        {isLoading && <p className="text-sm text-muted-foreground">Mesure en cours…</p>}
+        {error && <p className="text-sm text-destructive">Accès refusé ou erreur de mesure. Cette note est réservée aux administrateurs.</p>}
 
-        {data && (
+        {data && works && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 print:grid-cols-3 print:gap-2 print:mb-4">
-              <div className="rounded-xl border border-border p-4">
-                <Database className="w-5 h-5 text-primary mb-2" />
-                <div className="text-2xl font-semibold tabular-nums">
-                  {fmt(totalGeneral)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  enregistrements mesurés sur {famillesPrincipales.length} familles de données
-                </div>
+            <div className="mb-5 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm leading-relaxed print:mb-3">
+              <strong>Lecture corrigée.</strong> Cette note distingue la qualité d’auteur, l’activité du compte associatif, les données factuelles et les sources tierces. Elle ne présente plus leur addition comme une preuve de propriété personnelle.
+            </div>
+
+            <div className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-3 print:grid-cols-3 print:gap-2">
+              <div className="rounded-lg border border-border p-4">
+                <BookOpenCheck className="mb-2 h-5 w-5 text-primary" />
+                <div className="text-2xl font-semibold tabular-nums">{fmt(identifiedWorks)}</div>
+                <div className="text-xs text-muted-foreground">œuvres avec auteur identifié sur {fmt(works.total)}</div>
               </div>
-              <div className="rounded-xl border border-border p-4">
-                <Users className="w-5 h-5 text-primary mb-2" />
-                <div className="text-2xl font-semibold tabular-nums">
-                  {fmt(totalAttribue)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  créés par G. Boréal ou dans le cadre des Marches du Vivant
-                </div>
+              <div className="rounded-lg border border-border p-4">
+                <CircleAlert className="mb-2 h-5 w-5 text-primary" />
+                <div className="text-2xl font-semibold tabular-nums">{fmt(works.unattributed)}</div>
+                <div className="text-xs text-muted-foreground">œuvres sans auteur enregistré, à régulariser</div>
               </div>
-              <div className="rounded-xl border border-primary/40 bg-primary/5 p-4">
-                <ShieldCheck className="w-5 h-5 text-primary mb-2" />
-                <div className="text-2xl font-semibold tabular-nums">
-                  {ratioPct.toLocaleString('fr-FR')} %
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  du volume total {exportMode === 'simple' ? 'hors mesures IoT' : 'de la plateforme'}
-                </div>
+              <div className="rounded-lg border border-border p-4">
+                <Database className="mb-2 h-5 w-5 text-primary" />
+                <div className="text-2xl font-semibold tabular-nums">{fmt(structuredData)}</div>
+                <div className="text-xs text-muted-foreground">enregistrements factuels, techniques ou d’activité structurés</div>
               </div>
             </div>
 
-            <h2 className="text-lg font-semibold mb-3">1. Mesure par famille de données</h2>
-            <div className="rounded-xl border border-border overflow-hidden mb-8 print:mb-4">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted/50 text-left">
-                    <th className="px-4 py-2 font-medium">Famille</th>
-                    <th className="px-4 py-2 font-medium text-right">Total</th>
-                    <th className="px-4 py-2 font-medium text-right">
-                      G. Boréal + MdV
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {familles.map((f) => (
-                    <tr
-                      key={f.famille}
-                      className={`border-t border-border ${
-                        f.famille.startsWith('dont_')
-                          ? 'text-muted-foreground text-xs'
-                          : ''
-                      }`}
-                    >
-                      <td className="px-4 py-2">
-                        {LABELS[f.famille] ?? f.famille}
-                      </td>
-                      <td className="px-4 py-2 text-right tabular-nums">
-                        {f.famille.startsWith('dont_') ? '' : fmt(f.total)}
-                      </td>
-                      <td className="px-4 py-2 text-right tabular-nums">
-                        {fmt(f.attribue)}
-                      </td>
+            <p className="mb-8 text-xs text-muted-foreground print:mb-4">
+              Attribution issue des comptes et métadonnées enregistrés ; elle ne vaut pas preuve définitive de titularité.
+            </p>
+
+            <section className="mb-8 print:mb-4">
+              <h2 className="mb-3 text-lg font-semibold">1. Répartition par nature de données</h2>
+              <div className="overflow-hidden rounded-lg border border-border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-muted/50 text-left">
+                      <th className="px-4 py-2 font-medium">Nature</th>
+                      <th className="px-4 py-2 text-right font-medium">Volume</th>
+                      <th className="px-4 py-2 font-medium">Qualification démontrable aujourd’hui</th>
                     </tr>
-                  ))}
-                  <tr className="border-t-2 border-primary/40 font-semibold bg-primary/5">
-                    <td className="px-4 py-2">Total</td>
-                    <td className="px-4 py-2 text-right tabular-nums">
-                      {fmt(totalGeneral)}
-                    </td>
-                    <td className="px-4 py-2 text-right tabular-nums">
-                      {fmt(totalAttribue)} ({ratioPct.toLocaleString('fr-FR')} %)
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {visibleCategories.map((category) => (
+                      <tr key={category.key} className="border-t border-border align-top">
+                        <td className="px-4 py-2 font-medium">{category.label}</td>
+                        <td className="px-4 py-2 text-right tabular-nums">{fmt(category.total)}</td>
+                        <td className="px-4 py-2 text-muted-foreground">{categoryReading(category)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
 
-            <section className="break-inside-avoid mb-8 print:mb-4">
-              <h2 className="text-lg font-semibold mb-1">
-                2. Principaux marcheurs contributeurs
-              </h2>
-              <p className="text-xs text-muted-foreground mb-4">
-                Part de chaque marcheur dans les {fmt(data.top_base ?? 0)} contributions
-                des marcheurs (observations + médias + textes + audios). Mesures IoT exclues.
+            <section className="mb-8 break-inside-avoid print:mb-4">
+              <h2 className="mb-1 text-lg font-semibold">2. Répartition des œuvres et principaux marcheurs contributeurs</h2>
+              <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4 print:grid-cols-4">
+                {[
+                  ['G. Boréal', works.gaspard],
+                  ['Compte association', works.association],
+                  ['Autres auteurs', works.others],
+                  ['Auteur non enregistré', works.unattributed],
+                ].map(([label, value]) => (
+                  <div key={String(label)} className="rounded-lg border border-border p-3">
+                    <div className="text-lg font-semibold tabular-nums">{fmt(Number(value))}</div>
+                    <div className="text-xs text-muted-foreground">{label} · {pct(Number(value), works.total)}</div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="mb-4 text-xs text-muted-foreground">
+                Contributions signées : observations, médias, textes et audios de marcheurs. Les 292 œuvres sans auteur enregistré sont exclues de ce classement.
               </p>
-              <div className="space-y-2.5" style={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}>
+              <div className="space-y-2.5 [print-color-adjust:exact]">
                 {(() => {
                   const base = data.top_base || 1;
                   const top = data.top_marcheurs ?? [];
-                  const rest = base - top.reduce((s, t) => s + t.total, 0);
+                  const rest = Math.max(0, base - top.reduce((sum, person) => sum + person.total, 0));
                   const rows = [
-                    ...top.map((t, i) => ({ ...t, rank: String(i + 1) })),
+                    ...top.map((person, index) => ({ ...person, rank: String(index + 1) })),
                     ...(rest > 0 ? [{ nom: 'Autres marcheurs', total: rest, role: 'reste', rank: '' }] : []),
                   ];
-                  let cumul = 0;
+                  let cumulative = 0;
                   return (
                     <>
-                      {rows.map((r, idx) => {
-                        const pct = (r.total / base) * 100;
-                        cumul += pct;
-                        const collapsedHidden = !showAllTop && idx >= 3;
-                        const bar =
-                          r.role === 'gaspard'
-                            ? 'bg-primary'
-                            : r.role === 'association'
+                      {rows.map((row, index) => {
+                        const share = (row.total / base) * 100;
+                        cumulative += share;
+                        const hidden = !showAllTop && index >= 3;
+                        const barClass = row.role === 'gaspard'
+                          ? 'bg-primary'
+                          : row.role === 'association'
                             ? 'bg-accent-foreground'
-                            : r.role === 'reste'
-                            ? 'bg-muted-foreground/30'
-                            : 'bg-primary/45';
+                            : row.role === 'reste'
+                              ? 'bg-muted-foreground/30'
+                              : 'bg-primary/45';
                         return (
-                          <div key={r.nom + r.rank} className={`grid grid-cols-[1.25rem_8.5rem_1fr_9.5rem] sm:grid-cols-[1.5rem_11rem_1fr_11rem] items-center gap-2 text-sm ${collapsedHidden ? 'hidden' : ''}`}>
-                            <span className="text-muted-foreground tabular-nums text-right">{r.rank}</span>
-                            <span className={`truncate ${r.role === 'gaspard' || r.role === 'association' ? 'font-semibold' : ''}`}>{r.nom}</span>
-                            <div className="h-5 rounded bg-muted overflow-hidden">
-                              <div className={`h-full rounded ${bar}`} style={{ width: `${Math.max(pct, 0.8)}%` }} />
+                          <div key={`${row.nom}-${row.rank}`} className={`grid grid-cols-[1.25rem_8.5rem_1fr_9.5rem] items-center gap-2 text-sm sm:grid-cols-[1.5rem_11rem_1fr_11rem] ${hidden ? 'hidden' : ''}`}>
+                            <span className="text-right tabular-nums text-muted-foreground">{row.rank}</span>
+                            <span className={`truncate ${row.role === 'gaspard' || row.role === 'association' ? 'font-semibold' : ''}`}>{row.nom}</span>
+                            <div className="h-5 overflow-hidden rounded bg-muted">
+                              <div className={`h-full rounded ${barClass}`} style={{ width: `${Math.max(share, 0.8)}%` }} />
                             </div>
                             <span className="text-right tabular-nums">
-                              <strong>{pct.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %</strong>
-                              <span className="text-xs text-muted-foreground"> ({fmt(r.total)})</span>
-                              <span className="block text-xs text-muted-foreground">cumul {cumul.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %</span>
+                              <strong>{share.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %</strong>
+                              <span className="text-xs text-muted-foreground"> ({fmt(row.total)})</span>
+                              <span className="block text-xs text-muted-foreground">cumul {cumulative.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %</span>
                             </span>
                           </div>
                         );
                       })}
                       {rows.length > 3 && (
-                         <Button
-                           type="button"
-                           variant="link"
-                           size="sm"
-                          onClick={() => setShowAllTop((v) => !v)}
-                           className="print:hidden h-auto px-0 text-xs mt-1"
-                        >
-                          {showAllTop ? (
-                            <><ChevronUp className="w-3.5 h-3.5" /> Réduire aux 3 premiers</>
-                          ) : (
-                            <><ChevronDown className="w-3.5 h-3.5" /> Déplier les 10 premiers marcheurs</>
-                          )}
-                         </Button>
+                        <Button type="button" variant="link" size="sm" onClick={() => setShowAllTop((current) => !current)} className="mt-1 h-auto px-0 text-xs print:hidden">
+                          {showAllTop ? <><ChevronUp className="h-3.5 w-3.5" /> Réduire aux 3 premiers</> : <><ChevronDown className="h-3.5 w-3.5" /> Déplier les 10 premiers marcheurs</>}
+                        </Button>
                       )}
                     </>
                   );
@@ -323,65 +275,53 @@ export default function AdminNoteDonnees() {
             </section>
 
             <div className={exportMode === 'simple' ? 'hidden' : ''}>
-            <h2 className="text-lg font-semibold mb-3">
-              3. Qualification juridique en trois couches
-            </h2>
-            <div className="space-y-3 mb-8 print:mb-4 text-sm leading-relaxed">
-              <div className="rounded-xl border border-border p-4">
-                <h3 className="font-medium mb-1">
-                  Données tierces sous licences ouvertes
-                </h3>
-                <p className="text-muted-foreground">
-                  Les snapshots de biodiversité réutilisent les plateformes
-                  iNaturalist, GBIF et INPN sous licences ouvertes (Creative
-                  Commons). Ces données ne sont pas appropriables : la plateforme
-                  n'en est que réutilisatrice, dans le respect de leurs licences.
-                </p>
+              <h2 className="mb-3 text-lg font-semibold">3. Éléments de traçabilité</h2>
+              <div className="mb-8 space-y-3 text-sm leading-relaxed print:mb-4">
+                <div className="rounded-lg border border-border p-4">
+                  <h3 className="mb-1 font-medium">Œuvres sans auteur enregistré</h3>
+                  <p className="text-muted-foreground">
+                    Les 241 photos et 51 audios de marches ne comportent aucun champ ni aucune métadonnée d’auteur exploitable. Ils constituent un chantier d’attribution prioritaire : leur publication sous la bannière MdV ne permet pas de présumer leur auteur.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border p-4">
+                  <h3 className="mb-1 font-medium">Données tierces sous licences ouvertes</h3>
+                  <p className="text-muted-foreground">
+                    {fmt(data.snapshots_with_third_party ?? 0)} snapshots sur 403 contiennent au moins une attribution tierce. Sur {fmt(data.snapshot_attributions ?? 0)} mentions d’attribution analysées, {fmt(data.snapshot_third_party_attributions ?? 0)} relèvent de comptes autres que G. Boréal et Les marches du Vivant. Les observations sources iNaturalist, GBIF et INPN restent soumises à leurs licences.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border p-4">
+                  <h3 className="mb-1 font-medium">Données factuelles et personnelles</h3>
+                  <p className="text-muted-foreground">
+                    Une observation d’espèce, un lieu, une date, une participation ou une mesure technique ne démontre pas en soi un droit d’auteur. Les profils et informations de participants restent protégés par le RGPD et hors actif appropriable.
+                  </p>
+                </div>
               </div>
-              <div className="rounded-xl border border-border p-4">
-                <h3 className="font-medium mb-1">Contenus des marcheurs</h3>
-                <p className="text-muted-foreground">
-                  Observations, photographies et textes demeurent la propriété de
-                  leurs auteurs. L'association en détient une licence
-                  d'exploitation (clause à insérer dans les statuts et les
-                  conditions d'utilisation), et non la propriété. Les profils
-                  communauté sont des données personnelles au sens du RGPD et
-                  restent hors actif.
-                </p>
-              </div>
-              <div className="rounded-xl border border-border p-4">
-                <h3 className="font-medium mb-1">
-                  Actif propre de l'association
-                </h3>
-                <p className="text-muted-foreground">
-                  La méthodologie, les indices (ICG, Fréquence), les agrégats, les
-                  rapports, la structure et l'enrichissement de la base constituent
-                  l'actif défendable. L'association est productrice et exploitante
-                  de la base de données « Marches du Vivant » au sens de
-                  l'article L.341-1 du Code de la propriété intellectuelle (droit
-                  sui generis du producteur de base de données), sans préjudice
-                  des droits personnels des contributeurs et des licences des
-                  sources ouvertes.
-                </p>
-              </div>
-            </div>
 
-            <h2 className="text-lg font-semibold mb-3">
-              4. Formulation suggérée pour les statuts
-            </h2>
-            <blockquote className="rounded-xl border-l-4 border-primary bg-muted/30 p-4 mb-8 print:mb-4 text-sm italic leading-relaxed">
-              « L'association est productrice et exploitante de la base de
-              données "Marches du Vivant" (art. L.341-1 CPI — droit sui generis
-              du producteur de base de données), sans préjudice des droits
-              personnels des contributeurs et des licences des sources
-              ouvertes. »
-            </blockquote>
+              <h2 className="mb-3 text-lg font-semibold">4. Qualification juridique en deux fondements</h2>
+              <div className="mb-8 space-y-3 text-sm leading-relaxed print:mb-4">
+                <div className="rounded-lg border border-border p-4">
+                  <h3 className="mb-1 font-medium">Qualité d’auteur</h3>
+                  <p className="text-muted-foreground">
+                    Elle ne peut être soutenue que pour les œuvres dont l’auteur est identifiable. Les contenus des autres marcheurs demeurent ceux de leurs auteurs, sous réserve de la licence d’exploitation consentie à l’association.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border p-4">
+                  <h3 className="mb-1 font-medium">Qualité de producteur de la base</h3>
+                  <p className="text-muted-foreground">
+                    La protection prévue à l’article L.341-1 du Code de la propriété intellectuelle repose sur un investissement substantiel dans la constitution, la vérification ou la présentation de la base. Elle doit être documentée par les financements, le temps consacré, la méthodologie, les contrôles et l’architecture — non par un pourcentage brut de lignes.
+                  </p>
+                </div>
+              </div>
 
-            <p className="text-xs text-muted-foreground flex items-center gap-2">
-              <Scale className="w-3 h-3" />
-              Mesures au {computedAt}, recalculées en direct à chaque consultation.
-              Document interne — ne constitue pas un avis juridique.
-            </p>
+              <h2 className="mb-3 text-lg font-semibold">5. Formulation suggérée pour les statuts</h2>
+              <blockquote className="mb-8 rounded-lg border-l-4 border-primary bg-muted/30 p-4 text-sm italic leading-relaxed print:mb-4">
+                « L’association est productrice et exploitante de la base de données “Marches du Vivant”, sous réserve de la démonstration des investissements substantiels visés à l’article L.341-1 du Code de la propriété intellectuelle, sans préjudice des droits des auteurs, des droits des contributeurs, de la protection des données personnelles et des licences applicables aux sources tierces. »
+              </blockquote>
+
+              <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Scale className="h-3 w-3" />
+                Mesures au {computedAt}, recalculées en direct. Document interne — ne constitue pas un avis juridique.
+              </p>
             </div>
           </>
         )}

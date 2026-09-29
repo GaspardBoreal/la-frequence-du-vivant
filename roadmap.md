@@ -13,6 +13,7 @@
 - [x] Recalibrer la pluie, l’infiltration et le séchage dans l’animation Le sol éponge
 - [x] Recaler la météo, l’activité et les invasives dans l’animation La fenêtre de butinage
 - [x] Affiner les trajectoires, silhouettes et repères de La fenêtre de butinage
+- [x] Corriger la note de valorisation pour séparer auteurs, activité associative, données factuelles, sources tierces et contenus sans auteur
 
 - [x] Plan d’action IA LFDV (edge generate-partner-roadmap, calculs déterministes, frise 12 mois, repli statique) — cas CAPDL validé
 - [x] Archiver chaque simulation IA partenaire (projet, plan, questions-réponses) et l'exporter depuis Admin > CRM > IA
