@@ -5136,6 +5136,9 @@ export type Database = {
       }
       marche_audio: {
         Row: {
+          attributed_at: string | null
+          attributed_by: string | null
+          author_user_id: string | null
           created_at: string
           description: string | null
           duree_secondes: number | null
@@ -5159,6 +5162,9 @@ export type Database = {
           url_supabase: string
         }
         Insert: {
+          attributed_at?: string | null
+          attributed_by?: string | null
+          author_user_id?: string | null
           created_at?: string
           description?: string | null
           duree_secondes?: number | null
@@ -5182,6 +5188,9 @@ export type Database = {
           url_supabase: string
         }
         Update: {
+          attributed_at?: string | null
+          attributed_by?: string | null
+          author_user_id?: string | null
           created_at?: string
           description?: string | null
           duree_secondes?: number | null
@@ -5645,6 +5654,9 @@ export type Database = {
       }
       marche_photos: {
         Row: {
+          attributed_at: string | null
+          attributed_by: string | null
+          author_user_id: string | null
           created_at: string
           description: string | null
           id: string
@@ -5657,6 +5669,9 @@ export type Database = {
           url_supabase: string
         }
         Insert: {
+          attributed_at?: string | null
+          attributed_by?: string | null
+          author_user_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -5669,6 +5684,9 @@ export type Database = {
           url_supabase: string
         }
         Update: {
+          attributed_at?: string | null
+          attributed_by?: string | null
+          author_user_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -6483,6 +6501,36 @@ export type Database = {
           performed_by?: string
           previous_marcheur_id?: string | null
           source?: string
+        }
+        Relationships: []
+      }
+      media_author_attribution_log: {
+        Row: {
+          created_at: string
+          done_by: string | null
+          id: string
+          media_id: string
+          media_kind: string
+          new_author: string | null
+          old_author: string | null
+        }
+        Insert: {
+          created_at?: string
+          done_by?: string | null
+          id?: string
+          media_id: string
+          media_kind: string
+          new_author?: string | null
+          old_author?: string | null
+        }
+        Update: {
+          created_at?: string
+          done_by?: string | null
+          id?: string
+          media_id?: string
+          media_kind?: string
+          new_author?: string | null
+          old_author?: string | null
         }
         Relationships: []
       }
@@ -10910,6 +10958,10 @@ export type Database = {
         Returns: string
       }
       age_bracket: { Args: { _birth: string }; Returns: string }
+      assign_marche_media_author: {
+        Args: { _ids: string[]; _kind: string; _user_id: string }
+        Returns: number
+      }
       attach_pratique_to_marcheur:
         | {
             Args: {
@@ -11880,6 +11932,7 @@ export type Database = {
         Args: { _lat: number; _lon: number; _propriete_id: string }
         Returns: boolean
       }
+      list_attribution_candidates: { Args: never; Returns: Json }
       list_event_invited_readers: {
         Args: { _event_id: string }
         Returns: {
@@ -11898,6 +11951,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_marche_media_for_attribution: { Args: never; Returns: Json }
       list_propriete_calques: {
         Args: { _propriete_id: string }
         Returns: {
