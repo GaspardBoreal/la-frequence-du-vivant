@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import RealignSpeciesNamesCard from '@/components/admin/RealignSpeciesNamesCard';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route, Search, Mail, BookOpen } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route, Search, Mail, BookOpen, Scale } from 'lucide-react';
 
 const OUTILS = [
   {
@@ -84,6 +84,13 @@ const OUTILS = [
     active: true,
   },
 
+  {
+    titre: 'Note de valorisation des données',
+    description: 'Ratio G. Boréal + Marches du Vivant / toutes les données, qualification juridique en trois couches, export PDF pour le dossier statutaire.',
+    icon: Scale,
+    to: '/admin/note-donnees',
+    active: true,
+  },
   {
     titre: 'Simulations & plans IA partenaires',
     description: 'Tous les projets décrits dans les simulateurs partenaires, les plans générés, le fil des questions-réponses, et l\'export pour analyse dans une autre IA.',

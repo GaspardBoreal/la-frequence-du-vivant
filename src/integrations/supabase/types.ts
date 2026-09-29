@@ -11325,6 +11325,7 @@ export type Database = {
           role: string
         }[]
       }
+      get_data_asset_stats: { Args: never; Returns: Json }
       get_event_public_textes: { Args: { p_event_id: string }; Returns: Json }
       get_event_rayonnement: { Args: { _event_id: string }; Returns: Json }
       get_event_scenography: {
