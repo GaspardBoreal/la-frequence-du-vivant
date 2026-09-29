@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, Image as ImageIcon, Music, Search, UserRound, Undo2 } from 'lucide-react';
+import { ArrowLeft, Check, Image as ImageIcon, Loader2, Music, Pause, Play, Search, UserRound, Undo2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,18 @@ type Kind = 'photo' | 'audio';
 interface MediaItem {
   kind: Kind; id: string; marche_id: string | null; url: string | null; titre: string | null; nom_fichier: string | null;
   author_user_id: string | null; attributed_at: string | null; nom_marche: string | null; ville: string | null;
-  marche_date: string | null; author_name: string | null;
+  marche_date: string | null; author_name: string | null; format_audio: string | null; taille_octets: number | null;
 }
 interface Candidate { user_id: string; name: string; avatar_url: string | null; marche_ids: string[] }
 
 const rpc = supabase.rpc.bind(supabase) as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
 const keyOf = (m: MediaItem) => `${m.kind}:${m.id}`;
+const fmtTime = (s: number) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : '–:––');
+const audioBadge = (m: MediaItem) => {
+  const f = (m.format_audio ?? '').split('/').pop()?.replace('x-', '').replace('mpeg', 'mp3').toUpperCase();
+  const mo = m.taille_octets ? `${(m.taille_octets / 1e6).toFixed(m.taille_octets > 1e7 ? 0 : 1)} Mo` : '';
+  return [f, mo].filter(Boolean).join(' · ');
+};
 
 export default function AdminAttributionOeuvres() {
   const qc = useQueryClient();
@@ -30,7 +36,38 @@ export default function AdminAttributionOeuvres() {
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const media = useQuery({ queryKey: ['attribution-media'], queryFn: async () => {
+  // Lecteur audio unique pour toute la page
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState<MediaItem | null>(null);
+  const [isPaused, setIsPaused] = useState(true);
+  const [loadingAudio, setLoadingAudio] = useState(false);
+  const [time, setTime] = useState({ cur: 0, dur: NaN });
+
+  useEffect(() => {
+    const a = new Audio();
+    a.preload = 'metadata';
+    audioRef.current = a;
+    const on = (ev: string, fn: () => void) => a.addEventListener(ev, fn);
+    on('waiting', () => setLoadingAudio(true));
+    on('playing', () => { setLoadingAudio(false); setIsPaused(false); });
+    on('canplay', () => setLoadingAudio(false));
+    on('pause', () => setIsPaused(true));
+    on('ended', () => setIsPaused(true));
+    on('timeupdate', () => setTime({ cur: a.currentTime, dur: a.duration }));
+    on('loadedmetadata', () => setTime({ cur: a.currentTime, dur: a.duration }));
+    on('error', () => { setLoadingAudio(false); setIsPaused(true); toast.error('Lecture impossible pour ce son'); });
+    return () => { a.pause(); a.src = ''; };
+  }, []);
+
+  const playItem = (m: MediaItem) => {
+    const a = audioRef.current; if (!a || !m.url) return;
+    if (playing?.id === m.id) { a.paused ? a.play().catch(() => {}) : a.pause(); return; }
+    a.pause(); a.src = m.url; setPlaying(m); setTime({ cur: 0, dur: NaN }); setLoadingAudio(true);
+    a.play().catch(() => setLoadingAudio(false));
+  };
+  const closePlayer = () => { const a = audioRef.current; if (a) { a.pause(); a.removeAttribute('src'); a.load(); } setPlaying(null); };
+
+  const media = useQuery({ queryKey: ['attribution-media'], refetchOnWindowFocus: false, queryFn: async () => {
     const { data, error } = await rpc('list_marche_media_for_attribution'); if (error) throw new Error(error.message); return (data ?? []) as MediaItem[];
   }});
   const candidates = useQuery({ queryKey: ['attribution-candidates'], queryFn: async () => {
