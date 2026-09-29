@@ -85,7 +85,13 @@ const OUTILS = [
   },
 
   {
-    titre: 'Simulations & plans IA partenaires',
+    titre: 'Note de valorisation des données',
+    description: 'Ratio G. Boréal + Marches du Vivant / toutes les données, qualification juridique en trois couches, export PDF pour le dossier statutaire.',
+    icon: Scale,
+    to: '/admin/note-donnees',
+    active: true,
+  },
+
     description: 'Tous les projets décrits dans les simulateurs partenaires, les plans générés, le fil des questions-réponses, et l\'export pour analyse dans une autre IA.',
     icon: Sparkles,
     to: '/admin/crm/ia',
