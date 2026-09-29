@@ -132,13 +132,47 @@ export default function AdminNoteDonnees() {
               dont votre propriété personnelle reste discutable ».
             </p>
           </div>
-          <button
-            onClick={() => window.print()}
-            className="print:hidden inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
-          >
-            <Printer className="w-4 h-4" />
-            Exporter en PDF
-          </button>
+          <div className="print:hidden relative">
+            <button
+              onClick={() => setExportMenuOpen((v) => !v)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+            >
+              <Printer className="w-4 h-4" />
+              Exporter en PDF
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+            {exportMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setExportMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-1 z-20 w-72 rounded-xl border border-border bg-popover shadow-lg overflow-hidden">
+                  <button
+                    onClick={() => handleExport('simple')}
+                    className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted/60 transition-colors"
+                  >
+                    <FileText className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <span>
+                      <span className="block text-sm font-medium">Simple</span>
+                      <span className="block text-xs text-muted-foreground">
+                        En-tête + sections 1 et 2 uniquement
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleExport('complete')}
+                    className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted/60 transition-colors border-t border-border"
+                  >
+                    <Files className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <span>
+                      <span className="block text-sm font-medium">Complète</span>
+                      <span className="block text-xs text-muted-foreground">
+                        Tout le contenu de la note
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {isLoading && (
