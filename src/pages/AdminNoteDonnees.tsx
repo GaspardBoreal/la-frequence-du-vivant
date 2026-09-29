@@ -171,7 +171,12 @@ export default function AdminNoteDonnees() {
               <div className="rounded-lg border border-border p-4">
                 <Database className="mb-2 h-5 w-5 text-primary" />
                 <div className="text-2xl font-semibold tabular-nums">{fmt(structuredData)}</div>
-                <div className="text-xs text-muted-foreground">enregistrements factuels, techniques ou d’activité structurés</div>
+                <div className="text-xs text-muted-foreground">
+                  enregistrements factuels, techniques ou d’activité structurés
+                  {exportMode === 'complete'
+                    ? ', comprenant les mesures capteurs et IoT'
+                    : ', hors mesures capteurs et IoT'}
+                </div>
               </div>
             </div>
 
