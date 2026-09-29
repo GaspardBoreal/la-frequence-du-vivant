@@ -327,6 +327,7 @@ export default function AdminNoteDonnees() {
               </div>
             </section>
 
+            <div className={exportMode === 'simple' ? 'hidden' : ''}>
             <h2 className="text-lg font-semibold mb-3">
               3. Qualification juridique en trois couches
             </h2>
