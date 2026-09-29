@@ -183,6 +183,28 @@ const AdminProprietes: React.FC = () => {
     [facetRows],
   );
 
+  // ---- Liaisons marcheurs par propriété (rôles, table petite) -------------
+  const { data: lienMarcheurs = [] } = useQuery<{ propriete_id: string; role: string }[]>({
+    queryKey: ['admin-proprietes', 'liens-marcheurs'],
+    queryFn: async () => {
+      const { data, error } = await sb
+        .from('propriete_marcheurs')
+        .select('propriete_id, role')
+        .limit(10000);
+      if (error) throw error;
+      return (data ?? []) as { propriete_id: string; role: string }[];
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const idsParRole = useMemo(() => {
+    const map: Record<string, string[]> = { proprietaire: [], prestataire: [], marcheur_historique: [] };
+    lienMarcheurs.forEach((l) => {
+      if (map[l.role]) map[l.role].push(l.propriete_id);
+    });
+    return map;
+  }, [lienMarcheurs]);
+
   // ---- KPI globaux (comptes exacts, requêtes HEAD légères) ----------------
   const { data: kpis } = useQuery<ProprietesKpiCounts>({
     queryKey: ['admin-proprietes', 'kpis', idsAvecSondes.length],
@@ -232,6 +254,12 @@ const AdminProprietes: React.FC = () => {
     if (filters.sondes === 'avec') {
       q = idsAvecSondes.length > 0
         ? q.in('id', idsAvecSondes)
+        : q.eq('id', '00000000-0000-0000-0000-000000000000');
+    }
+    if (filters.role !== 'all') {
+      const ids = idsParRole[filters.role] ?? [];
+      q = ids.length > 0
+        ? q.in('id', ids)
         : q.eq('id', '00000000-0000-0000-0000-000000000000');
     }
     return q;
