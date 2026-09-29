@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-import { Printer, Database, Scale, ShieldCheck, Users, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
+import { Printer, Database, Scale, ShieldCheck, Users, ArrowLeft, ChevronDown, ChevronUp, FileText, Files } from 'lucide-react';
 
 interface Famille {
   famille: string;
@@ -78,6 +78,15 @@ const fmt = (n: number) => n.toLocaleString('fr-FR');
 
 export default function AdminNoteDonnees() {
   const [showAllTop, setShowAllTop] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exportMode, setExportMode] = useState<'simple' | 'complete'>('complete');
+
+  const handleExport = (mode: 'simple' | 'complete') => {
+    setExportMenuOpen(false);
+    setExportMode(mode);
+    // Laisser React appliquer le masquage avant d'ouvrir la boîte d'impression
+    setTimeout(() => window.print(), 50);
+  };
   const { data, isLoading, error } = useQuery({
     queryKey: ['data-asset-stats'],
     queryFn: async (): Promise<DataAssetStats> => {
@@ -123,13 +132,47 @@ export default function AdminNoteDonnees() {
               dont votre propriété personnelle reste discutable ».
             </p>
           </div>
-          <button
-            onClick={() => window.print()}
-            className="print:hidden inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
-          >
-            <Printer className="w-4 h-4" />
-            Exporter en PDF
-          </button>
+          <div className="print:hidden relative">
+            <button
+              onClick={() => setExportMenuOpen((v) => !v)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+            >
+              <Printer className="w-4 h-4" />
+              Exporter en PDF
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+            {exportMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setExportMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-1 z-20 w-72 rounded-xl border border-border bg-popover shadow-lg overflow-hidden">
+                  <button
+                    onClick={() => handleExport('simple')}
+                    className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted/60 transition-colors"
+                  >
+                    <FileText className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <span>
+                      <span className="block text-sm font-medium">Simple</span>
+                      <span className="block text-xs text-muted-foreground">
+                        En-tête + sections 1 et 2 uniquement
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleExport('complete')}
+                    className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted/60 transition-colors border-t border-border"
+                  >
+                    <Files className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                    <span>
+                      <span className="block text-sm font-medium">Complète</span>
+                      <span className="block text-xs text-muted-foreground">
+                        Tout le contenu de la note
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {isLoading && (
@@ -284,6 +327,7 @@ export default function AdminNoteDonnees() {
               </div>
             </section>
 
+            <div className={exportMode === 'simple' ? 'hidden' : ''}>
             <h2 className="text-lg font-semibold mb-3">
               3. Qualification juridique en trois couches
             </h2>
@@ -343,6 +387,7 @@ export default function AdminNoteDonnees() {
               Mesures au {computedAt}, recalculées en direct à chaque consultation.
               Document interne — ne constitue pas un avis juridique.
             </p>
+            </div>
           </>
         )}
       </div>
