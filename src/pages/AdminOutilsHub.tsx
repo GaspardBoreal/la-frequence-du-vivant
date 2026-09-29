@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import RealignSpeciesNamesCard from '@/components/admin/RealignSpeciesNamesCard';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route, Search, Mail, BookOpen, Scale } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route, Search, Mail, BookOpen, Scale, Users } from 'lucide-react';
 
 const OUTILS = [
   {
@@ -89,6 +89,13 @@ const OUTILS = [
     description: 'Ratio G. Boréal + Marches du Vivant / toutes les données, qualification juridique en trois couches, export PDF pour le dossier statutaire.',
     icon: Scale,
     to: '/admin/note-donnees',
+    active: true,
+  },
+  {
+    titre: 'Attribuer les œuvres',
+    description: 'Photos et sons de marches sans auteur : les rattacher au bon compte marcheur, avec journal des attributions.',
+    icon: Users,
+    to: '/admin/attribution-oeuvres',
     active: true,
   },
   {
