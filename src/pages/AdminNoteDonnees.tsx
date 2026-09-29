@@ -156,9 +156,6 @@ export default function AdminNoteDonnees() {
 
         {data && works && (
           <>
-            <div className="mb-5 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm leading-relaxed print:mb-3">
-              <strong>Lecture corrigée.</strong> Cette note distingue la qualité d’auteur, l’activité du compte associatif, les données factuelles et les sources tierces. Elle ne présente plus leur addition comme une preuve de propriété personnelle.
-            </div>
 
             <div className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-3 print:grid-cols-3 print:gap-2">
               <div className="rounded-lg border border-border p-4">
