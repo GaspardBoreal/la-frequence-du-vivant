@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-import { Printer, Database, Scale, ShieldCheck, Users, ArrowLeft } from 'lucide-react';
+import { Printer, Database, Scale, ShieldCheck, Users, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Famille {
   famille: string;
@@ -76,6 +77,7 @@ const ORDER = [
 const fmt = (n: number) => n.toLocaleString('fr-FR');
 
 export default function AdminNoteDonnees() {
+  const [showAllTop, setShowAllTop] = useState(false);
   const { data, isLoading, error } = useQuery({
     queryKey: ['data-asset-stats'],
     queryFn: async (): Promise<DataAssetStats> => {
