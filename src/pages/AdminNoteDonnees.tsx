@@ -387,6 +387,7 @@ export default function AdminNoteDonnees() {
               Mesures au {computedAt}, recalculées en direct à chaque consultation.
               Document interne — ne constitue pas un avis juridique.
             </p>
+            </div>
           </>
         )}
       </div>
