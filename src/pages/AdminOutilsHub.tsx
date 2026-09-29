@@ -92,6 +92,13 @@ const OUTILS = [
     active: true,
   },
   {
+    titre: 'Attribuer les œuvres',
+    description: 'Photos et sons de marches sans auteur : les rattacher au bon compte marcheur, avec journal des attributions.',
+    icon: Users,
+    to: '/admin/attribution-oeuvres',
+    active: true,
+  },
+  {
     titre: 'Simulations & plans IA partenaires',
     description: 'Tous les projets décrits dans les simulateurs partenaires, les plans générés, le fil des questions-réponses, et l\'export pour analyse dans une autre IA.',
     icon: Sparkles,

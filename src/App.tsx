@@ -444,6 +444,11 @@ function App() {
                 <AdminNoteDonnees />
               </AdminAuth>
             } />
+            <Route path="/admin/attribution-oeuvres" element={
+              <AdminAuth>
+                <AdminAttributionOeuvres />
+              </AdminAuth>
+            } />
             <Route path="/admin/outils/frequences" element={
               <AdminAuth>
                 <AdminFrequences />

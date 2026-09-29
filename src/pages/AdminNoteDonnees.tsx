@@ -167,6 +167,7 @@ export default function AdminNoteDonnees() {
                 <CircleAlert className="mb-2 h-5 w-5 text-primary" />
                 <div className="text-2xl font-semibold tabular-nums">{fmt(works.unattributed)}</div>
                 <div className="text-xs text-muted-foreground">œuvres sans auteur enregistré, à régulariser</div>
+                <Link to="/admin/attribution-oeuvres" className="mt-2 inline-block text-xs font-medium text-primary underline print:hidden">Attribuer les œuvres →</Link>
               </div>
               <div className="rounded-lg border border-border p-4">
                 <Database className="mb-2 h-5 w-5 text-primary" />
