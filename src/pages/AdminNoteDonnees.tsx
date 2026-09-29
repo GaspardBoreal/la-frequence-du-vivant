@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Printer, Database, Scale, ShieldCheck, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Printer, Database, Scale, ShieldCheck, Users, ArrowLeft } from 'lucide-react';
 
 interface Famille {
   famille: string;
@@ -84,6 +85,13 @@ export default function AdminNoteDonnees() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-3xl mx-auto px-4 py-10 print:py-4 print:max-w-none">
+        <Link
+          to="/admin/outils"
+          className="print:hidden inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 -ml-1"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Retour aux outils admin
+        </Link>
         <div className="flex items-start justify-between gap-4 mb-8 print:mb-4">
           <div>
             <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
