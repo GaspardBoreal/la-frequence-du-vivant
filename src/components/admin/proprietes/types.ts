@@ -46,6 +46,8 @@ export interface ProprietesFilterValues {
   sondes: 'all' | 'avec';
   /** Parcours d'accueil : bloc Portrait · Intention vide ou renseigné. */
   intention: 'all' | 'vide' | 'renseignee';
+  /** Rôle d'un marcheur rattaché (enum role_propriete). */
+  role: 'all' | 'proprietaire' | 'prestataire' | 'marcheur_historique';
   periode: ProprietesPeriode;
   du: string;
   au: string;
@@ -60,6 +62,7 @@ export const DEFAULT_FILTERS: ProprietesFilterValues = {
   gps: 'all',
   sondes: 'all',
   intention: 'all',
+  role: 'all',
   periode: 'all',
   du: '',
   au: '',

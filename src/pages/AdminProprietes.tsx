@@ -53,6 +53,7 @@ const AdminProprietes: React.FC = () => {
     gps: (searchParams.get('gps') as ProprietesFilterValues['gps']) || 'all',
     sondes: (searchParams.get('sondes') as ProprietesFilterValues['sondes']) || 'all',
     intention: (searchParams.get('intention') as ProprietesFilterValues['intention']) || 'all',
+    role: (searchParams.get('role') as ProprietesFilterValues['role']) || 'all',
     periode: (searchParams.get('periode') as ProprietesFilterValues['periode']) || 'all',
     du: searchParams.get('du') ?? '',
     au: searchParams.get('au') ?? '',
@@ -88,6 +89,7 @@ const AdminProprietes: React.FC = () => {
       gps: v.gps,
       sondes: v.sondes,
       intention: v.intention,
+      role: v.role,
       periode: v.periode,
       du: v.periode === 'plage' ? v.du || null : null,
       au: v.periode === 'plage' ? v.au || null : null,
@@ -181,6 +183,28 @@ const AdminProprietes: React.FC = () => {
     [facetRows],
   );
 
+  // ---- Liaisons marcheurs par propriété (rôles, table petite) -------------
+  const { data: lienMarcheurs = [] } = useQuery<{ propriete_id: string; role: string }[]>({
+    queryKey: ['admin-proprietes', 'liens-marcheurs'],
+    queryFn: async () => {
+      const { data, error } = await sb
+        .from('propriete_marcheurs')
+        .select('propriete_id, role')
+        .limit(10000);
+      if (error) throw error;
+      return (data ?? []) as { propriete_id: string; role: string }[];
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const idsParRole = useMemo(() => {
+    const map: Record<string, string[]> = { proprietaire: [], prestataire: [], marcheur_historique: [] };
+    lienMarcheurs.forEach((l) => {
+      if (map[l.role]) map[l.role].push(l.propriete_id);
+    });
+    return map;
+  }, [lienMarcheurs]);
+
   // ---- KPI globaux (comptes exacts, requêtes HEAD légères) ----------------
   const { data: kpis } = useQuery<ProprietesKpiCounts>({
     queryKey: ['admin-proprietes', 'kpis', idsAvecSondes.length],
@@ -232,12 +256,18 @@ const AdminProprietes: React.FC = () => {
         ? q.in('id', idsAvecSondes)
         : q.eq('id', '00000000-0000-0000-0000-000000000000');
     }
+    if (filters.role !== 'all') {
+      const ids = idsParRole[filters.role] ?? [];
+      q = ids.length > 0
+        ? q.in('id', ids)
+        : q.eq('id', '00000000-0000-0000-0000-000000000000');
+    }
     return q;
   };
 
   // ---- Liste paginée (vue Table) -------------------------------------------
   const listQuery = useQuery<{ rows: ProprieteListRow[]; total: number }>({
-    queryKey: ['admin-proprietes', 'list', filters, tri, dir, page, pageSize, idsAvecSondes],
+    queryKey: ['admin-proprietes', 'list', filters, tri, dir, page, pageSize, idsAvecSondes, idsParRole],
     enabled: vue === 'table',
     queryFn: async () => {
       const from = (page - 1) * pageSize;
@@ -254,7 +284,7 @@ const AdminProprietes: React.FC = () => {
 
   // ---- Ensemble filtré complet (vue Carte) ----------------------------------
   const mapQuery = useQuery<ProprieteListRow[]>({
-    queryKey: ['admin-proprietes', 'map', filters, idsAvecSondes],
+    queryKey: ['admin-proprietes', 'map', filters, idsAvecSondes, idsParRole],
     enabled: vue === 'carte',
     queryFn: async () => {
       const { data, error } = await applyFilters(sb.from('proprietes').select(LIST_COLUMNS))
@@ -268,7 +298,7 @@ const AdminProprietes: React.FC = () => {
 
   // ---- Réponses du parcours d'accueil (vues Tableau de bord et Analyse) -----
   const onboardingQuery = useQuery<GardenAnswers[]>({
-    queryKey: ['admin-proprietes', 'onboarding', filters, idsAvecSondes],
+    queryKey: ['admin-proprietes', 'onboarding', filters, idsAvecSondes, idsParRole],
     enabled: vue === 'kpi' || vue === 'analyse',
     queryFn: async () => {
       const { data, error } = await applyFilters(
