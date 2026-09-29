@@ -236,30 +236,55 @@ export default function AdminNoteDonnees() {
                     ...top.map((t, i) => ({ ...t, rank: String(i + 1) })),
                     ...(rest > 0 ? [{ nom: 'Autres marcheurs', total: rest, role: 'reste', rank: '' }] : []),
                   ];
-                  return rows.map((r) => {
-                    const pct = (r.total / base) * 100;
-                    const bar =
-                      r.role === 'gaspard'
-                        ? 'bg-primary'
-                        : r.role === 'association'
-                        ? 'bg-accent-foreground'
-                        : r.role === 'reste'
-                        ? 'bg-muted-foreground/30'
-                        : 'bg-primary/45';
-                    return (
-                      <div key={r.nom + r.rank} className="grid grid-cols-[1.25rem_8.5rem_1fr_6.5rem] sm:grid-cols-[1.5rem_11rem_1fr_7.5rem] items-center gap-2 text-sm">
-                        <span className="text-muted-foreground tabular-nums text-right">{r.rank}</span>
-                        <span className={`truncate ${r.role === 'gaspard' || r.role === 'association' ? 'font-semibold' : ''}`}>{r.nom}</span>
-                        <div className="h-5 rounded bg-muted overflow-hidden">
-                          <div className={`h-full rounded ${bar}`} style={{ width: `${Math.max(pct, 0.8)}%` }} />
-                        </div>
-                        <span className="text-right tabular-nums">
-                          <strong>{pct.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %</strong>
-                          <span className="text-xs text-muted-foreground"> ({fmt(r.total)})</span>
-                        </span>
-                      </div>
-                    );
-                  });
+                  const visible = showAllTop ? rows : rows.slice(0, 3);
+                  let cumul = 0;
+                  return (
+                    <>
+                      {visible.map((r) => {
+                        const pct = (r.total / base) * 100;
+                        cumul += pct;
+                        const bar =
+                          r.role === 'gaspard'
+                            ? 'bg-primary'
+                            : r.role === 'association'
+                            ? 'bg-accent-foreground'
+                            : r.role === 'reste'
+                            ? 'bg-muted-foreground/30'
+                            : 'bg-primary/45';
+                        return (
+                          <div key={r.nom + r.rank} className="grid grid-cols-[1.25rem_8.5rem_1fr_9.5rem] sm:grid-cols-[1.5rem_11rem_1fr_11rem] items-center gap-2 text-sm">
+                            <span className="text-muted-foreground tabular-nums text-right">{r.rank}</span>
+                            <span className={`truncate ${r.role === 'gaspard' || r.role === 'association' ? 'font-semibold' : ''}`}>{r.nom}</span>
+                            <div className="h-5 rounded bg-muted overflow-hidden">
+                              <div className={`h-full rounded ${bar}`} style={{ width: `${Math.max(pct, 0.8)}%` }} />
+                            </div>
+                            <span className="text-right tabular-nums">
+                              <strong>{pct.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %</strong>
+                              <span className="text-xs text-muted-foreground"> ({fmt(r.total)})</span>
+                              <span className="block text-xs text-muted-foreground">cumul {cumul.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %</span>
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {rows.length > 3 && (
+                        <button
+                          onClick={() => setShowAllTop((v) => !v)}
+                          className="print:hidden inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline mt-1"
+                        >
+                          {showAllTop ? (
+                            <><ChevronUp className="w-3.5 h-3.5" /> Réduire aux 3 premiers</>
+                          ) : (
+                            <><ChevronDown className="w-3.5 h-3.5" /> Déplier les 10 premiers marcheurs</>
+                          )}
+                        </button>
+                      )}
+                      {!showAllTop && rows.length > 3 && (
+                        <p className="hidden print:block text-xs text-muted-foreground">
+                          … et {rows.length - 3} autres lignes (version écran).
+                        </p>
+                      )}
+                    </>
+                  );
                 })()}
               </div>
             </section>
