@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-import { Printer, Database, Scale, ShieldCheck, Users, ArrowLeft, ChevronDown, ChevronUp, FileText, Files, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Printer, Database, Scale, ShieldCheck, Users, ArrowLeft, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 
 interface Famille {
   famille: string;
@@ -78,16 +79,12 @@ const fmt = (n: number) => n.toLocaleString('fr-FR');
 
 export default function AdminNoteDonnees() {
   const [showAllTop, setShowAllTop] = useState(false);
-  const [exportMenuOpen, setExportMenuOpen] = useState(false);
-  const [exportMode, setExportMode] = useState<'simple' | 'complete'>('complete');
+  const [exportMode, setExportMode] = useState<'simple' | 'complete'>('simple');
   const [printedAt, setPrintedAt] = useState<Date>(new Date());
 
-  const handleExport = (mode: 'simple' | 'complete') => {
-    setExportMenuOpen(false);
-    setExportMode(mode);
-    // Horodater à l'instant de l'impression, puis laisser React appliquer le masquage
+  const handleExport = () => {
     setPrintedAt(new Date());
-    setTimeout(() => window.print(), 50);
+    setTimeout(() => window.print(), 100);
   };
   const { data, isLoading, error } = useQuery({
     queryKey: ['data-asset-stats'],
@@ -100,8 +97,13 @@ export default function AdminNoteDonnees() {
   });
 
   const familles = (data?.familles ?? [])
+    .filter((f) => exportMode === 'complete' || f.famille !== 'mesures_capteurs_iot')
     .slice()
     .sort((a, b) => ORDER.indexOf(a.famille) - ORDER.indexOf(b.famille));
+  const famillesPrincipales = familles.filter((f) => !f.famille.startsWith('dont_'));
+  const totalGeneral = famillesPrincipales.reduce((sum, f) => sum + f.total, 0);
+  const totalAttribue = famillesPrincipales.reduce((sum, f) => sum + f.attribue, 0);
+  const ratioPct = totalGeneral > 0 ? Math.round(Math.min(totalAttribue, totalGeneral) / totalGeneral * 10000) / 100 : 0;
 
   const computedAt = data?.computed_at
     ? new Date(data.computed_at).toLocaleDateString('fr-FR', {
@@ -121,7 +123,7 @@ export default function AdminNoteDonnees() {
           <ArrowLeft className="w-4 h-4" />
           Retour aux outils admin
         </Link>
-        <div className="flex items-start justify-between gap-4 mb-8 print:mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5 print:mb-4">
           <div>
             <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
               Association La Fréquence du Vivant — dossier statutaire
@@ -133,6 +135,9 @@ export default function AdminNoteDonnees() {
               Réponse à la remarque : « les données des Marches du Vivant, seul actif
               dont votre propriété personnelle reste discutable ».
             </p>
+            <p className="mt-2 text-sm font-medium text-primary">
+              Version {exportMode === 'simple' ? 'Simple — hors mesures capteurs IoT' : 'Complète — toutes les données, mesures IoT comprises'}
+            </p>
             <p className="mt-3 inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-semibold print:mt-2 print:px-2.5 print:py-1 print:text-base">
               <Clock className="w-4 h-4 text-primary print:w-5 print:h-5" />
               Édition du{' '}
@@ -141,50 +146,24 @@ export default function AdminNoteDonnees() {
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric',
+                timeZone: 'Europe/Paris',
               })}{' '}
-              à {printedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              à {printedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}
             </p>
           </div>
-          <div className="print:hidden relative">
-            <button
-              onClick={() => setExportMenuOpen((v) => !v)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
-            >
+          <div className="print:hidden flex flex-col gap-2 shrink-0">
+            <div role="group" aria-label="Version de la note" className="inline-flex rounded-md border border-border p-0.5 bg-muted/50">
+              <Button type="button" size="sm" variant={exportMode === 'simple' ? 'default' : 'ghost'} aria-pressed={exportMode === 'simple'} onClick={() => setExportMode('simple')} className="flex-1">
+                Simple
+              </Button>
+              <Button type="button" size="sm" variant={exportMode === 'complete' ? 'default' : 'ghost'} aria-pressed={exportMode === 'complete'} onClick={() => setExportMode('complete')} className="flex-1">
+                Complète
+              </Button>
+            </div>
+            <Button type="button" onClick={handleExport}>
               <Printer className="w-4 h-4" />
               Exporter en PDF
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
-            {exportMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setExportMenuOpen(false)} />
-                <div className="absolute right-0 top-full mt-1 z-20 w-72 rounded-xl border border-border bg-popover shadow-lg overflow-hidden">
-                  <button
-                    onClick={() => handleExport('simple')}
-                    className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted/60 transition-colors"
-                  >
-                    <FileText className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                    <span>
-                      <span className="block text-sm font-medium">Simple</span>
-                      <span className="block text-xs text-muted-foreground">
-                        En-tête + sections 1 et 2 uniquement
-                      </span>
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => handleExport('complete')}
-                    className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted/60 transition-colors border-t border-border"
-                  >
-                    <Files className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                    <span>
-                      <span className="block text-sm font-medium">Complète</span>
-                      <span className="block text-xs text-muted-foreground">
-                        Tout le contenu de la note
-                      </span>
-                    </span>
-                  </button>
-                </div>
-              </>
-            )}
+            </Button>
           </div>
         </div>
 
@@ -203,16 +182,16 @@ export default function AdminNoteDonnees() {
               <div className="rounded-xl border border-border p-4">
                 <Database className="w-5 h-5 text-primary mb-2" />
                 <div className="text-2xl font-semibold tabular-nums">
-                  {fmt(data.total_general)}
+                  {fmt(totalGeneral)}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  enregistrements mesurés sur 15 familles de données
+                  enregistrements mesurés sur {famillesPrincipales.length} familles de données
                 </div>
               </div>
               <div className="rounded-xl border border-border p-4">
                 <Users className="w-5 h-5 text-primary mb-2" />
                 <div className="text-2xl font-semibold tabular-nums">
-                  {fmt(data.total_attribue)}
+                  {fmt(totalAttribue)}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   créés par G. Boréal ou dans le cadre des Marches du Vivant
@@ -221,10 +200,10 @@ export default function AdminNoteDonnees() {
               <div className="rounded-xl border border-primary/40 bg-primary/5 p-4">
                 <ShieldCheck className="w-5 h-5 text-primary mb-2" />
                 <div className="text-2xl font-semibold tabular-nums">
-                  {data.ratio_pct.toLocaleString('fr-FR')} %
+                  {ratioPct.toLocaleString('fr-FR')} %
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  du volume total de la plateforme
+                  du volume total {exportMode === 'simple' ? 'hors mesures IoT' : 'de la plateforme'}
                 </div>
               </div>
             </div>
@@ -265,10 +244,10 @@ export default function AdminNoteDonnees() {
                   <tr className="border-t-2 border-primary/40 font-semibold bg-primary/5">
                     <td className="px-4 py-2">Total</td>
                     <td className="px-4 py-2 text-right tabular-nums">
-                      {fmt(data.total_general)}
+                      {fmt(totalGeneral)}
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums">
-                      {fmt(data.total_attribue)} ({data.ratio_pct.toLocaleString('fr-FR')} %)
+                      {fmt(totalAttribue)} ({ratioPct.toLocaleString('fr-FR')} %)
                     </td>
                   </tr>
                 </tbody>
@@ -323,16 +302,19 @@ export default function AdminNoteDonnees() {
                         );
                       })}
                       {rows.length > 3 && (
-                        <button
+                         <Button
+                           type="button"
+                           variant="link"
+                           size="sm"
                           onClick={() => setShowAllTop((v) => !v)}
-                          className="print:hidden inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline mt-1"
+                           className="print:hidden h-auto px-0 text-xs mt-1"
                         >
                           {showAllTop ? (
                             <><ChevronUp className="w-3.5 h-3.5" /> Réduire aux 3 premiers</>
                           ) : (
                             <><ChevronDown className="w-3.5 h-3.5" /> Déplier les 10 premiers marcheurs</>
                           )}
-                        </button>
+                         </Button>
                       )}
                     </>
                   );
