@@ -225,7 +225,7 @@ export default function AdminNoteDonnees() {
                 Part de chaque marcheur dans les {fmt(data.top_base ?? 0)} contributions
                 des marcheurs (observations + médias + textes + audios). Mesures IoT exclues.
               </p>
-              <div className="space-y-2.5 print-exact">
+              <div className="space-y-2.5" style={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}>
                 {(() => {
                   const base = data.top_base || 1;
                   const top = data.top_marcheurs ?? [];
