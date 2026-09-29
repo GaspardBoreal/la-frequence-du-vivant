@@ -15,16 +15,24 @@ interface DataAssetStats {
   total_attribue: number;
   ratio_pct: number;
   computed_at: string;
+  top_marcheurs?: { nom: string; total: number; role: string }[];
+  top_base?: number;
 }
 
 const LABELS: Record<string, string> = {
   mesures_capteurs_iot: 'Mesures capteurs IoT',
   observations_marcheurs: 'Observations marcheurs',
   dont_observations_gaspard: '— dont signées G. Boréal',
+  dont_observations_association: '— dont signées Les marches du Vivant',
   medias_marcheurs: 'Médias marcheurs',
   dont_medias_gaspard: '— dont signés G. Boréal',
+  dont_medias_association: '— dont signés Les marches du Vivant',
   snapshots_biodiversite: 'Snapshots biodiversité',
+  dont_snapshots_attr_total: '— observations iNaturalist attribuées dans les snapshots',
+  dont_snapshots_gaspard: '— dont signées G. Boréal (@gaspardboreal)',
+  dont_snapshots_association: '— dont signées Les marches du Vivant (@les-marches-du-vivant)',
   photos_marches: 'Photos de marches',
+  dont_photos_association: '— dont Les marches du Vivant (contenu éditorial MdV, auteur non enregistré)',
   marches: 'Marches',
   evenements: 'Événements',
   dont_evenements_crees_gaspard: '— dont créés par G. Boréal',
@@ -32,6 +40,7 @@ const LABELS: Record<string, string> = {
   dont_participations_gaspard: '— dont G. Boréal',
   waypoints_exploration: "Points d'étape (waypoints)",
   audios_marches: 'Audios de marches',
+  dont_audios_association: '— dont Les marches du Vivant (contenu éditorial MdV, auteur non enregistré)',
   textes_marcheurs: 'Textes de marcheurs',
   profils_communaute_exclus: 'Profils communauté (exclus — RGPD)',
   proprietes: 'Propriétés documentées',
@@ -41,10 +50,16 @@ const ORDER = [
   'mesures_capteurs_iot',
   'observations_marcheurs',
   'dont_observations_gaspard',
+  'dont_observations_association',
   'medias_marcheurs',
   'dont_medias_gaspard',
+  'dont_medias_association',
   'snapshots_biodiversite',
+  'dont_snapshots_attr_total',
+  'dont_snapshots_gaspard',
+  'dont_snapshots_association',
   'photos_marches',
+  'dont_photos_association',
   'marches',
   'evenements',
   'dont_evenements_crees_gaspard',
@@ -52,6 +67,7 @@ const ORDER = [
   'dont_participations_gaspard',
   'waypoints_exploration',
   'audios_marches',
+  'dont_audios_association',
   'textes_marcheurs',
   'proprietes',
   'profils_communaute_exclus',
@@ -201,8 +217,53 @@ export default function AdminNoteDonnees() {
               </table>
             </div>
 
+            <section className="break-inside-avoid mb-8 print:mb-4">
+              <h2 className="text-lg font-semibold mb-1">
+                2. Contribution des 10 premiers marcheurs
+              </h2>
+              <p className="text-xs text-muted-foreground mb-4">
+                Part de chaque marcheur dans les {fmt(data.top_base ?? 0)} contributions
+                des marcheurs (observations + médias + textes + audios). Mesures IoT exclues.
+              </p>
+              <div className="space-y-2.5" style={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}>
+                {(() => {
+                  const base = data.top_base || 1;
+                  const top = data.top_marcheurs ?? [];
+                  const rest = base - top.reduce((s, t) => s + t.total, 0);
+                  const rows = [
+                    ...top.map((t, i) => ({ ...t, rank: String(i + 1) })),
+                    ...(rest > 0 ? [{ nom: 'Autres marcheurs', total: rest, role: 'reste', rank: '' }] : []),
+                  ];
+                  return rows.map((r) => {
+                    const pct = (r.total / base) * 100;
+                    const bar =
+                      r.role === 'gaspard'
+                        ? 'bg-primary'
+                        : r.role === 'association'
+                        ? 'bg-accent-foreground'
+                        : r.role === 'reste'
+                        ? 'bg-muted-foreground/30'
+                        : 'bg-primary/45';
+                    return (
+                      <div key={r.nom + r.rank} className="grid grid-cols-[1.25rem_8.5rem_1fr_6.5rem] sm:grid-cols-[1.5rem_11rem_1fr_7.5rem] items-center gap-2 text-sm">
+                        <span className="text-muted-foreground tabular-nums text-right">{r.rank}</span>
+                        <span className={`truncate ${r.role === 'gaspard' || r.role === 'association' ? 'font-semibold' : ''}`}>{r.nom}</span>
+                        <div className="h-5 rounded bg-muted overflow-hidden">
+                          <div className={`h-full rounded ${bar}`} style={{ width: `${Math.max(pct, 0.8)}%` }} />
+                        </div>
+                        <span className="text-right tabular-nums">
+                          <strong>{pct.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %</strong>
+                          <span className="text-xs text-muted-foreground"> ({fmt(r.total)})</span>
+                        </span>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </section>
+
             <h2 className="text-lg font-semibold mb-3">
-              2. Qualification juridique en trois couches
+              3. Qualification juridique en trois couches
             </h2>
             <div className="space-y-3 mb-8 print:mb-4 text-sm leading-relaxed">
               <div className="rounded-xl border border-border p-4">
@@ -245,7 +306,7 @@ export default function AdminNoteDonnees() {
             </div>
 
             <h2 className="text-lg font-semibold mb-3">
-              3. Formulation suggérée pour les statuts
+              4. Formulation suggérée pour les statuts
             </h2>
             <blockquote className="rounded-xl border-l-4 border-primary bg-muted/30 p-4 mb-8 print:mb-4 text-sm italic leading-relaxed">
               « L'association est productrice et exploitante de la base de
