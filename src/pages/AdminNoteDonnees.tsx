@@ -221,7 +221,7 @@ export default function AdminNoteDonnees() {
 
             <section className="break-inside-avoid mb-8 print:mb-4">
               <h2 className="text-lg font-semibold mb-1">
-                2. Contribution des 10 premiers marcheurs
+                2. Principaux marcheurs contributeurs
               </h2>
               <p className="text-xs text-muted-foreground mb-4">
                 Part de chaque marcheur dans les {fmt(data.top_base ?? 0)} contributions
