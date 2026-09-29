@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-import { Printer, Database, Scale, ShieldCheck, Users, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
+import { Printer, Database, Scale, ShieldCheck, Users, ArrowLeft, ChevronDown, ChevronUp, FileText, Files } from 'lucide-react';
 
 interface Famille {
   famille: string;
@@ -78,6 +78,15 @@ const fmt = (n: number) => n.toLocaleString('fr-FR');
 
 export default function AdminNoteDonnees() {
   const [showAllTop, setShowAllTop] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exportMode, setExportMode] = useState<'simple' | 'complete'>('complete');
+
+  const handleExport = (mode: 'simple' | 'complete') => {
+    setExportMenuOpen(false);
+    setExportMode(mode);
+    // Laisser React appliquer le masquage avant d'ouvrir la boîte d'impression
+    setTimeout(() => window.print(), 50);
+  };
   const { data, isLoading, error } = useQuery({
     queryKey: ['data-asset-stats'],
     queryFn: async (): Promise<DataAssetStats> => {
