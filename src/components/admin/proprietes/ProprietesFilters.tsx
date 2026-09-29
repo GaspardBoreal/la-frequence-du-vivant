@@ -110,7 +110,7 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
         )}
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-9">
         <Select value={values.statut} onValueChange={(v) => set('statut', v as ProprietesFilterValues['statut'])}>
           <SelectTrigger><SelectValue placeholder="Statut" /></SelectTrigger>
           <SelectContent>
@@ -183,6 +183,16 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
             <SelectItem value="all">Intention : toutes</SelectItem>
             <SelectItem value="vide">Intention à renseigner</SelectItem>
             <SelectItem value="renseignee">Intention renseignée</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={values.role} onValueChange={(v) => set('role', v as ProprietesFilterValues['role'])}>
+          <SelectTrigger><SelectValue placeholder="Rôle" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Rôle : tous</SelectItem>
+            <SelectItem value="proprietaire">Propriétaire</SelectItem>
+            <SelectItem value="prestataire">Prestataire</SelectItem>
+            <SelectItem value="marcheur_historique">Marcheur</SelectItem>
           </SelectContent>
         </Select>
 
