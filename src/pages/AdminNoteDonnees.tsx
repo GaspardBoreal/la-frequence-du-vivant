@@ -278,11 +278,6 @@ export default function AdminNoteDonnees() {
                           )}
                         </button>
                       )}
-                      {!showAllTop && rows.length > 3 && (
-                        <p className="hidden print:block text-xs text-muted-foreground">
-                          … et {rows.length - 3} autres lignes (version écran).
-                        </p>
-                      )}
                     </>
                   );
                 })()}
