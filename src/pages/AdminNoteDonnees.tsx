@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-import { Printer, Database, Scale, ShieldCheck, Users, ArrowLeft, ChevronDown, ChevronUp, FileText, Files } from 'lucide-react';
+import { Printer, Database, Scale, ShieldCheck, Users, ArrowLeft, ChevronDown, ChevronUp, FileText, Files, Clock } from 'lucide-react';
 
 interface Famille {
   famille: string;
@@ -80,11 +80,13 @@ export default function AdminNoteDonnees() {
   const [showAllTop, setShowAllTop] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [exportMode, setExportMode] = useState<'simple' | 'complete'>('complete');
+  const [printedAt, setPrintedAt] = useState<Date>(new Date());
 
   const handleExport = (mode: 'simple' | 'complete') => {
     setExportMenuOpen(false);
     setExportMode(mode);
-    // Laisser React appliquer le masquage avant d'ouvrir la boîte d'impression
+    // Horodater à l'instant de l'impression, puis laisser React appliquer le masquage
+    setPrintedAt(new Date());
     setTimeout(() => window.print(), 50);
   };
   const { data, isLoading, error } = useQuery({
@@ -130,6 +132,17 @@ export default function AdminNoteDonnees() {
             <p className="text-sm text-muted-foreground mt-2">
               Réponse à la remarque : « les données des Marches du Vivant, seul actif
               dont votre propriété personnelle reste discutable ».
+            </p>
+            <p className="mt-3 inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-semibold print:mt-2 print:px-2.5 print:py-1 print:text-base">
+              <Clock className="w-4 h-4 text-primary print:w-5 print:h-5" />
+              Édition du{' '}
+              {printedAt.toLocaleDateString('fr-FR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}{' '}
+              à {printedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
             </p>
           </div>
           <div className="print:hidden relative">
