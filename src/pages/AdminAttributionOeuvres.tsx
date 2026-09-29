@@ -74,7 +74,7 @@ export default function AdminAttributionOeuvres() {
       toast.success(userId ? `${items.length} œuvre(s) attribuée(s)` : 'Attribution annulée');
       setSelected(new Set()); setSheetOpen(false); setSearch('');
       qc.invalidateQueries({ queryKey: ['attribution-media'] });
-      qc.invalidateQueries({ queryKey: ['data-asset-stats'] });
+      qc.invalidateQueries({ queryKey: ['data-asset-stats-v2'] });
     } catch (e) { toast.error((e as Error).message); } finally { setSaving(false); }
   };
 
