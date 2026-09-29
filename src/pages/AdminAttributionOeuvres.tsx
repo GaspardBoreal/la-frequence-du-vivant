@@ -17,7 +17,7 @@ interface MediaItem {
 }
 interface Candidate { user_id: string; name: string; avatar_url: string | null; marche_ids: string[] }
 
-const rpc = supabase.rpc as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+const rpc = supabase.rpc.bind(supabase) as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
 const keyOf = (m: MediaItem) => `${m.kind}:${m.id}`;
 
 export default function AdminAttributionOeuvres() {
@@ -119,8 +119,8 @@ export default function AdminAttributionOeuvres() {
 
       <main className="px-4 py-4 space-y-6 max-w-5xl mx-auto">
         {media.isLoading && <p className="text-muted-foreground">Chargement…</p>}
-        {media.error && <p className="text-destructive">{(media.error as Error).message}</p>}
-        {!media.isLoading && visible.length === 0 && (
+        {media.error && (<div className="text-center py-8 space-y-2"><p className="text-destructive">Impossible de charger les œuvres : {(media.error as Error).message}</p><Button variant="outline" onClick={() => media.refetch()}>Réessayer</Button></div>)}
+        {media.isSuccess && visible.length === 0 && (
           <p className="text-center text-muted-foreground py-12">{tab === 'todo' ? 'Toutes les œuvres ont un auteur.' : 'Aucune œuvre attribuée pour l’instant.'}</p>
         )}
         {groups.map(([gid, items]) => {
