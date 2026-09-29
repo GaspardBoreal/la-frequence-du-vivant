@@ -181,15 +181,24 @@ export default function AdminAttributionOeuvres() {
                         {m.kind === 'photo' && m.url ? (
                           <img src={m.url} alt={m.titre ?? ''} loading="lazy" className="h-full w-full object-cover" />
                         ) : (
-                          <div className="h-full w-full flex flex-col items-center justify-center gap-1 p-1 text-center">
-                            <Music className="h-6 w-6 text-primary" />
+                          <div className="h-full w-full flex flex-col items-center justify-end gap-0.5 p-1 pb-2 text-center">
                             <span className="text-[10px] line-clamp-2">{m.titre || m.nom_fichier}</span>
+                            <span className="text-[9px] text-muted-foreground">{audioBadge(m)}</span>
                           </div>
                         )}
                         {sel && <span className="absolute top-1 right-1 rounded-full bg-primary p-0.5 text-primary-foreground"><Check className="h-3 w-3" /></span>}
                         <span className="absolute top-1 left-1 rounded bg-background/80 p-0.5">{m.kind === 'photo' ? <ImageIcon className="h-3 w-3" /> : <Music className="h-3 w-3" />}</span>
                       </button>
-                      {m.kind === 'audio' && m.url && <audio src={m.url} controls preload="none" className="w-full h-8" />}
+                      {m.kind === 'audio' && m.url && (() => {
+                        const isCur = playing?.id === m.id;
+                        return (
+                          <button type="button" onClick={(e) => { e.stopPropagation(); playItem(m); }}
+                            aria-label={isCur && !isPaused ? 'Pause' : 'Écouter'}
+                            className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow">
+                            {isCur && loadingAudio ? <Loader2 className="h-5 w-5 animate-spin" /> : isCur && !isPaused ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+                          </button>
+                        );
+                      })()}
                       {tab === 'done' && (
                         <div className="flex items-center justify-between gap-1 bg-muted px-1 py-0.5">
                           <span className="text-[10px] truncate">{m.author_name || 'Compte'}</span>
@@ -205,13 +214,34 @@ export default function AdminAttributionOeuvres() {
         })}
       </main>
 
-      {selected.size > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background p-3 flex items-center gap-2">
-          <span className="text-sm flex-1">{selected.size} sélectionnée(s)</span>
-          <Button variant="ghost" onClick={() => setSelected(new Set())}>Effacer</Button>
-          <Button onClick={() => setSheetOpen(true)}><UserRound className="h-4 w-4 mr-1" />{tab === 'todo' ? 'Attribuer à…' : 'Réattribuer à…'}</Button>
-        </div>
-      )}
+      <div className="fixed inset-x-0 bottom-0 z-30">
+        {playing && (
+          <div className="border-t border-border bg-card px-3 py-2 flex items-center gap-3">
+            <button onClick={() => playItem(playing)} aria-label={isPaused ? 'Écouter' : 'Pause'}
+              className="h-9 w-9 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+              {loadingAudio ? <Loader2 className="h-4 w-4 animate-spin" /> : isPaused ? <Play className="h-4 w-4 ml-0.5" /> : <Pause className="h-4 w-4" />}
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="flex justify-between gap-2 text-xs">
+                <span className="truncate font-medium">{playing.titre || playing.nom_fichier}</span>
+                <span className="tabular-nums text-muted-foreground shrink-0">{loadingAudio && !time.cur ? 'chargement…' : `${fmtTime(time.cur)} / ${fmtTime(time.dur)}`}</span>
+              </div>
+              <input type="range" min={0} max={Number.isFinite(time.dur) ? time.dur : 0} step={0.1} value={time.cur}
+                onChange={(e) => { const a = audioRef.current; if (a) a.currentTime = Number(e.target.value); }}
+                className="w-full accent-primary" aria-label="Avancement" />
+              <p className="text-[10px] text-muted-foreground truncate">{playing.nom_marche || playing.ville} · {audioBadge(playing)}</p>
+            </div>
+            <button onClick={closePlayer} aria-label="Fermer le lecteur"><X className="h-4 w-4" /></button>
+          </div>
+        )}
+        {selected.size > 0 && (
+          <div className="border-t border-border bg-background p-3 flex items-center gap-2">
+            <span className="text-sm flex-1">{selected.size} sélectionnée(s)</span>
+            <Button variant="ghost" onClick={() => setSelected(new Set())}>Effacer</Button>
+            <Button onClick={() => setSheetOpen(true)}><UserRound className="h-4 w-4 mr-1" />{tab === 'todo' ? 'Attribuer à…' : 'Réattribuer à…'}</Button>
+          </div>
+        )}
+      </div>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
