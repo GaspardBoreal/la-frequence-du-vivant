@@ -121,7 +121,7 @@ export default function AdminAttributionOeuvres() {
   const shown = q ? cands.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 40) : suggested;
 
   return (
-    <div className="min-h-screen bg-background pb-28">
+    <div className="min-h-screen bg-background pb-44">
       <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur px-4 py-3 space-y-3">
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" size="icon"><Link to="/admin/note-donnees" aria-label="Retour à la note"><ArrowLeft className="h-5 w-5" /></Link></Button>
