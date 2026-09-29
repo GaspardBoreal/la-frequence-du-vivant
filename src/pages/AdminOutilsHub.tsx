@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import RealignSpeciesNamesCard from '@/components/admin/RealignSpeciesNamesCard';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route, Search, Mail, BookOpen, Scale } from 'lucide-react';
+import { ArrowLeft, Sparkles, Map, HelpCircle, Network, Leaf, GitMerge, Crosshair, ShieldCheck, Radio, Route, Search, Mail, BookOpen, Scale, Users } from 'lucide-react';
 
 const OUTILS = [
   {
