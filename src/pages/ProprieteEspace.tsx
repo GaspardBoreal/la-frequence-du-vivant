@@ -363,7 +363,7 @@ const PropTabs: React.FC<{
   proprieteCodePostal?: string | null;
   proprieteCenter?: [number, number] | null;
 }> = ({ proprieteId, proprieteNom, proprieteVille, proprieteAdresse, proprieteCodePostal, proprieteCenter }) => {
-  const { data: bio } = usePropertyBiodiversity(proprieteId);
+  const { data: bio, isSuccess: bioLoaded } = usePropertyBiodiversity(proprieteId);
   const track = useProprieteTracker(proprieteId, proprieteNom);
   const [searchParams] = useSearchParams();
   // Un lien externe peut demander un onglet précis : /propriete/slug?tab=tour
@@ -503,10 +503,12 @@ const PropTabs: React.FC<{
   return (
     <ProprieteTrackerProvider proprieteId={proprieteId} proprieteNom={proprieteNom}>
     <div className="space-y-5">
-      <NudgeMarcheBanner
-        proprieteNom={proprieteNom}
-        monthsSinceLastEvent={bio?.monthsSinceLastEvent ?? null}
-      />
+      {bioLoaded && bio && (
+        <NudgeMarcheBanner
+          proprieteNom={proprieteNom}
+          monthsSinceLastEvent={bio.monthsSinceLastEvent ?? null}
+        />
+      )}
       <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
         <div id={TABS_BAR_ID} className="sticky top-0 z-[60]">
           <div
