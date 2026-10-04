@@ -25,7 +25,7 @@ interface Props {
 }
 
 /** Mêmes options que Mon espace → Biodiversité → Taxons observés. */
-const PERIOD_OPTIONS: { key: EvolutionPeriod; label: string }[] = [
+export const PERIOD_OPTIONS: { key: EvolutionPeriod; label: string }[] = [
   { key: 'today', label: "Aujourd'hui" },
   { key: '7d', label: '7 derniers jours' },
   { key: '30d', label: '30 derniers jours' },
