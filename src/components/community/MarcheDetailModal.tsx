@@ -19,6 +19,9 @@ import { classifyBatch } from '@/utils/fileClassifier';
 import { useBiodiversityData } from '@/hooks/useBiodiversityData';
 import { createSlug } from '@/utils/slugGenerator';
 import SpeciesExplorer from '@/components/biodiversity/SpeciesExplorer';
+import MarchePeriodBar from './exploration/MarchePeriodBar';
+import { resolvePeriodRange, type EvolutionPeriod, type CustomRange } from '@/hooks/useBiodiversityEvolution';
+import { periodLabelOf } from '@/components/propriete/VivantPeriodFilter';
 import RadiusSelector from '@/components/biodiversity/RadiusSelector';
 import { isSpeciesWithinRadius } from '@/utils/speciesRadiusFilter';
 import FileUploadZone from './contributions/FileUploadZone';
@@ -1003,6 +1006,9 @@ export const VivantTab: React.FC<{
   const isOverride = radiusCtx?.marcheRadiusM != null;
 
   const [radius, setRadius] = useState(0.5);
+  const [period, setPeriod] = useState<EvolutionPeriod>('all');
+  const [customRange, setCustomRange] = useState<CustomRange | undefined>();
+  useEffect(() => { setPeriod('all'); setCustomRange(undefined); }, [marcheId]);
   useEffect(() => {
     setRadius(resolvedKm);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1140,23 +1146,6 @@ export const VivantTab: React.FC<{
           </div>
         )}
       </div>
-      {/* Canonical inventory headline — single source of truth across all views */}
-      <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-400/20">
-        <div className="flex flex-col">
-          <span className="text-[10px] uppercase tracking-wider text-emerald-300/70">Inventaire collecté</span>
-          <span className="text-emerald-200 text-sm font-medium">
-            {canonicalCount ?? '…'} espèce{(canonicalCount ?? 0) > 1 ? 's' : ''}
-            <span className="text-emerald-300/60 text-[11px] ml-2">
-              (rayon {Math.round(persistedKm * 1000)} m)
-            </span>
-          </span>
-        </div>
-        {biodiversityData?.species && biodiversityData.species.length !== (canonicalCount ?? 0) && (
-          <span className="text-[10px] text-amber-300/80" title="Aperçu en direct depuis iNaturalist, peut différer de l'inventaire persisté">
-            Aperçu live : {biodiversityData.species.length}
-          </span>
-        )}
-      </div>
       {(() => {
         // ⚠️ Cohérence stricte avec la Carte / Synthèse / Apprendre :
         // l'API live iNat est interrogée au rayon du slider (par défaut le
@@ -1172,16 +1161,62 @@ export const VivantTab: React.FC<{
             snapshot_radius_m: Math.round(radius * 1000),
           })
         );
+        const { fromISO, toISO } = resolvePeriodRange(period, customRange);
+        const inRange = (d?: string | null) => {
+          if (!d) return false;
+          const t = new Date(d);
+          if (isNaN(t.getTime())) return false;
+          const day = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+          return (!fromISO || day >= fromISO) && (!toISO || day <= toISO);
+        };
+        const periodActive = period !== 'all' && (fromISO || toISO);
+        const displayed = !periodActive ? filteredLive : filteredLive.flatMap((sp: any) => {
+          const atts = Array.isArray(sp.attributions) ? sp.attributions : [];
+          const kept = atts.filter((a: any) => inRange(a?.date));
+          if (kept.length) {
+            const last = kept.map((a: any) => a.date).sort().pop();
+            return [{ ...sp, attributions: kept, observations: kept.length, lastObserved: last, lastSeen: last }];
+          }
+          if (!atts.length && inRange(sp.lastObserved || sp.lastSeen)) return [sp];
+          return [];
+        });
+        const total = canonicalCount ?? filteredLive.length;
+        const header = (
+          <MarchePeriodBar
+            period={period}
+            customRange={customRange}
+            onChange={(p, r) => { setPeriod(p); setCustomRange(p === 'custom' ? r : undefined); }}
+            title={
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-wider text-primary/80">Inventaire collecté</span>
+                <span className="text-sm font-medium text-foreground">
+                  {periodActive ? <>{displayed.length} espèce{displayed.length > 1 ? 's' : ''} <span className="text-muted-foreground font-normal">sur {total}</span></> : <>{canonicalCount ?? '…'} espèce{(canonicalCount ?? 0) > 1 ? 's' : ''}</>}
+                  <span className="text-muted-foreground text-[11px] ml-2">
+                    {periodActive ? periodLabelOf(period) + ' · ' : ''}rayon {Math.round(persistedKm * 1000)} m
+                  </span>
+                </span>
+              </div>
+            }
+          />
+        );
         if (!filteredLive.length) {
-          return <EmptyState message="Aucune espèce dans le rayon canonique de cette marche" />;
+          return <>{header}<EmptyState message="Aucune espèce dans le rayon canonique de cette marche" /></>;
         }
         return (
-          <SpeciesExplorer
-            species={filteredLive}
-            compact
-            explorationId={explorationId}
-            trophicPool={filteredLive}
-          />
+          <>
+            {header}
+            {displayed.length ? (
+              <SpeciesExplorer
+                key={`${period}-${customRange?.from}-${customRange?.to}`}
+                species={displayed}
+                compact
+                explorationId={explorationId}
+                trophicPool={displayed}
+              />
+            ) : (
+              <EmptyState message="Aucune espèce observée sur cette période" sub="Élargissez la période ou revenez à « Tout »." />
+            )}
+          </>
         );
       })()}
     </div>
