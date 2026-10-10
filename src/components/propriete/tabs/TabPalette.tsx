@@ -119,8 +119,9 @@ export const TabPalette: React.FC<Props> = ({
     if (!ring?.length) return null;
     const lngs = ring.map((p) => p[0]);
     const lats = ring.map((p) => p[1]);
-    const dLng = Math.max(Math.max(...lngs) - Math.min(...lngs), 0.00002) * 0.18;
-    const dLat = -Math.max(Math.max(...lats) - Math.min(...lats), 0.00002) * 0.18;
+    // Copie posée à côté de l'original, sans chevauchement : une largeur + 15 %.
+    const dLng = Math.max(Math.max(...lngs) - Math.min(...lngs), 0.00002) * 1.15;
+    const dLat = 0;
     const geometry = {
       ...zone.geometry,
       coordinates: [ring.map(([lng, lat]) => [lng + dLng, lat + dLat])],

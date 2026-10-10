@@ -1570,7 +1570,7 @@ export const PaletteStudio: React.FC<Props> = ({
                   ZONE_COLORS.length
               ]
             }
-            composition={compositionRef.current?.zoneId === zoneTransform.zone?.id}
+            composition={!!composition && composition.zoneId === zoneTransform.zone?.id}
             onDelete={() => {
               const z = zoneTransform.zone;
               if (!z) return;
