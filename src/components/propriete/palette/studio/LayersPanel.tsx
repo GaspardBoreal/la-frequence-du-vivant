@@ -463,16 +463,24 @@ export const LayersPanel: React.FC<Props> = ({
             return (
               <div
                 key={z.id}
-                onClick={() => onSelectZone(active ? null : z.id)}
+                onClick={() => {
+                  if (!active && !system.zones) onSystem({ zones: true });
+                  onSelectZone(active ? null : z.id);
+                }}
                 className={`${rowBase} cursor-pointer ${
                   active ? 'bg-[hsl(var(--ds-forest))]/12' : 'hover:bg-[hsl(var(--ds-forest))]/5'
                 }`}
               >
                 <IconBtn
-                  title={z.visible ? 'Masquer' : 'Afficher'}
-                  onClick={() => onPatchZone(z, { visible: !z.visible })}
+                  title={!system.zones ? 'Vue masquée — afficher' : z.visible ? 'Masquer' : 'Afficher'}
+                  onClick={() => {
+                    if (!z.visible || !system.zones) {
+                      if (!system.zones) onSystem({ zones: true });
+                      if (!z.visible) onPatchZone(z, { visible: true });
+                    } else onPatchZone(z, { visible: false });
+                  }}
                 >
-                  {z.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  {z.visible && system.zones ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                 </IconBtn>
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -496,7 +504,7 @@ export const LayersPanel: React.FC<Props> = ({
                   />
                 ) : (
                   <span
-                    className={`min-w-0 flex-1 truncate ${z.visible ? '' : 'opacity-45'}`}
+                    className={`min-w-0 flex-1 truncate ${z.visible && system.zones ? '' : 'opacity-45'}`}
                     onDoubleClick={(e) => {
                       e.stopPropagation();
                       if (!readOnly) startEdit(`z-${z.id}`, z.nom);
