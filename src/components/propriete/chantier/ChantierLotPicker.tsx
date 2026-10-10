@@ -4,6 +4,7 @@ import type { ProprieteObjet } from '@/hooks/propriete/usePropertyObjets';
 import { TOOL_BY_KEY, type PaysageTool } from '@/lib/paysageTools';
 import type { ProprieteChantier } from '@/hooks/propriete/useProprieteChantiers';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Props {
   objets: ProprieteObjet[];
@@ -137,26 +138,33 @@ export const ChantierLotPicker: React.FC<Props> = ({
     return String.fromCharCode(65 + Math.max(0, i));
   };
   const zoneChip = (z: ProprieteZone, on: boolean, onClick: () => void) => (
-    <button
-      key={z.id}
-      type="button"
-      onClick={onClick}
-      aria-pressed={on}
-      className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-[12.5px] transition ${
-        on
-          ? 'border-[hsl(var(--ds-gold))] bg-[hsl(var(--ds-gold))]/15 font-semibold'
-          : 'border-[hsl(var(--ds-line))] bg-white/50 hover:border-[hsl(var(--ds-gold))]/70'
-      }`}
-    >
-      <span
-        className="grid h-6 w-6 place-items-center rounded-full text-[11px] font-bold text-[hsl(var(--ds-cream))]"
-        style={{ background: z.couleur || 'hsl(var(--ds-forest))' }}
-      >
-        {zoneLetter(z)}
-      </span>
-      <span className="max-w-[16ch] truncate">{z.nom}</span>
-      {on && <Check className="h-3.5 w-3.5 text-[hsl(var(--ds-forest))]" />}
-    </button>
+    <Tooltip key={z.id}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onClick}
+          aria-pressed={on}
+          title={z.nom}
+          className={`flex min-h-12 w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-[12.5px] transition ${
+            on
+              ? 'border-[hsl(var(--ds-gold))] bg-[hsl(var(--ds-gold))]/15 font-semibold shadow-sm'
+              : 'border-[hsl(var(--ds-line))] bg-white/50 hover:border-[hsl(var(--ds-gold))]/70 hover:bg-[hsl(var(--ds-gold))]/[0.06]'
+          }`}
+        >
+          <span
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold text-[hsl(var(--ds-cream))]"
+            style={{ background: z.couleur || 'hsl(var(--ds-forest))' }}
+          >
+            {zoneLetter(z)}
+          </span>
+          <span className="min-w-0 flex-1 break-words leading-snug">{z.nom}</span>
+          {on && <Check className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--ds-forest))]" />}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[280px] text-center text-[12px]">
+        {z.nom}
+      </TooltipContent>
+    </Tooltip>
   );
   /** Lot composé mais non validé : on prévient avant de tout perdre. */
   const dirty = canSubmit && !editingId;
@@ -195,6 +203,7 @@ export const ChantierLotPicker: React.FC<Props> = ({
   const soft = 'text-[hsl(var(--ds-ink-soft))]';
 
   return (
+    <TooltipProvider delayDuration={350}>
     <div className="fixed inset-0 z-[3400] flex items-center justify-center bg-[hsl(var(--ds-forest-deep))]/70 p-4 backdrop-blur-sm">
       <div
         className={`flex max-h-[86vh] w-full max-w-[880px] flex-col overflow-hidden rounded-[20px] border border-[hsl(var(--ds-gold))]/45 bg-[hsl(var(--ds-cream))] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.55)] ${ink}`}
@@ -294,7 +303,7 @@ export const ChantierLotPicker: React.FC<Props> = ({
                         <p className={`mb-1.5 text-[10.5px] uppercase tracking-[0.14em] ${soft}`}>
                           Emplacements rattachés
                         </p>
-                        <div className="mb-2 flex flex-wrap gap-1.5">
+                        <div className="mb-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                           {zones.map((z) =>
                             zoneChip(z, editZones.includes(z.id), () =>
                               setEditZones((l) =>
@@ -481,7 +490,7 @@ export const ChantierLotPicker: React.FC<Props> = ({
                   <p className={`mb-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] ${soft}`}>
                     Emplacements (facultatif)
                   </p>
-                  <div className="flex flex-wrap gap-1.5">
+                   <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                     {zones.map((z) => zoneChip(z, selectedZones.includes(z.id), () => toggleZone(z.id)))}
                   </div>
                   <p className={`mt-1.5 text-[11px] italic ${soft}`}>
@@ -636,6 +645,7 @@ export const ChantierLotPicker: React.FC<Props> = ({
         </footer>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 
