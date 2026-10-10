@@ -21,3 +21,4 @@
 - [x] Aligner le Cortège vivant sur un emplacement ou ouvrage choisi, en conservant le bilan du chantier entier
 - [x] Journal des briques Ver de Terre Production (/partenaires/vdtp/journal, frise datée depuis la proposition du 9 juillet 2026)
 - [x] Ajouter le pilotage global des vues de l’Atelier et fiabiliser l’affichage persistant des emplacements
+- [x] Permettre de dupliquer, déplacer, tourner et retourner un emplacement, avec ou sans ses ouvrages

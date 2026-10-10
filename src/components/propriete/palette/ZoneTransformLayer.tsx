@@ -4,6 +4,7 @@ import {
   closeRing,
   openRing,
   ringBounds,
+  rotateRing,
   scaleRing,
   translateRing,
   type Ring,
@@ -75,7 +76,7 @@ interface Props {
  */
 export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onGestureStart, onPreview }) => {
   const map = useMap();
-  const stateRef = React.useRef<{ start: Ring; mode: 'move' | HandleId } | null>(null);
+  const stateRef = React.useRef<{ start: Ring; mode: 'move' | 'rotate' | HandleId } | null>(null);
   const liveRef = React.useRef<Ring>(ring);
   liveRef.current = ring;
 
@@ -86,20 +87,36 @@ export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onGestureStar
   const b = React.useMemo(() => ringBounds(openRing(ring)), [ring]);
 
   const beginGesture = React.useCallback(
-    (mode: 'move' | HandleId, ev: MouseEvent) => {
+    (mode: 'move' | 'rotate' | HandleId, ev: MouseEvent) => {
       const start = openRing(liveRef.current);
       stateRef.current = { start, mode };
       onGestureStart();
       map.dragging.disable();
       const startLatLng = map.mouseEventToLatLng(ev);
       const bounds = ringBounds(start)!;
-      const anchor = mode === 'move' ? null : anchorFor(bounds, mode);
-      const grab = mode === 'move' ? null : handlePos(bounds, mode);
+      const center: [number, number] = [
+        (bounds.minLng + bounds.maxLng) / 2,
+        (bounds.minLat + bounds.maxLat) / 2,
+      ];
+      const anchor = mode === 'move' || mode === 'rotate' ? null : anchorFor(bounds, mode);
+      const grab = mode === 'move' || mode === 'rotate' ? null : handlePos(bounds, mode);
+      const kxLat = Math.cos((center[1] * Math.PI) / 180) || 1;
+      const startAngle = Math.atan2(
+        startLatLng.lat - center[1],
+        (startLatLng.lng - center[0]) * kxLat,
+      );
 
       const onMove = (e: MouseEvent) => {
         const ll = map.mouseEventToLatLng(e);
         if (mode === 'move') {
           onPreview(closeRing(translateRing(start, ll.lng - startLatLng.lng, ll.lat - startLatLng.lat)));
+          return;
+        }
+        if (mode === 'rotate') {
+          const angle = Math.atan2(ll.lat - center[1], (ll.lng - center[0]) * kxLat);
+          let delta = angle - startAngle;
+          if (e.shiftKey) delta = Math.round(delta / (Math.PI / 12)) * (Math.PI / 12);
+          onPreview(closeRing(rotateRing(start, center, -delta)));
           return;
         }
         const gLat = grab![0];
@@ -150,6 +167,8 @@ export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onGestureStar
     [b.minLat, b.minLng],
     [b.maxLat, b.minLng],
   ];
+  const latSpan = Math.max(b.maxLat - b.minLat, 1e-6);
+  const rotatePos: [number, number] = [b.maxLat + latSpan * 0.18, (b.minLng + b.maxLng) / 2];
 
   return (
     <>
@@ -217,6 +236,27 @@ export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onGestureStar
           }}
         />
       ))}
+      <Polyline
+        positions={[[b.maxLat, (b.minLng + b.maxLng) / 2], rotatePos] as any}
+        pathOptions={{ color, weight: 1.2, opacity: 0.6, dashArray: '3 4' }}
+        interactive={false}
+      />
+      <CircleMarker
+        center={rotatePos as any}
+        radius={7}
+        pathOptions={{ color: 'hsl(var(--ds-gold))', weight: 3, fillColor: 'hsl(var(--ds-cream))', fillOpacity: 1 }}
+        eventHandlers={{
+          mousedown: (e: any) => {
+            e.originalEvent?.preventDefault?.();
+            e.originalEvent?.stopPropagation?.();
+            beginGesture('rotate', e.originalEvent as MouseEvent);
+          },
+          mouseover: (e: any) => {
+            const el = e.target?.getElement?.();
+            if (el) el.style.cursor = 'grab';
+          },
+        }}
+      />
     </>
   );
 };

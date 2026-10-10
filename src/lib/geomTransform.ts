@@ -157,6 +157,57 @@ export const rotateRing = (ring: Ring, anchor: [number, number], angleRad: numbe
   });
 };
 
+/** Symétrie autour de l'axe horizontal ou vertical passant par l'ancre. */
+export const reflectRing = (
+  ring: Ring,
+  anchor: [number, number],
+  axis: 'horizontal' | 'vertical',
+): Ring => scaleRing(ring, anchor, axis === 'vertical' ? -1 : 1, axis === 'horizontal' ? -1 : 1);
+
+/** Centre de la boîte englobante d'un anneau. */
+export const ringCenter = (ring: Ring): [number, number] | null => {
+  const bounds = ringBounds(openRing(ring));
+  return bounds
+    ? [(bounds.minLng + bounds.maxLng) / 2, (bounds.minLat + bounds.maxLat) / 2]
+    : null;
+};
+
+/** Applique à une géométrie la transformation affine observée entre deux anneaux homologues. */
+export const transformGeometryFromRings = (geometry: any, from: Ring, to: Ring): any => {
+  const source = openRing(from);
+  const target = openRing(to);
+  if (source.length !== target.length || source.length < 3) return geometry;
+
+  let triple: [number, number, number] | null = null;
+  for (let i = 0; i < source.length - 2 && !triple; i += 1) {
+    for (let j = i + 1; j < source.length - 1 && !triple; j += 1) {
+      for (let k = j + 1; k < source.length; k += 1) {
+        const [a, b, c] = [source[i], source[j], source[k]];
+        const det = a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1]);
+        if (Math.abs(det) > 1e-14) triple = [i, j, k];
+      }
+    }
+  }
+  if (!triple) return geometry;
+  const [i, j, k] = triple;
+  const p = [source[i], source[j], source[k]];
+  const q = [target[i], target[j], target[k]];
+  const det = p[0][0] * (p[1][1] - p[2][1]) + p[1][0] * (p[2][1] - p[0][1]) + p[2][0] * (p[0][1] - p[1][1]);
+  const solve = (values: number[]) => {
+    const a = (values[0] * (p[1][1] - p[2][1]) + values[1] * (p[2][1] - p[0][1]) + values[2] * (p[0][1] - p[1][1])) / det;
+    const b = (p[0][0] * (values[1] - values[2]) + p[1][0] * (values[2] - values[0]) + p[2][0] * (values[0] - values[1])) / det;
+    const c = (p[0][0] * (p[1][1] * values[2] - p[2][1] * values[1]) + p[1][0] * (p[2][1] * values[0] - p[0][1] * values[2]) + p[2][0] * (p[0][1] * values[1] - p[1][1] * values[0])) / det;
+    return [a, b, c];
+  };
+  const x = solve(q.map((point) => point[0]));
+  const y = solve(q.map((point) => point[1]));
+  const apply = ([lng, lat]: [number, number]): [number, number] => [
+    x[0] * lng + x[1] * lat + x[2],
+    y[0] * lng + y[1] * lat + y[2],
+  ];
+  return withGeomCoords(geometry, geomCoords(geometry).map(apply));
+};
+
 /* ── Ponts GeoJSON génériques (Point / LineString / Polygon) ──────────────── */
 
 export type GeomKind = 'Point' | 'LineString' | 'Polygon';

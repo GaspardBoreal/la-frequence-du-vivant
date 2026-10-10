@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Move, MoreHorizontal, Scaling, Spline, Trash2, Undo2, X } from 'lucide-react';
+import { Check, FlipHorizontal2, FlipVertical2, Move, MoreHorizontal, RotateCw, Scaling, Spline, Trash2, Undo2, X } from 'lucide-react';
 import { fmtArea } from './studio/geoMetrics';
 import type { ZoneTransformApi } from '@/hooks/propriete/useZoneTransform';
 
@@ -13,7 +13,8 @@ export const ZoneTransformBar: React.FC<{
   color: string;
   /** Suppression de l'emplacement depuis le Mode Atelier (confirmée dans le rang « ⋯ »). */
   onDelete?: () => void;
-}> = ({ api, color, onDelete }) => {
+  composition?: boolean;
+}> = ({ api, color, onDelete, composition = false }) => {
   const [more, setMore] = React.useState(false);
   const [hint, setHint] = React.useState(false);
   const [confirmDelete, setConfirmDelete] = React.useState(false);
@@ -69,12 +70,21 @@ export const ZoneTransformBar: React.FC<{
       <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[760] flex flex-col items-center gap-2 px-3">
         {more && (
           <div className="pointer-events-auto flex max-w-[92vw] flex-wrap items-center justify-center gap-2 rounded-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/97 px-3 py-2 shadow-xl backdrop-blur">
-            <button
+            {!composition && <button
               onClick={api.smooth}
               className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-line))] px-2.5 py-1 text-[11px] text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/60"
             >
               <Spline className="h-3 w-3" /> Lisser
               {api.smoothCount > 0 && <span className="opacity-60">×{api.smoothCount}</span>}
+            </button>}
+            <button onClick={api.rotate90} className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-line))] px-2.5 py-1 text-[11px] text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/60">
+              <RotateCw className="h-3 w-3" /> 90°
+            </button>
+            <button onClick={() => api.reflect('horizontal')} className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-line))] px-2.5 py-1 text-[11px] text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/60">
+              <FlipHorizontal2 className="h-3 w-3" /> Miroir horizontal
+            </button>
+            <button onClick={() => api.reflect('vertical')} className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-line))] px-2.5 py-1 text-[11px] text-[hsl(var(--ds-forest-deep))] hover:border-[hsl(var(--ds-forest))]/60">
+              <FlipVertical2 className="h-3 w-3" /> Miroir vertical
             </button>
             <button
               onClick={() => setHint(true)}

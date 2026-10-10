@@ -114,6 +114,37 @@ export const TabPalette: React.FC<Props> = ({
     [proprieteCenter, parcelles],
   );
 
+  const duplicateZone = React.useCallback(async (zone: (typeof zones)[number]) => {
+    const ring = zone.geometry?.coordinates?.[0] as Array<[number, number]> | undefined;
+    if (!ring?.length) return null;
+    const lngs = ring.map((p) => p[0]);
+    const lats = ring.map((p) => p[1]);
+    const dLng = Math.max(Math.max(...lngs) - Math.min(...lngs), 0.00002) * 0.18;
+    const dLat = -Math.max(Math.max(...lats) - Math.min(...lats), 0.00002) * 0.18;
+    const geometry = {
+      ...zone.geometry,
+      coordinates: [ring.map(([lng, lat]) => [lng + dLng, lat + dLat])],
+    };
+    const id = await upsertZone({
+      nom: `${zone.nom} (copie)`,
+      geometry,
+      couleur: zone.couleur,
+      note: zone.note,
+      ordre: zones.length,
+      visible: true,
+      verrouille: false,
+      opacite: zone.opacite,
+      surface_m2: zone.surface_m2,
+    });
+    if (typeof id !== 'string') return null;
+    return { id, geometry };
+  }, [upsertZone, zones.length]);
+
+  const commitZoneDuplicate = React.useCallback((sourceZoneId: string, newZoneId: string) => {
+    const choice = palette.state.zones.find((item) => item.zone_id === sourceZoneId);
+    if (choice) palette.setZoneChoice(newZoneId, { ...choice, zone_id: newZoneId });
+  }, [palette]);
+
   const soilLite = React.useMemo(() => soilLiteFromState(soilState), [soilState]);
   const poleScores = React.useMemo(
     () => computePoleScores(flora.state.observed_plants),
@@ -655,6 +686,8 @@ export const TabPalette: React.FC<Props> = ({
         })
       }
       onDeleteZone={(id) => deleteZone(id)}
+      onDuplicateZone={duplicateZone}
+      onCommitZoneDuplicate={commitZoneDuplicate}
     />
   ) : null;
 
