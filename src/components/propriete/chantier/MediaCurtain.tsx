@@ -277,7 +277,7 @@ export const MediaCurtain: React.FC<{
 
       {photos.length === 0 && (
         <p className="rounded-lg border border-dashed border-current/20 px-3 py-6 text-center text-[12px] italic opacity-55">
-          Aucun média au carnet des ouvrages de ce chantier.
+          Aucun média au carnet de ce chantier.
         </p>
       )}
 
