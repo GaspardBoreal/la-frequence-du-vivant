@@ -219,6 +219,7 @@ export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onGestureStar
           className: 'cursor-move',
         }}
         eventHandlers={{
+          ...touchHandlers('move'),
           mousedown: (e: any) => {
             e.originalEvent?.preventDefault?.();
             e.originalEvent?.stopPropagation?.();
@@ -253,6 +254,7 @@ export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onGestureStar
             className: `zone-handle-${h}`,
           }}
           eventHandlers={{
+            ...touchHandlers(h),
             mousedown: (e: any) => {
               e.originalEvent?.preventDefault?.();
               e.originalEvent?.stopPropagation?.();
@@ -275,6 +277,7 @@ export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onGestureStar
         radius={7}
         pathOptions={{ color: 'hsl(var(--ds-gold))', weight: 3, fillColor: 'hsl(var(--ds-cream))', fillOpacity: 1 }}
         eventHandlers={{
+          ...touchHandlers('rotate'),
           mousedown: (e: any) => {
             e.originalEvent?.preventDefault?.();
             e.originalEvent?.stopPropagation?.();
