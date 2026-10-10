@@ -9,3 +9,4 @@
 - Render Atelier emplacements in a dedicated Leaflet pane above parcels and works but below living markers; dense maps must keep editable place boundaries legible.
 - Treat a duplicated Atelier emplacement as a provisional composition until validation, and apply the same affine transform to copied works; cancel must remove the provisional copy.
 - Close an Atelier composition only after the zone, copied works and plant selection are confirmed saved; a failed step keeps the bar open with retry so no copy is lost or left half-written.
+- Use the shared guarded `react-zoom-pan-pinch` pattern for full-screen photo inspection; it keeps cursor/pinch anchoring, mobile memory limits, and reset behavior consistent.
