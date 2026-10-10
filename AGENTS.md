@@ -6,3 +6,4 @@
 - Let the Cortège vivant inspect one selected trace using the same edge-radius scope while keeping ICG, soil and reports on the full chantier union; this prevents a single emplacement from being mislabeled with whole-lot counts.
 - Keep authorship, association-account activity, factual records, open-license sources, unattributed works, personal data, and database-producer investment separate in the data valuation note; a combined row-count ratio cannot establish ownership.
 - Attribution des œuvres de marches : colonne author_user_id sur marche_photos/marche_audio, modifiée uniquement via la RPC admin assign_marche_media_author (journalisée) ; la note lit ce champ.
+- Render Atelier emplacements in a dedicated Leaflet pane above parcels and works but below living markers; dense maps must keep editable place boundaries legible.

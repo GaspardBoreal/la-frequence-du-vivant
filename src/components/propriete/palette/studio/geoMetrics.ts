@@ -1,5 +1,29 @@
 import { haversineM } from '@/utils/geoDistance';
 
+export type LatLngRing = Array<[number, number]>;
+
+/** Contours GeoJSON convertis en coordonnées Leaflet [lat, lng]. */
+export const geometryPolygonRings = (geometry: any): LatLngRing[] => {
+  const convert = (ring: any): LatLngRing =>
+    (Array.isArray(ring) ? ring : [])
+      .filter(
+        (coord: any) =>
+          Array.isArray(coord) && Number.isFinite(coord[0]) && Number.isFinite(coord[1]),
+      )
+      .map((coord: [number, number]) => [coord[1], coord[0]]);
+
+  if (geometry?.type === 'Polygon') {
+    const ring = convert(geometry.coordinates?.[0]);
+    return ring.length >= 3 ? [ring] : [];
+  }
+  if (geometry?.type === 'MultiPolygon') {
+    return (Array.isArray(geometry.coordinates) ? geometry.coordinates : [])
+      .map((polygon: any) => convert(polygon?.[0]))
+      .filter((ring: LatLngRing) => ring.length >= 3);
+  }
+  return [];
+};
+
 /** Anneau GeoJSON [lng, lat][] → surface en m² (projection équirectangulaire locale). */
 export const ringAreaM2 = (ring: Array<[number, number]>): number => {
   if (!ring || ring.length < 3) return 0;
