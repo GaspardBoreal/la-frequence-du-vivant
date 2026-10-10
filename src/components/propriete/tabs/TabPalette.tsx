@@ -647,6 +647,11 @@ export const TabPalette: React.FC<Props> = ({
           geometry: patch.geometry ?? z.geometry,
           couleur: patch.couleur ?? z.couleur,
           note: patch.note ?? z.note,
+          ordre: patch.ordre ?? z.ordre,
+          visible: patch.visible ?? z.visible,
+          verrouille: patch.verrouille ?? z.verrouille,
+          opacite: patch.opacite ?? z.opacite,
+          surface_m2: patch.surface_m2 ?? z.surface_m2,
         })
       }
       onDeleteZone={(id) => deleteZone(id)}

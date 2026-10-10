@@ -22,6 +22,7 @@ import { fmtArea } from './geoMetrics';
 import { calqueMeta } from '@/lib/calqueMeta';
 import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
 import VivantPeriodFilter from '@/components/propriete/VivantPeriodFilter';
+import { Button } from '@/components/ui/button';
 
 export interface SystemLayerState {
   parcelles: boolean;
@@ -134,11 +135,18 @@ export const LayersPanel: React.FC<Props> = ({
   scrollToSystem,
 }) => {
   const systemRef = React.useRef<HTMLElement | null>(null);
-  /** Dernier état individuel des « Vues de fond » avant un « Tout masquer » global. */
-  const preToggleSystemRef = React.useRef<SystemLayerState | null>(null);
-  const allSystemVisible = React.useMemo(
-    () => (Object.keys(system) as Array<keyof SystemLayerState>).every((k) => system[k]),
-    [system],
+  const mainSystemKeys = React.useMemo<Array<keyof SystemLayerState>>(
+    () => ['parcelles', 'zones', 'vivant', 'sol', 'sante', 'capteurs'],
+    [],
+  );
+  const anySystemVisible = React.useMemo(
+    () => mainSystemKeys.some((key) => system[key]),
+    [mainSystemKeys, system],
+  );
+  const mainSystemPatch = React.useCallback(
+    (visible: boolean) =>
+      Object.fromEntries(mainSystemKeys.map((key) => [key, visible])) as Partial<SystemLayerState>,
+    [mainSystemKeys],
   );
   React.useEffect(() => {
     if (!scrollToSystem) return;
@@ -284,36 +292,22 @@ export const LayersPanel: React.FC<Props> = ({
           <h4 className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--ds-forest))]/70">
             <Layers className="h-3 w-3" /> Vues de fond
           </h4>
-          <button
+          <Button
             type="button"
-            title={allSystemVisible ? 'Tout masquer' : 'Tout afficher'}
-            onClick={() => {
-              if (allSystemVisible) {
-                // Mémorise l'état individuel de chaque vue avant de tout masquer,
-                // pour pouvoir le restaurer tel quel au prochain « Tout afficher ».
-                preToggleSystemRef.current = system;
-                onSystem(
-                  Object.keys(system).reduce(
-                    (acc, k) => ({ ...acc, [k]: false }),
-                    {} as Partial<SystemLayerState>,
-                  ),
-                );
-              } else {
-                onSystem(preToggleSystemRef.current ?? Object.keys(system).reduce(
-                  (acc, k) => ({ ...acc, [k]: true }),
-                  {} as Partial<SystemLayerState>,
-                ));
-              }
-            }}
-            className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-forest))]/30 px-2 py-0.5 text-[10px] text-[hsl(var(--ds-forest-deep))]/70 transition-colors hover:border-[hsl(var(--ds-forest))]/60 hover:bg-[hsl(var(--ds-forest))]/8"
+            variant="ghost"
+            size="sm"
+            title={anySystemVisible ? 'Masquer toutes les vues' : 'Afficher toutes les vues'}
+            aria-label={anySystemVisible ? 'Masquer toutes les vues' : 'Afficher toutes les vues'}
+            onClick={() => onSystem(mainSystemPatch(!anySystemVisible))}
+            className="h-8 shrink-0 gap-1 border border-[hsl(var(--ds-forest))]/30 px-2 text-[10px] text-[hsl(var(--ds-forest-deep))]/70 hover:border-[hsl(var(--ds-forest))]/60 hover:bg-[hsl(var(--ds-forest))]/10"
           >
-            {allSystemVisible ? (
+            {anySystemVisible ? (
               <EyeOff className="h-3 w-3" />
             ) : (
               <Eye className="h-3 w-3" />
             )}
-            {allSystemVisible ? 'Tout masquer' : 'Tout afficher'}
-          </button>
+            {anySystemVisible ? 'Tout masquer' : 'Tout afficher'}
+          </Button>
         </div>
         <div className="space-y-0.5">
           {(

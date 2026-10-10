@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { GeoJSON, Polygon, Tooltip } from 'react-leaflet';
+import { GeoJSON, Pane, Polygon, Tooltip } from 'react-leaflet';
 import {
   X,
   Layers as LayersIcon,
@@ -105,7 +105,7 @@ import {
   getTagColor,
   normalizeTagKey,
 } from '@/hooks/useMarcheurSpeciesTags';
-import { geometryAreaM2, fmtArea, geometryCenter } from './geoMetrics';
+import { geometryAreaM2, fmtArea, geometryCenter, geometryPolygonRings } from './geoMetrics';
 import ZoneTransformLayer from '../ZoneTransformLayer';
 import ZoneTransformBar from '../ZoneTransformBar';
 import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
@@ -664,9 +664,7 @@ export const PaletteStudio: React.FC<Props> = ({
 
   const bounds = React.useMemo<Array<[number, number]>>(() => {
     const pts: Array<[number, number]> = [];
-    zones.forEach((z) =>
-      (z.geometry?.coordinates?.[0] ?? []).forEach((c: [number, number]) => pts.push([c[1], c[0]])),
-    );
+    zones.forEach((z) => geometryPolygonRings(z.geometry).forEach((ring) => pts.push(...ring)));
     parcelles.forEach((p: any) => {
       const geom = p.geometry;
       const polys =
@@ -1127,50 +1125,67 @@ export const PaletteStudio: React.FC<Props> = ({
                 />
               ))}
 
-            {system.zones &&
-              zones.map((z, i) => {
-                if (!z.visible || z.id === zoneTransform.zone?.id) return null;
-                const color = z.couleur || ZONE_COLORS[i % ZONE_COLORS.length];
-                const active = z.id === activeZoneId;
-                const ring = (z.geometry?.coordinates?.[0] ?? []).map((c: [number, number]) => [
-                  c[1],
-                  c[0],
-                ]);
-                if (ring.length < 3) return null;
-                return (
-                  <Polygon
-                    key={z.id}
-                    positions={ring as any}
-                    pathOptions={{
-                      color,
-                      weight: active ? 3.5 : 2,
-                      fillColor: color,
-                      fillOpacity: (active ? 0.3 : 0.14) * (z.opacite ? z.opacite / 0.18 : 1) * 0.9,
-                    }}
-                    eventHandlers={{
-                      click: (e: any) => {
-                        e.originalEvent?.stopPropagation?.();
-                        onSelectZone(z.id);
-                        setSelectedObjetId(null);
-                      },
-                      dblclick: (e: any) => {
-                        // Empêche le zoom Leaflet : le double-clic ouvre l'éditeur
-                        e.originalEvent?.preventDefault?.();
-                        e.originalEvent?.stopPropagation?.();
-                        onSelectZone(z.id);
-                        setSelectedObjetId(null);
-                      },
-                    }}
-                  >
-                    <Tooltip sticky>
-                      <span style={{ fontSize: 11 }}>
-                        {z.nom}
-                        {z.surface_m2 ? ` · ${fmtArea(z.surface_m2)}` : ''}
-                      </span>
-                    </Tooltip>
-                  </Polygon>
-                );
-              })}
+            <Pane name="atelier-emplacements" style={{ zIndex: 475 }}>
+              {system.zones &&
+                zones.flatMap((z, i) => {
+                  if (!z.visible || z.id === zoneTransform.zone?.id) return [];
+                  const color = z.couleur || ZONE_COLORS[i % ZONE_COLORS.length];
+                  const active = z.id === activeZoneId;
+                  const rings = geometryPolygonRings(z.geometry);
+                  if (rings.length === 0) {
+                    if (import.meta.env.DEV) {
+                      console.warn(`[Atelier] Emplacement visible sans contour exploitable : ${z.nom}`);
+                    }
+                    return [];
+                  }
+                  return rings.map((ring, ringIndex) => (
+                    <React.Fragment key={`${z.id}-${ringIndex}`}>
+                      <Polygon
+                        positions={ring as any}
+                        pane="atelier-emplacements"
+                        interactive={false}
+                        pathOptions={{
+                          color: 'hsl(var(--ds-cream))',
+                          weight: active ? 7 : 5,
+                          opacity: 0.88,
+                          fillOpacity: 0,
+                        }}
+                      />
+                      <Polygon
+                        positions={ring as any}
+                        pane="atelier-emplacements"
+                        pathOptions={{
+                          color,
+                          weight: active ? 4 : 2.75,
+                          opacity: 1,
+                          fillColor: color,
+                          fillOpacity: (active ? 0.3 : 0.16) * (z.opacite ? z.opacite / 0.18 : 1),
+                        }}
+                        eventHandlers={{
+                          click: (e: any) => {
+                            e.originalEvent?.stopPropagation?.();
+                            onSelectZone(z.id);
+                            setSelectedObjetId(null);
+                          },
+                          dblclick: (e: any) => {
+                            e.originalEvent?.preventDefault?.();
+                            e.originalEvent?.stopPropagation?.();
+                            onSelectZone(z.id);
+                            setSelectedObjetId(null);
+                          },
+                        }}
+                      >
+                        <Tooltip sticky>
+                          <span style={{ fontSize: 11 }}>
+                            {z.nom}
+                            {z.surface_m2 ? ` · ${fmtArea(z.surface_m2)}` : ''}
+                          </span>
+                        </Tooltip>
+                      </Polygon>
+                    </React.Fragment>
+                  ));
+                })}
+            </Pane>
 
             {system.vivant && (
               <LivingLayer
