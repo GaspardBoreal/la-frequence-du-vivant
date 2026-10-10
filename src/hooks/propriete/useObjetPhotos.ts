@@ -23,6 +23,7 @@ export interface ObjetPhoto {
   id: string;
   propriete_id: string;
   objet_id: string;
+  zone_id?: string | null;
   storage_path: string;
   mime: string | null;
   size_bytes: number | null;
@@ -160,9 +161,10 @@ export function useObjetPhotos(proprieteId?: string) {
   const byObjet = useMemo(() => {
     const m = new Map<string, ObjetPhoto[]>();
     photos.forEach((p) => {
-      const list = m.get(p.objet_id) ?? [];
+      const key = p.objet_id ?? p.zone_id ?? '';
+      const list = m.get(key) ?? [];
       list.push(p);
-      m.set(p.objet_id, list);
+      m.set(key, list);
     });
     return m;
   }, [photos]);
@@ -181,7 +183,7 @@ export function useObjetPhotos(proprieteId?: string) {
   );
 
   const upload = useCallback(
-    async (objetId: string, files: File[]) => {
+    async (objetId: string, files: File[], kind: 'objet' | 'zone' = 'objet') => {
       if (!proprieteId) return;
       const list = Array.from(files).filter((f) =>
         (f.type || '').startsWith('image/') ||
@@ -230,7 +232,7 @@ export function useObjetPhotos(proprieteId?: string) {
           const processedFile = prepared?.processedFile ?? file;
           const metadata = prepared?.metadata ?? null;
           const videoMeta = isVideo ? await videoDimensions(file) : null;
-          const path = `${proprieteId}/${objetId}/${crypto.randomUUID()}.${extOf(processedFile.name)}`;
+          const path = `${proprieteId}/${kind === 'zone' ? 'zone-' : ''}${objetId}/${crypto.randomUUID()}.${extOf(processedFile.name)}`;
 
           const { data: signed, error: upErr } = await supabase.storage
             .from(OUVRAGE_PHOTO_BUCKET)
@@ -248,7 +250,8 @@ export function useObjetPhotos(proprieteId?: string) {
                 .from('propriete_objet_photos')
                 .insert({
                   propriete_id: proprieteId,
-                  objet_id: objetId,
+                  objet_id: kind === 'objet' ? objetId : null,
+                  zone_id: kind === 'zone' ? objetId : null,
                   storage_path: path,
                   mime: processedFile.type || null,
                   media_type: isVideo ? 'video' : 'photo',

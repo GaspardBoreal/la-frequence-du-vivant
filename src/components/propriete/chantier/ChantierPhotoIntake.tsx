@@ -115,6 +115,11 @@ export const ChantierPhotoIntake: React.FC<{
         </div>
       </div>
 
+      {ouvrages.length === 0 && (
+        <p className="mt-1.5 text-[11px] text-[#e7d3a1]">
+          Ajoutez un ouvrage ou un emplacement au lot (« Changer de lot ») pour pouvoir y verser des médias.
+        </p>
+      )}
       <p className="mt-1.5 text-[11px] italic opacity-55">
         Glissez-déposez ici, ou choisissez : photos et vidéos rejoignent le carnet en « {PHASE_LABEL[phase]} ».
         Vidéo courte : 50 Mo maximum.

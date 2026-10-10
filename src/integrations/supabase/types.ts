@@ -8612,7 +8612,7 @@ export type Database = {
           lng: number | null
           media_type: string
           mime: string | null
-          objet_id: string
+          objet_id: string | null
           order_index: number
           propriete_id: string
           size_bytes: number | null
@@ -8622,6 +8622,7 @@ export type Database = {
           uploaded_at: string
           uploaded_by: string | null
           width: number | null
+          zone_id: string | null
         }
         Insert: {
           caption?: string | null
@@ -8633,7 +8634,7 @@ export type Database = {
           lng?: number | null
           media_type?: string
           mime?: string | null
-          objet_id: string
+          objet_id?: string | null
           order_index?: number
           propriete_id: string
           size_bytes?: number | null
@@ -8643,6 +8644,7 @@ export type Database = {
           uploaded_at?: string
           uploaded_by?: string | null
           width?: number | null
+          zone_id?: string | null
         }
         Update: {
           caption?: string | null
@@ -8654,7 +8656,7 @@ export type Database = {
           lng?: number | null
           media_type?: string
           mime?: string | null
-          objet_id?: string
+          objet_id?: string | null
           order_index?: number
           propriete_id?: string
           size_bytes?: number | null
@@ -8664,6 +8666,7 @@ export type Database = {
           uploaded_at?: string
           uploaded_by?: string | null
           width?: number | null
+          zone_id?: string | null
         }
         Relationships: [
           {
@@ -8678,6 +8681,13 @@ export type Database = {
             columns: ["propriete_id"]
             isOneToOne: false
             referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propriete_objet_photos_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "propriete_zones"
             referencedColumns: ["id"]
           },
         ]
