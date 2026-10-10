@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Flag, Trash2, X, GripVertical, ArrowUpDown, Check, Pencil, User } from 'lucide-react';
 import {
@@ -22,6 +22,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { ConvivialitePhoto } from '@/hooks/useConvivialitePhotos';
 import { useExplorationMarcheurs } from '@/hooks/useExplorationMarcheurs';
 import MediaAttributionSheet from '@/components/community/insights/curation/MediaAttributionSheet';
+import ZoomablePhoto from '@/components/media/ZoomablePhoto';
 
 interface Props {
   photos: ConvivialitePhoto[];
@@ -49,6 +50,8 @@ const ConvivialiteMosaic: React.FC<Props> = ({
 }) => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [attributionOpen, setAttributionOpen] = useState(false);
+  const zoomScaleRef = useRef(1);
+  const handleZoomScale = useCallback((scale: number) => { zoomScaleRef.current = scale; }, []);
   const { data: marcheurs = [] } = useExplorationMarcheurs(canReattribute ? explorationId : undefined);
   const [editMode, setEditMode] = useState(false);
   const [orderedPhotos, setOrderedPhotos] = useState<ConvivialitePhoto[]>(photos);
@@ -63,6 +66,7 @@ const ConvivialiteMosaic: React.FC<Props> = ({
     if (lightboxIndex === null) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setLightboxIndex(null);
+      if (zoomScaleRef.current > 1.02) return;
       if (e.key === 'ArrowRight') setLightboxIndex((i) => (i === null ? null : (i + 1) % photos.length));
       if (e.key === 'ArrowLeft') setLightboxIndex((i) => (i === null ? null : (i - 1 + photos.length) % photos.length));
     };
@@ -241,16 +245,16 @@ const ConvivialiteMosaic: React.FC<Props> = ({
             >
               <ChevronRight className="w-6 h-6" />
             </button>
-            <motion.img
+            <motion.div
               key={lightboxPhoto.id}
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              src={lightboxPhoto.url}
-              alt=""
+              exit={{ opacity: 0, scale: 0.97 }}
               onClick={(e) => e.stopPropagation()}
-              className="max-w-[92vw] max-h-[85vh] object-contain rounded-lg shadow-2xl"
-            />
+              className="relative w-[92vw] h-[80vh] max-w-[92vw]"
+            >
+              <ZoomablePhoto src={lightboxPhoto.url} alt="" onScaleChange={handleZoomScale} />
+            </motion.div>
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/90 text-sm text-center max-w-[92vw]" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
