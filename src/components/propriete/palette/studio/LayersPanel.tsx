@@ -147,7 +147,6 @@ export const LayersPanel: React.FC<Props> = ({
     (visible: boolean) =>
       Object.fromEntries(mainSystemKeys.map((key) => [key, visible])) as Partial<SystemLayerState>,
     [mainSystemKeys],
-    [system],
   );
   React.useEffect(() => {
     if (!scrollToSystem) return;
