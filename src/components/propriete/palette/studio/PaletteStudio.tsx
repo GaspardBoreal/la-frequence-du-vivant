@@ -156,6 +156,7 @@ interface Props {
   onPatchZone: (z: ProprieteZone, patch: Partial<ProprieteZone>) => void;
   onDeleteZone: (id: string) => void;
   onDuplicateZone: (zone: ProprieteZone) => Promise<{ id: string; geometry: any } | null>;
+  onCommitZoneDuplicate: (sourceZoneId: string, newZoneId: string) => void;
   readOnly?: boolean;
   /** Intention d'ouverture (ex. pose GPS d'un capteur depuis « Capteurs et sondes »). */
   intent?: AtelierIntent | null;
@@ -175,6 +176,7 @@ export const PaletteStudio: React.FC<Props> = ({
   onPatchZone,
   onDeleteZone,
   onDuplicateZone,
+  onCommitZoneDuplicate,
   readOnly,
   intent,
 }) => {
@@ -314,8 +316,18 @@ export const PaletteStudio: React.FC<Props> = ({
   const drawLayerRef = React.useRef<DrawLayerHandle | null>(null);
   const compositionRef = React.useRef<{
     zoneId: string;
+    sourceZoneId: string;
     initialRing: Ring;
-    copiedObjects: Array<{ id: string; geometry: any }>;
+    copiedObjects: Array<{
+      id: string;
+      geometry: any;
+      outil_key: string;
+      calque_id: string | null;
+      nom: string | null;
+      style: Record<string, any>;
+      meta: Record<string, any>;
+      ordre: number;
+    }>;
   } | null>(null);
   const zoneTransform = useZoneTransform(onPatchZone, (kind, zone, _base, final) => {
     const composition = compositionRef.current;
@@ -327,20 +339,19 @@ export const PaletteStudio: React.FC<Props> = ({
       onSelectZone(null);
     } else {
       composition.copiedObjects.forEach((item) => {
-        const object = objets.find((candidate) => candidate.id === item.id);
-        if (!object) return;
         upsertObjet({
-          id: object.id,
-          outil_key: object.outil_key,
+          id: item.id,
+          outil_key: item.outil_key,
           geometry: transformGeometryFromRings(item.geometry, composition.initialRing, final),
-          calque_id: object.calque_id,
+          calque_id: item.calque_id,
           zone_id: zone.id,
-          nom: object.nom,
-          style: object.style,
-          meta: object.meta,
-          ordre: object.ordre,
-        }).catch(() => toast.error(`L’ouvrage « ${object.nom || 'sans nom'} » n’a pas suivi la forme.`));
+          nom: item.nom,
+          style: item.style,
+          meta: item.meta,
+          ordre: item.ordre,
+        }).catch(() => toast.error(`L’ouvrage « ${item.nom || 'sans nom'} » n’a pas suivi la forme.`));
       });
+      onCommitZoneDuplicate(composition.sourceZoneId, zone.id);
       toast.success('Nouvelle composition enregistrée.');
     }
     compositionRef.current = null;
@@ -775,7 +786,7 @@ export const PaletteStudio: React.FC<Props> = ({
       if (!created) throw new Error('duplicate-zone');
       const initialRing = openRing((created.geometry?.coordinates?.[0] ?? []) as Ring);
       const sourceRing = openRing((zone.geometry?.coordinates?.[0] ?? []) as Ring);
-      const copiedObjects: Array<{ id: string; geometry: any }> = [];
+      const copiedObjects: NonNullable<typeof compositionRef.current>['copiedObjects'] = [];
       if (withObjects) {
         for (const object of objets.filter((candidate) => candidate.zone_id === zone.id)) {
           const geometry = transformGeometryFromRings(object.geometry, sourceRing, initialRing);
@@ -789,7 +800,16 @@ export const PaletteStudio: React.FC<Props> = ({
             meta: object.meta,
             ordre: objets.length + copiedObjects.length,
           });
-          if (typeof id === 'string') copiedObjects.push({ id, geometry });
+          if (typeof id === 'string') copiedObjects.push({
+            id,
+            geometry,
+            outil_key: object.outil_key,
+            calque_id: object.calque_id,
+            nom: object.nom,
+            style: object.style,
+            meta: object.meta,
+            ordre: objets.length + copiedObjects.length,
+          });
         }
       }
       const provisional: ProprieteZone = {
@@ -801,7 +821,12 @@ export const PaletteStudio: React.FC<Props> = ({
         visible: true,
         verrouille: false,
       };
-      compositionRef.current = { zoneId: created.id, initialRing, copiedObjects };
+      compositionRef.current = {
+        zoneId: created.id,
+        sourceZoneId: zone.id,
+        initialRing,
+        copiedObjects,
+      };
       setSystem((current) => ({ ...current, zones: true }));
       onSelectZone(created.id);
       setSelectedObjetId(null);

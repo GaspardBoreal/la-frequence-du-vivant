@@ -137,10 +137,13 @@ export const TabPalette: React.FC<Props> = ({
       surface_m2: zone.surface_m2,
     });
     if (typeof id !== 'string') return null;
-    const choice = palette.state.zones.find((item) => item.zone_id === zone.id);
-    if (choice) palette.setZoneChoice(id, { ...choice, zone_id: id });
     return { id, geometry };
-  }, [palette, upsertZone, zones.length]);
+  }, [upsertZone, zones.length]);
+
+  const commitZoneDuplicate = React.useCallback((sourceZoneId: string, newZoneId: string) => {
+    const choice = palette.state.zones.find((item) => item.zone_id === sourceZoneId);
+    if (choice) palette.setZoneChoice(newZoneId, { ...choice, zone_id: newZoneId });
+  }, [palette]);
 
   const soilLite = React.useMemo(() => soilLiteFromState(soilState), [soilState]);
   const poleScores = React.useMemo(
@@ -684,6 +687,7 @@ export const TabPalette: React.FC<Props> = ({
       }
       onDeleteZone={(id) => deleteZone(id)}
       onDuplicateZone={duplicateZone}
+      onCommitZoneDuplicate={commitZoneDuplicate}
     />
   ) : null;
 
