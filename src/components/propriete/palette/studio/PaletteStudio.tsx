@@ -1675,7 +1675,6 @@ export const PaletteStudio: React.FC<Props> = ({
                   deleteObjet(selectedObjet.id).catch(() => {});
                   setSelectedObjetId(null);
                 }}
-                onDuplicate={(withObjects) => duplicateAndCompose(selectedZone, withObjects)}
                 onDuplicate={() =>
                   upsertObjet({
                     outil_key: selectedObjet.outil_key,
@@ -1737,6 +1736,7 @@ export const PaletteStudio: React.FC<Props> = ({
                   onDeleteZone(selectedZone.id);
                   onSelectZone(null);
                 }}
+                onDuplicate={(withObjects) => duplicateAndCompose(selectedZone, withObjects)}
                 onClose={() => onSelectZone(null)}
                 readOnly={readOnly}
               />
