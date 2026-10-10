@@ -119,6 +119,8 @@ import { fullscreenSurfaces } from '@/lib/uiOverlayLevel';
 import { openGardenAi, useProprieteChatFocus } from '@/components/propriete/chatbot/proprieteChatFocus';
 import { Circle as LeafletCircle, Polygon as LeafletPolygon } from 'react-leaflet';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { openRing, transformGeometryFromRings, type Ring } from '@/lib/geomTransform';
 
 
 type PanelTab = 'calques' | 'outils' | 'vivant' | 'bilan';
@@ -153,6 +155,7 @@ interface Props {
   onCreateZone: (geometry: any, surfaceM2: number) => void;
   onPatchZone: (z: ProprieteZone, patch: Partial<ProprieteZone>) => void;
   onDeleteZone: (id: string) => void;
+  onDuplicateZone: (zone: ProprieteZone) => Promise<{ id: string; geometry: any } | null>;
   readOnly?: boolean;
   /** Intention d'ouverture (ex. pose GPS d'un capteur depuis « Capteurs et sondes »). */
   intent?: AtelierIntent | null;
@@ -171,6 +174,7 @@ export const PaletteStudio: React.FC<Props> = ({
   onCreateZone,
   onPatchZone,
   onDeleteZone,
+  onDuplicateZone,
   readOnly,
   intent,
 }) => {
@@ -308,7 +312,39 @@ export const PaletteStudio: React.FC<Props> = ({
     angleDeg: null,
   });
   const drawLayerRef = React.useRef<DrawLayerHandle | null>(null);
-  const zoneTransform = useZoneTransform(onPatchZone);
+  const compositionRef = React.useRef<{
+    zoneId: string;
+    initialRing: Ring;
+    copiedObjects: Array<{ id: string; geometry: any }>;
+  } | null>(null);
+  const zoneTransform = useZoneTransform(onPatchZone, (kind, zone, _base, final) => {
+    const composition = compositionRef.current;
+    if (!composition || composition.zoneId !== zone.id) return;
+    if (kind === 'cancel') {
+      Promise.all(composition.copiedObjects.map((item) => deleteObjet(item.id)))
+        .then(() => onDeleteZone(zone.id))
+        .catch(() => toast.error('La copie provisoire n’a pas pu être retirée complètement.'));
+      onSelectZone(null);
+    } else {
+      composition.copiedObjects.forEach((item) => {
+        const object = objets.find((candidate) => candidate.id === item.id);
+        if (!object) return;
+        upsertObjet({
+          id: object.id,
+          outil_key: object.outil_key,
+          geometry: transformGeometryFromRings(item.geometry, composition.initialRing, final),
+          calque_id: object.calque_id,
+          zone_id: zone.id,
+          nom: object.nom,
+          style: object.style,
+          meta: object.meta,
+          ordre: object.ordre,
+        }).catch(() => toast.error(`L’ouvrage « ${object.nom || 'sans nom'} » n’a pas suivi la forme.`));
+      });
+      toast.success('Nouvelle composition enregistrée.');
+    }
+    compositionRef.current = null;
+  });
   const [selectedObjetId, setSelectedObjetId] = React.useState<string | null>(null);
   /** Mode Transformer d'un ouvrage : géométrie éditée en local, écrite au « Valider ». */
   const objetTransform = useObjetTransform((o, geometry) => {
@@ -731,6 +767,50 @@ export const PaletteStudio: React.FC<Props> = ({
     selectedZone?.couleur || ZONE_COLORS[Math.max(0, selectedZoneIndex) % ZONE_COLORS.length];
   /** Une fiche ouverte concentre l'écran sur l'ouvrage ou l'emplacement sélectionné. */
   const inspectorActive = !!selectedObjet || !!selectedZone;
+
+  const duplicateAndCompose = React.useCallback(async (zone: ProprieteZone, withObjects: boolean) => {
+    if (readOnly) return;
+    try {
+      const created = await onDuplicateZone(zone);
+      if (!created) throw new Error('duplicate-zone');
+      const initialRing = openRing((created.geometry?.coordinates?.[0] ?? []) as Ring);
+      const sourceRing = openRing((zone.geometry?.coordinates?.[0] ?? []) as Ring);
+      const copiedObjects: Array<{ id: string; geometry: any }> = [];
+      if (withObjects) {
+        for (const object of objets.filter((candidate) => candidate.zone_id === zone.id)) {
+          const geometry = transformGeometryFromRings(object.geometry, sourceRing, initialRing);
+          const id = await upsertObjet({
+            outil_key: object.outil_key,
+            geometry,
+            calque_id: object.calque_id,
+            zone_id: created.id,
+            nom: object.nom,
+            style: object.style,
+            meta: object.meta,
+            ordre: objets.length + copiedObjects.length,
+          });
+          if (typeof id === 'string') copiedObjects.push({ id, geometry });
+        }
+      }
+      const provisional: ProprieteZone = {
+        ...zone,
+        id: created.id,
+        nom: `${zone.nom} (copie)`,
+        geometry: created.geometry,
+        ordre: zones.length,
+        visible: true,
+        verrouille: false,
+      };
+      compositionRef.current = { zoneId: created.id, initialRing, copiedObjects };
+      setSystem((current) => ({ ...current, zones: true }));
+      onSelectZone(created.id);
+      setSelectedObjetId(null);
+      zoneTransform.start(provisional);
+      toast.info(withObjects ? 'Copie avec ouvrages prête à composer.' : 'Copie prête à composer.');
+    } catch {
+      toast.error('Impossible de préparer cette copie.');
+    }
+  }, [objets, onDuplicateZone, onSelectZone, readOnly, upsertObjet, zoneTransform, zones.length]);
 
   React.useEffect(() => {
     window.dispatchEvent(
@@ -1400,6 +1480,7 @@ export const PaletteStudio: React.FC<Props> = ({
                   ZONE_COLORS.length
               ]
             }
+            composition={compositionRef.current?.zoneId === zoneTransform.zone?.id}
             onDelete={() => {
               const z = zoneTransform.zone;
               if (!z) return;
@@ -1594,6 +1675,7 @@ export const PaletteStudio: React.FC<Props> = ({
                   deleteObjet(selectedObjet.id).catch(() => {});
                   setSelectedObjetId(null);
                 }}
+                onDuplicate={(withObjects) => duplicateAndCompose(selectedZone, withObjects)}
                 onDuplicate={() =>
                   upsertObjet({
                     outil_key: selectedObjet.outil_key,
