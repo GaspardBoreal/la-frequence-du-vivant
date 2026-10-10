@@ -1962,15 +1962,39 @@ export const PaletteStudio: React.FC<Props> = ({
 export default PaletteStudio;
 
 /** Recentre la carte sur l'emplacement sélectionné, une fois par sélection. */
-function FitActiveZone({ zone }: { zone?: { id: string; geometry: any } }) {
+function FitActiveZone({ zone, paused = false }: { zone?: { id: string; geometry: any }; paused?: boolean }) {
   const map = useMap();
   const lastId = React.useRef<string | null>(null);
   React.useEffect(() => {
     if (!zone) { lastId.current = null; return; }
     if (lastId.current === zone.id) return;
     lastId.current = zone.id;
+    if (paused) return;
     const pts = geometryPolygonRings(zone.geometry).flat();
     if (pts.length >= 3) map.fitBounds(pts as any, { padding: [60, 60], maxZoom: 20 });
-  }, [zone, map]);
+  }, [zone, map, paused]);
+  return null;
+}
+
+/**
+ * Cadrage de composition : original + copie visibles ensemble, hors de la
+ * barre du bas (marge basse élargie) et des panneaux latéraux.
+ */
+function FitComposition({ id, geometries }: { id: string | null; geometries: any[] }) {
+  const map = useMap();
+  const lastId = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!id) { lastId.current = null; return; }
+    if (lastId.current === id) return;
+    const pts = geometries.flatMap((g) => geometryPolygonRings(g).flat());
+    if (pts.length < 3) return;
+    lastId.current = id;
+    const narrow = map.getSize().x < 640;
+    map.fitBounds(pts as any, {
+      paddingTopLeft: [narrow ? 24 : 80, narrow ? 72 : 90],
+      paddingBottomRight: [narrow ? 24 : 80, narrow ? 190 : 170],
+      maxZoom: 20,
+    });
+  }, [id, geometries, map]);
   return null;
 }
