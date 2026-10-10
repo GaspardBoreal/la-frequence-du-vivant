@@ -87,7 +87,8 @@ export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onGestureStar
   const b = React.useMemo(() => ringBounds(openRing(ring)), [ring]);
 
   const beginGesture = React.useCallback(
-    (mode: 'move' | 'rotate' | HandleId, ev: MouseEvent) => {
+    (mode: 'move' | 'rotate' | HandleId, ev: MouseEvent | PointerEvent) => {
+      if (stateRef.current) return;
       const start = openRing(liveRef.current);
       stateRef.current = { start, mode };
       onGestureStart();
@@ -106,7 +107,7 @@ export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onGestureStar
         (startLatLng.lng - center[0]) * kxLat,
       );
 
-      const onMove = (e: MouseEvent) => {
+      const onMove = (e: MouseEvent | PointerEvent) => {
         const ll = map.mouseEventToLatLng(e);
         if (mode === 'move') {
           onPreview(closeRing(translateRing(start, ll.lng - startLatLng.lng, ll.lat - startLatLng.lat)));
@@ -136,14 +137,17 @@ export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onGestureStar
       };
 
       const onUp = () => {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onUp);
         map.dragging.enable();
         stateRef.current = null;
       };
 
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
+      // Pointer Events : souris, doigt et stylet suivent le même geste.
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
     },
     [map, onPreview, onGestureStart],
   );
