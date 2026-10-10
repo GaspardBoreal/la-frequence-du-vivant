@@ -855,15 +855,35 @@ export const PaletteStudio: React.FC<Props> = ({
         initialRing,
         copiedObjects,
       };
+      setComposition({ zoneId: created.id, sourceZoneId: zone.id });
       setSystem((current) => ({ ...current, zones: true }));
       onSelectZone(created.id);
       setSelectedObjetId(null);
       zoneTransform.start(provisional);
       toast.info(withObjects ? 'Copie avec ouvrages prête à composer.' : 'Copie prête à composer.');
     } catch {
+      /* Rien d'incomplet ne doit rester : on retire ce qui a déjà été créé. */
+      await Promise.allSettled(copiedObjects.map((item) => deleteObjet(item.id)));
+      if (createdId) {
+        try { await onDeleteZone(createdId); } catch { /* signalé ci-dessous */ }
+      }
       toast.error('Impossible de préparer cette copie.');
     }
-  }, [objets, onDuplicateZone, onSelectZone, readOnly, upsertObjet, zoneTransform, zones.length]);
+  }, [deleteObjet, objets, onDeleteZone, onDuplicateZone, onSelectZone, readOnly, upsertObjet, zoneTransform, zones.length]);
+
+  const compositionSourceRing = React.useMemo(() => {
+    if (!composition) return null;
+    const source = zones.find((z) => z.id === composition.sourceZoneId);
+    const ring = geometryPolygonRings(source?.geometry)[0];
+    return ring?.length ? ring : null;
+  }, [composition, zones]);
+  const compositionStartGeometry =
+    composition && zoneTransform.zone?.id === composition.zoneId ? zoneTransform.zone.geometry : null;
+  const compositionGeometries = React.useMemo(() => {
+    if (!composition) return [];
+    const source = zones.find((z) => z.id === composition.sourceZoneId);
+    return [source?.geometry, compositionStartGeometry].filter(Boolean);
+  }, [composition, zones, compositionStartGeometry]);
 
   React.useEffect(() => {
     window.dispatchEvent(
