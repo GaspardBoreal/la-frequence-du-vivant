@@ -330,32 +330,56 @@ export const PaletteStudio: React.FC<Props> = ({
       ordre: number;
     }>;
   } | null>(null);
-  const zoneTransform = useZoneTransform(onPatchZone, (kind, zone, _base, final) => {
-    const composition = compositionRef.current;
-    if (!composition || composition.zoneId !== zone.id) return;
+  /** Composition en cours (state) : rendu fiable du mode, du contour source et du cadrage. */
+  const [composition, setComposition] = React.useState<{ zoneId: string; sourceZoneId: string } | null>(null);
+  const zoneTransform = useZoneTransform(onPatchZone, async (kind, zone, _base, final) => {
+    const current = compositionRef.current;
+    if (!current || current.zoneId !== zone.id) return;
     if (kind === 'cancel') {
-      Promise.all(composition.copiedObjects.map((item) => deleteObjet(item.id)))
-        .then(() => onDeleteZone(zone.id))
-        .catch(() => toast.error('La copie provisoire n’a pas pu être retirée complètement.'));
+      compositionRef.current = null;
+      setComposition(null);
       onSelectZone(null);
-    } else {
-      composition.copiedObjects.forEach((item) => {
+      try {
+        await Promise.all(current.copiedObjects.map((item) => deleteObjet(item.id)));
+        await onDeleteZone(zone.id);
+      } catch {
+        toast.error('La copie provisoire n’a pas pu être retirée complètement.');
+      }
+      return;
+    }
+    const results = await Promise.allSettled(
+      current.copiedObjects.map((item) =>
         upsertObjet({
           id: item.id,
           outil_key: item.outil_key,
-          geometry: transformGeometryFromRings(item.geometry, composition.initialRing, final),
+          geometry: transformGeometryFromRings(item.geometry, current.initialRing, final),
           calque_id: item.calque_id,
           zone_id: zone.id,
           nom: item.nom,
           style: item.style,
           meta: item.meta,
           ordre: item.ordre,
-        }).catch(() => toast.error(`L’ouvrage « ${item.nom || 'sans nom'} » n’a pas suivi la forme.`));
-      });
-      onCommitZoneDuplicate(composition.sourceZoneId, zone.id);
-      toast.success('Nouvelle composition enregistrée.');
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    if (failed > 0) {
+      throw new Error(
+        failed === 1
+          ? 'Un ouvrage n’a pas suivi la forme. Réessayez.'
+          : `${failed} ouvrages n’ont pas suivi la forme. Réessayez.`,
+      );
+    }
+    try {
+      if (typeof onCommitZoneDuplicate === 'function') {
+        onCommitZoneDuplicate(current.sourceZoneId, zone.id);
+      }
+    } catch {
+      toast.error('La copie est enregistrée, mais sa sélection végétale n’a pas été reprise.');
     }
     compositionRef.current = null;
+    setComposition(null);
+    toast.success('Nouvelle composition enregistrée.');
   });
   const [selectedObjetId, setSelectedObjetId] = React.useState<string | null>(null);
   /** Mode Transformer d'un ouvrage : géométrie éditée en local, écrite au « Valider ». */
@@ -782,12 +806,15 @@ export const PaletteStudio: React.FC<Props> = ({
 
   const duplicateAndCompose = React.useCallback(async (zone: ProprieteZone, withObjects: boolean) => {
     if (readOnly) return;
+    if (zoneTransform.zone) zoneTransform.cancel();
+    let createdId: string | null = null;
+    const copiedObjects: NonNullable<typeof compositionRef.current>['copiedObjects'] = [];
     try {
       const created = await onDuplicateZone(zone);
       if (!created) throw new Error('duplicate-zone');
+      createdId = created.id;
       const initialRing = openRing((created.geometry?.coordinates?.[0] ?? []) as Ring);
       const sourceRing = openRing((zone.geometry?.coordinates?.[0] ?? []) as Ring);
-      const copiedObjects: NonNullable<typeof compositionRef.current>['copiedObjects'] = [];
       if (withObjects) {
         for (const object of objets.filter((candidate) => candidate.zone_id === zone.id)) {
           const geometry = transformGeometryFromRings(object.geometry, sourceRing, initialRing);
@@ -828,15 +855,35 @@ export const PaletteStudio: React.FC<Props> = ({
         initialRing,
         copiedObjects,
       };
+      setComposition({ zoneId: created.id, sourceZoneId: zone.id });
       setSystem((current) => ({ ...current, zones: true }));
       onSelectZone(created.id);
       setSelectedObjetId(null);
       zoneTransform.start(provisional);
       toast.info(withObjects ? 'Copie avec ouvrages prête à composer.' : 'Copie prête à composer.');
     } catch {
+      /* Rien d'incomplet ne doit rester : on retire ce qui a déjà été créé. */
+      await Promise.allSettled(copiedObjects.map((item) => deleteObjet(item.id)));
+      if (createdId) {
+        try { await onDeleteZone(createdId); } catch { /* signalé ci-dessous */ }
+      }
       toast.error('Impossible de préparer cette copie.');
     }
-  }, [objets, onDuplicateZone, onSelectZone, readOnly, upsertObjet, zoneTransform, zones.length]);
+  }, [deleteObjet, objets, onDeleteZone, onDuplicateZone, onSelectZone, readOnly, upsertObjet, zoneTransform, zones.length]);
+
+  const compositionSourceRing = React.useMemo(() => {
+    if (!composition) return null;
+    const source = zones.find((z) => z.id === composition.sourceZoneId);
+    const ring = geometryPolygonRings(source?.geometry)[0];
+    return ring?.length ? ring : null;
+  }, [composition, zones]);
+  const compositionStartGeometry =
+    composition && zoneTransform.zone?.id === composition.zoneId ? zoneTransform.zone.geometry : null;
+  const compositionGeometries = React.useMemo(() => {
+    if (!composition) return [];
+    const source = zones.find((z) => z.id === composition.sourceZoneId);
+    return [source?.geometry, compositionStartGeometry].filter(Boolean);
+  }, [composition, zones, compositionStartGeometry]);
 
   React.useEffect(() => {
     window.dispatchEvent(
@@ -1170,7 +1217,24 @@ export const PaletteStudio: React.FC<Props> = ({
             height="100%"
           >
             <MapViewReporter onChange={onViewChange} />
-            <FitActiveZone zone={zones.find((zz) => zz.id === activeZoneId)} />
+            <FitActiveZone
+              zone={zones.find((zz) => zz.id === activeZoneId)}
+              paused={!!composition && composition.zoneId === activeZoneId}
+            />
+            <FitComposition id={composition?.zoneId ?? null} geometries={compositionGeometries} />
+            {compositionSourceRing && (
+              /* Repère de composition : l'original en pointillé discret. */
+              <LeafletPolygon
+                positions={compositionSourceRing as any}
+                pathOptions={{
+                  color: 'hsl(var(--ds-gold))',
+                  weight: 1.6,
+                  dashArray: '6 6',
+                  fillOpacity: 0,
+                  interactive: false,
+                }}
+              />
+            )}
             <ZoomScaleBadge />
             {aiFocusCenter && (
               <LeafletCircle
@@ -1506,12 +1570,14 @@ export const PaletteStudio: React.FC<Props> = ({
                   ZONE_COLORS.length
               ]
             }
-            composition={compositionRef.current?.zoneId === zoneTransform.zone?.id}
+            composition={!!composition && composition.zoneId === zoneTransform.zone?.id}
             onDelete={() => {
               const z = zoneTransform.zone;
               if (!z) return;
+              const isCopy = compositionRef.current?.zoneId === z.id;
               zoneTransform.cancel();
-              onDeleteZone(z.id);
+              // Une copie provisoire est déjà retirée par l'abandon.
+              if (!isCopy) onDeleteZone(z.id);
               onSelectZone(null);
             }}
           />
@@ -1938,15 +2004,39 @@ export const PaletteStudio: React.FC<Props> = ({
 export default PaletteStudio;
 
 /** Recentre la carte sur l'emplacement sélectionné, une fois par sélection. */
-function FitActiveZone({ zone }: { zone?: { id: string; geometry: any } }) {
+function FitActiveZone({ zone, paused = false }: { zone?: { id: string; geometry: any }; paused?: boolean }) {
   const map = useMap();
   const lastId = React.useRef<string | null>(null);
   React.useEffect(() => {
     if (!zone) { lastId.current = null; return; }
     if (lastId.current === zone.id) return;
     lastId.current = zone.id;
+    if (paused) return;
     const pts = geometryPolygonRings(zone.geometry).flat();
     if (pts.length >= 3) map.fitBounds(pts as any, { padding: [60, 60], maxZoom: 20 });
-  }, [zone, map]);
+  }, [zone, map, paused]);
+  return null;
+}
+
+/**
+ * Cadrage de composition : original + copie visibles ensemble, hors de la
+ * barre du bas (marge basse élargie) et des panneaux latéraux.
+ */
+function FitComposition({ id, geometries }: { id: string | null; geometries: any[] }) {
+  const map = useMap();
+  const lastId = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!id) { lastId.current = null; return; }
+    if (lastId.current === id) return;
+    const pts = geometries.flatMap((g) => geometryPolygonRings(g).flat());
+    if (pts.length < 3) return;
+    lastId.current = id;
+    const narrow = map.getSize().x < 640;
+    map.fitBounds(pts as any, {
+      paddingTopLeft: [narrow ? 24 : 80, narrow ? 72 : 90],
+      paddingBottomRight: [narrow ? 24 : 80, narrow ? 190 : 170],
+      maxZoom: 20,
+    });
+  }, [id, geometries, map]);
   return null;
 }

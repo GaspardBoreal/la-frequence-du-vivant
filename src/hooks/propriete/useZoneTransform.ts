@@ -19,6 +19,10 @@ export interface ZoneTransformApi {
   canUndo: boolean;
   baseArea: number;
   area: number;
+  /** Enregistrement en cours : Valider est verrouillé. */
+  saving: boolean;
+  /** Dernier échec d'enregistrement (la barre reste ouverte). */
+  saveError: string | null;
   start: (zone: ProprieteZone) => void;
   /** À appeler juste avant un geste : empile l'état courant. */
   pushHistory: () => void;
@@ -31,26 +35,56 @@ export interface ZoneTransformApi {
   save: () => void;
 }
 
+type FinishFn = (
+  kind: 'save' | 'cancel',
+  zone: ProprieteZone,
+  base: Ring,
+  final: Ring,
+) => void | Promise<void>;
+
 /**
  * État d'édition géométrique d'un emplacement : copie locale, pile d'annulation,
  * lissage cumulatif et sauvegarde différée (rien n'est écrit avant « Valider »).
+ * La validation n'est refermée qu'après confirmation réelle de l'enregistrement.
  */
 export function useZoneTransform(
-  onPatchZone?: (zone: ProprieteZone, patch: Partial<ProprieteZone>) => void,
-  onFinish?: (kind: 'save' | 'cancel', zone: ProprieteZone, base: Ring, final: Ring) => void,
+  onPatchZone?: (zone: ProprieteZone, patch: Partial<ProprieteZone>) => unknown,
+  onFinish?: FinishFn,
 ): ZoneTransformApi {
   const [zone, setZone] = React.useState<ProprieteZone | null>(null);
   const [ring, setRing] = React.useState<Ring>([]);
   const [history, setHistory] = React.useState<Ring[]>([]);
   const [smoothCount, setSmoothCount] = React.useState(0);
+  const [saving, setSaving] = React.useState(false);
+  const [saveError, setSaveError] = React.useState<string | null>(null);
   const baseRef = React.useRef<Ring>([]);
   const ringRef = React.useRef<Ring>([]);
   ringRef.current = ring;
+  const zoneRef = React.useRef<ProprieteZone | null>(null);
+  zoneRef.current = zone;
+  const savingRef = React.useRef(false);
+  const patchRef = React.useRef(onPatchZone);
+  patchRef.current = onPatchZone;
+  const finishRef = React.useRef(onFinish);
+  finishRef.current = onFinish;
+
+  const reset = React.useCallback(() => {
+    setZone(null);
+    zoneRef.current = null;
+    setRing([]);
+    setHistory([]);
+    setSmoothCount(0);
+    setSaveError(null);
+  }, []);
 
   const start = React.useCallback((z: ProprieteZone) => {
     const r = closeRing((z.geometry?.coordinates?.[0] ?? []) as Ring);
     baseRef.current = r;
+    savingRef.current = false;
+    setSaving(false);
+    setSaveError(null);
     setZone(z);
+    zoneRef.current = z;
     setRing(r);
     setHistory([]);
     setSmoothCount(0);
@@ -92,31 +126,60 @@ export function useZoneTransform(
   }, []);
 
   const cancel = React.useCallback(() => {
-    if (zone) onFinish?.('cancel', zone, baseRef.current, ringRef.current);
-    setZone(null);
-    setRing([]);
-    setHistory([]);
-    setSmoothCount(0);
-  }, [zone, onFinish]);
+    const z = zoneRef.current;
+    if (savingRef.current) return;
+    try {
+      if (z) {
+        const res = finishRef.current?.('cancel', z, baseRef.current, ringRef.current);
+        if (res && typeof (res as Promise<void>).catch === 'function') {
+          (res as Promise<void>).catch((e) => console.error('[zone-transform] cancel', e));
+        }
+      }
+    } catch (e) {
+      console.error('[zone-transform] cancel', e);
+    } finally {
+      reset();
+    }
+  }, [reset]);
 
   const baseArea = React.useMemo(() => ringAreaM2(openRing(baseRef.current)), [zone]);
   const area = React.useMemo(() => ringAreaM2(openRing(ring)), [ring]);
 
   const save = React.useCallback(() => {
-    if (!zone || openRing(ring).length < 3) {
+    const z = zoneRef.current;
+    const finalRing = ringRef.current;
+    if (savingRef.current) return;
+    if (!z || openRing(finalRing).length < 3) {
       cancel();
       return;
     }
-    onPatchZone?.(zone, {
-      geometry: { type: 'Polygon', coordinates: [closeRing(ring)] } as any,
-      surface_m2: Math.round(area),
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError(null);
+    (async () => {
+      try {
+        await patchRef.current?.(z, {
+          geometry: { type: 'Polygon', coordinates: [closeRing(finalRing)] } as any,
+          surface_m2: Math.round(ringAreaM2(openRing(finalRing))),
+        });
+      } catch (e) {
+        console.error('[zone-transform] save', e);
+        setSaveError('La forme n’a pas pu être enregistrée.');
+        return;
+      }
+      try {
+        await finishRef.current?.('save', z, baseRef.current, finalRing);
+      } catch (e) {
+        console.error('[zone-transform] finish', e);
+        setSaveError(e instanceof Error && e.message ? e.message : 'Enregistrement incomplet.');
+        return;
+      }
+      reset();
+    })().finally(() => {
+      savingRef.current = false;
+      setSaving(false);
     });
-    onFinish?.('save', zone, baseRef.current, ring);
-    setZone(null);
-    setRing([]);
-    setHistory([]);
-    setSmoothCount(0);
-  }, [zone, ring, area, onPatchZone, onFinish]);
+  }, [cancel, reset]);
 
   const dirty = React.useMemo(
     () => JSON.stringify(ring) !== JSON.stringify(baseRef.current),
@@ -131,6 +194,8 @@ export function useZoneTransform(
     canUndo: history.length > 0,
     baseArea,
     area,
+    saving,
+    saveError,
     start,
     pushHistory,
     preview,
