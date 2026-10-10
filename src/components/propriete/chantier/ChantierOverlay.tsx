@@ -266,8 +266,8 @@ export const ChantierOverlay: React.FC<Props> = ({
 
   /* ---------- D. Médias du lot ---------- */
   const lotPhotos = React.useMemo(
-    () => lotObjetIds.flatMap((id) => objetPhotos.byObjet.get(id) ?? []),
-    [lotObjetIds, objetPhotos.byObjet],
+    () => [...lotObjetIds, ...(active?.zone_ids ?? [])].flatMap((id) => objetPhotos.byObjet.get(id) ?? []),
+    [lotObjetIds, active?.zone_ids, objetPhotos.byObjet],
   );
   const phased = React.useMemo(
     () => phasePhotos(lotPhotos as any, active?.date_travaux ?? null, overrides),
@@ -285,18 +285,19 @@ export const ChantierOverlay: React.FC<Props> = ({
       setIntakePhase(phase);
       setIntakeObjetId(objetId);
       const before = new Set(objetPhotos.photos.map((p) => p.id));
-      await objetPhotos.upload(objetId, files);
+      const isZone = lotZones.some((z) => z.id === objetId);
+      await objetPhotos.upload(objetId, files, isZone ? 'zone' : 'objet');
       setFiling(true);
       try {
         const fresh = (await objetPhotos.refetch()).data ?? [];
-        const added = fresh.filter((p) => p.objet_id === objetId && !before.has(p.id));
+        const added = fresh.filter((p) => (p.objet_id ?? p.zone_id) === objetId && !before.has(p.id));
         for (const p of added) await setPhase(p.id, phase);
         if (added.length) toast.success(`${added.length} média(s) rangé(s) en « ${phase} »`);
       } finally {
         setFiling(false);
       }
     },
-    [objetPhotos, setPhase],
+    [objetPhotos, setPhase, lotZones],
   );
 
   const intakeObjet = lotObjets.find((o) => o.id === intakeObjetId);
@@ -558,7 +559,7 @@ export const ChantierOverlay: React.FC<Props> = ({
 
             {section === 'visu' && <section className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
               <ChantierPhotoIntake
-                ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))}
+                ouvrages={[...lotObjets.map((o) => ({ id: o.id, label: `Ouvrage · ${labelOfObjet(o)}` })), ...lotZones.map((z) => ({ id: z.id, label: `Emplacement · ${z.nom}` }))]}
                 busy={!!objetPhotos.progress || filing}
                 progress={objetPhotos.progress}
                 onUpload={handleIntake}
@@ -567,7 +568,7 @@ export const ChantierOverlay: React.FC<Props> = ({
                 items={objetPhotos.uploads}
                 phase={intakePhase}
                 filing={filing}
-                ouvrageLabel={intakeObjet ? labelOfObjet(intakeObjet) : undefined}
+                ouvrageLabel={intakeObjet ? labelOfObjet(intakeObjet) : lotZones.find((z) => z.id === intakeObjetId)?.nom}
                 onClose={objetPhotos.clearUploads}
               />
 
@@ -623,7 +624,7 @@ export const ChantierOverlay: React.FC<Props> = ({
                 </select>}
                 {afterMode === 'constate' && !active.date_travaux && <span className="text-[11.5px] italic opacity-60">Fixez la date des travaux pour distinguer les relevés d’après.</span>}
               </div>
-              {afterMode === 'projete' && <ProjectionGuide ouvrages={lotObjets.map((o) => ({ id: o.id, label: labelOfObjet(o) }))} hasScenario={plantings.length > 0} scenarioId={scenario?.id ?? null} scenarioObjetId={scenario?.objet_id ?? null} />}
+              {afterMode === 'projete' && <ProjectionGuide ouvrages={[...lotObjets.map((o) => ({ id: o.id, label: `Ouvrage · ${labelOfObjet(o)}` })), ...lotZones.map((z) => ({ id: z.id, label: `Emplacement · ${z.nom}` }))]} hasScenario={plantings.length > 0} scenarioId={scenario?.id ?? null} scenarioObjetId={scenario?.objet_id ?? null} />}
               <CortegeTriage entries={cortege} labelFor={(e) => displayNameFor(e)} saved={speciesPhases.statuses} preview={previewIcg} jury={beforeJury} onCommit={(changes) => speciesPhases.commit(changes)} onResetAll={() => void speciesPhases.resetAll()} />
             </div>}
 
