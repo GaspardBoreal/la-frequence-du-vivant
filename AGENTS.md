@@ -7,3 +7,4 @@
 - Keep authorship, association-account activity, factual records, open-license sources, unattributed works, personal data, and database-producer investment separate in the data valuation note; a combined row-count ratio cannot establish ownership.
 - Attribution des œuvres de marches : colonne author_user_id sur marche_photos/marche_audio, modifiée uniquement via la RPC admin assign_marche_media_author (journalisée) ; la note lit ce champ.
 - Render Atelier emplacements in a dedicated Leaflet pane above parcels and works but below living markers; dense maps must keep editable place boundaries legible.
+- Treat a duplicated Atelier emplacement as a provisional composition until validation, and apply the same affine transform to copied works; cancel must remove the provisional copy.

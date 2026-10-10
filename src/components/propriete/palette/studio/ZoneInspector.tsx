@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, X, Scaling, PencilLine, Eye, EyeOff } from 'lucide-react';
+import { Copy, Layers3, Trash2, X, Scaling, PencilLine, Eye, EyeOff } from 'lucide-react';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 import { fmtArea } from './geoMetrics';
 
@@ -13,6 +13,7 @@ interface Props {
   onTransform: () => void;
   onRedraw: () => void;
   onDelete: () => void;
+  onDuplicate: (withObjects: boolean) => void;
   onClose: () => void;
   readOnly?: boolean;
 }
@@ -34,12 +35,14 @@ export const ZoneInspector: React.FC<Props> = ({
   onTransform,
   onRedraw,
   onDelete,
+  onDuplicate,
   onClose,
   readOnly,
 }) => {
   const [nom, setNom] = React.useState(zone.nom || '');
   const [note, setNote] = React.useState(zone.note || '');
   const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const [duplicateChoice, setDuplicateChoice] = React.useState(false);
   const transforming = transformArea != null;
 
   React.useEffect(() => {
@@ -177,6 +180,24 @@ export const ZoneInspector: React.FC<Props> = ({
               <PencilLine className="h-3 w-3" /> Redessiner
             </button>
           </div>
+          {duplicateChoice ? (
+            <div className="rounded-xl border border-[hsl(var(--ds-gold))]/45 bg-[hsl(var(--ds-gold))]/8 p-2">
+              <p className="mb-1.5 text-[10px] font-medium">Que souhaitez-vous composer ?</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button onClick={() => onDuplicate(false)} className="inline-flex min-h-10 items-center justify-center gap-1 rounded-lg border border-[hsl(var(--ds-line))] px-2 text-[10px] hover:border-[hsl(var(--ds-forest))]/60">
+                  <Copy className="h-3 w-3" /> Emplacement seul
+                </button>
+                <button onClick={() => onDuplicate(true)} className="inline-flex min-h-10 items-center justify-center gap-1 rounded-lg border border-[hsl(var(--ds-line))] px-2 text-[10px] hover:border-[hsl(var(--ds-forest))]/60">
+                  <Layers3 className="h-3 w-3" /> Avec ouvrages
+                </button>
+              </div>
+              <button onClick={() => setDuplicateChoice(false)} className="mt-1.5 w-full text-[10px] opacity-60 hover:opacity-100">Annuler</button>
+            </div>
+          ) : (
+            <button onClick={() => setDuplicateChoice(true)} className="inline-flex w-full items-center justify-center gap-1 rounded-full border border-[hsl(var(--ds-gold))]/50 py-1 text-[10px] text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-gold))]/10">
+              <Copy className="h-3 w-3" /> Dupliquer et composer
+            </button>
+          )}
           {confirmDelete ? (
             <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-2.5 py-2">
               <p className="text-[10px] leading-snug text-red-700">
