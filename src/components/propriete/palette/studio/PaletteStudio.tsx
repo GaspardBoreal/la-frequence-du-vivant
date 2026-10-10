@@ -806,12 +806,15 @@ export const PaletteStudio: React.FC<Props> = ({
 
   const duplicateAndCompose = React.useCallback(async (zone: ProprieteZone, withObjects: boolean) => {
     if (readOnly) return;
+    if (zoneTransform.zone) zoneTransform.cancel();
+    let createdId: string | null = null;
+    const copiedObjects: NonNullable<typeof compositionRef.current>['copiedObjects'] = [];
     try {
       const created = await onDuplicateZone(zone);
       if (!created) throw new Error('duplicate-zone');
+      createdId = created.id;
       const initialRing = openRing((created.geometry?.coordinates?.[0] ?? []) as Ring);
       const sourceRing = openRing((zone.geometry?.coordinates?.[0] ?? []) as Ring);
-      const copiedObjects: NonNullable<typeof compositionRef.current>['copiedObjects'] = [];
       if (withObjects) {
         for (const object of objets.filter((candidate) => candidate.zone_id === zone.id)) {
           const geometry = transformGeometryFromRings(object.geometry, sourceRing, initialRing);
