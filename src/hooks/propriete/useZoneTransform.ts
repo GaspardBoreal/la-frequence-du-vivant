@@ -1,5 +1,13 @@
 import React from 'react';
-import { closeRing, openRing, smoothRing, type Ring } from '@/lib/geomTransform';
+import {
+  closeRing,
+  openRing,
+  reflectRing,
+  ringCenter,
+  rotateRing,
+  smoothRing,
+  type Ring,
+} from '@/lib/geomTransform';
 import { ringAreaM2 } from '@/components/propriete/palette/studio/geoMetrics';
 import type { ProprieteZone } from '@/hooks/propriete/usePropertyZones';
 
@@ -16,6 +24,8 @@ export interface ZoneTransformApi {
   pushHistory: () => void;
   preview: (ring: Ring) => void;
   smooth: () => void;
+  rotate90: () => void;
+  reflect: (axis: 'horizontal' | 'vertical') => void;
   undo: () => void;
   cancel: () => void;
   save: () => void;
@@ -27,6 +37,7 @@ export interface ZoneTransformApi {
  */
 export function useZoneTransform(
   onPatchZone?: (zone: ProprieteZone, patch: Partial<ProprieteZone>) => void,
+  onFinish?: (kind: 'save' | 'cancel', zone: ProprieteZone, base: Ring, final: Ring) => void,
 ): ZoneTransformApi {
   const [zone, setZone] = React.useState<ProprieteZone | null>(null);
   const [ring, setRing] = React.useState<Ring>([]);
@@ -57,6 +68,20 @@ export function useZoneTransform(
     setSmoothCount((c) => c + 1);
   }, []);
 
+  const rotate90 = React.useCallback(() => {
+    const center = ringCenter(ringRef.current);
+    if (!center) return;
+    setHistory((h) => [...h.slice(-24), ringRef.current]);
+    setRing(closeRing(rotateRing(openRing(ringRef.current), center, Math.PI / 2)));
+  }, []);
+
+  const reflect = React.useCallback((axis: 'horizontal' | 'vertical') => {
+    const center = ringCenter(ringRef.current);
+    if (!center) return;
+    setHistory((h) => [...h.slice(-24), ringRef.current]);
+    setRing(closeRing(reflectRing(openRing(ringRef.current), center, axis)));
+  }, []);
+
   const undo = React.useCallback(() => {
     setHistory((h) => {
       if (!h.length) return h;
@@ -67,11 +92,12 @@ export function useZoneTransform(
   }, []);
 
   const cancel = React.useCallback(() => {
+    if (zone) onFinish?.('cancel', zone, baseRef.current, ringRef.current);
     setZone(null);
     setRing([]);
     setHistory([]);
     setSmoothCount(0);
-  }, []);
+  }, [zone, onFinish]);
 
   const baseArea = React.useMemo(() => ringAreaM2(openRing(baseRef.current)), [zone]);
   const area = React.useMemo(() => ringAreaM2(openRing(ring)), [ring]);
@@ -85,8 +111,12 @@ export function useZoneTransform(
       geometry: { type: 'Polygon', coordinates: [closeRing(ring)] } as any,
       surface_m2: Math.round(area),
     });
-    cancel();
-  }, [zone, ring, area, onPatchZone, cancel]);
+    onFinish?.('save', zone, baseRef.current, ring);
+    setZone(null);
+    setRing([]);
+    setHistory([]);
+    setSmoothCount(0);
+  }, [zone, ring, area, onPatchZone, onFinish]);
 
   const dirty = React.useMemo(
     () => JSON.stringify(ring) !== JSON.stringify(baseRef.current),
@@ -105,6 +135,8 @@ export function useZoneTransform(
     pushHistory,
     preview,
     smooth,
+    rotate90,
+    reflect,
     undo,
     cancel,
     save,

@@ -157,6 +157,21 @@ export const rotateRing = (ring: Ring, anchor: [number, number], angleRad: numbe
   });
 };
 
+/** Symétrie autour de l'axe horizontal ou vertical passant par l'ancre. */
+export const reflectRing = (
+  ring: Ring,
+  anchor: [number, number],
+  axis: 'horizontal' | 'vertical',
+): Ring => scaleRing(ring, anchor, axis === 'vertical' ? -1 : 1, axis === 'horizontal' ? -1 : 1);
+
+/** Centre de la boîte englobante d'un anneau. */
+export const ringCenter = (ring: Ring): [number, number] | null => {
+  const bounds = ringBounds(openRing(ring));
+  return bounds
+    ? [(bounds.minLng + bounds.maxLng) / 2, (bounds.minLat + bounds.maxLat) / 2]
+    : null;
+};
+
 /* ── Ponts GeoJSON génériques (Point / LineString / Polygon) ──────────────── */
 
 export type GeomKind = 'Point' | 'LineString' | 'Polygon';
