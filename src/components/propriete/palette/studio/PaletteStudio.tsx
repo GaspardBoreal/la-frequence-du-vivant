@@ -1574,8 +1574,10 @@ export const PaletteStudio: React.FC<Props> = ({
             onDelete={() => {
               const z = zoneTransform.zone;
               if (!z) return;
+              const isCopy = compositionRef.current?.zoneId === z.id;
               zoneTransform.cancel();
-              onDeleteZone(z.id);
+              // Une copie provisoire est déjà retirée par l'abandon.
+              if (!isCopy) onDeleteZone(z.id);
               onSelectZone(null);
             }}
           />
