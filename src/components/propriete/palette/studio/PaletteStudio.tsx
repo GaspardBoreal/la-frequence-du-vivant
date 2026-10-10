@@ -330,32 +330,56 @@ export const PaletteStudio: React.FC<Props> = ({
       ordre: number;
     }>;
   } | null>(null);
-  const zoneTransform = useZoneTransform(onPatchZone, (kind, zone, _base, final) => {
-    const composition = compositionRef.current;
-    if (!composition || composition.zoneId !== zone.id) return;
+  /** Composition en cours (state) : rendu fiable du mode, du contour source et du cadrage. */
+  const [composition, setComposition] = React.useState<{ zoneId: string; sourceZoneId: string } | null>(null);
+  const zoneTransform = useZoneTransform(onPatchZone, async (kind, zone, _base, final) => {
+    const current = compositionRef.current;
+    if (!current || current.zoneId !== zone.id) return;
     if (kind === 'cancel') {
-      Promise.all(composition.copiedObjects.map((item) => deleteObjet(item.id)))
-        .then(() => onDeleteZone(zone.id))
-        .catch(() => toast.error('La copie provisoire n’a pas pu être retirée complètement.'));
+      compositionRef.current = null;
+      setComposition(null);
       onSelectZone(null);
-    } else {
-      composition.copiedObjects.forEach((item) => {
+      try {
+        await Promise.all(current.copiedObjects.map((item) => deleteObjet(item.id)));
+        await onDeleteZone(zone.id);
+      } catch {
+        toast.error('La copie provisoire n’a pas pu être retirée complètement.');
+      }
+      return;
+    }
+    const results = await Promise.allSettled(
+      current.copiedObjects.map((item) =>
         upsertObjet({
           id: item.id,
           outil_key: item.outil_key,
-          geometry: transformGeometryFromRings(item.geometry, composition.initialRing, final),
+          geometry: transformGeometryFromRings(item.geometry, current.initialRing, final),
           calque_id: item.calque_id,
           zone_id: zone.id,
           nom: item.nom,
           style: item.style,
           meta: item.meta,
           ordre: item.ordre,
-        }).catch(() => toast.error(`L’ouvrage « ${item.nom || 'sans nom'} » n’a pas suivi la forme.`));
-      });
-      onCommitZoneDuplicate(composition.sourceZoneId, zone.id);
-      toast.success('Nouvelle composition enregistrée.');
+        }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    if (failed > 0) {
+      throw new Error(
+        failed === 1
+          ? 'Un ouvrage n’a pas suivi la forme. Réessayez.'
+          : `${failed} ouvrages n’ont pas suivi la forme. Réessayez.`,
+      );
+    }
+    try {
+      if (typeof onCommitZoneDuplicate === 'function') {
+        onCommitZoneDuplicate(current.sourceZoneId, zone.id);
+      }
+    } catch {
+      toast.error('La copie est enregistrée, mais sa sélection végétale n’a pas été reprise.');
     }
     compositionRef.current = null;
+    setComposition(null);
+    toast.success('Nouvelle composition enregistrée.');
   });
   const [selectedObjetId, setSelectedObjetId] = React.useState<string | null>(null);
   /** Mode Transformer d'un ouvrage : géométrie éditée en local, écrite au « Valider ». */
