@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { GeoJSON, Pane, Polygon, Tooltip } from 'react-leaflet';
+import { GeoJSON, Pane, Polygon, Tooltip, useMap } from 'react-leaflet';
 import {
   X,
   Layers as LayersIcon,
@@ -1064,6 +1064,7 @@ export const PaletteStudio: React.FC<Props> = ({
             height="100%"
           >
             <MapViewReporter onChange={onViewChange} />
+            <FitActiveZone zone={zones.find((zz) => zz.id === activeZoneId)} />
             <ZoomScaleBadge />
             {aiFocusCenter && (
               <LeafletCircle
@@ -1827,3 +1828,17 @@ export const PaletteStudio: React.FC<Props> = ({
 };
 
 export default PaletteStudio;
+
+/** Recentre la carte sur l'emplacement sélectionné, une fois par sélection. */
+function FitActiveZone({ zone }: { zone?: { id: string; geometry: any } }) {
+  const map = useMap();
+  const lastId = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!zone) { lastId.current = null; return; }
+    if (lastId.current === zone.id) return;
+    lastId.current = zone.id;
+    const pts = geometryPolygonRings(zone.geometry).flat();
+    if (pts.length >= 3) map.fitBounds(pts as any, { padding: [60, 60], maxZoom: 20 });
+  }, [zone, map]);
+  return null;
+}

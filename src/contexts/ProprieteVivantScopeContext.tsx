@@ -109,7 +109,8 @@ export const ProprieteVivantScopeProvider: React.FC<{
       if (!raw) return fallback;
       const parsed = JSON.parse(raw);
       return {
-        period: (parsed?.period as EvolutionPeriod) || 'all',
+        // La période repart sur « Tout » à chaque ouverture (choix de séance).
+        period: 'all' as EvolutionPeriod,
         customRange: (parsed?.customRange as CustomRange) || {},
         dateSource: parsed?.dateSource === 'collection' ? 'collection' : 'observation',
       };
