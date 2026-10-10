@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { X, ChevronLeft, ChevronRight, Lock, Globe, User, Pencil, Info, Minus, Plus, Scan } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Lock, Globe, User, Pencil, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TransformComponent, TransformWrapper, useControls, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
@@ -9,7 +8,7 @@ import MediaAttributionSheet from '@/components/community/insights/curation/Medi
 import type { ReattributeSource } from '@/hooks/useReattributeMedia';
 import MediaMetadataPanel from './MediaMetadataPanel';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { safeZoomSrc, computeSafeMaxScale } from '@/components/biodiversity/discover/modes/games/zoomImageSrc';
+import ZoomablePhoto from '@/components/media/ZoomablePhoto';
 
 export interface LightboxItem {
   url: string;
