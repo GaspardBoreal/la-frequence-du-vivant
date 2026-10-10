@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { X, ChevronLeft, ChevronRight, Lock, Globe, User, Pencil, Info } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Lock, Globe, User, Pencil, Info, Minus, Plus, Scan } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { TransformComponent, TransformWrapper, useControls } from 'react-zoom-pan-pinch';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { ExplorationMarcheur } from '@/hooks/useExplorationMarcheurs';
@@ -8,6 +9,7 @@ import MediaAttributionSheet from '@/components/community/insights/curation/Medi
 import type { ReattributeSource } from '@/hooks/useReattributeMedia';
 import MediaMetadataPanel from './MediaMetadataPanel';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { safeZoomSrc, computeSafeMaxScale } from '@/components/biodiversity/discover/modes/games/zoomImageSrc';
 
 export interface LightboxItem {
   url: string;
@@ -57,8 +59,10 @@ const MediaLightbox: React.FC<MediaLightboxProps> = ({
 }) => {
   const [index, setIndex] = useState(startIndex);
   const [attributionOpen, setAttributionOpen] = useState(false);
+  const [photoScale, setPhotoScale] = useState(1);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const swipeEligible = useRef(false);
 
   const goNext = useCallback(() => setIndex(i => Math.min(i + 1, items.length - 1)), [items.length]);
   const goPrev = useCallback(() => setIndex(i => Math.max(i - 1, 0)), []);
@@ -91,11 +95,15 @@ const MediaLightbox: React.FC<MediaLightboxProps> = ({
   if (!item) return null;
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    swipeEligible.current = e.touches.length === 1 && photoScale <= 1.02;
+    if (!swipeEligible.current) return;
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!swipeEligible.current || !e.changedTouches[0]) return;
+    swipeEligible.current = false;
     const dx = touchStartX.current - e.changedTouches[0].clientX;
     const dy = Math.abs(touchStartY.current - e.changedTouches[0].clientY);
     if (Math.abs(dx) > 50 && dy < 100) {
@@ -114,8 +122,9 @@ const MediaLightbox: React.FC<MediaLightboxProps> = ({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[60] bg-black/95 flex flex-col"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Visionneuse de médias"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 shrink-0">
@@ -128,7 +137,12 @@ const MediaLightbox: React.FC<MediaLightboxProps> = ({
         </div>
 
         {/* Media */}
-        <div className="flex-1 relative flex items-center justify-center min-h-0 px-2">
+        <div
+          className="flex-1 relative flex items-center justify-center min-h-0 px-2 overflow-hidden"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          style={{ overscrollBehavior: 'contain' }}
+        >
           {index > 0 && (
             <button
               onClick={goPrev}
@@ -156,11 +170,11 @@ const MediaLightbox: React.FC<MediaLightboxProps> = ({
               className="w-full h-full flex items-center justify-center"
             >
               {item.type === 'photo' ? (
-                <img
+                <ZoomablePhoto
+                  key={`${item.id ?? item.url}-${index}`}
                   src={item.url}
                   alt={item.titre || ''}
-                  className="max-w-full max-h-full object-contain rounded-lg"
-                  draggable={false}
+                  onScaleChange={setPhotoScale}
                 />
               ) : (
                 <video
@@ -262,3 +276,132 @@ const MediaLightbox: React.FC<MediaLightboxProps> = ({
 };
 
 export default MediaLightbox;
+
+interface ZoomablePhotoProps {
+  src: string;
+  alt: string;
+  onScaleChange: (scale: number) => void;
+}
+
+const ZoomablePhoto: React.FC<ZoomablePhotoProps> = ({ src, alt, onScaleChange }) => {
+  const [scale, setScale] = useState(1);
+  const [maxScale, setMaxScale] = useState(8);
+  const frameRef = useRef<number | null>(null);
+  const latestScaleRef = useRef(1);
+  const safeSrc = useMemo(() => safeZoomSrc(src) ?? src, [src]);
+
+  useEffect(() => {
+    onScaleChange(1);
+    return () => {
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    };
+  }, [onScaleChange, src]);
+
+  const handleTransform = useCallback((_context: unknown, state: { scale: number }) => {
+    latestScaleRef.current = state.scale;
+    if (frameRef.current !== null) return;
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = null;
+      const nextScale = latestScaleRef.current;
+      setScale(nextScale);
+      onScaleChange(nextScale);
+    });
+  }, [onScaleChange]);
+
+  const handleLoad = useCallback((event: React.SyntheticEvent<HTMLImageElement>) => {
+    const naturalWidth = event.currentTarget.naturalWidth;
+    const safeScale = Math.floor(12800 / Math.max(naturalWidth, 1));
+    setMaxScale(Math.max(computeSafeMaxScale(naturalWidth), Math.min(8, safeScale)));
+  }, []);
+
+  return (
+    <TransformWrapper
+      initialScale={1}
+      minScale={1}
+      maxScale={maxScale}
+      centerOnInit
+      centerZoomedOut
+      limitToBounds
+      wheel={{ step: 0.12 }}
+      pinch={{ step: 4 }}
+      doubleClick={{ mode: 'toggle', step: 2 }}
+      panning={{ velocityDisabled: true }}
+      onTransform={handleTransform}
+    >
+      <>
+        <TransformComponent
+          wrapperClass="!w-full !h-full"
+          contentClass="!w-full !h-full flex items-center justify-center"
+        >
+          <img
+            src={safeSrc}
+            alt={alt}
+            onLoad={handleLoad}
+            draggable={false}
+            decoding="async"
+            loading="eager"
+            className="max-w-full max-h-full object-contain rounded-lg select-none"
+          />
+        </TransformComponent>
+        <PhotoZoomToolbar scale={scale} />
+      </>
+    </TransformWrapper>
+  );
+};
+
+const stopToolbarEvent = (event: React.SyntheticEvent) => {
+  event.preventDefault();
+  event.stopPropagation();
+};
+
+const PhotoZoomToolbar: React.FC<{ scale: number }> = React.memo(({ scale }) => {
+  const { zoomIn, zoomOut, resetTransform } = useControls();
+  const isAdjusted = scale <= 1.02;
+
+  return (
+    <div
+      className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/20 bg-black/75 p-1.5 text-white shadow-2xl backdrop-blur-md"
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
+      onTouchStart={(event) => event.stopPropagation()}
+      aria-label="Commandes de zoom"
+    >
+      <button
+        type="button"
+        onClick={(event) => { stopToolbarEvent(event); zoomOut(0.35); }}
+        disabled={isAdjusted}
+        aria-label="Réduire la photo"
+        title="Réduire"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-white/15 disabled:opacity-35"
+      >
+        <Minus className="h-5 w-5" />
+      </button>
+      <span className="min-w-[3.75rem] text-center text-sm font-semibold tabular-nums" aria-live="polite">
+        {Math.round(scale * 100)} %
+      </span>
+      <button
+        type="button"
+        onClick={(event) => { stopToolbarEvent(event); zoomIn(0.35); }}
+        aria-label="Agrandir la photo"
+        title="Agrandir"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-white/15"
+      >
+        <Plus className="h-5 w-5" />
+      </button>
+      <div className="mx-1 h-6 w-px bg-white/20" />
+      <button
+        type="button"
+        onClick={(event) => { stopToolbarEvent(event); resetTransform(220); }}
+        disabled={isAdjusted}
+        aria-label="Ajuster la photo à l’écran"
+        title="Revenir à la vue initiale"
+        className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white/10 px-3 text-sm font-semibold transition-colors hover:bg-white/20 disabled:opacity-40"
+      >
+        <Scan className="h-4 w-4" />
+        <span>Ajuster</span>
+      </button>
+    </div>
+  );
+});
+
+PhotoZoomToolbar.displayName = 'PhotoZoomToolbar';
