@@ -22,6 +22,7 @@ import { fmtArea } from './geoMetrics';
 import { calqueMeta } from '@/lib/calqueMeta';
 import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
 import VivantPeriodFilter from '@/components/propriete/VivantPeriodFilter';
+import { Button } from '@/components/ui/button';
 
 export interface SystemLayerState {
   parcelles: boolean;
@@ -284,9 +285,12 @@ export const LayersPanel: React.FC<Props> = ({
           <h4 className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--ds-forest))]/70">
             <Layers className="h-3 w-3" /> Vues de fond
           </h4>
-          <button
+          <Button
             type="button"
-            title={allSystemVisible ? 'Tout masquer' : 'Tout afficher'}
+            variant="ghost"
+            size="sm"
+            title={allSystemVisible ? 'Masquer toutes les vues' : 'Afficher toutes les vues'}
+            aria-label={allSystemVisible ? 'Masquer toutes les vues' : 'Afficher toutes les vues'}
             onClick={() => {
               if (allSystemVisible) {
                 // Mémorise l'état individuel de chaque vue avant de tout masquer,
@@ -305,7 +309,7 @@ export const LayersPanel: React.FC<Props> = ({
                 ));
               }
             }}
-            className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--ds-forest))]/30 px-2 py-0.5 text-[10px] text-[hsl(var(--ds-forest-deep))]/70 transition-colors hover:border-[hsl(var(--ds-forest))]/60 hover:bg-[hsl(var(--ds-forest))]/8"
+            className="h-8 shrink-0 gap-1 border border-[hsl(var(--ds-forest))]/30 px-2 text-[10px] text-[hsl(var(--ds-forest-deep))]/70 hover:border-[hsl(var(--ds-forest))]/60 hover:bg-[hsl(var(--ds-forest))]/10"
           >
             {allSystemVisible ? (
               <EyeOff className="h-3 w-3" />
@@ -313,7 +317,7 @@ export const LayersPanel: React.FC<Props> = ({
               <Eye className="h-3 w-3" />
             )}
             {allSystemVisible ? 'Tout masquer' : 'Tout afficher'}
-          </button>
+          </Button>
         </div>
         <div className="space-y-0.5">
           {(
