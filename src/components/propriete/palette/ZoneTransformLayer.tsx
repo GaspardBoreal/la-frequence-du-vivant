@@ -162,6 +162,31 @@ export const ZoneTransformLayer: React.FC<Props> = ({ ring, color, onGestureStar
     };
   }, [map]);
 
+  /**
+   * Toucher : Leaflet ne relaie pas le doigt aux formes vectorielles. On
+   * écoute directement le tracé SVG (souris laissée au relais Leaflet).
+   */
+  const beginRef = React.useRef(beginGesture);
+  beginRef.current = beginGesture;
+  const touchHandlers = React.useCallback(
+    (mode: 'move' | 'rotate' | HandleId) => ({
+      add: (e: any) => {
+        const el: HTMLElement | SVGElement | undefined = e.target?.getElement?.();
+        if (!el || (el as any).__touchBound) return;
+        (el as any).__touchBound = true;
+        (el as HTMLElement).style.touchAction = 'none';
+        el.addEventListener('pointerdown', (ev: Event) => {
+          const pe = ev as PointerEvent;
+          if (pe.pointerType === 'mouse') return;
+          pe.preventDefault();
+          pe.stopPropagation();
+          beginRef.current(mode, pe);
+        });
+      },
+    }),
+    [],
+  );
+
   if (positions.length < 3 || !b) return null;
 
   const boxRect: Array<[number, number]> = [
