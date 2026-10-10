@@ -1194,7 +1194,24 @@ export const PaletteStudio: React.FC<Props> = ({
             height="100%"
           >
             <MapViewReporter onChange={onViewChange} />
-            <FitActiveZone zone={zones.find((zz) => zz.id === activeZoneId)} />
+            <FitActiveZone
+              zone={zones.find((zz) => zz.id === activeZoneId)}
+              paused={!!composition && composition.zoneId === activeZoneId}
+            />
+            <FitComposition id={composition?.zoneId ?? null} geometries={compositionGeometries} />
+            {compositionSourceRing && (
+              /* Repère de composition : l'original en pointillé discret. */
+              <LeafletPolygon
+                positions={compositionSourceRing as any}
+                pathOptions={{
+                  color: 'hsl(var(--ds-gold))',
+                  weight: 1.6,
+                  dashArray: '6 6',
+                  fillOpacity: 0,
+                  interactive: false,
+                }}
+              />
+            )}
             <ZoomScaleBadge />
             {aiFocusCenter && (
               <LeafletCircle
