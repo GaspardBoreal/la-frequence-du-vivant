@@ -22,7 +22,8 @@ import { useExplorationDiscoverSpecies } from '@/hooks/useExplorationDiscoverSpe
 import { useChatPageContextProvider } from '@/hooks/useChatPageContext';
 import ChatViewportObserver from '@/components/chatbot/ChatViewportObserver';
 import { useSnapshotsResyncOnView } from '@/hooks/useSnapshotsResyncOnView';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { SpeciesPhotoModeProvider } from '@/contexts/SpeciesPhotoModeContext';
 import GlobalSearchFab from '@/components/search/GlobalSearchFab';
 import MobileActionFab from '@/components/mobile/MobileActionFab';
@@ -140,7 +141,8 @@ const ExplorationMarcheurPage: React.FC = () => {
   const effectiveExplorationId = explorationId || resolvedExplorationId;
 
   // Background refresh of biodiversity snapshots if older than 2h
-  const { isSyncing: isSnapshotSyncing } = useSnapshotsResyncOnView(effectiveExplorationId);
+  const { isSyncing: isSnapshotSyncing, lastUpdatedAt: snapshotsUpdatedAt, refresh: refreshSnapshots } = useSnapshotsResyncOnView(effectiveExplorationId);
+  const canRefreshInat = isAdmin || ['ambassadeur', 'sentinelle'].includes(userLevel);
   const { species: discoverSpecies } = useExplorationDiscoverSpecies(effectiveExplorationId);
 
   // Track page view on mount
@@ -454,12 +456,27 @@ const ExplorationMarcheurPage: React.FC = () => {
                     {marcheEvent.lieu}
                   </span>
                 )}
-                {isSnapshotSyncing && (
+                {isSnapshotSyncing ? (
                   <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                     <Loader2 className="w-3 h-3 animate-spin" />
-                    Mise à jour des observations…
+                    Mise à jour iNaturalist en cours…
                   </span>
-                )}
+                ) : snapshotsUpdatedAt ? (
+                  <span className="flex items-center gap-1" title={format(snapshotsUpdatedAt, "dd/MM/yyyy HH:mm", { locale: fr })}>
+                    iNaturalist à jour {formatDistanceToNow(snapshotsUpdatedAt, { locale: fr, addSuffix: true })}
+                    {canRefreshInat && (
+                      <button
+                        type="button"
+                        onClick={() => refreshSnapshots()}
+                        title="Actualiser depuis iNaturalist"
+                        aria-label="Actualiser depuis iNaturalist"
+                        className="ml-0.5 p-0.5 rounded hover:bg-muted text-emerald-700 dark:text-emerald-300"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                      </button>
+                    )}
+                  </span>
+                ) : null}
               </div>
             </div>
             {marcheEvent?.is_public && marcheEvent?.public_slug && (
