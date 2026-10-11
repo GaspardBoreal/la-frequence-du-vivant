@@ -6,8 +6,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { user, isAdmin, errorResponse } = await validateAuth(req);
-    if (errorResponse) return errorResponse;
+    // Appel interne du veilleur iNat (cron) : secret partagé, pas de JWT.
+    const cronSecret = Deno.env.get('CRON_SHARED_SECRET');
+    const providedSecret = req.headers.get('x-cron-secret');
+    const isCron = !!cronSecret && !!providedSecret && providedSecret === cronSecret;
+
+    let user: any = null;
+    let isAdmin = isCron;
+    if (!isCron) {
+      const auth = await validateAuth(req);
+      if (auth.errorResponse) return auth.errorResponse;
+      user = auth.user;
+      isAdmin = auth.isAdmin;
+    }
 
     const serviceClient = createServiceClient();
 
