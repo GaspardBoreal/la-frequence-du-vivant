@@ -6,8 +6,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { user, isAdmin, errorResponse } = await validateAuth(req);
-    if (errorResponse) return errorResponse;
+    // Appel interne du veilleur iNat (cron) : secret partagé, pas de JWT.
+    const cronSecret = Deno.env.get('CRON_SHARED_SECRET');
+    const providedSecret = req.headers.get('x-cron-secret');
+    const isCron = !!cronSecret && !!providedSecret && providedSecret === cronSecret;
+
+    let user: any = null;
+    let isAdmin = isCron;
+    if (!isCron) {
+      const auth = await validateAuth(req);
+      if (auth.errorResponse) return auth.errorResponse;
+      user = auth.user;
+      isAdmin = auth.isAdmin;
+    }
 
     const serviceClient = createServiceClient();
 
@@ -114,7 +125,7 @@ Deno.serve(async (req) => {
         marches_total: marchesToProcess.length,
         marches_processed: 0,
         started_at: new Date().toISOString(),
-        summary_stats: { exploration_id: explorationId, triggered_by: user.id }
+        summary_stats: { exploration_id: explorationId, triggered_by: user?.id ?? "cron-watch-inat" }
       })
       .select('id')
       .single();
@@ -144,7 +155,7 @@ Deno.serve(async (req) => {
             last_ping: new Date().toISOString(),
             summary_stats: {
               exploration_id: explorationId,
-              triggered_by: user.id,
+              triggered_by: user?.id ?? "cron-watch-inat",
               current_marche_name: marcheName,
               current_step: totalProcessed + 1,
               total_steps: marchesToProcess.length,
@@ -324,7 +335,7 @@ Deno.serve(async (req) => {
           duration_seconds: Math.round((Date.now() - new Date(logEntry!.created_at || Date.now()).getTime()) / 1000),
           summary_stats: {
             exploration_id: explorationId,
-            triggered_by: user.id,
+            triggered_by: user?.id ?? "cron-watch-inat",
             total_species_collected: totalSpeciesCollected,
           }
         })

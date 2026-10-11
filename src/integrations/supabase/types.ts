@@ -4298,6 +4298,51 @@ export type Database = {
         }
         Relationships: []
       }
+      inat_watch_misses: {
+        Row: {
+          exploration_id: string | null
+          first_seen_at: string
+          id: string
+          inat_observation_id: number
+          last_checked_at: string
+          marche_id: string
+          observation_url: string | null
+          observed_on: string | null
+          observer_login: string | null
+          reason: string | null
+          resolved_at: string | null
+          scientific_name: string | null
+        }
+        Insert: {
+          exploration_id?: string | null
+          first_seen_at?: string
+          id?: string
+          inat_observation_id: number
+          last_checked_at?: string
+          marche_id: string
+          observation_url?: string | null
+          observed_on?: string | null
+          observer_login?: string | null
+          reason?: string | null
+          resolved_at?: string | null
+          scientific_name?: string | null
+        }
+        Update: {
+          exploration_id?: string | null
+          first_seen_at?: string
+          id?: string
+          inat_observation_id?: number
+          last_checked_at?: string
+          marche_id?: string
+          observation_url?: string | null
+          observed_on?: string | null
+          observer_login?: string | null
+          reason?: string | null
+          resolved_at?: string | null
+          scientific_name?: string | null
+        }
+        Relationships: []
+      }
       insight_cards: {
         Row: {
           active: boolean

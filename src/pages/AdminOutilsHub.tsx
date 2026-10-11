@@ -99,6 +99,13 @@ const OUTILS = [
     active: true,
   },
   {
+    titre: 'Veille iNaturalist',
+    description: 'Observations de l\'association et des marcheurs, prises dans le rayon d\'une marche, qui ne sont pas encore affichées (retard de plus de 3 h, motif).',
+    icon: Radio,
+    to: '/admin/veille-inat',
+    active: true,
+  },
+  {
     titre: 'Simulations & plans IA partenaires',
     description: 'Tous les projets décrits dans les simulateurs partenaires, les plans générés, le fil des questions-réponses, et l\'export pour analyse dans une autre IA.',
     icon: Sparkles,

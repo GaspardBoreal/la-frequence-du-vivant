@@ -123,6 +123,7 @@ const MarchesDuVivantExplorationMarcheur = lazyWithRetry(() => import('./pages/M
 const AdminOutilsHub = lazyWithRetry(() => import('./pages/AdminOutilsHub'));
 const AdminNoteDonnees = lazyWithRetry(() => import('./pages/AdminNoteDonnees'));
 const AdminAttributionOeuvres = lazyWithRetry(() => import('./pages/AdminAttributionOeuvres'));
+const AdminVeilleInat = lazyWithRetry(() => import('./pages/AdminVeilleInat'));
 const AdminGpsControl = lazyWithRetry(() => import('./pages/AdminGpsControl'));
 const AdminImportParcours = lazyWithRetry(() => import('./pages/AdminImportParcours'));
 const AdminSoilRegistryAudit = lazyWithRetry(() => import('./pages/AdminSoilRegistryAudit'));
@@ -443,6 +444,11 @@ function App() {
             <Route path="/admin/note-donnees" element={
               <AdminAuth>
                 <AdminNoteDonnees />
+              </AdminAuth>
+            } />
+            <Route path="/admin/veille-inat" element={
+              <AdminAuth>
+                <AdminVeilleInat />
               </AdminAuth>
             } />
             <Route path="/admin/attribution-oeuvres" element={
