@@ -157,3 +157,6 @@ verify_jwt = false
 
 [functions.generate-partner-roadmap]
 verify_jwt = false
+
+[functions.watch-inat-accounts]
+verify_jwt = false
