@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
         marches_total: marchesToProcess.length,
         marches_processed: 0,
         started_at: new Date().toISOString(),
-        summary_stats: { exploration_id: explorationId, triggered_by: user.id }
+        summary_stats: { exploration_id: explorationId, triggered_by: user?.id ?? "cron-watch-inat" }
       })
       .select('id')
       .single();
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
             last_ping: new Date().toISOString(),
             summary_stats: {
               exploration_id: explorationId,
-              triggered_by: user.id,
+              triggered_by: user?.id ?? "cron-watch-inat",
               current_marche_name: marcheName,
               current_step: totalProcessed + 1,
               total_steps: marchesToProcess.length,
@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
           duration_seconds: Math.round((Date.now() - new Date(logEntry!.created_at || Date.now()).getTime()) / 1000),
           summary_stats: {
             exploration_id: explorationId,
-            triggered_by: user.id,
+            triggered_by: user?.id ?? "cron-watch-inat",
             total_species_collected: totalSpeciesCollected,
           }
         })
