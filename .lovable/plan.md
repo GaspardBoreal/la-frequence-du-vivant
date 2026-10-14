@@ -1,23 +1,28 @@
-# Bandeau « observations du jour » : où est la Buse variable ?
+# Filtre « Mes tags » — uniquement les tags de l'utilisateur connecté
 
-## Ce qui se passe (vérifié en base et sur iNaturalist)
-- La Buse variable (iNaturalist n° 407258720) a été **observée le samedi 10 octobre à 16h16**. Le bandeau ouvert est celui du **dimanche 11 octobre**.
-- Ce bandeau range chaque observation au **jour où elle a été faite sur le terrain**, pas au jour où elle arrive dans l'app. La Buse se trouve donc dans la barre du 10 octobre, l'avant-dernière, avec le Leucocoprinus barssii du même jour. Comme une Buse avait déjà été vue sur l'événement, elle y figure sous « Re-observées ».
-- Le bandeau du 11 octobre est exact : 4 observations de l'association ce matin, à savoir Diplocardia, Grillon champêtre et 2 Potirons.
-- Rien ne manque. En revanche, l'écran ne permet pas de le comprendre : on ne voit pas qu'une observation de la veille vient d'arriver aujourd'hui, et on ne passe pas facilement d'un jour à l'autre.
+## Constat
+- **Taxons observés** : le bouton « Mes tags » existe déjà, mais sa liste lit tous les tags visibles. Pour un compte admin (le vôtre), les règles d'accès laissent voir les tags de **tous** les marcheurs, d'où des tags comme « planté_par_communauté_marcheur » qui ne sont pas les vôtres.
+- **Atelier → Calques** : le filtre par tags existe seulement dans l'onglet **Vivant**. Rien sous « Observations du vivant » dans Calques.
 
 ## Ce qui change
-1. **Nouvelle rubrique « Arrivées ce jour, observées plus tôt »** dans le bandeau. Pour le 11 octobre, elle affiche la Buse variable avec « observée le 10 oct. ». Un clic ouvre le jour en question.
-2. **Flèches ◀ ▶ dans l'en-tête du bandeau** pour passer au jour précédent ou suivant sans refermer le bandeau.
-3. **Rappel sous le titre** : « Classées par date d'observation sur le terrain ».
-4. **Jours calculés à l'heure de Paris.** Aujourd'hui, une observation faite entre minuit et 2 h du matin peut tomber sur la veille. Elle sera désormais rangée au bon jour.
 
-## Vérifications
-- 10 octobre : la Buse variable apparaît, comme le Leucocoprinus.
-- 11 octobre : 4 observations, et la Buse dans « Arrivées ce jour, observées plus tôt ».
-- Les flèches font défiler les jours. Les totaux du graphique ne changent pas.
+### 1. Taxons observés (copie 1)
+- La liste ne montre plus que **vos propres tags**, même pour un admin. Le compteur à côté de chaque tag est aussi limité à vos tags.
+- Design mobile first pour le menu :
+  - Sur téléphone, il s'ouvre en tiroir par le bas (pleine largeur, gros boutons). Sur ordinateur, il reste un menu déroulant.
+  - Champ de recherche « Chercher un tag » si vous avez plus de 8 tags.
+  - Mode **Au moins un / Tous / Sauf** en libellés clairs (au lieu de ET/OU/SAUF), avec une phrase d'aide d'une ligne.
+  - Les tags actifs s'affichent en pastilles colorées sous la recherche, chacune avec une croix pour la retirer.
+  - Message vide : « Vous n'avez pas encore créé de tag. Touchez l'étiquette sur une fiche espèce pour en ajouter. »
+
+### 2. Atelier du jardin → Calques (copie 2)
+- Sous « Observations du vivant », après « Date terrain », une ligne **« Mes tags »** du même style que le sélecteur de période.
+- Elle ouvre le même menu que ci-dessus (tiroir sur téléphone), avec le nombre d'observations visibles sur la carte pour chaque tag.
+- Le filtre est **le même** que dans l'onglet Vivant et l'Herbier du moment : choisir un tag ici met à jour la carte, l'onglet Vivant et la liste des espèces.
+- Pastille compteur sur la ligne quand des tags sont actifs, et croix pour tout effacer.
 
 ## Détails techniques
-- `useBiodiversityEvolution` : calcul de `firstSyncedDay` par `originalUrl`, à partir du plus ancien `created_at` des snapshots qui la contiennent. Pour chaque `DayBucket`, ajout d'une liste `lateArrivals` : observations dont `firstSyncedDay === day` et dont la date terrain est antérieure. Cette liste est exclue des compteurs, pour ne pas compter deux fois.
-- `toDayISO` : formatage `Europe/Paris` via `Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Paris' })` au lieu de `toISOString()` ; les dates sans heure (`YYYY-MM-DD`) restent inchangées.
-- `DayDetailDrawer` : nouvelle section, flèches de navigation (props `onPrevDay` / `onNextDay` calculées sur les jours triés), mention de la source de date. Le parent passe la liste des jours disponibles.
+- `useMarcheurTagSuggestions` et `useMyMarcheurTagsOverview` : ajouter `.eq('user_id', user.id)` (via `supabase.auth.getUser()`) ; la clé de cache inclut l'id utilisateur. Vérifier que la RPC `get_my_marcheur_tags_for_species` filtre bien sur `auth.uid()` (sinon migration pour l'ajouter).
+- Extraire un composant partagé `MyTagsFilterPicker` (Popover sur desktop, Drawer sur mobile via `useIsMobile`), utilisé par `MarcheurTagsFilterBar` et par `LayersPanel`.
+- `LayersPanel` reçoit `tagFacets`, `tagsLoading`, `vivantFilter.tags` et `onVivantFilterChange` déjà calculés dans `PaletteStudio` (pas de nouvel état).
+- Couleurs via tokens du thème ; aucune modification de base hors éventuelle correction de la RPC.
