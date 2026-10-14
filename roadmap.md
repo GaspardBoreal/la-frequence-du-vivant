@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Transmettre l’inventaire exhaustif et correctement cadré à l’IA de Jardin
+- [x] Vérifier la Glycine en base et les listes de plus de 200 espèces (5 tests réussis)
+- [ ] Vérifier la réponse de l’IA de Jardin dans le compte connecté — bloqué : session externe non disponible
+
 - [x] Autoriser la suppression confirmée jusqu’à deux prélèvements et vérifier Maison sous Blossac
 - [x] Créer la lecture sécurisée et anonymisée des jardins
 - [x] Ajouter les sous-menus Créer et Carte des jardins

@@ -15,6 +15,7 @@ import { payloadBytes } from '@/lib/chatContextCost';
 import type { ContextProvider } from '@/hooks/useChatPageContext';
 import { useProprieteChatFocus } from '@/components/propriete/chatbot/proprieteChatFocus';
 import { classifyObservations, rollupSpecies } from '@/lib/ouvrageScope';
+import { propertyChatSpeciesRows, completeSpeciesContext } from '@/lib/propertyChatSpecies';
 
 const R = 6371000;
 const distanceM = (a: [number, number], b: [number, number]) => {
@@ -112,7 +113,9 @@ export function useProprieteChatProviders(proprieteId?: string): {
     const withFr = <T extends { n: string; c: string | null }>(rows: T[]): T[] =>
       rows.map((r) => ({ ...r, c: frBySci.get(r.n) ?? r.c ?? null }));
 
-    const speciesRows = withFr(rollupSpecies(scopedWaypoints as any));
+    const speciesRows = scope
+      ? withFr(rollupSpecies(scopedWaypoints as any))
+      : propertyChatSpeciesRows(species ?? []);
     const dedansRows = scope ? withFr(rollupSpecies(scope.dedans.map((s) => s.item) as any)) : [];
     const lisiereRows = scope ? withFr(rollupSpecies(scope.lisiere.map((s) => s.item) as any)) : [];
     const voisinageRows = scope ? withFr(rollupSpecies(scope.voisinage.map((s) => s.item) as any)) : [];
@@ -160,12 +163,8 @@ export function useProprieteChatProviders(proprieteId?: string): {
           group: 'Vivant',
           emoji: '📋',
           label: 'Liste complète des espèces',
-          hint: `${Math.min(speciesRows.length, 200)} lignes détaillées`,
-          payload: {
-            portee: scopeLabel,
-            tronque: speciesRows.length > 200,
-            especes: speciesRows.slice(0, 200).map((s) => ({ n: s.n, c: s.c, k: s.k, obs: s.obs, vu: s.vu })),
-          },
+          hint: `${speciesRows.length} espèces transmises · liste exhaustive`,
+          payload: completeSpeciesContext(speciesRows, scopeLabel),
         }),
       );
     }
