@@ -22,6 +22,8 @@ interface Props {
   /** Bouton déclencheur personnalisé (reçoit le nombre de tags actifs). */
   trigger?: (activeCount: number) => React.ReactElement;
   countLabel?: string;
+  /** Classe du contenu flottant (ex. z-index au-dessus d'un plein écran). */
+  contentClassName?: string;
 }
 
 const MODES: { value: PickerTagMode; label: string; help: string }[] = [
@@ -32,7 +34,7 @@ const MODES: { value: PickerTagMode; label: string; help: string }[] = [
 
 const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
-const PickerBody: React.FC<Omit<Props, 'trigger'>> = ({ tags, labels, mode, onChange, loading, countLabel }) => {
+const PickerBody: React.FC<Omit<Props, 'trigger' | 'contentClassName'>> = ({ tags, labels, mode, onChange, loading, countLabel }) => {
   const [q, setQ] = useState('');
   const shown = useMemo(() => (q ? tags.filter((t) => norm(t.label).includes(norm(q))) : tags), [tags, q]);
   const toggle = (k: string) =>
@@ -151,11 +153,11 @@ const MyTagsFilterPicker: React.FC<Props> = (props) => {
     return (
       <Drawer>
         <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-        <DrawerContent className="px-4 pb-6">
+        <DrawerContent className={cn('px-4 pb-6', props.contentClassName)}>
           <DrawerHeader className="px-0">
             <DrawerTitle className="flex items-center gap-2 text-base"><TagIcon className="h-4 w-4" /> Mes tags</DrawerTitle>
           </DrawerHeader>
-          <PickerBody {...props} />
+          <PickerBody tags={props.tags} labels={props.labels} mode={props.mode} onChange={props.onChange} loading={props.loading} countLabel={props.countLabel} />
         </DrawerContent>
       </Drawer>
     );
@@ -163,8 +165,8 @@ const MyTagsFilterPicker: React.FC<Props> = (props) => {
   return (
     <Popover>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent className="z-[1100] w-80 p-3" align="start">
-        <PickerBody {...props} />
+      <PopoverContent className={cn('z-[1100] w-80 p-3', props.contentClassName)} align="start">
+        <PickerBody tags={props.tags} labels={props.labels} mode={props.mode} onChange={props.onChange} loading={props.loading} countLabel={props.countLabel} />
       </PopoverContent>
     </Popover>
   );
