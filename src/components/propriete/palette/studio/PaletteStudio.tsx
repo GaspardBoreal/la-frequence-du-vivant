@@ -1895,6 +1895,8 @@ export const PaletteStudio: React.FC<Props> = ({
           scopeLabel={vivantScope.scope === 'cadastre' ? 'Observations du cadastre' : 'Toutes les observations'}
           periodLabel={periodLabelOf(vivantScope.period)}
           tagLabels={tagLabelsByKey}
+          tagFacets={tagFacets}
+          tagsLoading={tagsLoading}
           onHoverSpecies={setHoveredSpeciesKey}
           onFocusObservation={(w: PropertyWaypoint) => {
             setFocusObsId(null);

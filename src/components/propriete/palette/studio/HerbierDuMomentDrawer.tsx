@@ -12,12 +12,14 @@ import {
   Maximize2,
   Search,
   Sparkles,
+  Tag as TagIcon,
   X,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import MyTagsFilterPicker, { type PickerTag } from '@/components/community/tags/MyTagsFilterPicker';
 import type { PropertyWaypoint } from '@/hooks/propriete/usePropertySpeciesPool';
 import { TYPE_META, type VivantFilterState } from './LivingLayer';
 import { describeVivantFilters, resetVivantFilter, type VivantChip } from './vivantFilterChips';
@@ -35,6 +37,8 @@ interface Props {
   scopeLabel?: string | null;
   periodLabel?: string | null;
   tagLabels?: Map<string, string>;
+  tagFacets?: PickerTag[];
+  tagsLoading?: boolean;
   /** Survol d'une espèce : la carte fait pulser ses pastilles. */
   onHoverSpecies: (key: string | null) => void;
   /** Clic sur une observation : recentrage + ouverture de sa fiche. */
@@ -218,6 +222,8 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
   scopeLabel,
   periodLabel,
   tagLabels,
+  tagFacets,
+  tagsLoading,
   onHoverSpecies,
   onFocusObservation,
   onZoomObservation,
@@ -402,8 +408,27 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
           </button>
         </div>
 
-        {chips.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
+        <div className="mt-2 flex flex-wrap items-center gap-1">
+            <MyTagsFilterPicker
+              tags={tagFacets ?? []}
+              loading={tagsLoading}
+              labels={filter.tags.labels}
+              mode={filter.tags.mode}
+              onChange={(t) => onFilterChange({ ...filter, tags: { ...filter.tags, ...t } })}
+              countLabel="Nombre d'observations visibles sur la carte pour chaque tag."
+              contentClassName="z-[3600]"
+              trigger={(n) => (
+                <button
+                  type="button"
+                  className={`flex items-center gap-1 rounded-full border px-2 py-[1px] text-[9.5px] transition-colors ${
+                    n ? 'border-[hsl(var(--ds-forest))] bg-[hsl(var(--ds-forest))]/15' : 'border-[hsl(var(--ds-line))] hover:bg-[hsl(var(--ds-forest))]/5'
+                  }`}
+                >
+                  <TagIcon className="h-2.5 w-2.5" /> Mes tags
+                  {n > 0 && <span className="rounded-full bg-[hsl(var(--ds-forest))] px-1 text-[8.5px] font-bold text-[hsl(var(--ds-cream))]">{n}</span>}
+                </button>
+              )}
+            />
             {chips.map((c) => (
               <button
                 key={c.key}
@@ -419,8 +444,7 @@ export const HerbierDuMomentDrawer: React.FC<Props> = ({
                 {c.next && <X className="h-2.5 w-2.5 opacity-60" />}
               </button>
             ))}
-          </div>
-        )}
+        </div>
       </header>
 
       {/* Recherche par nom d'espèce (contient, insensible aux accents) */}
