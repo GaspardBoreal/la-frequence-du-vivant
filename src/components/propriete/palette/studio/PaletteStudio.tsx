@@ -1176,6 +1176,10 @@ export const PaletteStudio: React.FC<Props> = ({
                   onSystem={(p) => setSystem((s) => ({ ...s, ...p }))}
                   scopeCounts={scopeCounts}
                   onOpenHerbier={() => setHerbierOpen(true)}
+                  tagFacets={tagFacets}
+                  tagsLoading={tagsLoading}
+                  tagFilter={vivantFilter.tags}
+                  onTagFilterChange={(t) => setVivantFilter((f) => ({ ...f, tags: { ...f.tags, ...t } }))}
                   soilCount={soil.placed.length}
                   santeCounts={santeCounts}
                   objetCountByCalque={objetCountByCalque}
