@@ -360,6 +360,7 @@ export const LayersPanel: React.FC<Props> = ({
                 labels={tagFilter.labels}
                 mode={tagFilter.mode}
                 onChange={onTagFilterChange}
+                contentClassName="z-[3600]"
                 countLabel="Nombre d'observations visibles sur la carte pour chaque tag."
                 trigger={(n) => (
                   <button
