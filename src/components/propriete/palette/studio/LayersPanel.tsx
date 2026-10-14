@@ -22,6 +22,8 @@ import { fmtArea } from './geoMetrics';
 import { calqueMeta } from '@/lib/calqueMeta';
 import VivantScopeSwitch from '@/components/propriete/VivantScopeSwitch';
 import VivantPeriodFilter from '@/components/propriete/VivantPeriodFilter';
+import MyTagsFilterPicker, { type PickerTag, type PickerTagMode } from '@/components/community/tags/MyTagsFilterPicker';
+import { Tag as TagIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export interface SystemLayerState {
@@ -71,6 +73,11 @@ interface Props {
   santeCounts?: { placed: number; toPlace: number; actifs: number };
   /** Ouvre « L'herbier du moment » : la liste des espèces réellement visibles. */
   onOpenHerbier?: () => void;
+  /** Mes tags (filtre partagé avec l'onglet Vivant). */
+  tagFacets?: PickerTag[];
+  tagsLoading?: boolean;
+  tagFilter?: { labels: string[]; mode: PickerTagMode };
+  onTagFilterChange?: (next: { labels: string[]; mode: PickerTagMode }) => void;
 
 
 
@@ -127,6 +134,10 @@ export const LayersPanel: React.FC<Props> = ({
   soilCount,
   santeCounts,
   onOpenHerbier,
+  tagFacets,
+  tagsLoading,
+  tagFilter,
+  onTagFilterChange,
 
 
   scopeCounts,
@@ -342,6 +353,29 @@ export const LayersPanel: React.FC<Props> = ({
           >
             <VivantScopeSwitch counts={scopeCounts} />
             <VivantPeriodFilter visibleCount={scopeCounts?.all} />
+            {tagFilter && onTagFilterChange && (
+              <MyTagsFilterPicker
+                tags={tagFacets ?? []}
+                loading={tagsLoading}
+                labels={tagFilter.labels}
+                mode={tagFilter.mode}
+                onChange={onTagFilterChange}
+                countLabel="Nombre d'observations visibles sur la carte pour chaque tag."
+                trigger={(n) => (
+                  <button
+                    type="button"
+                    className={`flex w-full items-center justify-center gap-1.5 rounded-full border px-2 py-1 text-[10px] transition-colors ${
+                      n ? 'border-[hsl(var(--ds-forest))] bg-[hsl(var(--ds-forest))]/15 text-[hsl(var(--ds-forest-deep))]' : 'border-[hsl(var(--ds-line))] hover:bg-[hsl(var(--ds-forest))]/5'
+                    }`}
+                  >
+                    <TagIcon className="h-3 w-3" /> Mes tags
+                    {n > 0 && (
+                      <span className="rounded-full bg-[hsl(var(--ds-forest))] px-1.5 text-[9px] font-bold text-[hsl(var(--ds-cream))]">{n}</span>
+                    )}
+                  </button>
+                )}
+              />
+            )}
             {onOpenHerbier && (
               <button
                 type="button"

@@ -24,6 +24,12 @@ export function getTagColor(colorHash: number): string {
   return TAG_PALETTE[Math.max(0, Math.min(5, colorHash))] || TAG_PALETTE[0];
 }
 
+
+async function currentUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
 const norm = (s: string) =>
   s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
@@ -121,9 +127,12 @@ export function useMarcheurTagSuggestions(limit = 8) {
   return useQuery({
     queryKey: ['marcheur-tag-suggestions', limit],
     queryFn: async (): Promise<{ label: string; count: number; color_hash: number }[]> => {
+      const uid = await currentUserId();
+      if (!uid) return [];
       const { data, error } = await supabase
         .from('marcheur_species_tags')
         .select('label,color_hash')
+        .eq('user_id', uid)
         .order('created_at', { ascending: false })
         .limit(500);
       if (error) throw error;
@@ -161,9 +170,12 @@ export function useMyMarcheurTagsOverview() {
   return useQuery({
     queryKey: ['my-marcheur-tags-overview'],
     queryFn: async (): Promise<MyTagOverviewEntry[]> => {
+      const uid = await currentUserId();
+      if (!uid) return [];
       const { data, error } = await supabase
         .from('marcheur_species_tags')
         .select('id, label, color_hash, scientific_name, marche_id, created_at')
+        .eq('user_id', uid)
         .order('created_at', { ascending: false })
         .limit(2000);
       if (error) throw error;
