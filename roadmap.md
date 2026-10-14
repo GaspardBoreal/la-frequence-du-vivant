@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Transmettre l’inventaire exhaustif et correctement cadré à l’IA de Jardin
+- [ ] Vérifier la Glycine et les listes de plus de 200 espèces ; parcours authentifié bloqué si session indisponible
+
 - [x] Autoriser la suppression confirmée jusqu’à deux prélèvements et vérifier Maison sous Blossac
 - [x] Créer la lecture sécurisée et anonymisée des jardins
 - [x] Ajouter les sous-menus Créer et Carte des jardins
