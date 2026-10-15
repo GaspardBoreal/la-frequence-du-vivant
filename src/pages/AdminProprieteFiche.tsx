@@ -680,6 +680,15 @@ const AdminProprieteFiche: React.FC = () => {
               <p className="mb-2 text-xs text-muted-foreground">
                 Le marcheur référent obtient automatiquement l'accès à l'espace Propriété et peut le choisir après connexion.
               </p>
+              {form.main_walker_id && (() => {
+                const l = linkedMarcheurs.find((x) => x.community_profile_id === form.main_walker_id);
+                const lab = l ? ({ proprietaire: 'Propriétaire', prestataire: 'Prestataire', marcheur_historique: 'Marcheur' } as Record<string, string>)[l.role] ?? l.role : null;
+                return (
+                  <p className="mb-2 text-xs">
+                    Rôle enregistré sur ce jardin : <span className="font-medium">{lab ?? 'Marcheur (attribué à l\u2019enregistrement)'}</span>
+                  </p>
+                );
+              })()}
               <Select
                 value={form.main_walker_id ?? '__none__'}
                 onValueChange={(v) => setForm((f) => ({ ...f, main_walker_id: v === '__none__' ? null : v }))}
