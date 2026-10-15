@@ -91,6 +91,7 @@ const AdminProprietes: React.FC = () => {
       sondes: v.sondes,
       intention: v.intention,
       role: v.role,
+      user: v.user,
       periode: v.periode,
       du: v.periode === 'plage' ? v.du || null : null,
       au: v.periode === 'plage' ? v.au || null : null,
@@ -310,7 +311,7 @@ const AdminProprietes: React.FC = () => {
 
   // ---- Liste paginée (vue Table) -------------------------------------------
   const listQuery = useQuery<{ rows: ProprieteListRow[]; total: number }>({
-    queryKey: ['admin-proprietes', 'list', filters, tri, dir, page, pageSize, idsAvecSondes, idsParRole],
+    queryKey: ['admin-proprietes', 'list', filters, tri, dir, page, pageSize, idsAvecSondes, idsParRole, lienMarcheurs.length],
     enabled: vue === 'table',
     queryFn: async () => {
       const from = (page - 1) * pageSize;
@@ -327,7 +328,7 @@ const AdminProprietes: React.FC = () => {
 
   // ---- Ensemble filtré complet (vue Carte) ----------------------------------
   const mapQuery = useQuery<ProprieteListRow[]>({
-    queryKey: ['admin-proprietes', 'map', filters, idsAvecSondes, idsParRole],
+    queryKey: ['admin-proprietes', 'map', filters, idsAvecSondes, idsParRole, lienMarcheurs.length],
     enabled: vue === 'carte',
     queryFn: async () => {
       const { data, error } = await applyFilters(sb.from('proprietes').select(LIST_COLUMNS))
@@ -341,7 +342,7 @@ const AdminProprietes: React.FC = () => {
 
   // ---- Réponses du parcours d'accueil (vues Tableau de bord et Analyse) -----
   const onboardingQuery = useQuery<GardenAnswers[]>({
-    queryKey: ['admin-proprietes', 'onboarding', filters, idsAvecSondes, idsParRole],
+    queryKey: ['admin-proprietes', 'onboarding', filters, idsAvecSondes, idsParRole, lienMarcheurs.length],
     enabled: vue === 'kpi' || vue === 'analyse',
     queryFn: async () => {
       const { data, error } = await applyFilters(
