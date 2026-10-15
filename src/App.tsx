@@ -123,7 +123,7 @@ const MarchesDuVivantExplorationMarcheur = lazyWithRetry(() => import('./pages/M
 const AdminOutilsHub = lazyWithRetry(() => import('./pages/AdminOutilsHub'));
 const AdminNoteDonnees = lazyWithRetry(() => import('./pages/AdminNoteDonnees'));
 const AdminAttributionOeuvres = lazyWithRetry(() => import('./pages/AdminAttributionOeuvres'));
-const AdminVeilleInat = lazyWithRetry(() => import('./pages/AdminVeilleInat'));
+const AdminVeille = lazyWithRetry(() => import('./pages/AdminVeille'));
 const AdminGpsControl = lazyWithRetry(() => import('./pages/AdminGpsControl'));
 const AdminImportParcours = lazyWithRetry(() => import('./pages/AdminImportParcours'));
 const AdminSoilRegistryAudit = lazyWithRetry(() => import('./pages/AdminSoilRegistryAudit'));
@@ -446,11 +446,12 @@ function App() {
                 <AdminNoteDonnees />
               </AdminAuth>
             } />
-            <Route path="/admin/veille-inat" element={
+            <Route path="/admin/veille" element={
               <AdminAuth>
-                <AdminVeilleInat />
+                <AdminVeille />
               </AdminAuth>
             } />
+            <Route path="/admin/veille-inat" element={<Navigate to="/admin/veille?tab=inat" replace />} />
             <Route path="/admin/attribution-oeuvres" element={
               <AdminAuth>
                 <AdminAttributionOeuvres />

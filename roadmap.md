@@ -26,3 +26,8 @@
 - [x] Journal des briques Ver de Terre Production (/partenaires/vdtp/journal, frise datée depuis la proposition du 9 juillet 2026)
 - [x] Ajouter le pilotage global des vues de l’Atelier et fiabiliser l’affichage persistant des emplacements
 - [x] Permettre de dupliquer, déplacer, tourner et retourner un emplacement, avec ou sans ses ouvrages
+
+## Module Veille (15.10.2026)
+- [x] Renommage « Veille », onglets bziiit / iNaturalist, TdB, Liste, Relier, panier → brouillon newsletter, lettres prêtes
+- [ ] Rapprochement par espèces observées (noms cités ↔ pools d'espèces) — étape suivante
+- [ ] Automations vers propriétaires (alerte espèce, revue mensuelle, météo, invitation marche) — étape suivante
