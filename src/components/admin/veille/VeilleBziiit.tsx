@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import SearchableSelect from '@/components/admin/veille/SearchableSelect';
 import { useNewsletterMutations } from '@/hooks/admin/useNewsletter';
 import {
   NewsArticle, VeilleTarget, articleDate, matchArticle, norm, tagLabel,
@@ -316,12 +317,18 @@ function Relier({ news, cart, toggle, onLetter }: { news: NewsArticle[]; cart: S
 
       {mode === 'destination' ? (
         <>
-          <Select value={targetId} onValueChange={setTargetId}>
-            <SelectTrigger><SelectValue placeholder="Choisir un jardin ou une exploration" /></SelectTrigger>
-            <SelectContent className="max-h-80">
-              {targets.map((t) => <SelectItem key={t.id} value={t.id}>{t.type === 'propriete' ? '🌿 ' : '👣 '}{t.nom} — {t.sousTitre}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            options={targets.map((t) => ({
+              id: t.id, label: t.nom, sub: t.sousTitre,
+              icon: t.type === 'propriete' ? <Trees className="w-4 h-4 text-primary" /> : <Footprints className="w-4 h-4 text-primary" />,
+            }))}
+            value={targetId}
+            onChange={setTargetId}
+            placeholder="Choisir un jardin ou une exploration"
+            searchPlaceholder="Nom ou commune…"
+            emptyLabel="Aucun jardin ni exploration"
+            title="Jardin ou exploration"
+          />
           {target && (
             <>
               <div className="flex items-center justify-between gap-2">
@@ -344,12 +351,15 @@ function Relier({ news, cart, toggle, onLetter }: { news: NewsArticle[]; cart: S
         </>
       ) : (
         <>
-          <Select value={articleId} onValueChange={setArticleId}>
-            <SelectTrigger><SelectValue placeholder="Choisir un article récent" /></SelectTrigger>
-            <SelectContent className="max-h-80">
-              {recent.map((a) => <SelectItem key={a.id} value={a.id}>{a.title.slice(0, 90)}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            options={recent.map((a) => ({ id: a.id, label: a.title, sub: `${a.metadata?.source ?? ''} · ${articleDate(a)}` }))}
+            value={articleId}
+            onChange={setArticleId}
+            placeholder="Choisir un article récent"
+            searchPlaceholder="Le titre contient…"
+            emptyLabel="Aucun article récent"
+            title="Article récent"
+          />
           {article && (
             <>
               <h3 className="text-sm font-medium text-foreground">
