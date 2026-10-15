@@ -53,7 +53,7 @@ export const ZoneInspector: React.FC<Props> = ({
 
   return (
     <div
-      className="ds-inspector-in relative flex max-h-full flex-col overflow-hidden rounded-t-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/96 text-[hsl(var(--ds-forest-deep))] shadow-2xl backdrop-blur sm:rounded-xl"
+      className="ds-inspector-in relative flex max-h-full flex-col overflow-hidden rounded-t-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] shadow-2xl ring-1 ring-[hsl(var(--ds-forest-deep))]/15 sm:rounded-xl"
       role="dialog"
       aria-label={`Édition de l'emplacement ${zone.nom}`}
     >
@@ -63,7 +63,7 @@ export const ZoneInspector: React.FC<Props> = ({
         style={{ backgroundColor: color }}
       />
 
-      <div className="sticky top-0 z-10 flex items-start gap-2 border-b border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/96 px-3 py-2.5 backdrop-blur">
+      <div className="sticky top-0 z-10 flex items-start gap-2 border-b border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))] px-3 py-2.5">
         <span
           className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full ring-2 ring-white/70"
           style={{ backgroundColor: color }}
@@ -98,7 +98,7 @@ export const ZoneInspector: React.FC<Props> = ({
       ) : (
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3">
           <label className="block">
-            <span className="mb-0.5 block text-[10px] uppercase tracking-wider opacity-55">Nom</span>
+            <span className="mb-0.5 block text-[10px] uppercase tracking-wider opacity-75">Nom</span>
             <input
               className={field}
               value={nom}
@@ -111,7 +111,7 @@ export const ZoneInspector: React.FC<Props> = ({
 
           <div className="grid grid-cols-2 gap-2">
             <label className="block">
-              <span className="mb-0.5 block text-[10px] uppercase tracking-wider opacity-55">
+              <span className="mb-0.5 block text-[10px] uppercase tracking-wider opacity-75">
                 Couleur
               </span>
               <input
@@ -123,7 +123,7 @@ export const ZoneInspector: React.FC<Props> = ({
               />
             </label>
             <label className="block">
-              <span className="mb-0.5 block text-[10px] uppercase tracking-wider opacity-55">
+              <span className="mb-0.5 block text-[10px] uppercase tracking-wider opacity-75">
                 Opacité
               </span>
               <input
@@ -142,14 +142,14 @@ export const ZoneInspector: React.FC<Props> = ({
           <button
             onClick={() => onPatch({ visible: !zone.visible })}
             disabled={readOnly}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-[hsl(var(--ds-line))] py-1 text-[10px] hover:border-[hsl(var(--ds-forest))]/60"
+            className="inline-flex w-full items-center justify-center gap-1.5 min-h-9 rounded-full border border-[hsl(var(--ds-forest-deep))]/30 bg-[hsl(var(--ds-forest))]/8 py-1.5 text-[11px] font-medium hover:bg-[hsl(var(--ds-forest))]/15"
           >
             {zone.visible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
             {zone.visible ? 'Visible sur le plan' : 'Masqué'}
           </button>
 
           <label className="block">
-            <span className="mb-0.5 block text-[10px] uppercase tracking-wider opacity-55">
+            <span className="mb-0.5 block text-[10px] uppercase tracking-wider opacity-75">
               Intention / note de chantier
             </span>
             <textarea
@@ -165,17 +165,17 @@ export const ZoneInspector: React.FC<Props> = ({
       )}
 
       {!readOnly && !transforming && (
-        <div className="space-y-1.5 border-t border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/96 px-3 py-2.5">
+        <div className="space-y-1.5 border-t border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))] px-3 py-2.5">
           <div className="flex gap-1.5">
             <button
               onClick={onTransform}
-              className="inline-flex flex-1 items-center justify-center gap-1 rounded-full border border-[hsl(var(--ds-line))] py-1 text-[10px] hover:border-[hsl(var(--ds-forest))]/60"
+              className="inline-flex flex-1 items-center justify-center gap-1 min-h-9 rounded-full border border-[hsl(var(--ds-forest-deep))]/30 bg-[hsl(var(--ds-forest))]/8 py-1.5 text-[11px] font-medium hover:bg-[hsl(var(--ds-forest))]/15"
             >
               <Scaling className="h-3 w-3" /> Transformer
             </button>
             <button
               onClick={onRedraw}
-              className="inline-flex flex-1 items-center justify-center gap-1 rounded-full border border-[hsl(var(--ds-line))] py-1 text-[10px] hover:border-[hsl(var(--ds-forest))]/60"
+              className="inline-flex flex-1 items-center justify-center gap-1 min-h-9 rounded-full border border-[hsl(var(--ds-forest-deep))]/30 bg-[hsl(var(--ds-forest))]/8 py-1.5 text-[11px] font-medium hover:bg-[hsl(var(--ds-forest))]/15"
             >
               <PencilLine className="h-3 w-3" /> Redessiner
             </button>
@@ -194,7 +194,7 @@ export const ZoneInspector: React.FC<Props> = ({
               <button onClick={() => setDuplicateChoice(false)} className="mt-1.5 w-full text-[10px] opacity-60 hover:opacity-100">Annuler</button>
             </div>
           ) : (
-            <button onClick={() => setDuplicateChoice(true)} className="inline-flex w-full items-center justify-center gap-1 rounded-full border border-[hsl(var(--ds-gold))]/50 py-1 text-[10px] text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-gold))]/10">
+            <button onClick={() => setDuplicateChoice(true)} className="inline-flex w-full items-center justify-center gap-1 min-h-9 rounded-full border border-[hsl(var(--ds-gold))] bg-[hsl(var(--ds-gold))]/15 py-1.5 text-[11px] font-medium text-[hsl(var(--ds-forest-deep))] hover:bg-[hsl(var(--ds-gold))]/10">
               <Copy className="h-3 w-3" /> Dupliquer et composer
             </button>
           )}
@@ -207,7 +207,7 @@ export const ZoneInspector: React.FC<Props> = ({
               <div className="mt-1.5 flex gap-1.5">
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="inline-flex flex-1 items-center justify-center rounded-full border border-[hsl(var(--ds-line))] py-1 text-[10px] hover:border-[hsl(var(--ds-forest))]/60"
+                  className="inline-flex flex-1 items-center justify-center min-h-9 rounded-full border border-[hsl(var(--ds-forest-deep))]/30 bg-[hsl(var(--ds-forest))]/8 py-1.5 text-[11px] font-medium hover:bg-[hsl(var(--ds-forest))]/15"
                 >
                   Garder
                 </button>
@@ -225,7 +225,7 @@ export const ZoneInspector: React.FC<Props> = ({
           ) : (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="inline-flex w-full items-center justify-center gap-1 rounded-full border border-red-500/30 py-1 text-[10px] text-red-600 hover:bg-red-500/10"
+              className="inline-flex w-full items-center justify-center gap-1 min-h-9 rounded-full border border-destructive/50 bg-destructive/5 py-1.5 text-[11px] font-medium text-destructive hover:bg-red-500/10"
             >
               <Trash2 className="h-3 w-3" /> Supprimer l'emplacement
             </button>
