@@ -223,13 +223,16 @@ const AdminProprietes: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await sb
         .from('community_profiles')
-        .select('user_id, full_name')
+        .select('user_id, prenom, nom')
         .in('user_id', userIdsLies);
-      if (error) throw error;
+      if (error) {
+        console.error('[AdminProprietes] chargement des noms impossible', error);
+        throw error;
+      }
       return Object.fromEntries(
-        ((data ?? []) as { user_id: string; full_name: string | null }[])
-          .filter((r) => r.full_name?.trim())
-          .map((r) => [r.user_id, r.full_name!.trim()]),
+        ((data ?? []) as { user_id: string; prenom: string | null; nom: string | null }[])
+          .map((r) => [r.user_id, [r.prenom, r.nom].map((s) => (s ?? '').trim()).filter(Boolean).join(' ')] as const)
+          .filter(([, name]) => name),
       );
     },
     staleTime: 60 * 1000,
