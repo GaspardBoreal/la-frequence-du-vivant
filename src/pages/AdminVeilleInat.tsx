@@ -8,7 +8,7 @@ import { SpeciesName } from '@/components/species/SpeciesName';
 
 const LATE_MS = 3 * 60 * 60 * 1000;
 
-export default function AdminVeilleInat() {
+export default function AdminVeilleInat({ embedded = false }: { embedded?: boolean }) {
   const { data, isLoading } = useQuery({
     queryKey: ['admin-inat-watch-misses'],
     queryFn: async () => {
@@ -28,13 +28,13 @@ export default function AdminVeilleInat() {
   const late = rows.filter((r) => Date.now() - new Date(r.first_seen_at).getTime() > LATE_MS);
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-8">
+    <div className={embedded ? 'mt-3' : 'min-h-screen bg-background p-4 sm:p-8'}>
       <div className="max-w-4xl mx-auto space-y-6">
-        <Link to="/admin/outils" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        {!embedded && <Link to="/admin/outils" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-4 h-4" /> Outils admin
-        </Link>
+        </Link>}
         <header>
-          <h1 className="text-2xl font-semibold text-foreground">Veille iNaturalist</h1>
+          {!embedded && <h1 className="text-2xl font-semibold text-foreground">Veille iNaturalist</h1>}
           <p className="text-sm text-muted-foreground mt-1">
             Vérification toutes les heures des observations du compte @les-marches-du-vivant et des marcheurs liés. Une observation absente est recollectée automatiquement ; elle passe en alerte au-delà de 3 h.
           </p>

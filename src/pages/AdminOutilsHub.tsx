@@ -99,10 +99,10 @@ const OUTILS = [
     active: true,
   },
   {
-    titre: 'Veille iNaturalist',
-    description: 'Observations de l\'association et des marcheurs, prises dans le rayon d\'une marche, qui ne sont pas encore affichées (retard de plus de 3 h, motif).',
+    titre: 'Veille',
+    description: 'Veille bziiit (articles quotidiens, liens jardins et explorations, lettres ciblées) et veille iNaturalist (observations en retard).',
     icon: Radio,
-    to: '/admin/veille-inat',
+    to: '/admin/veille',
     active: true,
   },
   {
