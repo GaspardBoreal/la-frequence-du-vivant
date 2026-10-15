@@ -193,7 +193,9 @@ const AdminProprietes: React.FC = () => {
         .select('propriete_id, role, community_profile_id, community_profiles(user_id)')
         .limit(10000);
       if (error) throw error;
-      return (data ?? []) as { propriete_id: string; role: string; user_id: string }[];
+      return ((data ?? []) as { propriete_id: string; role: string; community_profiles: { user_id: string } | null }[])
+        .map((r) => ({ propriete_id: r.propriete_id, role: r.role, user_id: r.community_profiles?.user_id ?? '' }))
+        .filter((r) => r.user_id);
     },
     staleTime: 60 * 1000,
   });
