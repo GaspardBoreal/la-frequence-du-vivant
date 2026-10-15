@@ -445,6 +445,12 @@ const AdminProprietes: React.FC = () => {
             entreprises={entrepriseOptions}
           />
 
+          {liensError && (
+            <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              La liste des utilisateurs n'a pas pu être chargée — le filtre « Utilisateur » est indisponible. Rechargez la page pour réessayer.
+            </p>
+          )}
+
           {/* Bascule Table | Carte | Tableau de bord | Analyse */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="inline-flex flex-wrap rounded-lg border border-border bg-card p-1">
