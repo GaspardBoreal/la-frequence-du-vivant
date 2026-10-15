@@ -199,6 +199,20 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
           </SelectContent>
         </Select>
 
+        <SearchableSelect
+          options={users.map((u) => ({
+            id: u.id,
+            label: u.email,
+            sub: `${u.count} propriété${u.count > 1 ? 's' : ''}`,
+          }))}
+          value={values.user === 'all' ? '' : values.user}
+          onChange={(id) => set('user', id || 'all')}
+          placeholder="Utilisateur : tous"
+          searchPlaceholder="Nom ou e-mail…"
+          emptyLabel="Aucun utilisateur"
+          title="Filtrer par utilisateur"
+        />
+
         <Select value={values.periode} onValueChange={(v) => set('periode', v as ProprietesFilterValues['periode'])}>
           <SelectTrigger><SelectValue placeholder="Période" /></SelectTrigger>
           <SelectContent>
