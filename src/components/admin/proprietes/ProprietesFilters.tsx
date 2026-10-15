@@ -54,7 +54,7 @@ interface Props {
   departements: string[];
   entreprises: { id: string; nom: string }[];
   /** Utilisateurs ayant au moins une propriété rattachée (filtre « Utilisateur »). */
-  users?: { id: string; email: string; count: number }[];
+  users?: { id: string; name: string; email: string; count: number }[];
 }
 
 const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departements, entreprises, users = [] }) => {
@@ -202,8 +202,8 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
         <SearchableSelect
           options={users.map((u) => ({
             id: u.id,
-            label: u.email,
-            sub: `${u.count} propriété${u.count > 1 ? 's' : ''}`,
+            label: u.name || u.email,
+            sub: `${u.name ? `${u.email} · ` : ''}${u.count} propriété${u.count > 1 ? 's' : ''}`,
           }))}
           value={values.user === 'all' ? '' : values.user}
           onChange={(id) => set('user', id || 'all')}

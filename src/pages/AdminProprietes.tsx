@@ -216,16 +216,35 @@ const AdminProprietes: React.FC = () => {
     },
     staleTime: 60 * 1000,
   });
+  // Noms complets des utilisateurs liés (via leur profil communautaire)
+  const { data: userNames = {} } = useQuery<Record<string, string>>({
+    queryKey: ['admin-proprietes', 'liens-noms', userIdsLies],
+    enabled: userIdsLies.length > 0,
+    queryFn: async () => {
+      const { data, error } = await sb
+        .from('community_profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIdsLies);
+      if (error) throw error;
+      return Object.fromEntries(
+        ((data ?? []) as { user_id: string; full_name: string | null }[])
+          .filter((r) => r.full_name?.trim())
+          .map((r) => [r.user_id, r.full_name!.trim()]),
+      );
+    },
+    staleTime: 60 * 1000,
+  });
   const usersOptions = useMemo(
     () =>
       userIdsLies
         .map((id) => ({
           id,
+          name: userNames[id] ?? '',
           email: userEmails[id] ?? id.slice(0, 8) + '…',
           count: new Set(lienMarcheurs.filter((l) => l.user_id === id).map((l) => l.propriete_id)).size,
         }))
-        .sort((a, b) => a.email.localeCompare(b.email, 'fr')),
-    [userIdsLies, userEmails, lienMarcheurs],
+        .sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email, 'fr')),
+    [userIdsLies, userEmails, userNames, lienMarcheurs],
   );
 
   const idsParRole = useMemo(() => {
