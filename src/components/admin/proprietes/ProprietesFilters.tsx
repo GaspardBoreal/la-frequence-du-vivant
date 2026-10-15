@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import SearchableSelect from '@/components/admin/veille/SearchableSelect';
 import type { ProprietesFilterValues } from './types';
 import { DEFAULT_FILTERS } from './types';
 
@@ -52,9 +53,11 @@ interface Props {
   regions: string[];
   departements: string[];
   entreprises: { id: string; nom: string }[];
+  /** Utilisateurs ayant au moins une propriété rattachée (filtre « Utilisateur »). */
+  users?: { id: string; email: string; count: number }[];
 }
 
-const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departements, entreprises }) => {
+const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departements, entreprises, users = [] }) => {
   const [q, setQ] = useState(values.q);
 
   // Resynchronise le champ quand l'URL change (retour navigateur, KPI…)
@@ -195,6 +198,20 @@ const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departe
             <SelectItem value="marcheur_historique">Marcheur</SelectItem>
           </SelectContent>
         </Select>
+
+        <SearchableSelect
+          options={users.map((u) => ({
+            id: u.id,
+            label: u.email,
+            sub: `${u.count} propriété${u.count > 1 ? 's' : ''}`,
+          }))}
+          value={values.user === 'all' ? '' : values.user}
+          onChange={(id) => set('user', id || 'all')}
+          placeholder="Utilisateur : tous"
+          searchPlaceholder="Nom ou e-mail…"
+          emptyLabel="Aucun utilisateur"
+          title="Filtrer par utilisateur"
+        />
 
         <Select value={values.periode} onValueChange={(v) => set('periode', v as ProprietesFilterValues['periode'])}>
           <SelectTrigger><SelectValue placeholder="Période" /></SelectTrigger>

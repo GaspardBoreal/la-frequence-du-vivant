@@ -54,6 +54,7 @@ const AdminProprietes: React.FC = () => {
     sondes: (searchParams.get('sondes') as ProprietesFilterValues['sondes']) || 'all',
     intention: (searchParams.get('intention') as ProprietesFilterValues['intention']) || 'all',
     role: (searchParams.get('role') as ProprietesFilterValues['role']) || 'all',
+    user: searchParams.get('user') || 'all',
     periode: (searchParams.get('periode') as ProprietesFilterValues['periode']) || 'all',
     du: searchParams.get('du') ?? '',
     au: searchParams.get('au') ?? '',
@@ -184,18 +185,45 @@ const AdminProprietes: React.FC = () => {
   );
 
   // ---- Liaisons marcheurs par propriété (rôles, table petite) -------------
-  const { data: lienMarcheurs = [] } = useQuery<{ propriete_id: string; role: string }[]>({
+  const { data: lienMarcheurs = [] } = useQuery<{ propriete_id: string; role: string; user_id: string }[]>({
     queryKey: ['admin-proprietes', 'liens-marcheurs'],
     queryFn: async () => {
       const { data, error } = await sb
         .from('propriete_marcheurs')
-        .select('propriete_id, role')
+        .select('propriete_id, role, user_id')
         .limit(10000);
       if (error) throw error;
-      return (data ?? []) as { propriete_id: string; role: string }[];
+      return (data ?? []) as { propriete_id: string; role: string; user_id: string }[];
     },
     staleTime: 60 * 1000,
   });
+
+  // ---- Utilisateurs ayant au moins une propriété rattachée ----------------
+  const userIdsLies = useMemo(
+    () => [...new Set(lienMarcheurs.map((l) => l.user_id).filter(Boolean))],
+    [lienMarcheurs],
+  );
+  const { data: userEmails = {} } = useQuery<Record<string, string>>({
+    queryKey: ['admin-proprietes', 'liens-emails', userIdsLies],
+    enabled: userIdsLies.length > 0,
+    queryFn: async () => {
+      const { data, error } = await sb.rpc('admin_get_profile_emails', { user_ids: userIdsLies });
+      if (error) throw error;
+      return Object.fromEntries(((data ?? []) as { user_id: string; email: string }[]).map((r) => [r.user_id, r.email]));
+    },
+    staleTime: 60 * 1000,
+  });
+  const usersOptions = useMemo(
+    () =>
+      userIdsLies
+        .map((id) => ({
+          id,
+          email: userEmails[id] ?? id.slice(0, 8) + '…',
+          count: new Set(lienMarcheurs.filter((l) => l.user_id === id).map((l) => l.propriete_id)).size,
+        }))
+        .sort((a, b) => a.email.localeCompare(b.email, 'fr')),
+    [userIdsLies, userEmails, lienMarcheurs],
+  );
 
   const idsParRole = useMemo(() => {
     const map: Record<string, string[]> = { proprietaire: [], prestataire: [], marcheur_historique: [] };
@@ -258,6 +286,19 @@ const AdminProprietes: React.FC = () => {
     }
     if (filters.role !== 'all') {
       const ids = idsParRole[filters.role] ?? [];
+      q = ids.length > 0
+        ? q.in('id', ids)
+        : q.eq('id', '00000000-0000-0000-0000-000000000000');
+    }
+    if (filters.user !== 'all') {
+      const ids = [
+        ...new Set(
+          lienMarcheurs
+            .filter((l) => l.user_id === filters.user)
+            .filter((l) => filters.role === 'all' || l.role === filters.role)
+            .map((l) => l.propriete_id),
+        ),
+      ];
       q = ids.length > 0
         ? q.in('id', ids)
         : q.eq('id', '00000000-0000-0000-0000-000000000000');
@@ -396,6 +437,7 @@ const AdminProprietes: React.FC = () => {
           <ProprietesFilters
             values={filters}
             onChange={setFilters}
+            users={usersOptions}
             regions={regions}
             departements={departements}
             entreprises={entrepriseOptions}
