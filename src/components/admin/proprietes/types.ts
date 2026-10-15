@@ -48,6 +48,8 @@ export interface ProprietesFilterValues {
   intention: 'all' | 'vide' | 'renseignee';
   /** Rôle d'un marcheur rattaché (enum role_propriete). */
   role: 'all' | 'proprietaire' | 'prestataire' | 'marcheur_historique';
+  /** Utilisateur précis ayant un lien avec la propriété (user_id ou 'all'). */
+  user: string;
   periode: ProprietesPeriode;
   du: string;
   au: string;
@@ -63,6 +65,7 @@ export const DEFAULT_FILTERS: ProprietesFilterValues = {
   sondes: 'all',
   intention: 'all',
   role: 'all',
+  user: 'all',
   periode: 'all',
   du: '',
   au: '',
