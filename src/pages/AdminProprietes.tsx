@@ -290,6 +290,19 @@ const AdminProprietes: React.FC = () => {
         ? q.in('id', ids)
         : q.eq('id', '00000000-0000-0000-0000-000000000000');
     }
+    if (filters.user !== 'all') {
+      const ids = [
+        ...new Set(
+          lienMarcheurs
+            .filter((l) => l.user_id === filters.user)
+            .filter((l) => filters.role === 'all' || l.role === filters.role)
+            .map((l) => l.propriete_id),
+        ),
+      ];
+      q = ids.length > 0
+        ? q.in('id', ids)
+        : q.eq('id', '00000000-0000-0000-0000-000000000000');
+    }
     return q;
   };
 
