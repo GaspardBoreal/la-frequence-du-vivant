@@ -94,7 +94,7 @@ export const ObjectInspector: React.FC<Props> = ({
 
   return (
     <div
-      className="ds-inspector-in relative flex max-h-full flex-col overflow-hidden rounded-t-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))]/96 text-[hsl(var(--ds-forest-deep))] shadow-2xl backdrop-blur sm:rounded-xl"
+      className="ds-inspector-in relative flex max-h-full flex-col overflow-hidden rounded-t-2xl border border-[hsl(var(--ds-line))] bg-[hsl(var(--ds-cream))] text-[hsl(var(--ds-forest-deep))] shadow-2xl ring-1 ring-[hsl(var(--ds-forest-deep))]/15 sm:rounded-xl"
       role="dialog"
       aria-label={`Édition · ${tool.label}`}
     >
@@ -106,7 +106,7 @@ export const ObjectInspector: React.FC<Props> = ({
       />
 
       {/* En-tête collant : l'identité de l'objet reste lisible pendant le défilement */}
-      <div className="sticky top-0 z-10 flex items-start gap-2 border-b border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/96 px-3 py-2.5 backdrop-blur">
+      <div className="sticky top-0 z-10 flex items-start gap-2 border-b border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))] px-3 py-2.5">
         <span
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[14px]"
           style={{ backgroundColor: `${tool.color}22` }}
@@ -339,7 +339,7 @@ export const ObjectInspector: React.FC<Props> = ({
       </div>
 
       {!readOnly && (
-        <div className="space-y-1.5 border-t border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))]/96 px-3 py-2.5">
+        <div className="space-y-1.5 border-t border-[hsl(var(--ds-line))]/70 bg-[hsl(var(--ds-cream))] px-3 py-2.5">
           <div className="flex gap-1.5">
             <button
               onClick={onDuplicate}

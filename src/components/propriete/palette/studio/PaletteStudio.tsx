@@ -109,6 +109,7 @@ import {
 import { geometryAreaM2, fmtArea, geometryCenter, geometryPolygonRings } from './geoMetrics';
 import ZoneTransformLayer from '../ZoneTransformLayer';
 import ZoneTransformBar from '../ZoneTransformBar';
+import ZoneQuickEditLayer from './ZoneQuickEditLayer';
 import { useZoneTransform } from '@/hooks/propriete/useZoneTransform';
 import ObjetTransformLayer from './ObjetTransformLayer';
 import ObjetTransformBar from './ObjetTransformBar';
@@ -1306,6 +1307,17 @@ export const PaletteStudio: React.FC<Props> = ({
                   if (!z.visible || z.id === zoneTransform.zone?.id) return [];
                   const color = z.couleur || ZONE_COLORS[i % ZONE_COLORS.length];
                   const active = z.id === activeZoneId;
+                  if (active && !readOnly && !z.verrouille && !transforming && !zoneDraw) {
+                    return [
+                      <ZoneQuickEditLayer
+                        key={`quick-${z.id}`}
+                        zone={z}
+                        color={color}
+                        fillOpacity={0.3 * (z.opacite ? z.opacite / 0.18 : 1)}
+                        onCommit={(geometry) => onPatchZone(z, { geometry })}
+                      />,
+                    ];
+                  }
                   const rings = geometryPolygonRings(z.geometry);
                   if (rings.length === 0) {
                     if (import.meta.env.DEV) {
