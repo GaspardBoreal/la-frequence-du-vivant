@@ -55,6 +55,11 @@ const SearchableSelect: React.FC<Props> = ({
         <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <input
           autoFocus
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          name="searchable-select-q"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={searchPlaceholder}

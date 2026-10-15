@@ -185,15 +185,17 @@ const AdminProprietes: React.FC = () => {
   );
 
   // ---- Liaisons marcheurs par propriété (rôles, table petite) -------------
-  const { data: lienMarcheurs = [] } = useQuery<{ propriete_id: string; role: string; user_id: string }[]>({
+  const { data: lienMarcheurs = [], isError: liensError } = useQuery<{ propriete_id: string; role: string; user_id: string }[]>({
     queryKey: ['admin-proprietes', 'liens-marcheurs'],
     queryFn: async () => {
       const { data, error } = await sb
         .from('propriete_marcheurs')
-        .select('propriete_id, role, user_id')
+        .select('propriete_id, role, community_profile_id, community_profiles(user_id)')
         .limit(10000);
       if (error) throw error;
-      return (data ?? []) as { propriete_id: string; role: string; user_id: string }[];
+      return ((data ?? []) as { propriete_id: string; role: string; community_profiles: { user_id: string } | null }[])
+        .map((r) => ({ propriete_id: r.propriete_id, role: r.role, user_id: r.community_profiles?.user_id ?? '' }))
+        .filter((r) => r.user_id);
     },
     staleTime: 60 * 1000,
   });
@@ -442,6 +444,12 @@ const AdminProprietes: React.FC = () => {
             departements={departements}
             entreprises={entrepriseOptions}
           />
+
+          {liensError && (
+            <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              La liste des utilisateurs n'a pas pu être chargée — le filtre « Utilisateur » est indisponible. Rechargez la page pour réessayer.
+            </p>
+          )}
 
           {/* Bascule Table | Carte | Tableau de bord | Analyse */}
           <div className="flex flex-wrap items-center justify-between gap-2">
