@@ -91,6 +91,7 @@ const AdminProprietes: React.FC = () => {
       sondes: v.sondes,
       intention: v.intention,
       role: v.role,
+      user: v.user,
       periode: v.periode,
       du: v.periode === 'plage' ? v.du || null : null,
       au: v.periode === 'plage' ? v.au || null : null,
