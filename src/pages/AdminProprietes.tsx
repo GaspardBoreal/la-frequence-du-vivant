@@ -185,12 +185,12 @@ const AdminProprietes: React.FC = () => {
   );
 
   // ---- Liaisons marcheurs par propriété (rôles, table petite) -------------
-  const { data: lienMarcheurs = [] } = useQuery<{ propriete_id: string; role: string; user_id: string }[]>({
+  const { data: lienMarcheurs = [], isError: liensError } = useQuery<{ propriete_id: string; role: string; user_id: string }[]>({
     queryKey: ['admin-proprietes', 'liens-marcheurs'],
     queryFn: async () => {
       const { data, error } = await sb
         .from('propriete_marcheurs')
-        .select('propriete_id, role, user_id')
+        .select('propriete_id, role, community_profile_id, community_profiles(user_id)')
         .limit(10000);
       if (error) throw error;
       return (data ?? []) as { propriete_id: string; role: string; user_id: string }[];
