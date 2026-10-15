@@ -437,6 +437,7 @@ const AdminProprietes: React.FC = () => {
           <ProprietesFilters
             values={filters}
             onChange={setFilters}
+            users={usersOptions}
             regions={regions}
             departements={departements}
             entreprises={entrepriseOptions}

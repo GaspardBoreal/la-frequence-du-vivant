@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import SearchableSelect from '@/components/admin/veille/SearchableSelect';
 import type { ProprietesFilterValues } from './types';
 import { DEFAULT_FILTERS } from './types';
 
@@ -52,9 +53,11 @@ interface Props {
   regions: string[];
   departements: string[];
   entreprises: { id: string; nom: string }[];
+  /** Utilisateurs ayant au moins une propriété rattachée (filtre « Utilisateur »). */
+  users?: { id: string; email: string; count: number }[];
 }
 
-const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departements, entreprises }) => {
+const ProprietesFilters: React.FC<Props> = ({ values, onChange, regions, departements, entreprises, users = [] }) => {
   const [q, setQ] = useState(values.q);
 
   // Resynchronise le champ quand l'URL change (retour navigateur, KPI…)
