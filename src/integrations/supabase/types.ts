@@ -6870,6 +6870,53 @@ export type Database = {
         }
         Relationships: []
       }
+      news_links: {
+        Row: {
+          created_at: string
+          decided_by: string | null
+          id: string
+          news_id: string
+          raisons: Json
+          score: number
+          statut: string
+          target_id: string
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_by?: string | null
+          id?: string
+          news_id: string
+          raisons?: Json
+          score?: number
+          statut?: string
+          target_id: string
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_by?: string | null
+          id?: string
+          news_id?: string
+          raisons?: Json
+          score?: number
+          statut?: string
+          target_id?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_links_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "news"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       newsletter_audience_tags: {
         Row: {
           created_at: string
