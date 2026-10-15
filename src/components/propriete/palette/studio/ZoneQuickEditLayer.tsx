@@ -182,7 +182,7 @@ const ZoneQuickEditLayer: React.FC<Props> = ({ zone, color, fillOpacity, onCommi
             pathOptions={{ color, weight: 4, opacity: 1, fillColor: color, fillOpacity, className: 'cursor-grab' }}
             eventHandlers={{
               mousedown: (e: any) => beginDrag(e.originalEvent),
-              touchstart: (e: any) => beginDrag(e.originalEvent),
+              ...({ touchstart: (e: any) => beginDrag(e.originalEvent) } as any),
               click: (e: any) => e.originalEvent?.stopPropagation?.(),
             }}
           >
