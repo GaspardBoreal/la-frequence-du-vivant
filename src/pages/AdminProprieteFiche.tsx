@@ -31,6 +31,7 @@ import DeleteProprieteDialog from '@/components/admin/proprietes/DeletePropriete
 import ProprieteDashboard from '@/components/admin/proprietes/fiche/ProprieteDashboard';
 import ProprieteIntentionSection from '@/components/admin/proprietes/fiche/ProprieteIntentionSection';
 import { cn } from '@/lib/utils';
+import PackVivantProprieteButton from '@/components/propriete/PackVivantProprieteButton';
 
 const sb = supabase as any;
 
@@ -873,7 +874,16 @@ const AdminProprieteFiche: React.FC = () => {
 
               {/* Événements rattachés */}
               <section id="sec-evenements" className="scroll-mt-32 space-y-3 rounded-xl border border-border bg-card p-4 sm:p-6">
-                <SectionTitle icon={<CalendarDays className="h-4 w-4" />}>Événements Marches du Vivant</SectionTitle>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <SectionTitle icon={<CalendarDays className="h-4 w-4" />}>Événements Marches du Vivant</SectionTitle>
+                  {id && linkedEvents.length > 0 && (
+                    <PackVivantProprieteButton
+                      proprieteId={id}
+                      variant="outline"
+                      label={`Exporter la biodiversité (${linkedEvents.length} événement${linkedEvents.length > 1 ? 's' : ''})`}
+                    />
+                  )}
+                </div>
                 <div className="flex flex-wrap items-end gap-2">
                   <div className="min-w-[220px] flex-1">
                     <Select value={eventToAdd} onValueChange={setEventToAdd}>
