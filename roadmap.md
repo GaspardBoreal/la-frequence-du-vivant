@@ -31,3 +31,6 @@
 - [x] Renommage « Veille », onglets bziiit / iNaturalist, TdB, Liste, Relier, panier → brouillon newsletter, lettres prêtes
 - [ ] Rapprochement par espèces observées (noms cités ↔ pools d'espèces) — étape suivante
 - [ ] Automations vers propriétaires (alerte espèce, revue mensuelle, météo, invitation marche) — étape suivante
+
+- [x] Export biodiversité multi-événements depuis la fiche propriété admin
+- [ ] Onglet « Biodiversité & Propriétés » dans /admin/exportations (étape 2)
