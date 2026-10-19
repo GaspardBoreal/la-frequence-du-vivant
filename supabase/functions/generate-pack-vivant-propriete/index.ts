@@ -5,8 +5,6 @@
 // Accès : admin, ou personne ayant accès à la propriété (can_access_propriete).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import JSZip from 'https://esm.sh/jszip@3.10.1';
-import * as XLSX from 'https://esm.sh/xlsx@0.18.5';
-import { PDFDocument, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -212,15 +210,20 @@ Deno.serve(async (req) => {
       exploration_id: o.exploration_id, exploration: o.exploration_nom, evenements: o.evenements, marche_id: o.marche_id,
     }));
 
+    const rawCount = raw.length;
+    const rawCsv = toCsv(rawCsvRows);
+    rawCsvRows.length = 0;
+    groups.clear();
+    keptIds.clear();
     const generatedAt = new Date();
     const metadata = {
       propriete: { id: prop.id, nom: prop.nom, ville: prop.ville },
       generated_at: generatedAt.toISOString(),
       evenements_rattaches: events.length,
       explorations: exploSummary,
-      observations_brutes: raw.length,
+      observations_brutes: rawCount,
       observations_nettoyees: clean.length,
-      doublons_retires: raw.length - clean.length,
+      doublons_retires: rawCount - clean.length,
       especes_uniques: species.length,
       regles_dedup: [
         "1. Même identifiant iNaturalist = même observation (quelle que soit l'exploration ou la source).",
@@ -250,15 +253,18 @@ Deno.serve(async (req) => {
 <Placemark><name>${xml(o.common_name_fr || o.scientific_name)}</name><description><![CDATA[<i>${o.scientific_name}</i><br/>Date : ${o.observation_date || '—'}<br/>Observateur : ${o.observer_name}<br/>Événements : ${o.evenements_associes}]]></description><Point><coordinates>${o.longitude},${o.latitude},0</coordinates></Point></Placemark>`).join('')}
 </Document></kml>`;
 
-    // Excel
+    raw.length = 0;
+    // Excel (chargé seulement maintenant pour limiter la mémoire de pointe)
+    const XLSX = await import('https://esm.sh/xlsx@0.18.5');
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(species), 'Espèces');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cleanCsvRows), 'Observations nettoyées');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rawCsvRows), 'Observations brutes');
+    // Les observations brutes restent en CSV seulement : en Excel elles dépassent la mémoire disponible.
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exploSummary), 'Explorations');
-    const xlsx = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as Uint8Array;
+    const xlsx = XLSX.write(wb, { type: 'array', bookType: 'xlsx', compression: true }) as Uint8Array;
 
     // PDF récapitulatif
+    const { PDFDocument, StandardFonts, rgb } = await import('https://esm.sh/pdf-lib@1.17.1');
     const pdf = await PDFDocument.create();
     const font = await pdf.embedFont(StandardFonts.Helvetica);
     const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -271,7 +277,7 @@ Deno.serve(async (req) => {
     let y = 690;
     for (const [k, v] of [
       ['Evenements rattaches', events.length], ['Explorations', exploSummary.length],
-      ['Observations brutes', raw.length], ['Doublons retires', raw.length - clean.length],
+      ['Observations brutes', rawCount], ['Doublons retires', rawCount - clean.length],
       ['Observations nettoyees', clean.length], ['Especes uniques', species.length],
     ] as const) {
       page.drawText(safe(k), { x: 50, y, size: 10, font, color: muted });
@@ -296,11 +302,11 @@ Deno.serve(async (req) => {
     zip.file('02_biodiversite.xlsx', xlsx);
     zip.file('especes.csv', toCsv(species));
     zip.file('observations_nettoyees.csv', toCsv(cleanCsvRows));
-    zip.file('observations_brutes.csv', toCsv(rawCsvRows));
+    zip.file('observations_brutes.csv', rawCsv);
     zip.file('observations.geojson', JSON.stringify(geojson));
     zip.file('observations.kml', kml);
     zip.file('metadata.json', JSON.stringify(metadata, null, 2));
-    const zipBytes = await zip.generateAsync({ type: 'uint8array' });
+    const zipBytes = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
 
     const stamp = generatedAt.toISOString().slice(0, 10);
     const path = `proprietes/${proprieteId}/${stamp}_${crypto.randomUUID()}.zip`;
@@ -313,7 +319,7 @@ Deno.serve(async (req) => {
       url: signed.signedUrl,
       filename: `pack-vivant-propriete_${slugify(prop.nom)}_${stamp}.zip`,
       events: events.length, explorations: exploSummary.length,
-      raw_count: raw.length, clean_count: clean.length, species_count: species.length,
+      raw_count: rawCount, clean_count: clean.length, species_count: species.length,
     });
   } catch (e: any) {
     console.error('[pack-vivant-propriete]', e);
