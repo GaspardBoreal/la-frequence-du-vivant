@@ -13,3 +13,5 @@
 - Close an Atelier composition only after the zone, copied works and plant selection are confirmed saved; a failed step keeps the bar open with retry so no copy is lost or left half-written.
 - Use the shared guarded `react-zoom-pan-pinch` pattern for full-screen photo inspection; it keeps cursor/pinch anchoring, mobile memory limits, and reset behavior consistent.
 - iNat freshness: hourly `watch-inat-accounts` cron checks association + linked marcheur observations against each marche's latest snapshot, triggers targeted `collect-event-biodiversity` (cron secret) and logs gaps in `inat_watch_misses`; the snapshot pipeline alone can lag up to 24h.
+
+- Property biodiversity export (generate-pack-vivant-propriete) aggregates every linked event via per-exploration get_exploration_export_data and dedups by iNaturalist id first, shipping both raw and cleaned rows; lets users audit every merge.
