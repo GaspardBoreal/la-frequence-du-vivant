@@ -291,6 +291,7 @@ Deno.serve(async (req) => {
     page.drawText('Donnees iNaturalist : CC BY-NC, attribution requise. la-frequence-du-vivant.com', { x: 50, y: 40, size: 8, font, color: muted });
     const pdfBytes = await pdf.save();
 
+    const rawCount = raw.length;
     const rawCsv = toCsv(rawCsvRows);
     rawCsvRows.length = 0;
     raw.length = 0;
@@ -316,7 +317,7 @@ Deno.serve(async (req) => {
       url: signed.signedUrl,
       filename: `pack-vivant-propriete_${slugify(prop.nom)}_${stamp}.zip`,
       events: events.length, explorations: exploSummary.length,
-      raw_count: raw.length, clean_count: clean.length, species_count: species.length,
+      raw_count: rawCount, clean_count: clean.length, species_count: species.length,
     });
   } catch (e: any) {
     console.error('[pack-vivant-propriete]', e);
