@@ -254,9 +254,9 @@ Deno.serve(async (req) => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(species), 'Espèces');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cleanCsvRows), 'Observations nettoyées');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rawCsvRows), 'Observations brutes');
+    // Les observations brutes restent en CSV seulement : en Excel elles dépassent la mémoire disponible.
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exploSummary), 'Explorations');
-    const xlsx = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as Uint8Array;
+    const xlsx = XLSX.write(wb, { type: 'array', bookType: 'xlsx', compression: true }) as Uint8Array;
 
     // PDF récapitulatif
     const pdf = await PDFDocument.create();
@@ -291,16 +291,19 @@ Deno.serve(async (req) => {
     page.drawText('Donnees iNaturalist : CC BY-NC, attribution requise. la-frequence-du-vivant.com', { x: 50, y: 40, size: 8, font, color: muted });
     const pdfBytes = await pdf.save();
 
+    const rawCsv = toCsv(rawCsvRows);
+    rawCsvRows.length = 0;
+    raw.length = 0;
     const zip = new JSZip();
     zip.file('01_LISEZ-MOI.pdf', pdfBytes);
     zip.file('02_biodiversite.xlsx', xlsx);
     zip.file('especes.csv', toCsv(species));
     zip.file('observations_nettoyees.csv', toCsv(cleanCsvRows));
-    zip.file('observations_brutes.csv', toCsv(rawCsvRows));
+    zip.file('observations_brutes.csv', rawCsv);
     zip.file('observations.geojson', JSON.stringify(geojson));
     zip.file('observations.kml', kml);
     zip.file('metadata.json', JSON.stringify(metadata, null, 2));
-    const zipBytes = await zip.generateAsync({ type: 'uint8array' });
+    const zipBytes = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
 
     const stamp = generatedAt.toISOString().slice(0, 10);
     const path = `proprietes/${proprieteId}/${stamp}_${crypto.randomUUID()}.zip`;
